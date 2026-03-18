@@ -1,0 +1,56 @@
+# Drift Configuration Example
+# Copy to drift.yaml in your project root
+
+# File patterns (glob syntax)
+include:
+  - "**/*.py"
+  - "**/*.ts"
+  - "**/*.tsx"
+
+exclude:
+  - "**/node_modules/**"
+  - "**/__pycache__/**"
+  - "**/venv/**"
+  - "**/.venv/**"
+  - "**/dist/**"
+  - "**/build/**"
+  - "**/.git/**"
+  - "**/*.egg-info/**"
+
+# Signal weights (should sum to ~1.0)
+weights:
+  pattern_fragmentation: 0.20
+  architecture_violation: 0.20
+  mutant_duplicate: 0.15
+  temporal_volatility: 0.15
+  explainability_deficit: 0.10
+  doc_impl_drift: 0.10
+  system_misalignment: 0.10
+
+# Architecture policies
+policies:
+  # Layer boundary enforcement
+  layer_boundaries:
+    - name: "No DB imports in API layer"
+      from: "api/**"
+      deny_import:
+        - "db.*"
+        - "models.*"
+        - "repositories.*"
+
+    - name: "No API imports in DB layer"
+      from: "db/**"
+      deny_import:
+        - "api.*"
+        - "routes.*"
+        - "views.*"
+
+  # Maximum allowed variants per pattern category
+  max_pattern_variants:
+    error_handling: 2
+    data_access: 2
+    api_endpoint: 3
+
+# CI severity gate: exit 1 if findings meet or exceed this level
+# Options: critical, high, medium, low
+fail_on: high
