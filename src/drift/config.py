@@ -28,6 +28,17 @@ class PolicyConfig(BaseModel):
     ai_attribution: dict[str, Any] = Field(default_factory=dict)
 
 
+class ThresholdsConfig(BaseModel):
+    """Tunable thresholds for detection signals."""
+
+    high_complexity: int = 10
+    medium_complexity: int = 5
+    min_function_loc: int = 10
+    similarity_threshold: float = 0.80
+    recency_days: int = 14
+    volatility_z_threshold: float = 1.5
+
+
 class SignalWeights(BaseModel):
     """Weights for each detection signal in composite scoring.
 
@@ -50,9 +61,7 @@ class SignalWeights(BaseModel):
 class DriftConfig(BaseModel):
     """Main drift configuration, loaded from drift.yaml."""
 
-    include: list[str] = Field(
-        default_factory=lambda: ["**/*.py", "**/*.ts", "**/*.tsx"]
-    )
+    include: list[str] = Field(default_factory=lambda: ["**/*.py"])
     exclude: list[str] = Field(
         default_factory=lambda: [
             "**/node_modules/**",
@@ -68,6 +77,7 @@ class DriftConfig(BaseModel):
     )
     policies: PolicyConfig = Field(default_factory=PolicyConfig)
     weights: SignalWeights = Field(default_factory=SignalWeights)
+    thresholds: ThresholdsConfig = Field(default_factory=ThresholdsConfig)
     cache_dir: str = ".drift-cache"
     fail_on: str = "high"
 

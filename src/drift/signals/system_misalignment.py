@@ -110,6 +110,8 @@ class SystemMisalignmentSignal(BaseSignal):
     ) -> list[Finding]:
         # Build baseline of established imports per module (excluding recent files)
         recency_days = 14
+        if hasattr(config, "thresholds"):
+            recency_days = config.thresholds.recency_days
         cutoff = datetime.datetime.now(tz=datetime.timezone.utc) - datetime.timedelta(
             days=recency_days
         )
@@ -165,8 +167,3 @@ class SystemMisalignmentSignal(BaseSignal):
             )
 
         return findings
-
-    def score(self, findings: list[Finding]) -> float:
-        if not findings:
-            return 0.0
-        return sum(f.score for f in findings) / len(findings)

@@ -44,7 +44,6 @@ def test_no_patterns_returns_no_findings():
     signal = PatternFragmentationSignal()
     findings = signal.analyze(_wrap([]), {}, None)
     assert findings == []
-    assert signal.score(findings) == 0.0
 
 
 def test_single_variant_no_fragmentation():
@@ -144,4 +143,5 @@ def test_score_aggregation():
             description="",
         ),
     ]
-    assert signal.score(findings) == 0.6
+    avg_score = sum(f.score for f in findings) / len(findings)
+    assert avg_score == 0.6

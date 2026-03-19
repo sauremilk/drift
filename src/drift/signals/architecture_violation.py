@@ -251,8 +251,3 @@ class ArchitectureViolationSignal(BaseSignal):
             reported += 1
 
         return findings
-
-    def score(self, findings: list[Finding]) -> float:
-        if not findings:
-            return 0.0
-        return min(1.0, sum(f.score for f in findings) / max(len(findings), 3))

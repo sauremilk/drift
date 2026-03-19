@@ -19,7 +19,6 @@ def _finding_to_dict(f: Finding) -> dict[str, Any]:
         "start_line": f.start_line,
         "end_line": f.end_line,
         "ai_attributed": f.ai_attributed,
-        "canonical_ref": f.canonical_ref,
         "metadata": f.metadata,
     }
 

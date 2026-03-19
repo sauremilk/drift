@@ -37,8 +37,3 @@ class DocImplDriftSignal(BaseSignal):
         # Phase 2: ADR parsing and claim verification against code
         # MVP returns empty — this signal requires NLP which adds complexity
         return []
-
-    def score(self, findings: list[Finding]) -> float:
-        if not findings:
-            return 0.0
-        return sum(f.score for f in findings) / len(findings)

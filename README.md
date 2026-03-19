@@ -31,7 +31,7 @@ drift analyze --format json
 
 ## What Drift Detects
 
-Drift measures 7 detection signals, each targeting a different dimension of architectural erosion:
+Drift measures 6 active detection signals, each targeting a different dimension of architectural erosion:
 
 | Signal                      | Code | What it detects                                                                                  |
 | --------------------------- | ---- | ------------------------------------------------------------------------------------------------ |
@@ -39,9 +39,10 @@ Drift measures 7 detection signals, each targeting a different dimension of arch
 | **Architecture Violations** | AVS  | Imports that cross layer boundaries (DB → API) or create circular dependencies                   |
 | **Mutant Duplicates**       | MDS  | Near-identical functions that diverge in subtle ways (copy-paste-then-modify)                    |
 | **Explainability Deficit**  | EDS  | Complex functions lacking docstrings, tests, or type annotations — especially when AI-attributed |
-| **Doc-Impl Drift**          | DIA  | Documented architecture that no longer matches actual code _(Phase 2)_                           |
 | **Temporal Volatility**     | TVS  | Files with anomalous change frequency, author diversity, or defect correlation                   |
 | **System Misalignment**     | SMS  | Recently introduced imports/patterns foreign to their target module                              |
+
+> **Phase 2 (not active):** Doc-Implementation Drift (DIA) — documented architecture that no longer matches actual code. Included in the codebase but excluded from the default pipeline (weight 0.0).
 
 ### Composite Drift Score
 
@@ -55,13 +56,13 @@ Default weights:
 
 ```yaml
 weights:
-  pattern_fragmentation: 0.20
-  architecture_violation: 0.20
-  mutant_duplicate: 0.15
-  temporal_volatility: 0.15
-  explainability_deficit: 0.10
-  doc_impl_drift: 0.10
+  pattern_fragmentation: 0.22
+  architecture_violation: 0.22
+  mutant_duplicate: 0.17
+  temporal_volatility: 0.17
+  explainability_deficit: 0.12
   system_misalignment: 0.10
+  doc_impl_drift: 0.00 # Phase 2 — not active
 ```
 
 ## Configuration
@@ -72,21 +73,29 @@ Create a `drift.yaml` in your project root:
 # File patterns
 include:
   - "**/*.py"
-  - "**/*.ts"
 exclude:
   - "**/node_modules/**"
   - "**/__pycache__/**"
   - "**/venv/**"
 
-# Signal weights (must sum to ~1.0)
+# Signal weights (normalised internally — don't need to sum to 1.0)
 weights:
-  pattern_fragmentation: 0.20
-  architecture_violation: 0.20
-  mutant_duplicate: 0.15
-  temporal_volatility: 0.15
-  explainability_deficit: 0.10
-  doc_impl_drift: 0.10
+  pattern_fragmentation: 0.22
+  architecture_violation: 0.22
+  mutant_duplicate: 0.17
+  temporal_volatility: 0.17
+  explainability_deficit: 0.12
   system_misalignment: 0.10
+  doc_impl_drift: 0.00
+
+# Detection thresholds
+thresholds:
+  high_complexity: 10
+  medium_complexity: 5
+  min_function_loc: 10
+  similarity_threshold: 0.80
+  recency_days: 14
+  volatility_z_threshold: 1.5
 
 # Architecture boundaries
 policies:
@@ -158,6 +167,7 @@ drift trend --last 90
 drift/
 ├── cli.py              # Click CLI entry point
 ├── analyzer.py         # Orchestrator: discovery → parse → signals → score
+├── cache.py            # Parse result caching (SHA-256 keyed)
 ├── config.py           # drift.yaml configuration loading
 ├── models.py           # Core data models (dataclasses)
 ├── ingestion/
@@ -172,7 +182,7 @@ drift/
 │   ├── explainability_deficit.py
 │   ├── temporal_volatility.py
 │   ├── system_misalignment.py
-│   └── doc_impl_drift.py
+│   └── doc_impl_drift.py  # Phase 2 stub
 ├── scoring/
 │   └── engine.py       # Weighted composite scoring
 └── output/
@@ -184,7 +194,7 @@ drift/
 
 1. **Deterministic core.** No LLM in the detection pipeline. All signals use AST analysis, graph algorithms, and statistical methods. Reproducible, fast, auditable.
 
-2. **Python `ast` module for Python files.** Zero-dependency parsing, always available, simpler than tree-sitter for Python-only analysis. TypeScript support via optional tree-sitter dependency.
+2. **Python `ast` module for Python files.** Zero-dependency parsing, always available, simpler than tree-sitter for Python-only analysis. TypeScript support planned via optional tree-sitter dependency (Phase 2).
 
 3. **Signal architecture.** Each signal is an independent analyzer implementing `BaseSignal`. Signals are composed, not chained — they run on the same parsed data.
 
@@ -227,9 +237,9 @@ drift analyze --repo .
 
 ## Roadmap
 
-- **v0.1 (current):** 7 detection signals, Python support, CLI + CI integration
-- **v0.2:** TypeScript support, embedding-based duplicate detection, temporal trend charts
-- **v0.3:** IDE plugin (VS Code), ADR-to-code alignment (Doc-Impl Drift), team dashboards
+- **v0.1 (current):** 6 active detection signals, Python support, CLI + CI integration, parse caching, trend history
+- **v0.2:** TypeScript support (tree-sitter), Doc-Impl Drift signal, embedding-based duplicate detection
+- **v0.3:** IDE plugin (VS Code), ADR-to-code alignment, team dashboards
 - **v0.4:** PR bot, auto-fix suggestions, historical drift tracking
 
 ## License

@@ -70,13 +70,18 @@ class TemporalVolatilitySignal(BaseSignal):
             if len(vals) < 2:
                 return 0.0
             m = _mean(vals)
-            return math.sqrt(sum((v - m) ** 2 for v in vals) / len(vals))
+            return math.sqrt(sum((v - m) ** 2 for v in vals) / (len(vals) - 1))
 
         freq_mean, freq_std = _mean(freq_values), _std(freq_values)
         author_mean, author_std = _mean(author_values), _std(author_values)
         defect_mean, defect_std = _mean(defect_values), _std(defect_values)
 
         findings: list[Finding] = []
+
+        # Resolve z-threshold from config
+        z_threshold = 1.5
+        if hasattr(config, "thresholds"):
+            z_threshold = config.thresholds.volatility_z_threshold
 
         for history in histories:
             freq_z = _z_score(history.change_frequency_30d, freq_mean, freq_std)
@@ -85,9 +90,9 @@ class TemporalVolatilitySignal(BaseSignal):
                 float(history.defect_correlated_commits), defect_mean, defect_std
             )
 
-            # Composite volatility: any dimension > 1.5 is notable
+            # Composite volatility: any dimension > z_threshold is notable
             max_z = max(freq_z, author_z, defect_z)
-            if max_z < 1.5:
+            if max_z < z_threshold:
                 continue
 
             # Score: normalized composite of z-scores
@@ -111,17 +116,17 @@ class TemporalVolatilitySignal(BaseSignal):
                 severity = Severity.LOW
 
             desc_parts = []
-            if freq_z > 1.5:
+            if freq_z > z_threshold:
                 desc_parts.append(
                     f"Change frequency: {history.change_frequency_30d:.1f}/week "
                     f"({freq_z:.1f}σ above mean)"
                 )
-            if author_z > 1.5:
+            if author_z > z_threshold:
                 desc_parts.append(
                     f"{history.unique_authors} unique authors "
                     f"({author_z:.1f}σ above mean)"
                 )
-            if defect_z > 1.5:
+            if defect_z > z_threshold:
                 desc_parts.append(
                     f"{history.defect_correlated_commits} defect-correlated commits "
                     f"({defect_z:.1f}σ above mean)"
@@ -151,8 +156,3 @@ class TemporalVolatilitySignal(BaseSignal):
             )
 
         return findings
-
-    def score(self, findings: list[Finding]) -> float:
-        if not findings:
-            return 0.0
-        return sum(f.score for f in findings) / len(findings)

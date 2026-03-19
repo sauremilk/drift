@@ -5,6 +5,7 @@ from __future__ import annotations
 import datetime
 import re
 from collections import defaultdict
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import TYPE_CHECKING
 
@@ -78,24 +79,34 @@ def _is_defect_correlated(message: str) -> bool:
 # ---------------------------------------------------------------------------
 
 
-def _bulk_commit_files(repo: "gitmodule.Repo", since_iso: str) -> dict[str, list[str]]:
-    """Fetch changed-file lists for all commits since *since_iso* in one subprocess.
+@dataclass
+class _BulkCommitData:
+    """Aggregated per-commit data from bulk git log."""
 
-    Returns a mapping of abbreviated commit hash → list of changed file paths.
-    This replaces the per-commit ``commit.stats.files`` call which spawns a
-    separate ``git diff-tree`` subprocess for every single commit.
+    files: list[str] = field(default_factory=list)
+    insertions: int = 0
+    deletions: int = 0
+
+
+def _bulk_commit_files(
+    repo: "gitmodule.Repo", since_iso: str
+) -> dict[str, _BulkCommitData]:
+    """Fetch changed-file lists and stat data for all commits since *since_iso*.
+
+    Uses ``--numstat`` to capture per-file insertions/deletions in a single
+    subprocess call, replacing the old per-commit ``commit.stats.files``.
     """
     try:
         raw: str = repo.git.log(
             "--since",
             since_iso,
-            "--name-only",
+            "--numstat",
             "--pretty=format:%H",
         )
     except Exception:
         return {}
 
-    result: dict[str, list[str]] = {}
+    result: dict[str, _BulkCommitData] = {}
     current_hash: str | None = None
     for line in raw.splitlines():
         line = line.strip()
@@ -104,9 +115,21 @@ def _bulk_commit_files(repo: "gitmodule.Repo", since_iso: str) -> dict[str, list
         # 40-char hex → commit hash
         if len(line) == 40 and all(c in "0123456789abcdef" for c in line):
             current_hash = line[:12]
-            result.setdefault(current_hash, [])
+            result.setdefault(current_hash, _BulkCommitData())
         elif current_hash is not None:
-            result[current_hash].append(line)
+            # --numstat format: "insertions\tdeletions\tfilename"
+            parts = line.split("\t")
+            if len(parts) == 3:
+                ins_str, del_str, filepath = parts
+                result[current_hash].files.append(filepath)
+                # Binary files show '-' instead of numbers
+                if ins_str != "-":
+                    result[current_hash].insertions += int(ins_str)
+                if del_str != "-":
+                    result[current_hash].deletions += int(del_str)
+            else:
+                # Fallback: plain filename (shouldn't happen with --numstat)
+                result[current_hash].files.append(line)
     return result
 
 
@@ -144,7 +167,8 @@ def parse_git_history(
 
     for commit in commit_iter:
         short_hash = commit.hexsha[:12]
-        files = bulk_files.get(short_hash, [])
+        bulk_data = bulk_files.get(short_hash)
+        files = bulk_data.files if bulk_data else []
 
         if file_filter and not any(f in file_filter for f in files):
             continue
@@ -161,8 +185,8 @@ def parse_git_history(
             timestamp=commit.authored_datetime,
             message=commit.message.strip(),
             files_changed=files,
-            insertions=0,
-            deletions=0,
+            insertions=bulk_data.insertions if bulk_data else 0,
+            deletions=bulk_data.deletions if bulk_data else 0,
             is_ai_attributed=is_ai,
             ai_confidence=ai_conf,
             coauthors=coauthors,

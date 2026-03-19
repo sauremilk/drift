@@ -3,10 +3,12 @@
 from __future__ import annotations
 
 import datetime
+import logging
 import time
 from pathlib import Path
 from typing import Callable
 
+from drift.cache import ParseCache
 from drift.config import DriftConfig
 from drift.ingestion.ast_parser import parse_file
 from drift.ingestion.file_discovery import discover_files
@@ -26,7 +28,6 @@ from drift.scoring.engine import (
     compute_signal_scores,
 )
 from drift.signals.architecture_violation import ArchitectureViolationSignal
-from drift.signals.doc_impl_drift import DocImplDriftSignal
 from drift.signals.explainability_deficit import ExplainabilityDeficitSignal
 from drift.signals.mutant_duplicates import MutantDuplicateSignal
 from drift.signals.pattern_fragmentation import PatternFragmentationSignal
@@ -78,13 +79,30 @@ def analyze_repo(
         target = Path(target_path)
         files = [f for f in files if str(f.path).startswith(str(target))]
 
-    # --- 2. AST parsing ---
+    # --- 2. AST parsing (with cache) ---
+    cache_dir = repo_path / config.cache_dir
+    cache = ParseCache(cache_dir)
+    logger = logging.getLogger("drift")
+
     parse_results: list[ParseResult] = []
     total_files = len(files)
     for i, finfo in enumerate(files):
         _progress("Parsing files", i + 1, total_files)
-        result = parse_file(finfo.path, repo_path, finfo.language)
-        parse_results.append(result)
+        full_path = repo_path / finfo.path
+        try:
+            content_hash = ParseCache.file_hash(full_path)
+        except OSError:
+            result = parse_file(finfo.path, repo_path, finfo.language)
+            parse_results.append(result)
+            continue
+
+        cached = cache.get(content_hash)
+        if cached is not None:
+            parse_results.append(cached)
+        else:
+            result = parse_file(finfo.path, repo_path, finfo.language)
+            cache.put(content_hash, result)
+            parse_results.append(result)
 
     # --- 3. Git history ---
     _progress("Analyzing git history", 0, 0)
@@ -101,8 +119,8 @@ def analyze_repo(
         MutantDuplicateSignal(repo_path),
         ExplainabilityDeficitSignal(),
         TemporalVolatilitySignal(),
-        DocImplDriftSignal(),
         SystemMisalignmentSignal(),
+        # DocImplDriftSignal excluded — Phase 2 stub (weight 0.0)
     ]
 
     all_findings: list[Finding] = []
@@ -226,8 +244,8 @@ def analyze_diff(
         MutantDuplicateSignal(repo_path),
         ExplainabilityDeficitSignal(),
         TemporalVolatilitySignal(),
-        DocImplDriftSignal(),
         SystemMisalignmentSignal(),
+        # DocImplDriftSignal excluded — Phase 2 stub (weight 0.0)
     ]
 
     all_findings: list[Finding] = []

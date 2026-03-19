@@ -18,7 +18,7 @@ LANGUAGE_MAP: dict[str, str] = {
     ".jsx": "jsx",
 }
 
-SUPPORTED_LANGUAGES = {"python", "typescript", "tsx"}
+SUPPORTED_LANGUAGES = {"python"}
 
 
 def detect_language(path: Path) -> str | None:
@@ -39,7 +39,7 @@ def discover_files(
 ) -> list[FileInfo]:
     """Walk the repo and return all source files matching include/exclude patterns."""
     if include is None:
-        include = ["**/*.py", "**/*.ts", "**/*.tsx"]
+        include = ["**/*.py"]
     if exclude is None:
         exclude = [
             "**/node_modules/**",

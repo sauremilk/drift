@@ -141,8 +141,3 @@ class PatternFragmentationSignal(BaseSignal):
                 )
 
         return findings
-
-    def score(self, findings: list[Finding]) -> float:
-        if not findings:
-            return 0.0
-        return sum(f.score for f in findings) / len(findings)

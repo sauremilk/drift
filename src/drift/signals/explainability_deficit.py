@@ -19,7 +19,7 @@ from drift.models import (
 )
 from drift.signals.base import BaseSignal
 
-# Thresholds
+# Defaults (overridden by config.thresholds)
 HIGH_COMPLEXITY = 10
 MEDIUM_COMPLEXITY = 5
 
@@ -81,15 +81,22 @@ class ExplainabilityDeficitSignal(BaseSignal):
                         _, method = fn.name.rsplit(".", 1)
                         test_targets.add(method.removeprefix("test_"))
 
+        # Resolve thresholds from config
+        medium_complexity = MEDIUM_COMPLEXITY
+        min_func_loc = 10
+        if hasattr(config, "thresholds"):
+            medium_complexity = config.thresholds.medium_complexity
+            min_func_loc = config.thresholds.min_function_loc
+
         findings: list[Finding] = []
 
         for key, func in all_functions.items():
             # Skip test files and trivial functions
             if "test" in func.file_path.as_posix().lower():
                 continue
-            if func.complexity < MEDIUM_COMPLEXITY:
+            if func.complexity < medium_complexity:
                 continue
-            if func.loc < 10:
+            if func.loc < min_func_loc:
                 continue
 
             # Check if there's a corresponding test
@@ -154,8 +161,3 @@ class ExplainabilityDeficitSignal(BaseSignal):
             )
 
         return findings
-
-    def score(self, findings: list[Finding]) -> float:
-        if not findings:
-            return 0.0
-        return sum(f.score for f in findings) / len(findings)

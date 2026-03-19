@@ -190,7 +190,6 @@ class Finding:
     start_line: int | None = None
     end_line: int | None = None
     related_files: list[Path] = field(default_factory=list)
-    canonical_ref: str | None = None
     commit_hash: str | None = None
     ai_attributed: bool = False
     metadata: dict[str, Any] = field(default_factory=dict)

@@ -82,6 +82,11 @@ class MutantDuplicateSignal(BaseSignal):
         if len(functions) < 2:
             return []
 
+        # Resolve similarity threshold from config
+        similarity_threshold = SIMILARITY_THRESHOLD
+        if hasattr(config, "thresholds"):
+            similarity_threshold = config.thresholds.similarity_threshold
+
         # Compare all pairs — O(n²) but acceptable for typical repos (< 5000 functions)
         # For large repos (>5k functions), body_hash pre-filtering reduces comparisons
         findings: list[Finding] = []
@@ -154,7 +159,7 @@ class MutantDuplicateSignal(BaseSignal):
             text_b = _function_body_text(b, self._repo_path, file_cache)
 
             sim = _structural_similarity(text_a, text_b)
-            if sim >= SIMILARITY_THRESHOLD and sim < 1.0:
+            if sim >= similarity_threshold and sim < 1.0:
                 checked.add(key)
 
                 severity = Severity.MEDIUM if sim < 0.9 else Severity.HIGH
@@ -179,8 +184,3 @@ class MutantDuplicateSignal(BaseSignal):
                 )
 
         return findings
-
-    def score(self, findings: list[Finding]) -> float:
-        if not findings:
-            return 0.0
-        return min(1.0, sum(f.score for f in findings) / max(len(findings), 2))

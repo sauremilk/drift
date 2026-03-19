@@ -107,4 +107,4 @@ def test_score_zero_when_clean():
     findings = signal.analyze(results, {}, None)
 
     # Clean layered architecture → no violations
-    assert signal.score(findings) == 0.0
+    assert findings == []

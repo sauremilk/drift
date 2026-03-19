@@ -33,8 +33,3 @@ class BaseSignal(ABC):
     ) -> list[Finding]:
         """Run this signal's detection logic and return findings."""
         ...
-
-    @abstractmethod
-    def score(self, findings: list[Finding]) -> float:
-        """Compute aggregate score (0.0-1.0) from this signal's findings."""
-        ...
