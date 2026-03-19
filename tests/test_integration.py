@@ -155,9 +155,9 @@ class TestIntegrationAnalyzeRepo:
         """Custom config restricts analysis to only specified patterns."""
         cfg = DriftConfig(include=["services/**/*.py"])
         analysis = analyze_repo(git_repo, config=cfg, since_days=365)
-        # Only services/ files should be included
+        # Only services/ files should be included (plus <root> from doc-drift)
         for ms in analysis.module_scores:
-            assert "services" in ms.path.as_posix() or ms.path.as_posix() == "."
+            assert "services" in ms.path.as_posix() or ms.path.as_posix() in (".", "<root>")
 
     def test_cache_dir_created(self, git_repo: Path) -> None:
         """Parse cache directory is created after analysis."""

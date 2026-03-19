@@ -33,10 +33,25 @@ AI_COAUTHOR_MARKERS = [
 ]
 
 # Commit messages dominated by AI tools tend to be formulaic.
-# Require verb + at least two more words to avoid false positives on
-# normal human messages like "Fix typo" or "Add tests".
-AI_MESSAGE_PATTERNS = [
-    re.compile(r"^(Add|Update|Fix|Implement|Refactor|Create|Remove) \w+ \w+", re.IGNORECASE),
+# We use multiple tiers of patterns with different confidence levels.
+# Tier 1 (higher confidence): very specific AI-tool patterns
+# Tier 2 (lower confidence): generic "Verb + noun + noun" only when
+#   combined with other weak signals (no body, exact format).
+
+# High-confidence patterns: clearly auto-generated messages
+_AI_MSG_TIER1 = [
+    # Cursor / Copilot default messages
+    re.compile(r"^(Implement|Refactor|Create) \w+ \w+ \w+", re.IGNORECASE),
+    # "Add X functionality for Y" — 4+ word noun-phrase after verb
+    re.compile(
+        r"^(Add|Implement|Create) \w+ \w+ (functionality|feature|support|handling|endpoint|module)\b",
+        re.IGNORECASE,
+    ),
+]
+
+# Low-confidence patterns: common in AI but also in humans
+_AI_MSG_TIER2 = [
+    re.compile(r"^(Add|Update|Fix|Remove) \w+ \w+", re.IGNORECASE),
 ]
 
 DEFECT_MARKERS = re.compile(
@@ -48,6 +63,13 @@ def _detect_ai_attribution(message: str, coauthors: list[str]) -> tuple[bool, fl
     """Determine if a commit is likely AI-attributed.
 
     Returns (is_ai, confidence) where confidence is 0.0-1.0.
+
+    Uses tiered heuristics:
+    - Co-author tag from known AI tool → 0.95 confidence
+    - Tier 1 formulaic message (specific AI patterns) → 0.40 confidence
+    - Tier 2 formulaic message (generic verb-noun) → 0.15 confidence
+      (below the default threshold, so treated as human unless
+       combined with other evidence in the caller)
     """
     # Strong signal: co-author tag from known AI tool
     for coauthor in coauthors:
@@ -56,14 +78,18 @@ def _detect_ai_attribution(message: str, coauthors: list[str]) -> tuple[bool, fl
             if marker in lower:
                 return True, 0.95
 
-    # Weak signal: formulaic commit message (common in AI-assisted workflows)
     msg_first_line = message.split("\n")[0].strip()
     msg_body = message.split("\n", 1)[1].strip() if "\n" in message else ""
-    formulaic_match = any(p.match(msg_first_line) for p in AI_MESSAGE_PATTERNS)
 
-    # Formulaic subject with no body and short length — likely AI-generated
-    if formulaic_match and len(msg_first_line) < 60 and not msg_body:
-        return True, 0.25
+    # Tier 1: specific AI patterns — higher confidence
+    tier1_match = any(p.match(msg_first_line) for p in _AI_MSG_TIER1)
+    if tier1_match and len(msg_first_line) < 72 and not msg_body:
+        return True, 0.40
+
+    # Tier 2: generic verb-noun patterns — only weak signal
+    tier2_match = any(p.match(msg_first_line) for p in _AI_MSG_TIER2)
+    if tier2_match and len(msg_first_line) < 50 and not msg_body:
+        return False, 0.15
 
     return False, 0.0
 
