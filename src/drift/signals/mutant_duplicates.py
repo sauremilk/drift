@@ -265,7 +265,7 @@ class MutantDuplicateSignal(BaseSignal):
                 else:
                     sim = ast_sim
 
-                if sim >= threshold and sim < 1.0:
+                if sim >= threshold:
                     checked.add(key)
 
                     severity = Severity.MEDIUM if sim < 0.9 else Severity.HIGH

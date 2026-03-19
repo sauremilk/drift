@@ -7,6 +7,7 @@ import pytest
 from drift.config import SignalWeights
 from drift.models import Finding, Severity, SignalType
 from drift.scoring.engine import (
+    calibrate_weights,
     composite_score,
     compute_module_scores,
     compute_signal_scores,
@@ -146,3 +147,52 @@ def test_gate_critical_only():
 
 def test_gate_empty_findings():
     assert severity_gate_pass([], "high") is True
+
+
+# ── Weight calibration ────────────────────────────────────────────────────
+
+
+def test_calibrate_weights_high_delta_gets_more_weight():
+    deltas = {
+        "pattern_fragmentation": 0.20,
+        "architecture_violation": 0.05,
+        "mutant_duplicate": 0.15,
+        "explainability_deficit": 0.01,
+        "doc_impl_drift": 0.00,
+        "temporal_volatility": 0.10,
+        "system_misalignment": 0.02,
+    }
+    calibrated = calibrate_weights(deltas, SignalWeights())
+
+    # Pattern fragmentation has highest delta → highest weight
+    assert calibrated.pattern_fragmentation > calibrated.architecture_violation
+    assert calibrated.pattern_fragmentation > calibrated.explainability_deficit
+
+    # Weights should sum to approximately 1.0
+    total = sum(calibrated.as_dict().values())
+    assert 0.99 <= total <= 1.01
+
+
+def test_calibrate_weights_all_zero_returns_current():
+    deltas = {k: 0.0 for k in SignalWeights().as_dict()}
+    original = SignalWeights()
+    calibrated = calibrate_weights(deltas, original)
+    # With all-zero deltas, min_weight kicks in — all equal
+    vals = list(calibrated.as_dict().values())
+    assert max(vals) - min(vals) < 0.01  # approximately uniform
+
+
+def test_calibrate_weights_respects_bounds():
+    deltas = {
+        "pattern_fragmentation": 1.0,  # extreme
+        "architecture_violation": 0.001,
+        "mutant_duplicate": 0.001,
+        "explainability_deficit": 0.001,
+        "doc_impl_drift": 0.001,
+        "temporal_volatility": 0.001,
+        "system_misalignment": 0.001,
+    }
+    calibrated = calibrate_weights(deltas, SignalWeights(), min_weight=0.05, max_weight=0.35)
+    for val in calibrated.as_dict().values():
+        assert val >= 0.04  # small rounding tolerance
+        assert val <= 0.36

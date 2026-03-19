@@ -369,9 +369,11 @@ class ArchitectureViolationSignal(BaseSignal):
                 line = imp_info.line_number if imp_info else 0
 
                 score = 0.5
-                # Dampen score for hub-module targets
+                # Dampen score for hub-module targets (0.5× instead
+                # of 0.3× — less aggressive to reduce false negatives
+                # on legitimate architectural violations via hubs).
                 if dst in hub_nodes:
-                    score *= 0.3
+                    score *= 0.5
 
                 # Filter out very low-confidence findings
                 if score < 0.15:

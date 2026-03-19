@@ -81,6 +81,20 @@ class ExplainabilityDeficitSignal(BaseSignal):
                         _, method = fn.name.rsplit(".", 1)
                         test_targets.add(method.removeprefix("test_"))
 
+                    # Decorator-aware: pytest.mark.parametrize hints at
+                    # thorough testing of the target function
+                    for dec in fn.decorators:
+                        if "parametrize" in dec or "fixture" in dec:
+                            test_targets.add(target_name)
+                            break
+
+                    # setUp/tearDown style (unittest)
+                    if fn.name in ("setUp", "tearDown", "setUpClass"):
+                        # Mark all functions in the same file as tested
+                        for other in pr.functions:
+                            if not other.name.startswith("test_"):
+                                test_targets.add(other.name)
+
         # Resolve thresholds from config
         medium_complexity = MEDIUM_COMPLEXITY
         min_func_loc = 10

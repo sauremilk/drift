@@ -129,5 +129,5 @@ class TestHubDampening:
 
         # All findings targeting the hub should be dampened
         for f in upward:
-            assert f.score <= 0.2, f"Expected dampened score, got {f.score}"
+            assert f.score <= 0.3, f"Expected dampened score, got {f.score}"
             assert f.metadata.get("hub_dampened") is True

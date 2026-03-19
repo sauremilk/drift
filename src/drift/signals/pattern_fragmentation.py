@@ -25,9 +25,26 @@ from drift.models import (
 from drift.signals.base import BaseSignal, register_signal
 
 
+def _normalize_fingerprint(fingerprint: dict[str, Any]) -> dict[str, Any]:
+    """Normalize fingerprint to reduce false positives from async/sync equivalence.
+
+    Removes async-specific markers so that ``async def`` and ``def``
+    versions of the same pattern are grouped together.
+    """
+    normalized = dict(fingerprint)
+    # Treat async/sync variants as equivalent
+    normalized.pop("is_async", None)
+    normalized.pop("async", None)
+    # Normalize await expressions to regular calls
+    if "body" in normalized and isinstance(normalized["body"], str):
+        normalized["body"] = normalized["body"].replace("await ", "").replace("async ", "")
+    return normalized
+
+
 def _variant_key(fingerprint: dict[str, Any]) -> str:
     """Create a hashable key from a pattern fingerprint for grouping."""
-    return json.dumps(fingerprint, sort_keys=True, default=str)
+    normalized = _normalize_fingerprint(fingerprint)
+    return json.dumps(normalized, sort_keys=True, default=str)
 
 
 def _group_by_module(

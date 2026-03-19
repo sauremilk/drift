@@ -400,7 +400,70 @@ With DIA precision at 59% (strict) and 81% (lenient), the signal is approaching 
 
 ---
 
-## 11. Conclusion
+## 11. Engineering Evaluation (v0.2 — 2026-03-19)
+
+### 11.1 Ground-Truth Fixture Evaluation
+
+To complement the repository-level ground-truth analysis (§3), we constructed a curated fixture suite of minimal, deterministic test cases with known-correct expectations. Each fixture is a synthetic codebase snippet designed to trigger (TP) or not trigger (TN) a specific signal.
+
+| Signal  | TP Fixtures | TN Fixtures |    P     |    R     |    F1    |
+| ------- | :---------: | :---------: | :------: | :------: | :------: |
+| PFS     |      1      |      1      |   1.00   |   1.00   |   1.00   |
+| AVS     |      2      |      1      |   1.00   |   1.00   |   1.00   |
+| MDS     |      1      |      1      |   1.00   |   1.00   |   1.00   |
+| TVS     |      1      |      1      |   1.00   |   1.00   |   1.00   |
+| EDS     |      1      |      1      |   1.00   |   1.00   |   1.00   |
+| SMS     |      1      |      1      |   1.00   |   1.00   |   1.00   |
+| DIA     |      1      |      1      |   1.00   |   1.00   |   1.00   |
+| **All** |    **8**    |    **7**    | **1.00** | **1.00** | **1.00** |
+
+**Macro-Average F1: 1.00** (preliminary, n=15, self-curated)
+
+**Important caveat:** These fixtures were designed by the tool author to validate specific signal behaviors. F1 = 1.00 on curated fixtures demonstrates that each signal detects its intended pattern — it does not imply generalization to arbitrary real-world code. External validation on an independent fixture corpus is the necessary next step.
+
+### 11.2 Ablation Study
+
+We measure each signal's contribution by deactivating it and computing the resulting F1 loss on the fixture suite:
+
+| Signal | F1 without |  Delta | Impact                         |
+| ------ | :--------: | -----: | ------------------------------ |
+| AVS    |   0.857    | +0.143 | Highest — drives 2 TP fixtures |
+| PFS    |   0.933    | +0.067 | Equal contribution             |
+| MDS    |   0.933    | +0.067 | Equal contribution             |
+| EDS    |   0.933    | +0.067 | Equal contribution             |
+| TVS    |   0.933    | +0.067 | Equal contribution             |
+| SMS    |   0.933    | +0.067 | Equal contribution             |
+| DIA    |   0.933    | +0.067 | Equal contribution             |
+
+All 7 signals contribute measurably. AVS has the strongest single-signal impact because it has 2 TP fixtures (upward import + circular dependency). No signal is dead weight.
+
+### 11.3 Signal Improvements Applied
+
+| Signal | Change                                                                                      | Rationale                                                                                                                                                   |
+| ------ | ------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| EDS    | Decorator-aware test detection (`@pytest.mark.parametrize`, `@fixture`, `setUp`/`tearDown`) | Reduces FN for tested-but-undocumented functions                                                                                                            |
+| AVS    | Hub-module dampening 0.3x → 0.5x                                                            | Prior dampening was too aggressive, suppressing genuine violations                                                                                          |
+| PFS    | Async/sync fingerprint normalization                                                        | Prevents false fragmentation between `async def` and `def` variants                                                                                         |
+| MDS    | Removed `sim < 1.0` guard in Phase 2 near-duplicate detection                               | Functions with identical AST structure but different names fell through both Phase 1 (different body_hash) and Phase 2 (sim=1.0 rejected) — a detection gap |
+
+### 11.4 Scoring Calibration
+
+A `calibrate_weights()` function was added to `drift.scoring.engine` that computes signal weights proportional to ablation delta magnitudes, with iterative clamping to configurable min/max bounds.
+
+**Current limitation:** Weights are fitted on the same fixture corpus used for evaluation. A train/validation split should be introduced as the fixture suite grows beyond ~30 cases per signal.
+
+### 11.5 Known Gaps and Next Steps
+
+| Gap                                    | Risk                                 | Next Step                                                |
+| -------------------------------------- | ------------------------------------ | -------------------------------------------------------- |
+| n=15 fixtures (2 per signal avg.)      | Too small for generalization claims  | Scale to ≥30 fixtures per signal type                    |
+| Only synthetic/curated fixtures        | No real-world signal                 | Add ≥3 open-source repos as smoke tests                  |
+| `calibrate_weights()` without hold-out | Weights fitted on training data      | Introduce train/val split                                |
+| DIA weight still 0.00                  | Signal has 59% precision, not scored | Increase to 0.05 once precision > 70% on external corpus |
+
+---
+
+## 12. Conclusion
 
 drift v0.2 demonstrates that deterministic static analysis — without LLM involvement — can detect meaningful structural erosion in Python codebases. Across 5 repositories:
 
