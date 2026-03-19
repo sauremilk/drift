@@ -15,6 +15,7 @@ Drift is a static analysis tool that measures how well a codebase maintains its 
 ## Contents
 
 - [The Problem](#the-problem)
+- [Measured Results](#measured-results)
 - [Quick Start](#-quick-start)
 - [Demo](#-demo)
 - [What Drift Detects](#-what-drift-detects)
@@ -24,7 +25,9 @@ Drift is a static analysis tool that measures how well a codebase maintains its 
 - [GitHub Action](#github-action)
 - [CLI Commands](#cli-commands)
 - [Architecture](#architecture)
+- [Design Decisions](#design-decisions)
 - [Development](#development)
+- [Benchmark Study](STUDY.md)
 - [Roadmap](#roadmap)
 
 ---
@@ -34,6 +37,22 @@ Drift is a static analysis tool that measures how well a codebase maintains its 
 AI coding assistants optimize for the _prompt context_, not the _codebase context_. The result: code that works but doesn't fit. Error handling fragments across 4 different patterns. Import boundaries erode. Near-duplicate functions accumulate. The codebase gradually loses the implicit contracts that made it maintainable.
 
 **Drift doesn't detect bugs. It detects the loss of design intent.**
+
+## Measured Results
+
+Benchmarked on 5 real-world Python repositories (default config, no tuning):
+
+| Repository                                       | Files | Functions | Drift Score | Severity | Findings |   Time |
+| ------------------------------------------------ | ----: | --------: | ----------: | -------- | -------- | -----: |
+| [FastAPI](https://github.com/fastapi/fastapi)    | 1,118 |     4,554 |       0.690 | HIGH     | 661      |  2.3 s |
+| [Pydantic](https://github.com/pydantic/pydantic) |   403 |     8,384 |       0.577 | MEDIUM   | 283      | 57.9 s |
+| PWBS (490-file backend)                          |   490 |     5,073 |       0.520 | MEDIUM   | 146      |  6.2 s |
+| [httpx](https://github.com/encode/httpx)         |    60 |     1,134 |       0.472 | MEDIUM   | 46       |  3.3 s |
+| drift (self-analysis)                            |    45 |       263 |       0.442 | MEDIUM   | 69       |  0.3 s |
+
+Top finding for each repo: FastAPI → 499 near-duplicate test functions (MDS), Pydantic → 117 underdocumented internal functions (EDS), PWBS → 114 API endpoint variants (PFS), httpx → 31 error-handling variants (PFS), drift → doc-implementation gaps (DIA).
+
+**Evaluation:** 80% precision on 291 classified findings, 86% recall on 14 controlled mutations. Full methodology, ground-truth analysis, and raw data: **[STUDY.md](STUDY.md)**
 
 ## Quick Start
 
@@ -348,15 +367,17 @@ drift/
     └── json_output.py  # JSON + SARIF
 ```
 
-### Key Design Decisions
+### Design Decisions
 
-1. **Deterministic core.** No LLM in the detection pipeline. All signals use AST analysis, graph algorithms, and statistical methods. Reproducible, fast, auditable.
+1. **Deterministic core — no LLM in detection.** All signals use AST analysis, graph algorithms, and statistical methods. Reproducible, fast, auditable. ([ADR-001](docs/adr/001-deterministic-analysis-pipeline.md))
 
-2. **Python `ast` module for Python files.** Zero-dependency parsing, always available, simpler than tree-sitter for Python-only analysis. TypeScript support planned via optional tree-sitter dependency (Phase 2).
+2. **AST fingerprinting for pattern matching.** Error handling, API endpoints, and other patterns are reduced to structural fingerprints (JSON dicts). Grouping and variant counting happens on these fingerprints, not source text. ([ADR-002](docs/adr/002-ast-fingerprinting-for-patterns.md))
 
-3. **Signal architecture.** Each signal is an independent analyzer implementing `BaseSignal`. Signals are composed, not chained — they run on the same parsed data.
+3. **Count-dampened composite scoring.** Logarithmic dampening prevents signals with many findings from dominating. A single critical architecture violation outweighs 50 low-severity doc gaps. ([ADR-003](docs/adr/003-composite-scoring-model.md))
 
-4. **Fingerprint-based pattern matching.** Error handling, API endpoints, and other patterns are reduced to structural fingerprints (JSON dicts). Grouping and variant counting happens on these fingerprints, not source text.
+4. **Subprocess-based git parsing.** Decoupled from libgit2 — works on any system with `git` installed. Parallel history processing via `ThreadPoolExecutor`. ([ADR-004](docs/adr/004-subprocess-git-parsing.md))
+
+5. **Signal architecture.** Each signal is an independent analyzer implementing `BaseSignal`. Signals are composed, not chained — they run on the same parsed data. Adding a new signal requires one file and one decorator.
 
 ## Development
 

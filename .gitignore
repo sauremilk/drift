@@ -13,3 +13,5 @@ build/
 .coverage
 htmlcov/
 out.json
+benchmark_pwbs.json
+scripts/_*

@@ -1,0 +1,44 @@
+{
+  "name": "httpx",
+  "drift_score": 0.472,
+  "severity": "medium",
+  "files": 60,
+  "functions": 1134,
+  "ai_ratio": 0.0,
+  "analysis_s": 3.33,
+  "wall_s": 3.83,
+  "findings": 46,
+  "signals": {},
+  "top5": [
+    {
+      "sig": "pattern_fragmentation",
+      "sev": "high",
+      "score": 0.967741935483871,
+      "title": "error_handling: 31 variants in httpx/"
+    },
+    {
+      "sig": "mutant_duplicate",
+      "sev": "high",
+      "score": 0.9,
+      "title": "Exact duplicate: DeflateDecoder.flush \u2194 GZipDecoder.flush"
+    },
+    {
+      "sig": "mutant_duplicate",
+      "sev": "high",
+      "score": 0.9,
+      "title": "Exact duplicate: streaming_body_with_empty_chunks \u2194 streaming_body_with_empty_chunks"
+    },
+    {
+      "sig": "pattern_fragmentation",
+      "sev": "high",
+      "score": 0.8,
+      "title": "error_handling: 5 variants in httpx/_transports/"
+    },
+    {
+      "sig": "mutant_duplicate",
+      "sev": "high",
+      "score": 0.7892857142857143,
+      "title": "Near-duplicate (93%): get \u2194 delete"
+    }
+  ]
+}

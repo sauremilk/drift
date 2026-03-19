@@ -1,0 +1,44 @@
+{
+  "name": "fastapi",
+  "drift_score": 0.69,
+  "severity": "high",
+  "files": 1118,
+  "functions": 4554,
+  "ai_ratio": 0.0,
+  "analysis_s": 2.3,
+  "wall_s": 2.73,
+  "findings": 661,
+  "signals": {},
+  "top5": [
+    {
+      "sig": "system_misalignment",
+      "sev": "medium",
+      "score": 1.0,
+      "title": "Novel dependencies in fastapi/_compat/"
+    },
+    {
+      "sig": "system_misalignment",
+      "sev": "medium",
+      "score": 1.0,
+      "title": "Novel dependencies in fastapi/"
+    },
+    {
+      "sig": "system_misalignment",
+      "sev": "medium",
+      "score": 1.0,
+      "title": "Novel dependencies in fastapi/dependencies/"
+    },
+    {
+      "sig": "system_misalignment",
+      "sev": "medium",
+      "score": 1.0,
+      "title": "Novel dependencies in fastapi/openapi/"
+    },
+    {
+      "sig": "system_misalignment",
+      "sev": "medium",
+      "score": 1.0,
+      "title": "Novel dependencies in fastapi/security/"
+    }
+  ]
+}

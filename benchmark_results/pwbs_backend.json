@@ -1,0 +1,44 @@
+{
+  "name": "pwbs_backend",
+  "drift_score": 0.52,
+  "severity": "medium",
+  "files": 490,
+  "functions": 5073,
+  "ai_ratio": 0.0,
+  "analysis_s": 6.23,
+  "wall_s": 6.78,
+  "findings": 146,
+  "signals": {},
+  "top5": [
+    {
+      "sig": "pattern_fragmentation",
+      "sev": "high",
+      "score": 0.9912280701754386,
+      "title": "api_endpoint: 114 variants in pwbs/api/v1/routes/"
+    },
+    {
+      "sig": "pattern_fragmentation",
+      "sev": "high",
+      "score": 0.9615384615384616,
+      "title": "error_handling: 26 variants in pwbs/connectors/"
+    },
+    {
+      "sig": "pattern_fragmentation",
+      "sev": "high",
+      "score": 0.96,
+      "title": "error_handling: 25 variants in pwbs/api/v1/routes/"
+    },
+    {
+      "sig": "pattern_fragmentation",
+      "sev": "high",
+      "score": 0.9285714285714286,
+      "title": "error_handling: 14 variants in _deferred/connectors/"
+    },
+    {
+      "sig": "pattern_fragmentation",
+      "sev": "high",
+      "score": 0.9285714285714286,
+      "title": "api_endpoint: 14 variants in _deferred/routes/"
+    }
+  ]
+}

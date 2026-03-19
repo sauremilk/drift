@@ -1,0 +1,558 @@
+{
+  "mutations": {
+    "mutant_duplicate": [
+      "Exact duplicate: process_order in service_a.py and service_b.py",
+      "Exact duplicate: validate_input in service_a.py and service_b.py",
+      "Near-duplicate: fetch_user_data ~ get_customer_info"
+    ],
+    "pattern_fragmentation": [
+      "error_handling: 4 variants in handlers/",
+      "return_pattern: 3 variants in models/"
+    ],
+    "explainability_deficit": [
+      "Unexplained complexity: calculate_pricing (CC>=12, no docstring)",
+      "Unexplained complexity: transform_dataset (CC>=15, no docstring)"
+    ],
+    "architecture_violation": [
+      "Upward import: models/enriched.py imports from handlers/",
+      "Transitive violation: utils/ -> models/ -> handlers/"
+    ],
+    "system_misalignment": [
+      "Novel deps: outlier_module.py uses ctypes/struct/mmap in web app"
+    ],
+    "doc_impl_drift": [
+      "Phantom dir: README references views/ (does not exist)",
+      "Phantom dir: README references middleware/ (does not exist)",
+      "Phantom dir: README references plugins/ (does not exist)"
+    ],
+    "temporal_volatility": [
+      "High volatility: hotspot.py (10 commits in 10 days)"
+    ]
+  },
+  "detection": {
+    "mutant_duplicate": {
+      "injected": 3,
+      "detected": 2,
+      "recall": 0.6666666666666666,
+      "finding_count": 2,
+      "mutation_descriptions": [
+        "Exact duplicate: process_order in service_a.py and service_b.py",
+        "Exact duplicate: validate_input in service_a.py and service_b.py",
+        "Near-duplicate: fetch_user_data ~ get_customer_info"
+      ],
+      "finding_titles": [
+        "Exact duplicate: process_order \u2194 process_order",
+        "Exact duplicate: validate_input \u2194 validate_input"
+      ]
+    },
+    "pattern_fragmentation": {
+      "injected": 2,
+      "detected": 1,
+      "recall": 0.5,
+      "finding_count": 1,
+      "mutation_descriptions": [
+        "error_handling: 4 variants in handlers/",
+        "return_pattern: 3 variants in models/"
+      ],
+      "finding_titles": [
+        "error_handling: 2 variants in src/myapp/handlers/"
+      ]
+    },
+    "explainability_deficit": {
+      "injected": 2,
+      "detected": 2,
+      "recall": 1.0,
+      "finding_count": 2,
+      "mutation_descriptions": [
+        "Unexplained complexity: calculate_pricing (CC>=12, no docstring)",
+        "Unexplained complexity: transform_dataset (CC>=15, no docstring)"
+      ],
+      "finding_titles": [
+        "Unexplained complexity: calculate_pricing",
+        "Unexplained complexity: transform_dataset"
+      ]
+    },
+    "architecture_violation": {
+      "injected": 2,
+      "detected": 2,
+      "recall": 1.0,
+      "finding_count": 2,
+      "mutation_descriptions": [
+        "Upward import: models/enriched.py imports from handlers/",
+        "Transitive violation: utils/ -> models/ -> handlers/"
+      ],
+      "finding_titles": [
+        "Upward layer import: enriched.py \u2192 auth.py",
+        "Upward layer import: enriched.py \u2192 orders.py"
+      ]
+    },
+    "system_misalignment": {
+      "injected": 1,
+      "detected": 1,
+      "recall": 1.0,
+      "finding_count": 4,
+      "mutation_descriptions": [
+        "Novel deps: outlier_module.py uses ctypes/struct/mmap in web app"
+      ],
+      "finding_titles": [
+        "Novel dependencies in src/myapp/",
+        "Novel dependencies in src/myapp/handlers/",
+        "Novel dependencies in src/myapp/models/",
+        "Novel dependencies in src/myapp/utils/"
+      ]
+    },
+    "doc_impl_drift": {
+      "injected": 3,
+      "detected": 3,
+      "recall": 1.0,
+      "finding_count": 7,
+      "mutation_descriptions": [
+        "Phantom dir: README references views/ (does not exist)",
+        "Phantom dir: README references middleware/ (does not exist)",
+        "Phantom dir: README references plugins/ (does not exist)"
+      ],
+      "finding_titles": [
+        "README references missing directory: handlers/",
+        "README references missing directory: middleware/",
+        "README references missing directory: models/",
+        "README references missing directory: myapp/",
+        "README references missing directory: plugins/",
+        "README references missing directory: utils/",
+        "README references missing directory: views/"
+      ]
+    },
+    "temporal_volatility": {
+      "injected": 1,
+      "detected": 1,
+      "recall": 1.0,
+      "finding_count": 1,
+      "mutation_descriptions": [
+        "High volatility: hotspot.py (10 commits in 10 days)"
+      ],
+      "finding_titles": [
+        "High volatility: src/myapp/hotspot.py"
+      ]
+    }
+  },
+  "total_injected": 14,
+  "total_detected": 12,
+  "overall_recall": 0.8571428571428571,
+  "drift_output": {
+    "version": "0.1.0",
+    "repo": "C:/Users/mickg/AppData/Local/Temp/drift_mutation_0sihzeyq/synthetic_repo",
+    "analyzed_at": "2026-03-19T11:41:39.012579+00:00",
+    "drift_score": 0.265,
+    "severity": "low",
+    "summary": {
+      "total_files": 24,
+      "total_functions": 26,
+      "ai_attributed_ratio": 0.0,
+      "analysis_duration_seconds": 0.08
+    },
+    "modules": [
+      {
+        "path": "src/myapp",
+        "drift_score": 0.321,
+        "severity": "low",
+        "signal_scores": {
+          "mutant_duplicate": 0.4123,
+          "explainability_deficit": 0.4467,
+          "temporal_volatility": 0.1474,
+          "system_misalignment": 0.2891
+        },
+        "finding_count": 6,
+        "ai_ratio": 0.0
+      },
+      {
+        "path": ".",
+        "drift_score": 0.26,
+        "severity": "low",
+        "signal_scores": {
+          "doc_impl_drift": 0.2602
+        },
+        "finding_count": 7,
+        "ai_ratio": 0.0
+      },
+      {
+        "path": "src/myapp/models",
+        "drift_score": 0.184,
+        "severity": "info",
+        "signal_scores": {
+          "architecture_violation": 0.2291,
+          "system_misalignment": 0.0723
+        },
+        "finding_count": 3,
+        "ai_ratio": 0.0
+      },
+      {
+        "path": "src/myapp/handlers",
+        "drift_score": 0.144,
+        "severity": "info",
+        "signal_scores": {
+          "pattern_fragmentation": 0.1445,
+          "system_misalignment": 0.1445
+        },
+        "finding_count": 2,
+        "ai_ratio": 0.0
+      },
+      {
+        "path": "src/myapp/utils",
+        "drift_score": 0.072,
+        "severity": "info",
+        "signal_scores": {
+          "system_misalignment": 0.0723
+        },
+        "finding_count": 1,
+        "ai_ratio": 0.0
+      }
+    ],
+    "findings": [
+      {
+        "signal": "architecture_violation",
+        "severity": "medium",
+        "score": 0.5,
+        "title": "Upward layer import: enriched.py \u2192 auth.py",
+        "description": "src/myapp/models/enriched.py:1 \u2014 data/infrastructure layer imports from presentation/API layer. Expected direction: presentation \u2192 service \u2192 data.",
+        "file": "src/myapp/models/enriched.py",
+        "start_line": 1,
+        "end_line": null,
+        "ai_attributed": false,
+        "metadata": {
+          "src_layer": 2,
+          "dst_layer": 0
+        }
+      },
+      {
+        "signal": "architecture_violation",
+        "severity": "medium",
+        "score": 0.5,
+        "title": "Upward layer import: enriched.py \u2192 orders.py",
+        "description": "src/myapp/models/enriched.py:2 \u2014 data/infrastructure layer imports from presentation/API layer. Expected direction: presentation \u2192 service \u2192 data.",
+        "file": "src/myapp/models/enriched.py",
+        "start_line": 2,
+        "end_line": null,
+        "ai_attributed": false,
+        "metadata": {
+          "src_layer": 2,
+          "dst_layer": 0
+        }
+      },
+      {
+        "signal": "doc_impl_drift",
+        "severity": "low",
+        "score": 0.3,
+        "title": "README references missing directory: handlers/",
+        "description": "README mentions 'handlers/' but no such directory exists. Documentation may be outdated.",
+        "file": "README.md",
+        "start_line": null,
+        "end_line": null,
+        "ai_attributed": false,
+        "metadata": {
+          "referenced_dir": "handlers"
+        }
+      },
+      {
+        "signal": "doc_impl_drift",
+        "severity": "low",
+        "score": 0.3,
+        "title": "README references missing directory: middleware/",
+        "description": "README mentions 'middleware/' but no such directory exists. Documentation may be outdated.",
+        "file": "README.md",
+        "start_line": null,
+        "end_line": null,
+        "ai_attributed": false,
+        "metadata": {
+          "referenced_dir": "middleware"
+        }
+      },
+      {
+        "signal": "doc_impl_drift",
+        "severity": "low",
+        "score": 0.3,
+        "title": "README references missing directory: models/",
+        "description": "README mentions 'models/' but no such directory exists. Documentation may be outdated.",
+        "file": "README.md",
+        "start_line": null,
+        "end_line": null,
+        "ai_attributed": false,
+        "metadata": {
+          "referenced_dir": "models"
+        }
+      },
+      {
+        "signal": "doc_impl_drift",
+        "severity": "low",
+        "score": 0.3,
+        "title": "README references missing directory: myapp/",
+        "description": "README mentions 'myapp/' but no such directory exists. Documentation may be outdated.",
+        "file": "README.md",
+        "start_line": null,
+        "end_line": null,
+        "ai_attributed": false,
+        "metadata": {
+          "referenced_dir": "myapp"
+        }
+      },
+      {
+        "signal": "doc_impl_drift",
+        "severity": "low",
+        "score": 0.3,
+        "title": "README references missing directory: plugins/",
+        "description": "README mentions 'plugins/' but no such directory exists. Documentation may be outdated.",
+        "file": "README.md",
+        "start_line": null,
+        "end_line": null,
+        "ai_attributed": false,
+        "metadata": {
+          "referenced_dir": "plugins"
+        }
+      },
+      {
+        "signal": "doc_impl_drift",
+        "severity": "low",
+        "score": 0.3,
+        "title": "README references missing directory: utils/",
+        "description": "README mentions 'utils/' but no such directory exists. Documentation may be outdated.",
+        "file": "README.md",
+        "start_line": null,
+        "end_line": null,
+        "ai_attributed": false,
+        "metadata": {
+          "referenced_dir": "utils"
+        }
+      },
+      {
+        "signal": "doc_impl_drift",
+        "severity": "low",
+        "score": 0.3,
+        "title": "README references missing directory: views/",
+        "description": "README mentions 'views/' but no such directory exists. Documentation may be outdated.",
+        "file": "README.md",
+        "start_line": null,
+        "end_line": null,
+        "ai_attributed": false,
+        "metadata": {
+          "referenced_dir": "views"
+        }
+      },
+      {
+        "signal": "explainability_deficit",
+        "severity": "high",
+        "score": 0.95,
+        "title": "Unexplained complexity: calculate_pricing",
+        "description": "Complexity: 19, LOC: 36. No docstring. No corresponding test found. No return type annotation.",
+        "file": "src/myapp/complex_logic.py",
+        "start_line": 1,
+        "end_line": 36,
+        "ai_attributed": false,
+        "metadata": {
+          "function_name": "calculate_pricing",
+          "complexity": 19,
+          "loc": 36,
+          "has_docstring": false,
+          "has_test": false,
+          "has_return_type": false,
+          "explanation_score": 0.0
+        }
+      },
+      {
+        "signal": "explainability_deficit",
+        "severity": "high",
+        "score": 1.0,
+        "title": "Unexplained complexity: transform_dataset",
+        "description": "Complexity: 30, LOC: 54. No docstring. No corresponding test found. No return type annotation.",
+        "file": "src/myapp/complex_logic.py",
+        "start_line": 39,
+        "end_line": 92,
+        "ai_attributed": false,
+        "metadata": {
+          "function_name": "transform_dataset",
+          "complexity": 30,
+          "loc": 54,
+          "has_docstring": false,
+          "has_test": false,
+          "has_return_type": false,
+          "explanation_score": 0.0
+        }
+      },
+      {
+        "signal": "mutant_duplicate",
+        "severity": "high",
+        "score": 0.9,
+        "title": "Exact duplicate: process_order \u2194 process_order",
+        "description": "src\\myapp\\service_a.py:1 and src\\myapp\\service_b.py:1 are identical (6 lines). Consider consolidating.",
+        "file": "src/myapp/service_a.py",
+        "start_line": 1,
+        "end_line": null,
+        "ai_attributed": false,
+        "metadata": {
+          "similarity": 1.0,
+          "body_hash": "57c71e30dc313cac",
+          "function_a": "process_order",
+          "function_b": "process_order",
+          "file_a": "src/myapp/service_a.py",
+          "file_b": "src/myapp/service_b.py"
+        }
+      },
+      {
+        "signal": "mutant_duplicate",
+        "severity": "high",
+        "score": 0.9,
+        "title": "Exact duplicate: validate_input \u2194 validate_input",
+        "description": "src\\myapp\\service_a.py:9 and src\\myapp\\service_b.py:9 are identical (9 lines). Consider consolidating.",
+        "file": "src/myapp/service_a.py",
+        "start_line": 9,
+        "end_line": null,
+        "ai_attributed": false,
+        "metadata": {
+          "similarity": 1.0,
+          "body_hash": "4642cfc909f608c3",
+          "function_a": "validate_input",
+          "function_b": "validate_input",
+          "file_a": "src/myapp/service_a.py",
+          "file_b": "src/myapp/service_b.py"
+        }
+      },
+      {
+        "signal": "pattern_fragmentation",
+        "severity": "medium",
+        "score": 0.5,
+        "title": "error_handling: 2 variants in src/myapp/handlers/",
+        "description": "2 error_handling variants in src/myapp/handlers/ (1/2 use canonical pattern).\n  - orders.py:7 (create_order)",
+        "file": "src/myapp/handlers",
+        "start_line": null,
+        "end_line": null,
+        "ai_attributed": false,
+        "metadata": {
+          "category": "error_handling",
+          "num_variants": 2,
+          "variant_count": 2,
+          "canonical_count": 1,
+          "canonical_variant": "{\"handler_count\": 2, \"handlers\": [{\"actions\": [\"log\", \"raise",
+          "module": "src/myapp/handlers",
+          "total_instances": 2
+        }
+      },
+      {
+        "signal": "system_misalignment",
+        "severity": "medium",
+        "score": 1.0,
+        "title": "Novel dependencies in src/myapp/",
+        "description": "Recently introduced 10 package(s) not previously used in this module: ast, ctypes, dis, json, logging, mmap, multiprocessing, os, struct, xml\n  - src\\myapp\\cache.py:1 imports 'os'\n  - src\\myapp\\cache.py:2 imports 'json'\n  - src\\myapp\\cache.py:3 imports 'logging'\n  - src\\myapp\\config.py:1 imports 'os'\n  - src\\myapp\\config.py:2 imports 'json'",
+        "file": "src/myapp",
+        "start_line": null,
+        "end_line": null,
+        "ai_attributed": false,
+        "metadata": {
+          "novel_packages": [
+            "ast",
+            "ctypes",
+            "dis",
+            "json",
+            "logging",
+            "mmap",
+            "multiprocessing",
+            "os",
+            "struct",
+            "xml"
+          ],
+          "novel_imports": [
+            "ast",
+            "ctypes",
+            "dis",
+            "json",
+            "logging",
+            "mmap",
+            "multiprocessing",
+            "os",
+            "struct",
+            "xml"
+          ],
+          "import_count": 19
+        }
+      },
+      {
+        "signal": "system_misalignment",
+        "severity": "low",
+        "score": 0.5,
+        "title": "Novel dependencies in src/myapp/handlers/",
+        "description": "Recently introduced 2 package(s) not previously used in this module: logging, typing\n  - src\\myapp\\handlers\\auth.py:1 imports 'logging'\n  - src\\myapp\\handlers\\payments.py:1 imports 'typing'",
+        "file": "src/myapp/handlers",
+        "start_line": null,
+        "end_line": null,
+        "ai_attributed": false,
+        "metadata": {
+          "novel_packages": [
+            "logging",
+            "typing"
+          ],
+          "novel_imports": [
+            "logging",
+            "typing"
+          ],
+          "import_count": 2
+        }
+      },
+      {
+        "signal": "system_misalignment",
+        "severity": "info",
+        "score": 0.25,
+        "title": "Novel dependencies in src/myapp/models/",
+        "description": "Recently introduced 1 package(s) not previously used in this module: src\n  - src\\myapp\\models\\enriched.py:1 imports 'src'\n  - src\\myapp\\models\\enriched.py:2 imports 'src'",
+        "file": "src/myapp/models",
+        "start_line": null,
+        "end_line": null,
+        "ai_attributed": false,
+        "metadata": {
+          "novel_packages": [
+            "src"
+          ],
+          "novel_imports": [
+            "src"
+          ],
+          "import_count": 2
+        }
+      },
+      {
+        "signal": "system_misalignment",
+        "severity": "info",
+        "score": 0.25,
+        "title": "Novel dependencies in src/myapp/utils/",
+        "description": "Recently introduced 1 package(s) not previously used in this module: src\n  - src\\myapp\\utils\\helpers.py:1 imports 'src'",
+        "file": "src/myapp/utils",
+        "start_line": null,
+        "end_line": null,
+        "ai_attributed": false,
+        "metadata": {
+          "novel_packages": [
+            "src"
+          ],
+          "novel_imports": [
+            "src"
+          ],
+          "import_count": 1
+        }
+      },
+      {
+        "signal": "temporal_volatility",
+        "severity": "medium",
+        "score": 0.51,
+        "title": "High volatility: src/myapp/hotspot.py",
+        "description": "Change frequency: 2.1/week (4.6\u03c3 above mean).",
+        "file": "src/myapp/hotspot.py",
+        "start_line": null,
+        "end_line": null,
+        "ai_attributed": false,
+        "metadata": {
+          "change_frequency_30d": 2.1,
+          "unique_authors": 1,
+          "defect_correlated": 0,
+          "ai_ratio": 0.0,
+          "freq_z": 4.59,
+          "author_z": 0.0,
+          "defect_z": 0.0
+        }
+      }
+    ]
+  }
+}

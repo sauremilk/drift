@@ -1,0 +1,44 @@
+{
+  "name": "pydantic",
+  "drift_score": 0.577,
+  "severity": "medium",
+  "files": 403,
+  "functions": 8384,
+  "ai_ratio": 0.0,
+  "analysis_s": 57.91,
+  "wall_s": 58.43,
+  "findings": 283,
+  "signals": {},
+  "top5": [
+    {
+      "sig": "system_misalignment",
+      "sev": "medium",
+      "score": 1.0,
+      "title": "Novel dependencies in pydantic-core/python/pydantic_core/"
+    },
+    {
+      "sig": "system_misalignment",
+      "sev": "medium",
+      "score": 1.0,
+      "title": "Novel dependencies in pydantic-core/tests/"
+    },
+    {
+      "sig": "system_misalignment",
+      "sev": "medium",
+      "score": 1.0,
+      "title": "Novel dependencies in pydantic/_internal/"
+    },
+    {
+      "sig": "system_misalignment",
+      "sev": "medium",
+      "score": 1.0,
+      "title": "Novel dependencies in pydantic/"
+    },
+    {
+      "sig": "system_misalignment",
+      "sev": "medium",
+      "score": 1.0,
+      "title": "Novel dependencies in tests/mypy/"
+    }
+  ]
+}

@@ -1,0 +1,44 @@
+{
+  "name": "drift_self",
+  "drift_score": 0.442,
+  "severity": "medium",
+  "files": 45,
+  "functions": 263,
+  "ai_ratio": 0.0,
+  "analysis_s": 0.25,
+  "wall_s": 0.74,
+  "findings": 69,
+  "signals": {},
+  "top5": [
+    {
+      "sig": "system_misalignment",
+      "sev": "medium",
+      "score": 1.0,
+      "title": "Novel dependencies in src/drift/"
+    },
+    {
+      "sig": "system_misalignment",
+      "sev": "medium",
+      "score": 1.0,
+      "title": "Novel dependencies in src/drift/ingestion/"
+    },
+    {
+      "sig": "system_misalignment",
+      "sev": "medium",
+      "score": 1.0,
+      "title": "Novel dependencies in src/drift/output/"
+    },
+    {
+      "sig": "system_misalignment",
+      "sev": "medium",
+      "score": 1.0,
+      "title": "Novel dependencies in src/drift/scoring/"
+    },
+    {
+      "sig": "system_misalignment",
+      "sev": "medium",
+      "score": 1.0,
+      "title": "Novel dependencies in src/drift/signals/"
+    }
+  ]
+}

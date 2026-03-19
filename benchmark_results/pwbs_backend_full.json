@@ -1,0 +1,3204 @@
+{
+  "version": "0.1.0",
+  "repo": "C:/Users/mickg/PWBS/backend",
+  "analyzed_at": "2026-03-19T11:13:14.218297+00:00",
+  "drift_score": 0.52,
+  "severity": "medium",
+  "summary": {
+    "total_files": 490,
+    "total_functions": 5073,
+    "ai_attributed_ratio": 0.0,
+    "analysis_duration_seconds": 6.23
+  },
+  "modules": [
+    {
+      "path": "_deferred/sso",
+      "drift_score": 0.9,
+      "severity": "critical",
+      "signal_scores": {
+        "mutant_duplicate": 0.9
+      },
+      "finding_count": 15,
+      "ai_ratio": 0.0
+    },
+    {
+      "path": "_deferred/routes",
+      "drift_score": 0.618,
+      "severity": "high",
+      "signal_scores": {
+        "pattern_fragmentation": 0.4132,
+        "mutant_duplicate": 0.8902
+      },
+      "finding_count": 12,
+      "ai_ratio": 0.0
+    },
+    {
+      "path": "pwbs/queue/tasks",
+      "drift_score": 0.523,
+      "severity": "medium",
+      "signal_scores": {
+        "pattern_fragmentation": 0.2409,
+        "mutant_duplicate": 0.9
+      },
+      "finding_count": 16,
+      "ai_ratio": 0.0
+    },
+    {
+      "path": "_deferred/marketplace",
+      "drift_score": 0.521,
+      "severity": "medium",
+      "signal_scores": {
+        "pattern_fragmentation": 0.2409,
+        "mutant_duplicate": 0.8952
+      },
+      "finding_count": 26,
+      "ai_ratio": 0.0
+    },
+    {
+      "path": "_deferred/tests/test_marketplace",
+      "drift_score": 0.52,
+      "severity": "medium",
+      "signal_scores": {
+        "mutant_duplicate": 0.5203
+      },
+      "finding_count": 3,
+      "ai_ratio": 0.0
+    },
+    {
+      "path": "tests/test_auth",
+      "drift_score": 0.52,
+      "severity": "medium",
+      "signal_scores": {
+        "mutant_duplicate": 0.5203
+      },
+      "finding_count": 3,
+      "ai_ratio": 0.0
+    },
+    {
+      "path": "tests/test_processing",
+      "drift_score": 0.52,
+      "severity": "medium",
+      "signal_scores": {
+        "mutant_duplicate": 0.5203
+      },
+      "finding_count": 3,
+      "ai_ratio": 0.0
+    },
+    {
+      "path": "_deferred/billing",
+      "drift_score": 0.495,
+      "severity": "medium",
+      "signal_scores": {
+        "mutant_duplicate": 0.8155,
+        "explainability_deficit": 0.0939
+      },
+      "finding_count": 9,
+      "ai_ratio": 0.0
+    },
+    {
+      "path": "_deferred/rbac",
+      "drift_score": 0.423,
+      "severity": "medium",
+      "signal_scores": {
+        "pattern_fragmentation": 0.1927,
+        "mutant_duplicate": 0.7304
+      },
+      "finding_count": 7,
+      "ai_ratio": 0.0
+    },
+    {
+      "path": "_deferred/marketplace/examples/notion_plugin",
+      "drift_score": 0.412,
+      "severity": "medium",
+      "signal_scores": {
+        "mutant_duplicate": 0.4123
+      },
+      "finding_count": 2,
+      "ai_ratio": 0.0
+    },
+    {
+      "path": "_deferred/tests",
+      "drift_score": 0.412,
+      "severity": "medium",
+      "signal_scores": {
+        "mutant_duplicate": 0.4123
+      },
+      "finding_count": 2,
+      "ai_ratio": 0.0
+    },
+    {
+      "path": "tests/test_email",
+      "drift_score": 0.412,
+      "severity": "medium",
+      "signal_scores": {
+        "mutant_duplicate": 0.4123
+      },
+      "finding_count": 2,
+      "ai_ratio": 0.0
+    },
+    {
+      "path": "pwbs/api/v1/routes",
+      "drift_score": 0.335,
+      "severity": "low",
+      "signal_scores": {
+        "pattern_fragmentation": 0.447,
+        "mutant_duplicate": 0.2602,
+        "explainability_deficit": 0.2434
+      },
+      "finding_count": 6,
+      "ai_ratio": 0.0
+    },
+    {
+      "path": "pwbs/connectors",
+      "drift_score": 0.26,
+      "severity": "low",
+      "signal_scores": {
+        "pattern_fragmentation": 0.2779,
+        "explainability_deficit": 0.2291
+      },
+      "finding_count": 3,
+      "ai_ratio": 0.0
+    },
+    {
+      "path": "pwbs/services",
+      "drift_score": 0.26,
+      "severity": "low",
+      "signal_scores": {
+        "pattern_fragmentation": 0.2602
+      },
+      "finding_count": 1,
+      "ai_ratio": 0.0
+    },
+    {
+      "path": "_deferred/connectors",
+      "drift_score": 0.247,
+      "severity": "low",
+      "signal_scores": {
+        "pattern_fragmentation": 0.2684,
+        "explainability_deficit": 0.212
+      },
+      "finding_count": 4,
+      "ai_ratio": 0.0
+    },
+    {
+      "path": "pwbs/marketplace",
+      "drift_score": 0.241,
+      "severity": "low",
+      "signal_scores": {
+        "pattern_fragmentation": 0.2409
+      },
+      "finding_count": 1,
+      "ai_ratio": 0.0
+    },
+    {
+      "path": "pwbs/db",
+      "drift_score": 0.24,
+      "severity": "low",
+      "signal_scores": {
+        "pattern_fragmentation": 0.1445,
+        "architecture_violation": 0.3356
+      },
+      "finding_count": 5,
+      "ai_ratio": 0.0
+    },
+    {
+      "path": "pwbs/processing",
+      "drift_score": 0.228,
+      "severity": "low",
+      "signal_scores": {
+        "pattern_fragmentation": 0.2478,
+        "explainability_deficit": 0.1947
+      },
+      "finding_count": 3,
+      "ai_ratio": 0.0
+    },
+    {
+      "path": "tests/integration",
+      "drift_score": 0.222,
+      "severity": "low",
+      "signal_scores": {
+        "pattern_fragmentation": 0.1927,
+        "mutant_duplicate": 0.2602
+      },
+      "finding_count": 2,
+      "ai_ratio": 0.0
+    },
+    {
+      "path": "pwbs/core",
+      "drift_score": 0.216,
+      "severity": "low",
+      "signal_scores": {
+        "pattern_fragmentation": 0.2668,
+        "explainability_deficit": 0.1301
+      },
+      "finding_count": 2,
+      "ai_ratio": 0.0
+    },
+    {
+      "path": "pwbs/briefing",
+      "drift_score": 0.205,
+      "severity": "low",
+      "signal_scores": {
+        "pattern_fragmentation": 0.2313,
+        "explainability_deficit": 0.1604
+      },
+      "finding_count": 3,
+      "ai_ratio": 0.0
+    },
+    {
+      "path": "pwbs/api/middleware",
+      "drift_score": 0.193,
+      "severity": "info",
+      "signal_scores": {
+        "pattern_fragmentation": 0.1927
+      },
+      "finding_count": 1,
+      "ai_ratio": 0.0
+    },
+    {
+      "path": "pwbs/rbac",
+      "drift_score": 0.193,
+      "severity": "info",
+      "signal_scores": {
+        "pattern_fragmentation": 0.1927
+      },
+      "finding_count": 1,
+      "ai_ratio": 0.0
+    },
+    {
+      "path": "_deferred/integrations/slack",
+      "drift_score": 0.144,
+      "severity": "info",
+      "signal_scores": {
+        "pattern_fragmentation": 0.1445
+      },
+      "finding_count": 1,
+      "ai_ratio": 0.0
+    },
+    {
+      "path": "pwbs/api/dependencies",
+      "drift_score": 0.144,
+      "severity": "info",
+      "signal_scores": {
+        "pattern_fragmentation": 0.1445
+      },
+      "finding_count": 1,
+      "ai_ratio": 0.0
+    },
+    {
+      "path": "pwbs/dsgvo",
+      "drift_score": 0.144,
+      "severity": "info",
+      "signal_scores": {
+        "pattern_fragmentation": 0.1445
+      },
+      "finding_count": 1,
+      "ai_ratio": 0.0
+    },
+    {
+      "path": "pwbs/graph",
+      "drift_score": 0.144,
+      "severity": "info",
+      "signal_scores": {
+        "pattern_fragmentation": 0.1445
+      },
+      "finding_count": 1,
+      "ai_ratio": 0.0
+    },
+    {
+      "path": "pwbs/processing/multimodal",
+      "drift_score": 0.144,
+      "severity": "info",
+      "signal_scores": {
+        "pattern_fragmentation": 0.1445
+      },
+      "finding_count": 1,
+      "ai_ratio": 0.0
+    },
+    {
+      "path": "pwbs/prompts",
+      "drift_score": 0.144,
+      "severity": "info",
+      "signal_scores": {
+        "pattern_fragmentation": 0.1445
+      },
+      "finding_count": 1,
+      "ai_ratio": 0.0
+    },
+    {
+      "path": "pwbs/queue",
+      "drift_score": 0.144,
+      "severity": "info",
+      "signal_scores": {
+        "pattern_fragmentation": 0.1445
+      },
+      "finding_count": 1,
+      "ai_ratio": 0.0
+    },
+    {
+      "path": "pwbs/search",
+      "drift_score": 0.144,
+      "severity": "info",
+      "signal_scores": {
+        "pattern_fragmentation": 0.1445
+      },
+      "finding_count": 1,
+      "ai_ratio": 0.0
+    },
+    {
+      "path": "tests",
+      "drift_score": 0.144,
+      "severity": "info",
+      "signal_scores": {
+        "pattern_fragmentation": 0.1445
+      },
+      "finding_count": 1,
+      "ai_ratio": 0.0
+    },
+    {
+      "path": "tests/performance",
+      "drift_score": 0.144,
+      "severity": "info",
+      "signal_scores": {
+        "pattern_fragmentation": 0.1445
+      },
+      "finding_count": 1,
+      "ai_ratio": 0.0
+    },
+    {
+      "path": "tests/unit",
+      "drift_score": 0.144,
+      "severity": "info",
+      "signal_scores": {
+        "pattern_fragmentation": 0.1445
+      },
+      "finding_count": 1,
+      "ai_ratio": 0.0
+    },
+    {
+      "path": "<root>",
+      "drift_score": 0.116,
+      "severity": "info",
+      "signal_scores": {
+        "doc_impl_drift": 0.1156
+      },
+      "finding_count": 1,
+      "ai_ratio": 0.0
+    },
+    {
+      "path": "pwbs/billing",
+      "drift_score": 0.094,
+      "severity": "info",
+      "signal_scores": {
+        "explainability_deficit": 0.0939
+      },
+      "finding_count": 1,
+      "ai_ratio": 0.0
+    },
+    {
+      "path": "pwbs/snapshots",
+      "drift_score": 0.087,
+      "severity": "info",
+      "signal_scores": {
+        "explainability_deficit": 0.0867
+      },
+      "finding_count": 1,
+      "ai_ratio": 0.0
+    }
+  ],
+  "findings": [
+    {
+      "signal": "architecture_violation",
+      "severity": "medium",
+      "score": 0.5,
+      "title": "Upward layer import: weaviate_client.py \u2192 config.py",
+      "description": "pwbs/db/weaviate_client.py:13 \u2014 data/infrastructure layer imports from presentation/API layer. Expected direction: presentation \u2192 service \u2192 data.",
+      "file": "pwbs/db/weaviate_client.py",
+      "start_line": 13,
+      "end_line": null,
+      "ai_attributed": false,
+      "metadata": {
+        "src_layer": 2,
+        "dst_layer": 1
+      }
+    },
+    {
+      "signal": "architecture_violation",
+      "severity": "medium",
+      "score": 0.5,
+      "title": "Upward layer import: postgres.py \u2192 config.py",
+      "description": "pwbs/db/postgres.py:15 \u2014 data/infrastructure layer imports from presentation/API layer. Expected direction: presentation \u2192 service \u2192 data.",
+      "file": "pwbs/db/postgres.py",
+      "start_line": 15,
+      "end_line": null,
+      "ai_attributed": false,
+      "metadata": {
+        "src_layer": 2,
+        "dst_layer": 1
+      }
+    },
+    {
+      "signal": "architecture_violation",
+      "severity": "medium",
+      "score": 0.5,
+      "title": "Upward layer import: neo4j_client.py \u2192 config.py",
+      "description": "pwbs/db/neo4j_client.py:13 \u2014 data/infrastructure layer imports from presentation/API layer. Expected direction: presentation \u2192 service \u2192 data.",
+      "file": "pwbs/db/neo4j_client.py",
+      "start_line": 13,
+      "end_line": null,
+      "ai_attributed": false,
+      "metadata": {
+        "src_layer": 2,
+        "dst_layer": 1
+      }
+    },
+    {
+      "signal": "architecture_violation",
+      "severity": "medium",
+      "score": 0.5,
+      "title": "Upward layer import: redis_client.py \u2192 config.py",
+      "description": "pwbs/db/redis_client.py:7 \u2014 data/infrastructure layer imports from presentation/API layer. Expected direction: presentation \u2192 service \u2192 data.",
+      "file": "pwbs/db/redis_client.py",
+      "start_line": 7,
+      "end_line": null,
+      "ai_attributed": false,
+      "metadata": {
+        "src_layer": 2,
+        "dst_layer": 1
+      }
+    },
+    {
+      "signal": "doc_impl_drift",
+      "severity": "medium",
+      "score": 0.4,
+      "title": "No README found",
+      "description": "The repository has no README file. A README is essential for architectural context.",
+      "file": null,
+      "start_line": null,
+      "end_line": null,
+      "ai_attributed": false,
+      "metadata": {}
+    },
+    {
+      "signal": "explainability_deficit",
+      "severity": "low",
+      "score": 0.325,
+      "title": "Unexplained complexity: create_checkout_session",
+      "description": "Complexity: 13, LOC: 69. No corresponding test found.",
+      "file": "_deferred/billing/service.py",
+      "start_line": 145,
+      "end_line": 213,
+      "ai_attributed": false,
+      "metadata": {
+        "function_name": "create_checkout_session",
+        "complexity": 13,
+        "loc": 69,
+        "has_docstring": true,
+        "has_test": false,
+        "has_return_type": true,
+        "explanation_score": 0.5
+      }
+    },
+    {
+      "signal": "explainability_deficit",
+      "severity": "low",
+      "score": 0.3,
+      "title": "Unexplained complexity: _convert_table",
+      "description": "Complexity: 12, LOC: 29. No corresponding test found.",
+      "file": "_deferred/connectors/google_docs.py",
+      "start_line": 178,
+      "end_line": 206,
+      "ai_attributed": false,
+      "metadata": {
+        "function_name": "_convert_table",
+        "complexity": 12,
+        "loc": 29,
+        "has_docstring": true,
+        "has_test": false,
+        "has_return_type": true,
+        "explanation_score": 0.5
+      }
+    },
+    {
+      "signal": "explainability_deficit",
+      "severity": "medium",
+      "score": 0.5,
+      "title": "Unexplained complexity: OutlookMailConnector._normalize_thread",
+      "description": "Complexity: 25, LOC: 115. No corresponding test found.",
+      "file": "_deferred/connectors/outlook.py",
+      "start_line": 342,
+      "end_line": 456,
+      "ai_attributed": false,
+      "metadata": {
+        "function_name": "OutlookMailConnector._normalize_thread",
+        "complexity": 25,
+        "loc": 115,
+        "has_docstring": true,
+        "has_test": false,
+        "has_return_type": true,
+        "explanation_score": 0.5
+      }
+    },
+    {
+      "signal": "explainability_deficit",
+      "severity": "low",
+      "score": 0.3,
+      "title": "Unexplained complexity: SlackConnector._normalize_thread",
+      "description": "Complexity: 12, LOC: 85. No corresponding test found.",
+      "file": "_deferred/connectors/slack.py",
+      "start_line": 541,
+      "end_line": 625,
+      "ai_attributed": false,
+      "metadata": {
+        "function_name": "SlackConnector._normalize_thread",
+        "complexity": 12,
+        "loc": 85,
+        "has_docstring": true,
+        "has_test": false,
+        "has_return_type": true,
+        "explanation_score": 0.5
+      }
+    },
+    {
+      "signal": "explainability_deficit",
+      "severity": "medium",
+      "score": 0.625,
+      "title": "Unexplained complexity: upload_obsidian",
+      "description": "Complexity: 20, LOC: 210. No docstring. No corresponding test found.",
+      "file": "pwbs/api/v1/routes/connectors.py",
+      "start_line": 807,
+      "end_line": 1016,
+      "ai_attributed": false,
+      "metadata": {
+        "function_name": "upload_obsidian",
+        "complexity": 20,
+        "loc": 210,
+        "has_docstring": false,
+        "has_test": false,
+        "has_return_type": true,
+        "explanation_score": 0.375
+      }
+    },
+    {
+      "signal": "explainability_deficit",
+      "severity": "low",
+      "score": 0.3,
+      "title": "Unexplained complexity: update_settings",
+      "description": "Complexity: 16, LOC: 110. No corresponding test found.",
+      "file": "pwbs/api/v1/routes/user.py",
+      "start_line": 212,
+      "end_line": 321,
+      "ai_attributed": false,
+      "metadata": {
+        "function_name": "update_settings",
+        "complexity": 16,
+        "loc": 110,
+        "has_docstring": true,
+        "has_test": false,
+        "has_return_type": true,
+        "explanation_score": 0.625
+      }
+    },
+    {
+      "signal": "explainability_deficit",
+      "severity": "low",
+      "score": 0.338,
+      "title": "Unexplained complexity: slack_events_webhook",
+      "description": "Complexity: 18, LOC: 118. No corresponding test found.",
+      "file": "pwbs/api/v1/routes/webhooks.py",
+      "start_line": 144,
+      "end_line": 261,
+      "ai_attributed": false,
+      "metadata": {
+        "function_name": "slack_events_webhook",
+        "complexity": 18,
+        "loc": 118,
+        "has_docstring": true,
+        "has_test": false,
+        "has_return_type": true,
+        "explanation_score": 0.625
+      }
+    },
+    {
+      "signal": "explainability_deficit",
+      "severity": "low",
+      "score": 0.325,
+      "title": "Unexplained complexity: create_checkout_session",
+      "description": "Complexity: 13, LOC: 70. No corresponding test found.",
+      "file": "pwbs/billing/service.py",
+      "start_line": 144,
+      "end_line": 213,
+      "ai_attributed": false,
+      "metadata": {
+        "function_name": "create_checkout_session",
+        "complexity": 13,
+        "loc": 70,
+        "has_docstring": true,
+        "has_test": false,
+        "has_return_type": true,
+        "explanation_score": 0.5
+      }
+    },
+    {
+      "signal": "explainability_deficit",
+      "severity": "low",
+      "score": 0.35,
+      "title": "Unexplained complexity: MorningContextAssembler.assemble",
+      "description": "Complexity: 14, LOC: 92. No corresponding test found.",
+      "file": "pwbs/briefing/context.py",
+      "start_line": 218,
+      "end_line": 309,
+      "ai_attributed": false,
+      "metadata": {
+        "function_name": "MorningContextAssembler.assemble",
+        "complexity": 14,
+        "loc": 92,
+        "has_docstring": true,
+        "has_test": false,
+        "has_return_type": true,
+        "explanation_score": 0.5
+      }
+    },
+    {
+      "signal": "explainability_deficit",
+      "severity": "low",
+      "score": 0.35,
+      "title": "Unexplained complexity: BriefingValidator.validate",
+      "description": "Complexity: 14, LOC: 110. No corresponding test found.",
+      "file": "pwbs/briefing/validation.py",
+      "start_line": 423,
+      "end_line": 532,
+      "ai_attributed": false,
+      "metadata": {
+        "function_name": "BriefingValidator.validate",
+        "complexity": 14,
+        "loc": 110,
+        "has_docstring": true,
+        "has_test": false,
+        "has_return_type": true,
+        "explanation_score": 0.5
+      }
+    },
+    {
+      "signal": "explainability_deficit",
+      "severity": "medium",
+      "score": 0.5,
+      "title": "Unexplained complexity: _block_to_markdown",
+      "description": "Complexity: 30, LOC: 81. No corresponding test found.",
+      "file": "pwbs/connectors/notion.py",
+      "start_line": 155,
+      "end_line": 235,
+      "ai_attributed": false,
+      "metadata": {
+        "function_name": "_block_to_markdown",
+        "complexity": 30,
+        "loc": 81,
+        "has_docstring": true,
+        "has_test": false,
+        "has_return_type": true,
+        "explanation_score": 0.5
+      }
+    },
+    {
+      "signal": "explainability_deficit",
+      "severity": "medium",
+      "score": 0.5,
+      "title": "Unexplained complexity: _extract_page_properties",
+      "description": "Complexity: 27, LOC: 54. No corresponding test found.",
+      "file": "pwbs/connectors/notion.py",
+      "start_line": 256,
+      "end_line": 309,
+      "ai_attributed": false,
+      "metadata": {
+        "function_name": "_extract_page_properties",
+        "complexity": 27,
+        "loc": 54,
+        "has_docstring": true,
+        "has_test": false,
+        "has_return_type": true,
+        "explanation_score": 0.5
+      }
+    },
+    {
+      "signal": "explainability_deficit",
+      "severity": "low",
+      "score": 0.45,
+      "title": "Unexplained complexity: before_send",
+      "description": "Complexity: 18, LOC: 42. No corresponding test found.",
+      "file": "pwbs/core/sentry.py",
+      "start_line": 66,
+      "end_line": 107,
+      "ai_attributed": false,
+      "metadata": {
+        "function_name": "before_send",
+        "complexity": 18,
+        "loc": 42,
+        "has_docstring": true,
+        "has_test": false,
+        "has_return_type": true,
+        "explanation_score": 0.5
+      }
+    },
+    {
+      "signal": "explainability_deficit",
+      "severity": "low",
+      "score": 0.375,
+      "title": "Unexplained complexity: LLMEntityExtractor._convert_response",
+      "description": "Complexity: 29, LOC: 247. No corresponding test found.",
+      "file": "pwbs/processing/llm_ner.py",
+      "start_line": 357,
+      "end_line": 603,
+      "ai_attributed": false,
+      "metadata": {
+        "function_name": "LLMEntityExtractor._convert_response",
+        "complexity": 29,
+        "loc": 247,
+        "has_docstring": true,
+        "has_test": false,
+        "has_return_type": true,
+        "explanation_score": 0.625
+      }
+    },
+    {
+      "signal": "explainability_deficit",
+      "severity": "low",
+      "score": 0.475,
+      "title": "Unexplained complexity: segment_sentences",
+      "description": "Complexity: 19, LOC: 63. No corresponding test found.",
+      "file": "pwbs/processing/semantic_chunker.py",
+      "start_line": 175,
+      "end_line": 237,
+      "ai_attributed": false,
+      "metadata": {
+        "function_name": "segment_sentences",
+        "complexity": 19,
+        "loc": 63,
+        "has_docstring": true,
+        "has_test": false,
+        "has_return_type": true,
+        "explanation_score": 0.5
+      }
+    },
+    {
+      "signal": "explainability_deficit",
+      "severity": "low",
+      "score": 0.3,
+      "title": "Unexplained complexity: compute_diff",
+      "description": "Complexity: 12, LOC: 114. No corresponding test found.",
+      "file": "pwbs/snapshots/service.py",
+      "start_line": 161,
+      "end_line": 274,
+      "ai_attributed": false,
+      "metadata": {
+        "function_name": "compute_diff",
+        "complexity": 12,
+        "loc": 114,
+        "has_docstring": true,
+        "has_test": false,
+        "has_return_type": true,
+        "explanation_score": 0.5
+      }
+    },
+    {
+      "signal": "mutant_duplicate",
+      "severity": "high",
+      "score": 0.9,
+      "title": "Exact duplicate: _get_plan_limits \u2194 _get_plan_limits",
+      "description": "_deferred\\billing\\service.py:35 and pwbs\\billing\\service.py:33 are identical (15 lines). Consider consolidating.",
+      "file": "_deferred/billing/service.py",
+      "start_line": 35,
+      "end_line": null,
+      "ai_attributed": false,
+      "metadata": {
+        "similarity": 1.0,
+        "body_hash": "6e563294e64ef014",
+        "function_a": "_get_plan_limits",
+        "function_b": "_get_plan_limits",
+        "file_a": "_deferred/billing/service.py",
+        "file_b": "pwbs/billing/service.py"
+      }
+    },
+    {
+      "signal": "mutant_duplicate",
+      "severity": "high",
+      "score": 0.9,
+      "title": "Exact duplicate: get_plan_limits \u2194 get_plan_limits",
+      "description": "_deferred\\billing\\service.py:55 and pwbs\\billing\\service.py:53 are identical (5 lines). Consider consolidating.",
+      "file": "_deferred/billing/service.py",
+      "start_line": 55,
+      "end_line": null,
+      "ai_attributed": false,
+      "metadata": {
+        "similarity": 1.0,
+        "body_hash": "0589cf84d795ccc7",
+        "function_a": "get_plan_limits",
+        "function_b": "get_plan_limits",
+        "file_a": "_deferred/billing/service.py",
+        "file_b": "pwbs/billing/service.py"
+      }
+    },
+    {
+      "signal": "mutant_duplicate",
+      "severity": "high",
+      "score": 0.9,
+      "title": "Exact duplicate: get_or_create_free_subscription \u2194 get_or_create_free_subscription",
+      "description": "_deferred\\billing\\service.py:77 and pwbs\\billing\\service.py:74 are identical (19 lines). Consider consolidating.",
+      "file": "_deferred/billing/service.py",
+      "start_line": 77,
+      "end_line": null,
+      "ai_attributed": false,
+      "metadata": {
+        "similarity": 1.0,
+        "body_hash": "6e5439302e4310c1",
+        "function_a": "get_or_create_free_subscription",
+        "function_b": "get_or_create_free_subscription",
+        "file_a": "_deferred/billing/service.py",
+        "file_b": "pwbs/billing/service.py"
+      }
+    },
+    {
+      "signal": "mutant_duplicate",
+      "severity": "high",
+      "score": 0.9,
+      "title": "Exact duplicate: get_user_plan \u2194 get_user_plan",
+      "description": "_deferred\\billing\\service.py:98 and pwbs\\billing\\service.py:95 are identical (8 lines). Consider consolidating.",
+      "file": "_deferred/billing/service.py",
+      "start_line": 98,
+      "end_line": null,
+      "ai_attributed": false,
+      "metadata": {
+        "similarity": 1.0,
+        "body_hash": "5c982f8fe3f1403d",
+        "function_a": "get_user_plan",
+        "function_b": "get_user_plan",
+        "file_a": "_deferred/billing/service.py",
+        "file_b": "pwbs/billing/service.py"
+      }
+    },
+    {
+      "signal": "mutant_duplicate",
+      "severity": "high",
+      "score": 0.9,
+      "title": "Exact duplicate: check_feature_access \u2194 check_feature_access",
+      "description": "_deferred\\billing\\service.py:112 and pwbs\\billing\\service.py:110 are identical (27 lines). Consider consolidating.",
+      "file": "_deferred/billing/service.py",
+      "start_line": 112,
+      "end_line": null,
+      "ai_attributed": false,
+      "metadata": {
+        "similarity": 1.0,
+        "body_hash": "2dff84aacfc3ecd4",
+        "function_a": "check_feature_access",
+        "function_b": "check_feature_access",
+        "file_a": "_deferred/billing/service.py",
+        "file_b": "pwbs/billing/service.py"
+      }
+    },
+    {
+      "signal": "mutant_duplicate",
+      "severity": "high",
+      "score": 0.9,
+      "title": "Exact duplicate: handle_webhook_event \u2194 handle_webhook_event",
+      "description": "_deferred\\billing\\service.py:274 and pwbs\\billing\\service.py:279 are identical (32 lines). Consider consolidating.",
+      "file": "_deferred/billing/service.py",
+      "start_line": 274,
+      "end_line": null,
+      "ai_attributed": false,
+      "metadata": {
+        "similarity": 1.0,
+        "body_hash": "7bd0a8a2eef587b6",
+        "function_a": "handle_webhook_event",
+        "function_b": "handle_webhook_event",
+        "file_a": "_deferred/billing/service.py",
+        "file_b": "pwbs/billing/service.py"
+      }
+    },
+    {
+      "signal": "mutant_duplicate",
+      "severity": "high",
+      "score": 0.9,
+      "title": "Exact duplicate: _handle_checkout_completed \u2194 _handle_checkout_completed",
+      "description": "_deferred\\billing\\service.py:308 and pwbs\\billing\\service.py:313 are identical (46 lines). Consider consolidating.",
+      "file": "_deferred/billing/service.py",
+      "start_line": 308,
+      "end_line": null,
+      "ai_attributed": false,
+      "metadata": {
+        "similarity": 1.0,
+        "body_hash": "69e2d8b648621c4c",
+        "function_a": "_handle_checkout_completed",
+        "function_b": "_handle_checkout_completed",
+        "file_a": "_deferred/billing/service.py",
+        "file_b": "pwbs/billing/service.py"
+      }
+    },
+    {
+      "signal": "mutant_duplicate",
+      "severity": "high",
+      "score": 0.9,
+      "title": "Exact duplicate: validate \u2194 validate",
+      "description": "_deferred\\marketplace\\cli.py:230 and pwbs\\marketplace\\cli.py:228 are identical (20 lines). Consider consolidating.",
+      "file": "_deferred/marketplace/cli.py",
+      "start_line": 230,
+      "end_line": null,
+      "ai_attributed": false,
+      "metadata": {
+        "similarity": 1.0,
+        "body_hash": "ad8e1d999433f1ac",
+        "function_a": "validate",
+        "function_b": "validate",
+        "file_a": "_deferred/marketplace/cli.py",
+        "file_b": "pwbs/marketplace/cli.py"
+      }
+    },
+    {
+      "signal": "mutant_duplicate",
+      "severity": "high",
+      "score": 0.9,
+      "title": "Exact duplicate: package \u2194 package",
+      "description": "_deferred\\marketplace\\cli.py:261 and pwbs\\marketplace\\cli.py:259 are identical (21 lines). Consider consolidating.",
+      "file": "_deferred/marketplace/cli.py",
+      "start_line": 261,
+      "end_line": null,
+      "ai_attributed": false,
+      "metadata": {
+        "similarity": 1.0,
+        "body_hash": "3b8e83c183dd242d",
+        "function_a": "package",
+        "function_b": "package",
+        "file_a": "_deferred/marketplace/cli.py",
+        "file_b": "pwbs/marketplace/cli.py"
+      }
+    },
+    {
+      "signal": "mutant_duplicate",
+      "severity": "high",
+      "score": 0.9,
+      "title": "Exact duplicate: NotionConnectorPlugin.get_manifest \u2194 NotionConnectorPlugin.get_manifest",
+      "description": "_deferred\\marketplace\\examples\\notion_plugin\\plugin.py:34 and pwbs\\marketplace\\examples\\notion_plugin\\plugin.py:33 are identical (19 lines). Consider consolidating.",
+      "file": "_deferred/marketplace/examples/notion_plugin/plugin.py",
+      "start_line": 34,
+      "end_line": null,
+      "ai_attributed": false,
+      "metadata": {
+        "similarity": 1.0,
+        "body_hash": "f4781177312c723d",
+        "function_a": "NotionConnectorPlugin.get_manifest",
+        "function_b": "NotionConnectorPlugin.get_manifest",
+        "file_a": "_deferred/marketplace/examples/notion_plugin/plugin.py",
+        "file_b": "pwbs/marketplace/examples/notion_plugin/plugin.py"
+      }
+    },
+    {
+      "signal": "mutant_duplicate",
+      "severity": "high",
+      "score": 0.9,
+      "title": "Exact duplicate: NotionConnectorPlugin.validate_config \u2194 NotionConnectorPlugin.validate_config",
+      "description": "_deferred\\marketplace\\examples\\notion_plugin\\plugin.py:100 and pwbs\\marketplace\\examples\\notion_plugin\\plugin.py:96 are identical (6 lines). Consider consolidating.",
+      "file": "_deferred/marketplace/examples/notion_plugin/plugin.py",
+      "start_line": 100,
+      "end_line": null,
+      "ai_attributed": false,
+      "metadata": {
+        "similarity": 1.0,
+        "body_hash": "144d4b9d4c99db3e",
+        "function_a": "NotionConnectorPlugin.validate_config",
+        "function_b": "NotionConnectorPlugin.validate_config",
+        "file_a": "_deferred/marketplace/examples/notion_plugin/plugin.py",
+        "file_b": "pwbs/marketplace/examples/notion_plugin/plugin.py"
+      }
+    },
+    {
+      "signal": "mutant_duplicate",
+      "severity": "high",
+      "score": 0.9,
+      "title": "Exact duplicate: get_plugin_detail \u2194 get_plugin_detail",
+      "description": "_deferred\\marketplace\\marketplace_service.py:182 and pwbs\\marketplace\\marketplace_service.py:180 are identical (6 lines). Consider consolidating.",
+      "file": "_deferred/marketplace/marketplace_service.py",
+      "start_line": 182,
+      "end_line": null,
+      "ai_attributed": false,
+      "metadata": {
+        "similarity": 1.0,
+        "body_hash": "0d99e95aa6e69e3e",
+        "function_a": "get_plugin_detail",
+        "function_b": "get_plugin_detail",
+        "file_a": "_deferred/marketplace/marketplace_service.py",
+        "file_b": "pwbs/marketplace/marketplace_service.py"
+      }
+    },
+    {
+      "signal": "mutant_duplicate",
+      "severity": "high",
+      "score": 0.9,
+      "title": "Exact duplicate: uninstall_plugin \u2194 uninstall_plugin",
+      "description": "_deferred\\marketplace\\marketplace_service.py:264 and pwbs\\marketplace\\marketplace_service.py:263 are identical (27 lines). Consider consolidating.",
+      "file": "_deferred/marketplace/marketplace_service.py",
+      "start_line": 264,
+      "end_line": null,
+      "ai_attributed": false,
+      "metadata": {
+        "similarity": 1.0,
+        "body_hash": "fac83d7212eaafa8",
+        "function_a": "uninstall_plugin",
+        "function_b": "uninstall_plugin",
+        "file_a": "_deferred/marketplace/marketplace_service.py",
+        "file_b": "pwbs/marketplace/marketplace_service.py"
+      }
+    },
+    {
+      "signal": "mutant_duplicate",
+      "severity": "high",
+      "score": 0.9,
+      "title": "Exact duplicate: update_plugin_config \u2194 update_plugin_config",
+      "description": "_deferred\\marketplace\\marketplace_service.py:298 and pwbs\\marketplace\\marketplace_service.py:297 are identical (33 lines). Consider consolidating.",
+      "file": "_deferred/marketplace/marketplace_service.py",
+      "start_line": 298,
+      "end_line": null,
+      "ai_attributed": false,
+      "metadata": {
+        "similarity": 1.0,
+        "body_hash": "dbb3636aa5135f37",
+        "function_a": "update_plugin_config",
+        "function_b": "update_plugin_config",
+        "file_a": "_deferred/marketplace/marketplace_service.py",
+        "file_b": "pwbs/marketplace/marketplace_service.py"
+      }
+    },
+    {
+      "signal": "mutant_duplicate",
+      "severity": "high",
+      "score": 0.9,
+      "title": "Exact duplicate: toggle_plugin \u2194 toggle_plugin",
+      "description": "_deferred\\marketplace\\marketplace_service.py:333 and pwbs\\marketplace\\marketplace_service.py:332 are identical (21 lines). Consider consolidating.",
+      "file": "_deferred/marketplace/marketplace_service.py",
+      "start_line": 333,
+      "end_line": null,
+      "ai_attributed": false,
+      "metadata": {
+        "similarity": 1.0,
+        "body_hash": "1975dc7279491840",
+        "function_a": "toggle_plugin",
+        "function_b": "toggle_plugin",
+        "file_a": "_deferred/marketplace/marketplace_service.py",
+        "file_b": "pwbs/marketplace/marketplace_service.py"
+      }
+    },
+    {
+      "signal": "mutant_duplicate",
+      "severity": "high",
+      "score": 0.9,
+      "title": "Exact duplicate: list_installed_plugins \u2194 list_installed_plugins",
+      "description": "_deferred\\marketplace\\marketplace_service.py:356 and pwbs\\marketplace\\marketplace_service.py:355 are identical (12 lines). Consider consolidating.",
+      "file": "_deferred/marketplace/marketplace_service.py",
+      "start_line": 356,
+      "end_line": null,
+      "ai_attributed": false,
+      "metadata": {
+        "similarity": 1.0,
+        "body_hash": "327f1b46714f4201",
+        "function_a": "list_installed_plugins",
+        "function_b": "list_installed_plugins",
+        "file_a": "_deferred/marketplace/marketplace_service.py",
+        "file_b": "pwbs/marketplace/marketplace_service.py"
+      }
+    },
+    {
+      "signal": "mutant_duplicate",
+      "severity": "high",
+      "score": 0.9,
+      "title": "Exact duplicate: validate_manifest \u2194 validate_manifest",
+      "description": "_deferred\\marketplace\\plugin_registry.py:41 and pwbs\\marketplace\\plugin_registry.py:40 are identical (24 lines). Consider consolidating.",
+      "file": "_deferred/marketplace/plugin_registry.py",
+      "start_line": 41,
+      "end_line": null,
+      "ai_attributed": false,
+      "metadata": {
+        "similarity": 1.0,
+        "body_hash": "5326dce9e2c54059",
+        "function_a": "validate_manifest",
+        "function_b": "validate_manifest",
+        "file_a": "_deferred/marketplace/plugin_registry.py",
+        "file_b": "pwbs/marketplace/plugin_registry.py"
+      }
+    },
+    {
+      "signal": "mutant_duplicate",
+      "severity": "high",
+      "score": 0.9,
+      "title": "Exact duplicate: PluginRegistry.register \u2194 PluginRegistry.register",
+      "description": "_deferred\\marketplace\\plugin_registry.py:108 and pwbs\\marketplace\\plugin_registry.py:106 are identical (12 lines). Consider consolidating.",
+      "file": "_deferred/marketplace/plugin_registry.py",
+      "start_line": 108,
+      "end_line": null,
+      "ai_attributed": false,
+      "metadata": {
+        "similarity": 1.0,
+        "body_hash": "d2dad6916a6bdcd8",
+        "function_a": "PluginRegistry.register",
+        "function_b": "PluginRegistry.register",
+        "file_a": "_deferred/marketplace/plugin_registry.py",
+        "file_b": "pwbs/marketplace/plugin_registry.py"
+      }
+    },
+    {
+      "signal": "mutant_duplicate",
+      "severity": "high",
+      "score": 0.9,
+      "title": "Exact duplicate: ConnectorPlugin.fetch_data \u2194 ConnectorPlugin.fetch_data",
+      "description": "_deferred\\marketplace\\plugin_sdk.py:140 and pwbs\\marketplace\\plugin_sdk.py:139 are identical (7 lines). Consider consolidating.",
+      "file": "_deferred/marketplace/plugin_sdk.py",
+      "start_line": 140,
+      "end_line": null,
+      "ai_attributed": false,
+      "metadata": {
+        "similarity": 1.0,
+        "body_hash": "5ecb756f30b448aa",
+        "function_a": "ConnectorPlugin.fetch_data",
+        "function_b": "ConnectorPlugin.fetch_data",
+        "file_a": "_deferred/marketplace/plugin_sdk.py",
+        "file_b": "pwbs/marketplace/plugin_sdk.py"
+      }
+    },
+    {
+      "signal": "mutant_duplicate",
+      "severity": "high",
+      "score": 0.9,
+      "title": "Exact duplicate: ConnectorPlugin.execute \u2194 ConnectorPlugin.execute",
+      "description": "_deferred\\marketplace\\plugin_sdk.py:148 and pwbs\\marketplace\\plugin_sdk.py:147 are identical (10 lines). Consider consolidating.",
+      "file": "_deferred/marketplace/plugin_sdk.py",
+      "start_line": 148,
+      "end_line": null,
+      "ai_attributed": false,
+      "metadata": {
+        "similarity": 1.0,
+        "body_hash": "7e7c4471015dda55",
+        "function_a": "ConnectorPlugin.execute",
+        "function_b": "ConnectorPlugin.execute",
+        "file_a": "_deferred/marketplace/plugin_sdk.py",
+        "file_b": "pwbs/marketplace/plugin_sdk.py"
+      }
+    },
+    {
+      "signal": "mutant_duplicate",
+      "severity": "high",
+      "score": 0.9,
+      "title": "Exact duplicate: BriefingTemplatePlugin.generate_briefing \u2194 BriefingTemplatePlugin.generate_briefing",
+      "description": "_deferred\\marketplace\\plugin_sdk.py:164 and pwbs\\marketplace\\plugin_sdk.py:163 are identical (8 lines). Consider consolidating.",
+      "file": "_deferred/marketplace/plugin_sdk.py",
+      "start_line": 164,
+      "end_line": null,
+      "ai_attributed": false,
+      "metadata": {
+        "similarity": 1.0,
+        "body_hash": "b6aa53017dfe8b59",
+        "function_a": "BriefingTemplatePlugin.generate_briefing",
+        "function_b": "BriefingTemplatePlugin.generate_briefing",
+        "file_a": "_deferred/marketplace/plugin_sdk.py",
+        "file_b": "pwbs/marketplace/plugin_sdk.py"
+      }
+    },
+    {
+      "signal": "mutant_duplicate",
+      "severity": "high",
+      "score": 0.9,
+      "title": "Exact duplicate: ProcessingPlugin.process_documents \u2194 ProcessingPlugin.process_documents",
+      "description": "_deferred\\marketplace\\plugin_sdk.py:193 and pwbs\\marketplace\\plugin_sdk.py:194 are identical (7 lines). Consider consolidating.",
+      "file": "_deferred/marketplace/plugin_sdk.py",
+      "start_line": 193,
+      "end_line": null,
+      "ai_attributed": false,
+      "metadata": {
+        "similarity": 1.0,
+        "body_hash": "0dc652e36dc88554",
+        "function_a": "ProcessingPlugin.process_documents",
+        "function_b": "ProcessingPlugin.process_documents",
+        "file_a": "_deferred/marketplace/plugin_sdk.py",
+        "file_b": "pwbs/marketplace/plugin_sdk.py"
+      }
+    },
+    {
+      "signal": "mutant_duplicate",
+      "severity": "high",
+      "score": 0.9,
+      "title": "Exact duplicate: ProcessingPlugin.execute \u2194 ProcessingPlugin.execute",
+      "description": "_deferred\\marketplace\\plugin_sdk.py:201 and pwbs\\marketplace\\plugin_sdk.py:202 are identical (7 lines). Consider consolidating.",
+      "file": "_deferred/marketplace/plugin_sdk.py",
+      "start_line": 201,
+      "end_line": null,
+      "ai_attributed": false,
+      "metadata": {
+        "similarity": 1.0,
+        "body_hash": "21477a5397949e6e",
+        "function_a": "ProcessingPlugin.execute",
+        "function_b": "ProcessingPlugin.execute",
+        "file_a": "_deferred/marketplace/plugin_sdk.py",
+        "file_b": "pwbs/marketplace/plugin_sdk.py"
+      }
+    },
+    {
+      "signal": "mutant_duplicate",
+      "severity": "high",
+      "score": 0.9,
+      "title": "Exact duplicate: PluginManifestModel._validate_permissions \u2194 PluginManifestModel._validate_permissions",
+      "description": "_deferred\\marketplace\\plugin_sdk.py:293 and pwbs\\marketplace\\plugin_sdk.py:294 are identical (5 lines). Consider consolidating.",
+      "file": "_deferred/marketplace/plugin_sdk.py",
+      "start_line": 293,
+      "end_line": null,
+      "ai_attributed": false,
+      "metadata": {
+        "similarity": 1.0,
+        "body_hash": "fc25e48caf711cde",
+        "function_a": "PluginManifestModel._validate_permissions",
+        "function_b": "PluginManifestModel._validate_permissions",
+        "file_a": "_deferred/marketplace/plugin_sdk.py",
+        "file_b": "pwbs/marketplace/plugin_sdk.py"
+      }
+    },
+    {
+      "signal": "mutant_duplicate",
+      "severity": "high",
+      "score": 0.9,
+      "title": "Exact duplicate: PluginManifestModel.to_dataclass \u2194 PluginManifestModel.to_dataclass",
+      "description": "_deferred\\marketplace\\plugin_sdk.py:299 and pwbs\\marketplace\\plugin_sdk.py:300 are identical (14 lines). Consider consolidating.",
+      "file": "_deferred/marketplace/plugin_sdk.py",
+      "start_line": 299,
+      "end_line": null,
+      "ai_attributed": false,
+      "metadata": {
+        "similarity": 1.0,
+        "body_hash": "1ddc1400b55e5f41",
+        "function_a": "PluginManifestModel.to_dataclass",
+        "function_b": "PluginManifestModel.to_dataclass",
+        "file_a": "_deferred/marketplace/plugin_sdk.py",
+        "file_b": "pwbs/marketplace/plugin_sdk.py"
+      }
+    },
+    {
+      "signal": "mutant_duplicate",
+      "severity": "high",
+      "score": 0.9,
+      "title": "Exact duplicate: validate_manifest_file \u2194 validate_manifest_file",
+      "description": "_deferred\\marketplace\\plugin_sdk.py:315 and pwbs\\marketplace\\plugin_sdk.py:316 are identical (7 lines). Consider consolidating.",
+      "file": "_deferred/marketplace/plugin_sdk.py",
+      "start_line": 315,
+      "end_line": null,
+      "ai_attributed": false,
+      "metadata": {
+        "similarity": 1.0,
+        "body_hash": "0735fdcb85a10888",
+        "function_a": "validate_manifest_file",
+        "function_b": "validate_manifest_file",
+        "file_a": "_deferred/marketplace/plugin_sdk.py",
+        "file_b": "pwbs/marketplace/plugin_sdk.py"
+      }
+    },
+    {
+      "signal": "mutant_duplicate",
+      "severity": "high",
+      "score": 0.9,
+      "title": "Exact duplicate: NetworkPolicy.check_domain \u2194 NetworkPolicy.check_domain",
+      "description": "_deferred\\marketplace\\sandbox.py:107 and pwbs\\marketplace\\sandbox.py:104 are identical (7 lines). Consider consolidating.",
+      "file": "_deferred/marketplace/sandbox.py",
+      "start_line": 107,
+      "end_line": null,
+      "ai_attributed": false,
+      "metadata": {
+        "similarity": 1.0,
+        "body_hash": "ddef06b9477d8bea",
+        "function_a": "NetworkPolicy.check_domain",
+        "function_b": "NetworkPolicy.check_domain",
+        "file_a": "_deferred/marketplace/sandbox.py",
+        "file_b": "pwbs/marketplace/sandbox.py"
+      }
+    },
+    {
+      "signal": "mutant_duplicate",
+      "severity": "high",
+      "score": 0.9,
+      "title": "Exact duplicate: PermissionGuard.__init__ \u2194 PermissionGuard.__init__",
+      "description": "_deferred\\marketplace\\sandbox.py:129 and pwbs\\marketplace\\sandbox.py:126 are identical (12 lines). Consider consolidating.",
+      "file": "_deferred/marketplace/sandbox.py",
+      "start_line": 129,
+      "end_line": null,
+      "ai_attributed": false,
+      "metadata": {
+        "similarity": 1.0,
+        "body_hash": "6272680c0c796c42",
+        "function_a": "PermissionGuard.__init__",
+        "function_b": "PermissionGuard.__init__",
+        "file_a": "_deferred/marketplace/sandbox.py",
+        "file_b": "pwbs/marketplace/sandbox.py"
+      }
+    },
+    {
+      "signal": "mutant_duplicate",
+      "severity": "high",
+      "score": 0.9,
+      "title": "Exact duplicate: PermissionGuard.require_permission \u2194 PermissionGuard.require_permission",
+      "description": "_deferred\\marketplace\\sandbox.py:149 and pwbs\\marketplace\\sandbox.py:146 are identical (7 lines). Consider consolidating.",
+      "file": "_deferred/marketplace/sandbox.py",
+      "start_line": 149,
+      "end_line": null,
+      "ai_attributed": false,
+      "metadata": {
+        "similarity": 1.0,
+        "body_hash": "3485fc873277872d",
+        "function_a": "PermissionGuard.require_permission",
+        "function_b": "PermissionGuard.require_permission",
+        "file_a": "_deferred/marketplace/sandbox.py",
+        "file_b": "pwbs/marketplace/sandbox.py"
+      }
+    },
+    {
+      "signal": "mutant_duplicate",
+      "severity": "high",
+      "score": 0.9,
+      "title": "Exact duplicate: GuardedPluginContext.__init__ \u2194 GuardedPluginContext.__init__",
+      "description": "_deferred\\marketplace\\sandbox.py:174 and pwbs\\marketplace\\sandbox.py:171 are identical (7 lines). Consider consolidating.",
+      "file": "_deferred/marketplace/sandbox.py",
+      "start_line": 174,
+      "end_line": null,
+      "ai_attributed": false,
+      "metadata": {
+        "similarity": 1.0,
+        "body_hash": "3490b3f72842c53b",
+        "function_a": "GuardedPluginContext.__init__",
+        "function_b": "GuardedPluginContext.__init__",
+        "file_a": "_deferred/marketplace/sandbox.py",
+        "file_b": "pwbs/marketplace/sandbox.py"
+      }
+    },
+    {
+      "signal": "mutant_duplicate",
+      "severity": "high",
+      "score": 0.9,
+      "title": "Exact duplicate: _run_plugin_in_process \u2194 _run_plugin_in_process",
+      "description": "_deferred\\marketplace\\sandbox.py:218 and pwbs\\marketplace\\sandbox.py:215 are identical (26 lines). Consider consolidating.",
+      "file": "_deferred/marketplace/sandbox.py",
+      "start_line": 218,
+      "end_line": null,
+      "ai_attributed": false,
+      "metadata": {
+        "similarity": 1.0,
+        "body_hash": "58545f04f32a48a2",
+        "function_a": "_run_plugin_in_process",
+        "function_b": "_run_plugin_in_process",
+        "file_a": "_deferred/marketplace/sandbox.py",
+        "file_b": "pwbs/marketplace/sandbox.py"
+      }
+    },
+    {
+      "signal": "mutant_duplicate",
+      "severity": "high",
+      "score": 0.9,
+      "title": "Exact duplicate: SandboxExecutor.__init__ \u2194 SandboxExecutor.__init__",
+      "description": "_deferred\\marketplace\\sandbox.py:257 and pwbs\\marketplace\\sandbox.py:254 are identical (7 lines). Consider consolidating.",
+      "file": "_deferred/marketplace/sandbox.py",
+      "start_line": 257,
+      "end_line": null,
+      "ai_attributed": false,
+      "metadata": {
+        "similarity": 1.0,
+        "body_hash": "e30e94d619401d1b",
+        "function_a": "SandboxExecutor.__init__",
+        "function_b": "SandboxExecutor.__init__",
+        "file_a": "_deferred/marketplace/sandbox.py",
+        "file_b": "pwbs/marketplace/sandbox.py"
+      }
+    },
+    {
+      "signal": "mutant_duplicate",
+      "severity": "high",
+      "score": 0.9,
+      "title": "Exact duplicate: SandboxExecutor.create_guard \u2194 SandboxExecutor.create_guard",
+      "description": "_deferred\\marketplace\\sandbox.py:273 and pwbs\\marketplace\\sandbox.py:270 are identical (11 lines). Consider consolidating.",
+      "file": "_deferred/marketplace/sandbox.py",
+      "start_line": 273,
+      "end_line": null,
+      "ai_attributed": false,
+      "metadata": {
+        "similarity": 1.0,
+        "body_hash": "34c6a942d6ba0cba",
+        "function_a": "SandboxExecutor.create_guard",
+        "function_b": "SandboxExecutor.create_guard",
+        "file_a": "_deferred/marketplace/sandbox.py",
+        "file_b": "pwbs/marketplace/sandbox.py"
+      }
+    },
+    {
+      "signal": "mutant_duplicate",
+      "severity": "high",
+      "score": 0.9,
+      "title": "Exact duplicate: get_user_role \u2194 get_user_role",
+      "description": "_deferred\\rbac\\checker.py:25 and pwbs\\rbac\\checker.py:25 are identical (20 lines). Consider consolidating.",
+      "file": "_deferred/rbac/checker.py",
+      "start_line": 25,
+      "end_line": null,
+      "ai_attributed": false,
+      "metadata": {
+        "similarity": 1.0,
+        "body_hash": "0312d2c2bc278438",
+        "function_a": "get_user_role",
+        "function_b": "get_user_role",
+        "file_a": "_deferred/rbac/checker.py",
+        "file_b": "pwbs/rbac/checker.py"
+      }
+    },
+    {
+      "signal": "mutant_duplicate",
+      "severity": "high",
+      "score": 0.9,
+      "title": "Exact duplicate: check_permission \u2194 check_permission",
+      "description": "_deferred\\rbac\\checker.py:47 and pwbs\\rbac\\checker.py:47 are identical (12 lines). Consider consolidating.",
+      "file": "_deferred/rbac/checker.py",
+      "start_line": 47,
+      "end_line": null,
+      "ai_attributed": false,
+      "metadata": {
+        "similarity": 1.0,
+        "body_hash": "ef3b6c130f332b91",
+        "function_a": "check_permission",
+        "function_b": "check_permission",
+        "file_a": "_deferred/rbac/checker.py",
+        "file_b": "pwbs/rbac/checker.py"
+      }
+    },
+    {
+      "signal": "mutant_duplicate",
+      "severity": "high",
+      "score": 0.9,
+      "title": "Exact duplicate: require_permission \u2194 require_permission",
+      "description": "_deferred\\rbac\\checker.py:61 and pwbs\\rbac\\checker.py:61 are identical (20 lines). Consider consolidating.",
+      "file": "_deferred/rbac/checker.py",
+      "start_line": 61,
+      "end_line": null,
+      "ai_attributed": false,
+      "metadata": {
+        "similarity": 1.0,
+        "body_hash": "04bcadc2158c9a17",
+        "function_a": "require_permission",
+        "function_b": "require_permission",
+        "file_a": "_deferred/rbac/checker.py",
+        "file_b": "pwbs/rbac/checker.py"
+      }
+    },
+    {
+      "signal": "mutant_duplicate",
+      "severity": "high",
+      "score": 0.9,
+      "title": "Exact duplicate: get_user_permissions \u2194 get_user_permissions",
+      "description": "_deferred\\rbac\\checker.py:83 and pwbs\\rbac\\checker.py:83 are identical (13 lines). Consider consolidating.",
+      "file": "_deferred/rbac/checker.py",
+      "start_line": 83,
+      "end_line": null,
+      "ai_attributed": false,
+      "metadata": {
+        "similarity": 1.0,
+        "body_hash": "35bb1e88d2c1fe4c",
+        "function_a": "get_user_permissions",
+        "function_b": "get_user_permissions",
+        "file_a": "_deferred/rbac/checker.py",
+        "file_b": "pwbs/rbac/checker.py"
+      }
+    },
+    {
+      "signal": "mutant_duplicate",
+      "severity": "high",
+      "score": 0.9,
+      "title": "Exact duplicate: log_role_change \u2194 log_role_change",
+      "description": "_deferred\\rbac\\checker.py:98 and pwbs\\rbac\\checker.py:98 are identical (35 lines). Consider consolidating.",
+      "file": "_deferred/rbac/checker.py",
+      "start_line": 98,
+      "end_line": null,
+      "ai_attributed": false,
+      "metadata": {
+        "similarity": 1.0,
+        "body_hash": "25864a080e93df28",
+        "function_a": "log_role_change",
+        "function_b": "log_role_change",
+        "file_a": "_deferred/rbac/checker.py",
+        "file_b": "pwbs/rbac/checker.py"
+      }
+    },
+    {
+      "signal": "mutant_duplicate",
+      "severity": "high",
+      "score": 0.9,
+      "title": "Exact duplicate: can_assign_role \u2194 can_assign_role",
+      "description": "_deferred\\rbac\\permissions.py:78 and _deferred\\rbac\\permissions.py:78 are identical (12 lines). Consider consolidating.",
+      "file": "_deferred/rbac/permissions.py",
+      "start_line": 78,
+      "end_line": null,
+      "ai_attributed": false,
+      "metadata": {
+        "similarity": 1.0,
+        "body_hash": "6682653fc8e3c9f0",
+        "function_a": "can_assign_role",
+        "function_b": "can_assign_role",
+        "file_a": "_deferred/rbac/permissions.py",
+        "file_b": "_deferred/rbac/permissions.py"
+      }
+    },
+    {
+      "signal": "mutant_duplicate",
+      "severity": "high",
+      "score": 0.9,
+      "title": "Exact duplicate: stripe_webhook \u2194 stripe_webhook",
+      "description": "_deferred\\routes\\billing.py:167 and pwbs\\api\\v1\\routes\\billing.py:168 are identical (40 lines). Consider consolidating.",
+      "file": "_deferred/routes/billing.py",
+      "start_line": 167,
+      "end_line": null,
+      "ai_attributed": false,
+      "metadata": {
+        "similarity": 1.0,
+        "body_hash": "9e272e3c246abd44",
+        "function_a": "stripe_webhook",
+        "function_b": "stripe_webhook",
+        "file_a": "_deferred/routes/billing.py",
+        "file_b": "pwbs/api/v1/routes/billing.py"
+      }
+    },
+    {
+      "signal": "mutant_duplicate",
+      "severity": "high",
+      "score": 0.9,
+      "title": "Exact duplicate: require_paid_plan \u2194 require_paid_plan",
+      "description": "_deferred\\routes\\billing.py:214 and pwbs\\api\\v1\\routes\\billing.py:215 are identical (16 lines). Consider consolidating.",
+      "file": "_deferred/routes/billing.py",
+      "start_line": 214,
+      "end_line": null,
+      "ai_attributed": false,
+      "metadata": {
+        "similarity": 1.0,
+        "body_hash": "d32d95b05a009727",
+        "function_a": "require_paid_plan",
+        "function_b": "require_paid_plan",
+        "file_a": "_deferred/routes/billing.py",
+        "file_b": "pwbs/api/v1/routes/billing.py"
+      }
+    },
+    {
+      "signal": "mutant_duplicate",
+      "severity": "high",
+      "score": 0.9,
+      "title": "Exact duplicate: list_plugins \u2194 list_plugins",
+      "description": "_deferred\\routes\\marketplace.py:116 and pwbs\\api\\v1\\routes\\marketplace.py:138 are identical (20 lines). Consider consolidating.",
+      "file": "_deferred/routes/marketplace.py",
+      "start_line": 116,
+      "end_line": null,
+      "ai_attributed": false,
+      "metadata": {
+        "similarity": 1.0,
+        "body_hash": "bb02e3e36d8cc53a",
+        "function_a": "list_plugins",
+        "function_b": "list_plugins",
+        "file_a": "_deferred/routes/marketplace.py",
+        "file_b": "pwbs/api/v1/routes/marketplace.py"
+      }
+    },
+    {
+      "signal": "mutant_duplicate",
+      "severity": "high",
+      "score": 0.9,
+      "title": "Exact duplicate: get_plugin \u2194 get_plugin",
+      "description": "_deferred\\routes\\marketplace.py:143 and pwbs\\api\\v1\\routes\\marketplace.py:165 are identical (6 lines). Consider consolidating.",
+      "file": "_deferred/routes/marketplace.py",
+      "start_line": 143,
+      "end_line": null,
+      "ai_attributed": false,
+      "metadata": {
+        "similarity": 1.0,
+        "body_hash": "aa26e234f580db98",
+        "function_a": "get_plugin",
+        "function_b": "get_plugin",
+        "file_a": "_deferred/routes/marketplace.py",
+        "file_b": "pwbs/api/v1/routes/marketplace.py"
+      }
+    },
+    {
+      "signal": "mutant_duplicate",
+      "severity": "high",
+      "score": 0.9,
+      "title": "Exact duplicate: publish_plugin \u2194 publish_plugin",
+      "description": "_deferred\\routes\\marketplace.py:162 and pwbs\\api\\v1\\routes\\marketplace.py:184 are identical (21 lines). Consider consolidating.",
+      "file": "_deferred/routes/marketplace.py",
+      "start_line": 162,
+      "end_line": null,
+      "ai_attributed": false,
+      "metadata": {
+        "similarity": 1.0,
+        "body_hash": "fbc212d80d0e0f8a",
+        "function_a": "publish_plugin",
+        "function_b": "publish_plugin",
+        "file_a": "_deferred/routes/marketplace.py",
+        "file_b": "pwbs/api/v1/routes/marketplace.py"
+      }
+    },
+    {
+      "signal": "mutant_duplicate",
+      "severity": "high",
+      "score": 0.9,
+      "title": "Exact duplicate: review_plugin \u2194 review_plugin",
+      "description": "_deferred\\routes\\marketplace.py:286 and pwbs\\api\\v1\\routes\\marketplace.py:320 are identical (14 lines). Consider consolidating.",
+      "file": "_deferred/routes/marketplace.py",
+      "start_line": 286,
+      "end_line": null,
+      "ai_attributed": false,
+      "metadata": {
+        "similarity": 1.0,
+        "body_hash": "038f1b1f3e02c6be",
+        "function_a": "review_plugin",
+        "function_b": "review_plugin",
+        "file_a": "_deferred/routes/marketplace.py",
+        "file_b": "pwbs/api/v1/routes/marketplace.py"
+      }
+    },
+    {
+      "signal": "mutant_duplicate",
+      "severity": "high",
+      "score": 0.9,
+      "title": "Exact duplicate: initiate_sso_login \u2194 initiate_sso_login",
+      "description": "_deferred\\routes\\sso.py:222 and pwbs\\api\\v1\\routes\\sso.py:221 are identical (41 lines). Consider consolidating.",
+      "file": "_deferred/routes/sso.py",
+      "start_line": 222,
+      "end_line": null,
+      "ai_attributed": false,
+      "metadata": {
+        "similarity": 1.0,
+        "body_hash": "628067abd64223fc",
+        "function_a": "initiate_sso_login",
+        "function_b": "initiate_sso_login",
+        "file_a": "_deferred/routes/sso.py",
+        "file_b": "pwbs/api/v1/routes/sso.py"
+      }
+    },
+    {
+      "signal": "mutant_duplicate",
+      "severity": "high",
+      "score": 0.9,
+      "title": "Exact duplicate: _get_org_by_slug \u2194 _get_org_by_slug",
+      "description": "_deferred\\routes\\sso.py:335 and pwbs\\api\\v1\\routes\\sso.py:337 are identical (11 lines). Consider consolidating.",
+      "file": "_deferred/routes/sso.py",
+      "start_line": 335,
+      "end_line": null,
+      "ai_attributed": false,
+      "metadata": {
+        "similarity": 1.0,
+        "body_hash": "ccd958faf9a5339b",
+        "function_a": "_get_org_by_slug",
+        "function_b": "_get_org_by_slug",
+        "file_a": "_deferred/routes/sso.py",
+        "file_b": "pwbs/api/v1/routes/sso.py"
+      }
+    },
+    {
+      "signal": "mutant_duplicate",
+      "severity": "high",
+      "score": 0.9,
+      "title": "Exact duplicate: _get_enabled_sso_config \u2194 _get_enabled_sso_config",
+      "description": "_deferred\\routes\\sso.py:348 and pwbs\\api\\v1\\routes\\sso.py:350 are identical (25 lines). Consider consolidating.",
+      "file": "_deferred/routes/sso.py",
+      "start_line": 348,
+      "end_line": null,
+      "ai_attributed": false,
+      "metadata": {
+        "similarity": 1.0,
+        "body_hash": "eab31816ba7300f3",
+        "function_a": "_get_enabled_sso_config",
+        "function_b": "_get_enabled_sso_config",
+        "file_a": "_deferred/routes/sso.py",
+        "file_b": "pwbs/api/v1/routes/sso.py"
+      }
+    },
+    {
+      "signal": "mutant_duplicate",
+      "severity": "high",
+      "score": 0.9,
+      "title": "Exact duplicate: _generate_pkce \u2194 _generate_pkce",
+      "description": "_deferred\\sso\\oidc_handler.py:58 and pwbs\\sso\\oidc_handler.py:58 are identical (6 lines). Consider consolidating.",
+      "file": "_deferred/sso/oidc_handler.py",
+      "start_line": 58,
+      "end_line": null,
+      "ai_attributed": false,
+      "metadata": {
+        "similarity": 1.0,
+        "body_hash": "54f427ac195544dd",
+        "function_a": "_generate_pkce",
+        "function_b": "_generate_pkce",
+        "file_a": "_deferred/sso/oidc_handler.py",
+        "file_b": "pwbs/sso/oidc_handler.py"
+      }
+    },
+    {
+      "signal": "mutant_duplicate",
+      "severity": "high",
+      "score": 0.9,
+      "title": "Exact duplicate: OIDCHandler.__init__ \u2194 OIDCHandler.__init__",
+      "description": "_deferred\\sso\\oidc_handler.py:79 and pwbs\\sso\\oidc_handler.py:79 are identical (10 lines). Consider consolidating.",
+      "file": "_deferred/sso/oidc_handler.py",
+      "start_line": 79,
+      "end_line": null,
+      "ai_attributed": false,
+      "metadata": {
+        "similarity": 1.0,
+        "body_hash": "ec19a2a17e905c77",
+        "function_a": "OIDCHandler.__init__",
+        "function_b": "OIDCHandler.__init__",
+        "file_a": "_deferred/sso/oidc_handler.py",
+        "file_b": "pwbs/sso/oidc_handler.py"
+      }
+    },
+    {
+      "signal": "mutant_duplicate",
+      "severity": "high",
+      "score": 0.9,
+      "title": "Exact duplicate: OIDCHandler.get_authorization_url \u2194 OIDCHandler.get_authorization_url",
+      "description": "_deferred\\sso\\oidc_handler.py:90 and pwbs\\sso\\oidc_handler.py:90 are identical (28 lines). Consider consolidating.",
+      "file": "_deferred/sso/oidc_handler.py",
+      "start_line": 90,
+      "end_line": null,
+      "ai_attributed": false,
+      "metadata": {
+        "similarity": 1.0,
+        "body_hash": "5b2cf9eb7dd28913",
+        "function_a": "OIDCHandler.get_authorization_url",
+        "function_b": "OIDCHandler.get_authorization_url",
+        "file_a": "_deferred/sso/oidc_handler.py",
+        "file_b": "pwbs/sso/oidc_handler.py"
+      }
+    },
+    {
+      "signal": "mutant_duplicate",
+      "severity": "high",
+      "score": 0.9,
+      "title": "Exact duplicate: OIDCHandler.handle_callback \u2194 OIDCHandler.handle_callback",
+      "description": "_deferred\\sso\\oidc_handler.py:119 and pwbs\\sso\\oidc_handler.py:119 are identical (55 lines). Consider consolidating.",
+      "file": "_deferred/sso/oidc_handler.py",
+      "start_line": 119,
+      "end_line": null,
+      "ai_attributed": false,
+      "metadata": {
+        "similarity": 1.0,
+        "body_hash": "7ae0fb06ff399480",
+        "function_a": "OIDCHandler.handle_callback",
+        "function_b": "OIDCHandler.handle_callback",
+        "file_a": "_deferred/sso/oidc_handler.py",
+        "file_b": "pwbs/sso/oidc_handler.py"
+      }
+    },
+    {
+      "signal": "mutant_duplicate",
+      "severity": "high",
+      "score": 0.9,
+      "title": "Exact duplicate: OIDCHandler._discover \u2194 OIDCHandler._discover",
+      "description": "_deferred\\sso\\oidc_handler.py:175 and pwbs\\sso\\oidc_handler.py:175 are identical (15 lines). Consider consolidating.",
+      "file": "_deferred/sso/oidc_handler.py",
+      "start_line": 175,
+      "end_line": null,
+      "ai_attributed": false,
+      "metadata": {
+        "similarity": 1.0,
+        "body_hash": "734398f17b80ec37",
+        "function_a": "OIDCHandler._discover",
+        "function_b": "OIDCHandler._discover",
+        "file_a": "_deferred/sso/oidc_handler.py",
+        "file_b": "pwbs/sso/oidc_handler.py"
+      }
+    },
+    {
+      "signal": "mutant_duplicate",
+      "severity": "high",
+      "score": 0.9,
+      "title": "Exact duplicate: OIDCHandler._exchange_code \u2194 OIDCHandler._exchange_code",
+      "description": "_deferred\\sso\\oidc_handler.py:191 and pwbs\\sso\\oidc_handler.py:191 are identical (22 lines). Consider consolidating.",
+      "file": "_deferred/sso/oidc_handler.py",
+      "start_line": 191,
+      "end_line": null,
+      "ai_attributed": false,
+      "metadata": {
+        "similarity": 1.0,
+        "body_hash": "fa0d4a075333caa6",
+        "function_a": "OIDCHandler._exchange_code",
+        "function_b": "OIDCHandler._exchange_code",
+        "file_a": "_deferred/sso/oidc_handler.py",
+        "file_b": "pwbs/sso/oidc_handler.py"
+      }
+    },
+    {
+      "signal": "mutant_duplicate",
+      "severity": "high",
+      "score": 0.9,
+      "title": "Exact duplicate: OIDCHandler._fetch_userinfo \u2194 OIDCHandler._fetch_userinfo",
+      "description": "_deferred\\sso\\oidc_handler.py:214 and pwbs\\sso\\oidc_handler.py:214 are identical (16 lines). Consider consolidating.",
+      "file": "_deferred/sso/oidc_handler.py",
+      "start_line": 214,
+      "end_line": null,
+      "ai_attributed": false,
+      "metadata": {
+        "similarity": 1.0,
+        "body_hash": "c38dad028bd70fa5",
+        "function_a": "OIDCHandler._fetch_userinfo",
+        "function_b": "OIDCHandler._fetch_userinfo",
+        "file_a": "_deferred/sso/oidc_handler.py",
+        "file_b": "pwbs/sso/oidc_handler.py"
+      }
+    },
+    {
+      "signal": "mutant_duplicate",
+      "severity": "high",
+      "score": 0.9,
+      "title": "Exact duplicate: OIDCHandler._get_client \u2194 OIDCHandler._get_client",
+      "description": "_deferred\\sso\\oidc_handler.py:231 and pwbs\\sso\\oidc_handler.py:231 are identical (6 lines). Consider consolidating.",
+      "file": "_deferred/sso/oidc_handler.py",
+      "start_line": 231,
+      "end_line": null,
+      "ai_attributed": false,
+      "metadata": {
+        "similarity": 1.0,
+        "body_hash": "ac14cbd3550fa7cf",
+        "function_a": "OIDCHandler._get_client",
+        "function_b": "OIDCHandler._get_client",
+        "file_a": "_deferred/sso/oidc_handler.py",
+        "file_b": "pwbs/sso/oidc_handler.py"
+      }
+    },
+    {
+      "signal": "mutant_duplicate",
+      "severity": "high",
+      "score": 0.9,
+      "title": "Exact duplicate: SAMLHandler.__init__ \u2194 SAMLHandler.__init__",
+      "description": "_deferred\\sso\\saml_handler.py:60 and pwbs\\sso\\saml_handler.py:60 are identical (7 lines). Consider consolidating.",
+      "file": "_deferred/sso/saml_handler.py",
+      "start_line": 60,
+      "end_line": null,
+      "ai_attributed": false,
+      "metadata": {
+        "similarity": 1.0,
+        "body_hash": "63a7115ae73b9cf9",
+        "function_a": "SAMLHandler.__init__",
+        "function_b": "SAMLHandler.__init__",
+        "file_a": "_deferred/sso/saml_handler.py",
+        "file_b": "pwbs/sso/saml_handler.py"
+      }
+    },
+    {
+      "signal": "mutant_duplicate",
+      "severity": "high",
+      "score": 0.9,
+      "title": "Exact duplicate: SAMLHandler.get_sp_settings \u2194 SAMLHandler.get_sp_settings",
+      "description": "_deferred\\sso\\saml_handler.py:68 and pwbs\\sso\\saml_handler.py:68 are identical (27 lines). Consider consolidating.",
+      "file": "_deferred/sso/saml_handler.py",
+      "start_line": 68,
+      "end_line": null,
+      "ai_attributed": false,
+      "metadata": {
+        "similarity": 1.0,
+        "body_hash": "b0a7a96bf705f14a",
+        "function_a": "SAMLHandler.get_sp_settings",
+        "function_b": "SAMLHandler.get_sp_settings",
+        "file_a": "_deferred/sso/saml_handler.py",
+        "file_b": "pwbs/sso/saml_handler.py"
+      }
+    },
+    {
+      "signal": "mutant_duplicate",
+      "severity": "high",
+      "score": 0.9,
+      "title": "Exact duplicate: SAMLHandler.build_auth_redirect_url \u2194 SAMLHandler.build_auth_redirect_url",
+      "description": "_deferred\\sso\\saml_handler.py:96 and pwbs\\sso\\saml_handler.py:96 are identical (7 lines). Consider consolidating.",
+      "file": "_deferred/sso/saml_handler.py",
+      "start_line": 96,
+      "end_line": null,
+      "ai_attributed": false,
+      "metadata": {
+        "similarity": 1.0,
+        "body_hash": "acfb1e300a4b5b57",
+        "function_a": "SAMLHandler.build_auth_redirect_url",
+        "function_b": "SAMLHandler.build_auth_redirect_url",
+        "file_a": "_deferred/sso/saml_handler.py",
+        "file_b": "pwbs/sso/saml_handler.py"
+      }
+    },
+    {
+      "signal": "mutant_duplicate",
+      "severity": "high",
+      "score": 0.9,
+      "title": "Exact duplicate: SAMLHandler._get_attribute \u2194 SAMLHandler._get_attribute",
+      "description": "_deferred\\sso\\saml_handler.py:155 and pwbs\\sso\\saml_handler.py:153 are identical (8 lines). Consider consolidating.",
+      "file": "_deferred/sso/saml_handler.py",
+      "start_line": 155,
+      "end_line": null,
+      "ai_attributed": false,
+      "metadata": {
+        "similarity": 1.0,
+        "body_hash": "678bc4cae516f5be",
+        "function_a": "SAMLHandler._get_attribute",
+        "function_b": "SAMLHandler._get_attribute",
+        "file_a": "_deferred/sso/saml_handler.py",
+        "file_b": "pwbs/sso/saml_handler.py"
+      }
+    },
+    {
+      "signal": "mutant_duplicate",
+      "severity": "high",
+      "score": 0.9,
+      "title": "Exact duplicate: SSOLoginResult.__init__ \u2194 SSOLoginResult.__init__",
+      "description": "_deferred\\sso\\service.py:42 and pwbs\\sso\\service.py:38 are identical (13 lines). Consider consolidating.",
+      "file": "_deferred/sso/service.py",
+      "start_line": 42,
+      "end_line": null,
+      "ai_attributed": false,
+      "metadata": {
+        "similarity": 1.0,
+        "body_hash": "a9ac0c9ed71fe208",
+        "function_a": "SSOLoginResult.__init__",
+        "function_b": "SSOLoginResult.__init__",
+        "file_a": "_deferred/sso/service.py",
+        "file_b": "pwbs/sso/service.py"
+      }
+    },
+    {
+      "signal": "mutant_duplicate",
+      "severity": "high",
+      "score": 0.9,
+      "title": "Exact duplicate: SSOService.get_sso_config \u2194 SSOService.get_sso_config",
+      "description": "_deferred\\sso\\service.py:71 and pwbs\\sso\\service.py:67 are identical (18 lines). Consider consolidating.",
+      "file": "_deferred/sso/service.py",
+      "start_line": 71,
+      "end_line": null,
+      "ai_attributed": false,
+      "metadata": {
+        "similarity": 1.0,
+        "body_hash": "2c2c115414934c7e",
+        "function_a": "SSOService.get_sso_config",
+        "function_b": "SSOService.get_sso_config",
+        "file_a": "_deferred/sso/service.py",
+        "file_b": "pwbs/sso/service.py"
+      }
+    },
+    {
+      "signal": "mutant_duplicate",
+      "severity": "high",
+      "score": 0.9,
+      "title": "Exact duplicate: SSOService.save_sso_config \u2194 SSOService.save_sso_config",
+      "description": "_deferred\\sso\\service.py:90 and pwbs\\sso\\service.py:86 are identical (24 lines). Consider consolidating.",
+      "file": "_deferred/sso/service.py",
+      "start_line": 90,
+      "end_line": null,
+      "ai_attributed": false,
+      "metadata": {
+        "similarity": 1.0,
+        "body_hash": "8ba9bfc31f214bdc",
+        "function_a": "SSOService.save_sso_config",
+        "function_b": "SSOService.save_sso_config",
+        "file_a": "_deferred/sso/service.py",
+        "file_b": "pwbs/sso/service.py"
+      }
+    },
+    {
+      "signal": "mutant_duplicate",
+      "severity": "high",
+      "score": 0.9,
+      "title": "Exact duplicate: TestFetchSince.mock_get \u2194 TestMetadataExtraction.mock_get",
+      "description": "_deferred\\tests\\test_google_docs.py:557 and _deferred\\tests\\test_google_docs.py:908 are identical (16 lines). Consider consolidating.",
+      "file": "_deferred/tests/test_google_docs.py",
+      "start_line": 557,
+      "end_line": null,
+      "ai_attributed": false,
+      "metadata": {
+        "similarity": 1.0,
+        "body_hash": "077fbc3c1727598c",
+        "function_a": "TestFetchSince.mock_get",
+        "function_b": "TestMetadataExtraction.mock_get",
+        "file_a": "_deferred/tests/test_google_docs.py",
+        "file_b": "_deferred/tests/test_google_docs.py"
+      }
+    },
+    {
+      "signal": "mutant_duplicate",
+      "severity": "high",
+      "score": 0.9,
+      "title": "Exact duplicate: _make_context \u2194 _make_context",
+      "description": "_deferred\\tests\\test_marketplace\\test_plugin_registry.py:78 and _deferred\\tests\\test_marketplace\\test_plugin_sdk.py:96 are identical (8 lines). Consider consolidating.",
+      "file": "_deferred/tests/test_marketplace/test_plugin_registry.py",
+      "start_line": 78,
+      "end_line": null,
+      "ai_attributed": false,
+      "metadata": {
+        "similarity": 1.0,
+        "body_hash": "08bf41965d6a0d8a",
+        "function_a": "_make_context",
+        "function_b": "_make_context",
+        "file_a": "_deferred/tests/test_marketplace/test_plugin_registry.py",
+        "file_b": "_deferred/tests/test_marketplace/test_plugin_sdk.py"
+      }
+    },
+    {
+      "signal": "mutant_duplicate",
+      "severity": "high",
+      "score": 0.9,
+      "title": "Exact duplicate: _make_context \u2194 _make_context",
+      "description": "_deferred\\tests\\test_marketplace\\test_plugin_registry.py:78 and _deferred\\tests\\test_marketplace\\test_plugin_sdk_156.py:31 are identical (8 lines). Consider consolidating.",
+      "file": "_deferred/tests/test_marketplace/test_plugin_registry.py",
+      "start_line": 78,
+      "end_line": null,
+      "ai_attributed": false,
+      "metadata": {
+        "similarity": 1.0,
+        "body_hash": "08bf41965d6a0d8a",
+        "function_a": "_make_context",
+        "function_b": "_make_context",
+        "file_a": "_deferred/tests/test_marketplace/test_plugin_registry.py",
+        "file_b": "_deferred/tests/test_marketplace/test_plugin_sdk_156.py"
+      }
+    },
+    {
+      "signal": "mutant_duplicate",
+      "severity": "high",
+      "score": 0.9,
+      "title": "Exact duplicate: _make_context \u2194 _make_context",
+      "description": "_deferred\\tests\\test_marketplace\\test_plugin_sdk.py:96 and _deferred\\tests\\test_marketplace\\test_plugin_sdk_156.py:31 are identical (8 lines). Consider consolidating.",
+      "file": "_deferred/tests/test_marketplace/test_plugin_sdk.py",
+      "start_line": 96,
+      "end_line": null,
+      "ai_attributed": false,
+      "metadata": {
+        "similarity": 1.0,
+        "body_hash": "08bf41965d6a0d8a",
+        "function_a": "_make_context",
+        "function_b": "_make_context",
+        "file_a": "_deferred/tests/test_marketplace/test_plugin_sdk.py",
+        "file_b": "_deferred/tests/test_marketplace/test_plugin_sdk_156.py"
+      }
+    },
+    {
+      "signal": "mutant_duplicate",
+      "severity": "high",
+      "score": 0.9,
+      "title": "Exact duplicate: TestBackfillBoundary.mock_get \u2194 TestBackfillBoundary.mock_get",
+      "description": "_deferred\\tests\\test_slack.py:545 and _deferred\\tests\\test_slack.py:577 are identical (8 lines). Consider consolidating.",
+      "file": "_deferred/tests/test_slack.py",
+      "start_line": 545,
+      "end_line": null,
+      "ai_attributed": false,
+      "metadata": {
+        "similarity": 1.0,
+        "body_hash": "c51c22924529de13",
+        "function_a": "TestBackfillBoundary.mock_get",
+        "function_b": "TestBackfillBoundary.mock_get",
+        "file_a": "_deferred/tests/test_slack.py",
+        "file_b": "_deferred/tests/test_slack.py"
+      }
+    },
+    {
+      "signal": "mutant_duplicate",
+      "severity": "high",
+      "score": 0.9,
+      "title": "Exact duplicate: _require_admin \u2194 _require_admin",
+      "description": "pwbs\\api\\v1\\routes\\feature_flags.py:63 and pwbs\\api\\v1\\routes\\health.py:171 are identical (7 lines). Consider consolidating.",
+      "file": "pwbs/api/v1/routes/feature_flags.py",
+      "start_line": 63,
+      "end_line": null,
+      "ai_attributed": false,
+      "metadata": {
+        "similarity": 1.0,
+        "body_hash": "160e004ffe353694",
+        "function_a": "_require_admin",
+        "function_b": "_require_admin",
+        "file_a": "pwbs/api/v1/routes/feature_flags.py",
+        "file_b": "pwbs/api/v1/routes/health.py"
+      }
+    },
+    {
+      "signal": "mutant_duplicate",
+      "severity": "high",
+      "score": 0.9,
+      "title": "Exact duplicate: _run_async \u2194 _run_async",
+      "description": "pwbs\\queue\\tasks\\briefing.py:20 and pwbs\\queue\\tasks\\embedding.py:19 are identical (7 lines). Consider consolidating.",
+      "file": "pwbs/queue/tasks/briefing.py",
+      "start_line": 20,
+      "end_line": null,
+      "ai_attributed": false,
+      "metadata": {
+        "similarity": 1.0,
+        "body_hash": "073807668a3f4fa6",
+        "function_a": "_run_async",
+        "function_b": "_run_async",
+        "file_a": "pwbs/queue/tasks/briefing.py",
+        "file_b": "pwbs/queue/tasks/embedding.py"
+      }
+    },
+    {
+      "signal": "mutant_duplicate",
+      "severity": "high",
+      "score": 0.9,
+      "title": "Exact duplicate: _run_async \u2194 _run_async",
+      "description": "pwbs\\queue\\tasks\\briefing.py:20 and pwbs\\queue\\tasks\\extraction.py:19 are identical (7 lines). Consider consolidating.",
+      "file": "pwbs/queue/tasks/briefing.py",
+      "start_line": 20,
+      "end_line": null,
+      "ai_attributed": false,
+      "metadata": {
+        "similarity": 1.0,
+        "body_hash": "073807668a3f4fa6",
+        "function_a": "_run_async",
+        "function_b": "_run_async",
+        "file_a": "pwbs/queue/tasks/briefing.py",
+        "file_b": "pwbs/queue/tasks/extraction.py"
+      }
+    },
+    {
+      "signal": "mutant_duplicate",
+      "severity": "high",
+      "score": 0.9,
+      "title": "Exact duplicate: _run_async \u2194 _run_async",
+      "description": "pwbs\\queue\\tasks\\briefing.py:20 and pwbs\\queue\\tasks\\insights.py:18 are identical (7 lines). Consider consolidating.",
+      "file": "pwbs/queue/tasks/briefing.py",
+      "start_line": 20,
+      "end_line": null,
+      "ai_attributed": false,
+      "metadata": {
+        "similarity": 1.0,
+        "body_hash": "073807668a3f4fa6",
+        "function_a": "_run_async",
+        "function_b": "_run_async",
+        "file_a": "pwbs/queue/tasks/briefing.py",
+        "file_b": "pwbs/queue/tasks/insights.py"
+      }
+    },
+    {
+      "signal": "mutant_duplicate",
+      "severity": "high",
+      "score": 0.9,
+      "title": "Exact duplicate: _run_async \u2194 _run_async",
+      "description": "pwbs\\queue\\tasks\\briefing.py:20 and pwbs\\queue\\tasks\\multimodal.py:21 are identical (7 lines). Consider consolidating.",
+      "file": "pwbs/queue/tasks/briefing.py",
+      "start_line": 20,
+      "end_line": null,
+      "ai_attributed": false,
+      "metadata": {
+        "similarity": 1.0,
+        "body_hash": "073807668a3f4fa6",
+        "function_a": "_run_async",
+        "function_b": "_run_async",
+        "file_a": "pwbs/queue/tasks/briefing.py",
+        "file_b": "pwbs/queue/tasks/multimodal.py"
+      }
+    },
+    {
+      "signal": "mutant_duplicate",
+      "severity": "high",
+      "score": 0.9,
+      "title": "Exact duplicate: _run_async \u2194 _run_async",
+      "description": "pwbs\\queue\\tasks\\briefing.py:20 and pwbs\\queue\\tasks\\snapshots.py:18 are identical (7 lines). Consider consolidating.",
+      "file": "pwbs/queue/tasks/briefing.py",
+      "start_line": 20,
+      "end_line": null,
+      "ai_attributed": false,
+      "metadata": {
+        "similarity": 1.0,
+        "body_hash": "073807668a3f4fa6",
+        "function_a": "_run_async",
+        "function_b": "_run_async",
+        "file_a": "pwbs/queue/tasks/briefing.py",
+        "file_b": "pwbs/queue/tasks/snapshots.py"
+      }
+    },
+    {
+      "signal": "mutant_duplicate",
+      "severity": "high",
+      "score": 0.9,
+      "title": "Exact duplicate: _run_async \u2194 _run_async",
+      "description": "pwbs\\queue\\tasks\\embedding.py:19 and pwbs\\queue\\tasks\\extraction.py:19 are identical (7 lines). Consider consolidating.",
+      "file": "pwbs/queue/tasks/embedding.py",
+      "start_line": 19,
+      "end_line": null,
+      "ai_attributed": false,
+      "metadata": {
+        "similarity": 1.0,
+        "body_hash": "073807668a3f4fa6",
+        "function_a": "_run_async",
+        "function_b": "_run_async",
+        "file_a": "pwbs/queue/tasks/embedding.py",
+        "file_b": "pwbs/queue/tasks/extraction.py"
+      }
+    },
+    {
+      "signal": "mutant_duplicate",
+      "severity": "high",
+      "score": 0.9,
+      "title": "Exact duplicate: _run_async \u2194 _run_async",
+      "description": "pwbs\\queue\\tasks\\embedding.py:19 and pwbs\\queue\\tasks\\insights.py:18 are identical (7 lines). Consider consolidating.",
+      "file": "pwbs/queue/tasks/embedding.py",
+      "start_line": 19,
+      "end_line": null,
+      "ai_attributed": false,
+      "metadata": {
+        "similarity": 1.0,
+        "body_hash": "073807668a3f4fa6",
+        "function_a": "_run_async",
+        "function_b": "_run_async",
+        "file_a": "pwbs/queue/tasks/embedding.py",
+        "file_b": "pwbs/queue/tasks/insights.py"
+      }
+    },
+    {
+      "signal": "mutant_duplicate",
+      "severity": "high",
+      "score": 0.9,
+      "title": "Exact duplicate: _run_async \u2194 _run_async",
+      "description": "pwbs\\queue\\tasks\\embedding.py:19 and pwbs\\queue\\tasks\\multimodal.py:21 are identical (7 lines). Consider consolidating.",
+      "file": "pwbs/queue/tasks/embedding.py",
+      "start_line": 19,
+      "end_line": null,
+      "ai_attributed": false,
+      "metadata": {
+        "similarity": 1.0,
+        "body_hash": "073807668a3f4fa6",
+        "function_a": "_run_async",
+        "function_b": "_run_async",
+        "file_a": "pwbs/queue/tasks/embedding.py",
+        "file_b": "pwbs/queue/tasks/multimodal.py"
+      }
+    },
+    {
+      "signal": "mutant_duplicate",
+      "severity": "high",
+      "score": 0.9,
+      "title": "Exact duplicate: _run_async \u2194 _run_async",
+      "description": "pwbs\\queue\\tasks\\embedding.py:19 and pwbs\\queue\\tasks\\snapshots.py:18 are identical (7 lines). Consider consolidating.",
+      "file": "pwbs/queue/tasks/embedding.py",
+      "start_line": 19,
+      "end_line": null,
+      "ai_attributed": false,
+      "metadata": {
+        "similarity": 1.0,
+        "body_hash": "073807668a3f4fa6",
+        "function_a": "_run_async",
+        "function_b": "_run_async",
+        "file_a": "pwbs/queue/tasks/embedding.py",
+        "file_b": "pwbs/queue/tasks/snapshots.py"
+      }
+    },
+    {
+      "signal": "mutant_duplicate",
+      "severity": "high",
+      "score": 0.9,
+      "title": "Exact duplicate: _run_async \u2194 _run_async",
+      "description": "pwbs\\queue\\tasks\\extraction.py:19 and pwbs\\queue\\tasks\\insights.py:18 are identical (7 lines). Consider consolidating.",
+      "file": "pwbs/queue/tasks/extraction.py",
+      "start_line": 19,
+      "end_line": null,
+      "ai_attributed": false,
+      "metadata": {
+        "similarity": 1.0,
+        "body_hash": "073807668a3f4fa6",
+        "function_a": "_run_async",
+        "function_b": "_run_async",
+        "file_a": "pwbs/queue/tasks/extraction.py",
+        "file_b": "pwbs/queue/tasks/insights.py"
+      }
+    },
+    {
+      "signal": "mutant_duplicate",
+      "severity": "high",
+      "score": 0.9,
+      "title": "Exact duplicate: _run_async \u2194 _run_async",
+      "description": "pwbs\\queue\\tasks\\extraction.py:19 and pwbs\\queue\\tasks\\multimodal.py:21 are identical (7 lines). Consider consolidating.",
+      "file": "pwbs/queue/tasks/extraction.py",
+      "start_line": 19,
+      "end_line": null,
+      "ai_attributed": false,
+      "metadata": {
+        "similarity": 1.0,
+        "body_hash": "073807668a3f4fa6",
+        "function_a": "_run_async",
+        "function_b": "_run_async",
+        "file_a": "pwbs/queue/tasks/extraction.py",
+        "file_b": "pwbs/queue/tasks/multimodal.py"
+      }
+    },
+    {
+      "signal": "mutant_duplicate",
+      "severity": "high",
+      "score": 0.9,
+      "title": "Exact duplicate: _run_async \u2194 _run_async",
+      "description": "pwbs\\queue\\tasks\\extraction.py:19 and pwbs\\queue\\tasks\\snapshots.py:18 are identical (7 lines). Consider consolidating.",
+      "file": "pwbs/queue/tasks/extraction.py",
+      "start_line": 19,
+      "end_line": null,
+      "ai_attributed": false,
+      "metadata": {
+        "similarity": 1.0,
+        "body_hash": "073807668a3f4fa6",
+        "function_a": "_run_async",
+        "function_b": "_run_async",
+        "file_a": "pwbs/queue/tasks/extraction.py",
+        "file_b": "pwbs/queue/tasks/snapshots.py"
+      }
+    },
+    {
+      "signal": "mutant_duplicate",
+      "severity": "high",
+      "score": 0.9,
+      "title": "Exact duplicate: _run_async \u2194 _run_async",
+      "description": "pwbs\\queue\\tasks\\insights.py:18 and pwbs\\queue\\tasks\\multimodal.py:21 are identical (7 lines). Consider consolidating.",
+      "file": "pwbs/queue/tasks/insights.py",
+      "start_line": 18,
+      "end_line": null,
+      "ai_attributed": false,
+      "metadata": {
+        "similarity": 1.0,
+        "body_hash": "073807668a3f4fa6",
+        "function_a": "_run_async",
+        "function_b": "_run_async",
+        "file_a": "pwbs/queue/tasks/insights.py",
+        "file_b": "pwbs/queue/tasks/multimodal.py"
+      }
+    },
+    {
+      "signal": "mutant_duplicate",
+      "severity": "high",
+      "score": 0.9,
+      "title": "Exact duplicate: _run_async \u2194 _run_async",
+      "description": "pwbs\\queue\\tasks\\insights.py:18 and pwbs\\queue\\tasks\\snapshots.py:18 are identical (7 lines). Consider consolidating.",
+      "file": "pwbs/queue/tasks/insights.py",
+      "start_line": 18,
+      "end_line": null,
+      "ai_attributed": false,
+      "metadata": {
+        "similarity": 1.0,
+        "body_hash": "073807668a3f4fa6",
+        "function_a": "_run_async",
+        "function_b": "_run_async",
+        "file_a": "pwbs/queue/tasks/insights.py",
+        "file_b": "pwbs/queue/tasks/snapshots.py"
+      }
+    },
+    {
+      "signal": "mutant_duplicate",
+      "severity": "high",
+      "score": 0.9,
+      "title": "Exact duplicate: _run_async \u2194 _run_async",
+      "description": "pwbs\\queue\\tasks\\multimodal.py:21 and pwbs\\queue\\tasks\\snapshots.py:18 are identical (7 lines). Consider consolidating.",
+      "file": "pwbs/queue/tasks/multimodal.py",
+      "start_line": 21,
+      "end_line": null,
+      "ai_attributed": false,
+      "metadata": {
+        "similarity": 1.0,
+        "body_hash": "073807668a3f4fa6",
+        "function_a": "_run_async",
+        "function_b": "_run_async",
+        "file_a": "pwbs/queue/tasks/multimodal.py",
+        "file_b": "pwbs/queue/tasks/snapshots.py"
+      }
+    },
+    {
+      "signal": "mutant_duplicate",
+      "severity": "high",
+      "score": 0.9,
+      "title": "Exact duplicate: db_session \u2194 db_session",
+      "description": "tests\\integration\\test_briefing_e2e.py:225 and tests\\integration\\test_pipeline_e2e.py:202 are identical (5 lines). Consider consolidating.",
+      "file": "tests/integration/test_briefing_e2e.py",
+      "start_line": 225,
+      "end_line": null,
+      "ai_attributed": false,
+      "metadata": {
+        "similarity": 1.0,
+        "body_hash": "272a26be531997a0",
+        "function_a": "db_session",
+        "function_b": "db_session",
+        "file_a": "tests/integration/test_briefing_e2e.py",
+        "file_b": "tests/integration/test_pipeline_e2e.py"
+      }
+    },
+    {
+      "signal": "mutant_duplicate",
+      "severity": "high",
+      "score": 0.9,
+      "title": "Exact duplicate: _make_user \u2194 _make_user",
+      "description": "tests\\test_auth\\test_briefing_feedback.py:32 and tests\\test_auth\\test_briefings_api.py:34 are identical (6 lines). Consider consolidating.",
+      "file": "tests/test_auth/test_briefing_feedback.py",
+      "start_line": 32,
+      "end_line": null,
+      "ai_attributed": false,
+      "metadata": {
+        "similarity": 1.0,
+        "body_hash": "ecb711edaeeb3308",
+        "function_a": "_make_user",
+        "function_b": "_make_user",
+        "file_a": "tests/test_auth/test_briefing_feedback.py",
+        "file_b": "tests/test_auth/test_briefings_api.py"
+      }
+    },
+    {
+      "signal": "mutant_duplicate",
+      "severity": "high",
+      "score": 0.9,
+      "title": "Exact duplicate: _mock_db \u2194 _mock_db",
+      "description": "tests\\test_auth\\test_briefing_feedback.py:58 and tests\\test_auth\\test_feature_flags.py:42 are identical (5 lines). Consider consolidating.",
+      "file": "tests/test_auth/test_briefing_feedback.py",
+      "start_line": 58,
+      "end_line": null,
+      "ai_attributed": false,
+      "metadata": {
+        "similarity": 1.0,
+        "body_hash": "65f9c794a47d81fd",
+        "function_a": "_mock_db",
+        "function_b": "_mock_db",
+        "file_a": "tests/test_auth/test_briefing_feedback.py",
+        "file_b": "tests/test_auth/test_feature_flags.py"
+      }
+    },
+    {
+      "signal": "mutant_duplicate",
+      "severity": "high",
+      "score": 0.9,
+      "title": "Exact duplicate: _make_user \u2194 _make_user",
+      "description": "tests\\test_auth\\test_connectors_api.py:30 and tests\\test_auth\\test_search_api.py:30 are identical (8 lines). Consider consolidating.",
+      "file": "tests/test_auth/test_connectors_api.py",
+      "start_line": 30,
+      "end_line": null,
+      "ai_attributed": false,
+      "metadata": {
+        "similarity": 1.0,
+        "body_hash": "956f4f2ff5eab2e5",
+        "function_a": "_make_user",
+        "function_b": "_make_user",
+        "file_a": "tests/test_auth/test_connectors_api.py",
+        "file_b": "tests/test_auth/test_search_api.py"
+      }
+    },
+    {
+      "signal": "mutant_duplicate",
+      "severity": "high",
+      "score": 0.9,
+      "title": "Exact duplicate: _make_settings \u2194 _make_settings",
+      "description": "tests\\test_email\\test_briefing_email.py:35 and tests\\test_email\\test_email_service.py:38 are identical (17 lines). Consider consolidating.",
+      "file": "tests/test_email/test_briefing_email.py",
+      "start_line": 35,
+      "end_line": null,
+      "ai_attributed": false,
+      "metadata": {
+        "similarity": 1.0,
+        "body_hash": "75d7c453d788a2fb",
+        "function_a": "_make_settings",
+        "function_b": "_make_settings",
+        "file_a": "tests/test_email/test_briefing_email.py",
+        "file_b": "tests/test_email/test_email_service.py"
+      }
+    },
+    {
+      "signal": "mutant_duplicate",
+      "severity": "high",
+      "score": 0.9,
+      "title": "Exact duplicate: _make_service \u2194 _make_service",
+      "description": "tests\\test_email\\test_briefing_email.py:65 and tests\\test_email\\test_email_service.py:68 are identical (9 lines). Consider consolidating.",
+      "file": "tests/test_email/test_briefing_email.py",
+      "start_line": 65,
+      "end_line": null,
+      "ai_attributed": false,
+      "metadata": {
+        "similarity": 1.0,
+        "body_hash": "568435811c714515",
+        "function_a": "_make_service",
+        "function_b": "_make_service",
+        "file_a": "tests/test_email/test_briefing_email.py",
+        "file_b": "tests/test_email/test_email_service.py"
+      }
+    },
+    {
+      "signal": "mutant_duplicate",
+      "severity": "high",
+      "score": 0.9,
+      "title": "Exact duplicate: _mock_search_service \u2194 _mock_search_service",
+      "description": "tests\\test_processing\\test_project_briefing.py:107 and tests\\test_processing\\test_weekly_briefing.py:106 are identical (5 lines). Consider consolidating.",
+      "file": "tests/test_processing/test_project_briefing.py",
+      "start_line": 107,
+      "end_line": null,
+      "ai_attributed": false,
+      "metadata": {
+        "similarity": 1.0,
+        "body_hash": "77186b8f3d10ffd8",
+        "function_a": "_mock_search_service",
+        "function_b": "_mock_search_service",
+        "file_a": "tests/test_processing/test_project_briefing.py",
+        "file_b": "tests/test_processing/test_weekly_briefing.py"
+      }
+    },
+    {
+      "signal": "mutant_duplicate",
+      "severity": "high",
+      "score": 0.9,
+      "title": "Exact duplicate: TestAnalyze._execute \u2194 TestAnalyzeAndPersist._execute",
+      "description": "tests\\test_processing\\test_work_patterns.py:328 and tests\\test_processing\\test_work_patterns.py:373 are identical (12 lines). Consider consolidating.",
+      "file": "tests/test_processing/test_work_patterns.py",
+      "start_line": 328,
+      "end_line": null,
+      "ai_attributed": false,
+      "metadata": {
+        "similarity": 1.0,
+        "body_hash": "c2f832035d4c4dff",
+        "function_a": "TestAnalyze._execute",
+        "function_b": "TestAnalyzeAndPersist._execute",
+        "file_a": "tests/test_processing/test_work_patterns.py",
+        "file_b": "tests/test_processing/test_work_patterns.py"
+      }
+    },
+    {
+      "signal": "mutant_duplicate",
+      "severity": "high",
+      "score": 0.9,
+      "title": "Exact duplicate: TestAnalyzeAndPersist._execute \u2194 TestAnalyzeAndPersist._execute",
+      "description": "tests\\test_processing\\test_work_patterns.py:373 and tests\\test_processing\\test_work_patterns.py:412 are identical (12 lines). Consider consolidating.",
+      "file": "tests/test_processing/test_work_patterns.py",
+      "start_line": 373,
+      "end_line": null,
+      "ai_attributed": false,
+      "metadata": {
+        "similarity": 1.0,
+        "body_hash": "c2f832035d4c4dff",
+        "function_a": "TestAnalyzeAndPersist._execute",
+        "function_b": "TestAnalyzeAndPersist._execute",
+        "file_a": "tests/test_processing/test_work_patterns.py",
+        "file_b": "tests/test_processing/test_work_patterns.py"
+      }
+    },
+    {
+      "signal": "mutant_duplicate",
+      "severity": "high",
+      "score": 0.7788973384030418,
+      "title": "Near-duplicate (92%): scaffold \u2194 scaffold",
+      "description": "_deferred\\marketplace\\cli.py:182 and pwbs\\marketplace\\cli.py:180 are 92% similar. Small differences may indicate copy-paste divergence.",
+      "file": "_deferred/marketplace/cli.py",
+      "start_line": 182,
+      "end_line": null,
+      "ai_attributed": false,
+      "metadata": {
+        "similarity": 0.916,
+        "function_a": "scaffold",
+        "function_b": "scaffold",
+        "file_a": "_deferred/marketplace/cli.py",
+        "file_b": "pwbs/marketplace/cli.py"
+      }
+    },
+    {
+      "signal": "mutant_duplicate",
+      "severity": "high",
+      "score": 0.8200879765395894,
+      "title": "Near-duplicate (96%): _handle_subscription_updated \u2194 _handle_subscription_updated",
+      "description": "_deferred\\billing\\service.py:356 and pwbs\\billing\\service.py:361 are 96% similar. Small differences may indicate copy-paste divergence.",
+      "file": "_deferred/billing/service.py",
+      "start_line": 356,
+      "end_line": null,
+      "ai_attributed": false,
+      "metadata": {
+        "similarity": 0.965,
+        "function_a": "_handle_subscription_updated",
+        "function_b": "_handle_subscription_updated",
+        "file_a": "_deferred/billing/service.py",
+        "file_b": "pwbs/billing/service.py"
+      }
+    },
+    {
+      "signal": "mutant_duplicate",
+      "severity": "high",
+      "score": 0.8016014234875445,
+      "title": "Near-duplicate (94%): oidc_callback \u2194 oidc_callback",
+      "description": "_deferred\\routes\\sso.py:269 and pwbs\\api\\v1\\routes\\sso.py:268 are 94% similar. Small differences may indicate copy-paste divergence.",
+      "file": "_deferred/routes/sso.py",
+      "start_line": 269,
+      "end_line": null,
+      "ai_attributed": false,
+      "metadata": {
+        "similarity": 0.943,
+        "function_a": "oidc_callback",
+        "function_b": "oidc_callback",
+        "file_a": "_deferred/routes/sso.py",
+        "file_b": "pwbs/api/v1/routes/sso.py"
+      }
+    },
+    {
+      "signal": "pattern_fragmentation",
+      "severity": "high",
+      "score": 0.9285714285714286,
+      "title": "error_handling: 14 variants in _deferred/connectors/",
+      "description": "14 error_handling variants in _deferred/connectors/ (3/24 use canonical pattern).\n  - google_docs.py:302 (GoogleDocsConnector.exchange_code)\n  - google_docs.py:432 (GoogleDocsConnector.fetch_since)\n  - google_docs.py:393 (GoogleDocsConnector.fetch_since)",
+      "file": "_deferred/connectors",
+      "start_line": null,
+      "end_line": null,
+      "ai_attributed": false,
+      "metadata": {
+        "category": "error_handling",
+        "num_variants": 14,
+        "variant_count": 14,
+        "canonical_count": 3,
+        "canonical_variant": "{\"handler_count\": 1, \"handlers\": [{\"actions\": [\"return\"], \"e",
+        "module": "_deferred/connectors",
+        "total_instances": 24
+      }
+    },
+    {
+      "signal": "pattern_fragmentation",
+      "severity": "medium",
+      "score": 0.5,
+      "title": "error_handling: 2 variants in _deferred/integrations/slack/",
+      "description": "2 error_handling variants in _deferred/integrations/slack/ (2/3 use canonical pattern).\n  - bot.py:87 (verify_slack_signature)",
+      "file": "_deferred/integrations/slack",
+      "start_line": null,
+      "end_line": null,
+      "ai_attributed": false,
+      "metadata": {
+        "category": "error_handling",
+        "num_variants": 2,
+        "variant_count": 2,
+        "canonical_count": 2,
+        "canonical_variant": "{\"handler_count\": 1, \"handlers\": [{\"actions\": [\"log\", \"retur",
+        "module": "_deferred/integrations/slack",
+        "total_instances": 3
+      }
+    },
+    {
+      "signal": "pattern_fragmentation",
+      "severity": "high",
+      "score": 0.8333333333333334,
+      "title": "error_handling: 6 variants in _deferred/marketplace/",
+      "description": "6 error_handling variants in _deferred/marketplace/ (3/8 use canonical pattern).\n  - cli.py:236 (validate)\n  - plugin_registry.py:163 (PluginRegistry.execute_sandboxed)\n  - sandbox.py:230 (_run_plugin_in_process)",
+      "file": "_deferred/marketplace",
+      "start_line": null,
+      "end_line": null,
+      "ai_attributed": false,
+      "metadata": {
+        "category": "error_handling",
+        "num_variants": 6,
+        "variant_count": 6,
+        "canonical_count": 3,
+        "canonical_variant": "{\"handler_count\": 1, \"handlers\": [{\"actions\": [\"return\"], \"e",
+        "module": "_deferred/marketplace",
+        "total_instances": 8
+      }
+    },
+    {
+      "signal": "pattern_fragmentation",
+      "severity": "medium",
+      "score": 0.6666666666666667,
+      "title": "error_handling: 3 variants in _deferred/rbac/",
+      "description": "3 error_handling variants in _deferred/rbac/ (1/3 use canonical pattern).\n  - dependencies.py:55 (_dependency)\n  - dependencies.py:48 (_dependency)",
+      "file": "_deferred/rbac",
+      "start_line": null,
+      "end_line": null,
+      "ai_attributed": false,
+      "metadata": {
+        "category": "error_handling",
+        "num_variants": 3,
+        "variant_count": 3,
+        "canonical_count": 1,
+        "canonical_variant": "{\"handler_count\": 1, \"handlers\": [{\"actions\": [\"log\", \"retur",
+        "module": "_deferred/rbac",
+        "total_instances": 3
+      }
+    },
+    {
+      "signal": "pattern_fragmentation",
+      "severity": "high",
+      "score": 0.875,
+      "title": "error_handling: 8 variants in _deferred/routes/",
+      "description": "8 error_handling variants in _deferred/routes/ (3/12 use canonical pattern).\n  - billing.py:120 (create_checkout)\n  - billing.py:149 (create_portal)\n  - billing.py:197 (stripe_webhook)",
+      "file": "_deferred/routes",
+      "start_line": null,
+      "end_line": null,
+      "ai_attributed": false,
+      "metadata": {
+        "category": "error_handling",
+        "num_variants": 8,
+        "variant_count": 8,
+        "canonical_count": 3,
+        "canonical_variant": "{\"handler_count\": 1, \"handlers\": [{\"actions\": [\"raise\"], \"ex",
+        "module": "_deferred/routes",
+        "total_instances": 12
+      }
+    },
+    {
+      "signal": "pattern_fragmentation",
+      "severity": "medium",
+      "score": 0.5,
+      "title": "error_handling: 2 variants in pwbs/api/dependencies/",
+      "description": "2 error_handling variants in pwbs/api/dependencies/ (1/2 use canonical pattern).\n  - auth.py:39 (get_current_user)",
+      "file": "pwbs/api/dependencies",
+      "start_line": null,
+      "end_line": null,
+      "ai_attributed": false,
+      "metadata": {
+        "category": "error_handling",
+        "num_variants": 2,
+        "variant_count": 2,
+        "canonical_count": 1,
+        "canonical_variant": "{\"handler_count\": 1, \"handlers\": [{\"actions\": [\"other\", \"rai",
+        "module": "pwbs/api/dependencies",
+        "total_instances": 2
+      }
+    },
+    {
+      "signal": "pattern_fragmentation",
+      "severity": "medium",
+      "score": 0.6666666666666667,
+      "title": "error_handling: 3 variants in pwbs/api/middleware/",
+      "description": "3 error_handling variants in pwbs/api/middleware/ (2/4 use canonical pattern).\n  - auth.py:42 (AuthMiddleware.dispatch)\n  - rate_limit.py:160 (RateLimitMiddleware.dispatch)",
+      "file": "pwbs/api/middleware",
+      "start_line": null,
+      "end_line": null,
+      "ai_attributed": false,
+      "metadata": {
+        "category": "error_handling",
+        "num_variants": 3,
+        "variant_count": 3,
+        "canonical_count": 2,
+        "canonical_variant": "{\"handler_count\": 0, \"handlers\": [], \"has_else\": false, \"has",
+        "module": "pwbs/api/middleware",
+        "total_instances": 4
+      }
+    },
+    {
+      "signal": "pattern_fragmentation",
+      "severity": "high",
+      "score": 0.96,
+      "title": "error_handling: 25 variants in pwbs/api/v1/routes/",
+      "description": "25 error_handling variants in pwbs/api/v1/routes/ (12/60 use canonical pattern).\n  - assumptions.py:98 (list_assumptions)\n  - assumptions.py:165 (get_assumption)\n  - assumptions.py:220 (add_evidence)",
+      "file": "pwbs/api/v1/routes",
+      "start_line": null,
+      "end_line": null,
+      "ai_attributed": false,
+      "metadata": {
+        "category": "error_handling",
+        "num_variants": 25,
+        "variant_count": 25,
+        "canonical_count": 12,
+        "canonical_variant": "{\"handler_count\": 1, \"handlers\": [{\"actions\": [\"raise\"], \"ex",
+        "module": "pwbs/api/v1/routes",
+        "total_instances": 60
+      }
+    },
+    {
+      "signal": "pattern_fragmentation",
+      "severity": "high",
+      "score": 0.8,
+      "title": "error_handling: 5 variants in pwbs/briefing/",
+      "description": "5 error_handling variants in pwbs/briefing/ (1/5 use canonical pattern).\n  - context.py:436 (MorningContextAssembler._fetch_user_profile_themes)\n  - meeting_context.py:328 (MeetingContextAssembler._search_relevant_documents)\n  - persistence.py:346 (BriefingPersistenceService._to_persisted)",
+      "file": "pwbs/briefing",
+      "start_line": null,
+      "end_line": null,
+      "ai_attributed": false,
+      "metadata": {
+        "category": "error_handling",
+        "num_variants": 5,
+        "variant_count": 5,
+        "canonical_count": 1,
+        "canonical_variant": "{\"handler_count\": 1, \"handlers\": [{\"actions\": [\"call\", \"retu",
+        "module": "pwbs/briefing",
+        "total_instances": 5
+      }
+    },
+    {
+      "signal": "pattern_fragmentation",
+      "severity": "high",
+      "score": 0.9615384615384616,
+      "title": "error_handling: 26 variants in pwbs/connectors/",
+      "description": "26 error_handling variants in pwbs/connectors/ (7/45 use canonical pattern).\n  - google_calendar.py:86 (_decode_cursor)\n  - google_calendar.py:185 (GoogleCalendarConnector.exchange_code)\n  - google_calendar.py:329 (GoogleCalendarConnector.fetch_since)",
+      "file": "pwbs/connectors",
+      "start_line": null,
+      "end_line": null,
+      "ai_attributed": false,
+      "metadata": {
+        "category": "error_handling",
+        "num_variants": 26,
+        "variant_count": 26,
+        "canonical_count": 7,
+        "canonical_variant": "{\"handler_count\": 1, \"handlers\": [{\"actions\": [\"pass\"], \"exc",
+        "module": "pwbs/connectors",
+        "total_instances": 45
+      }
+    },
+    {
+      "signal": "pattern_fragmentation",
+      "severity": "high",
+      "score": 0.9230769230769231,
+      "title": "error_handling: 13 variants in pwbs/core/",
+      "description": "13 error_handling variants in pwbs/core/ (4/19 use canonical pattern).\n  - cache.py:49 (cache_get)\n  - cache.py:68 (cache_set)\n  - cache.py:81 (cache_invalidate)",
+      "file": "pwbs/core",
+      "start_line": null,
+      "end_line": null,
+      "ai_attributed": false,
+      "metadata": {
+        "category": "error_handling",
+        "num_variants": 13,
+        "variant_count": 13,
+        "canonical_count": 4,
+        "canonical_variant": "{\"handler_count\": 1, \"handlers\": [{\"actions\": [\"pass\"], \"exc",
+        "module": "pwbs/core",
+        "total_instances": 19
+      }
+    },
+    {
+      "signal": "pattern_fragmentation",
+      "severity": "medium",
+      "score": 0.5,
+      "title": "error_handling: 2 variants in pwbs/db/",
+      "description": "2 error_handling variants in pwbs/db/ (4/6 use canonical pattern).\n  - neo4j_client.py:32 (get_neo4j_driver)\n  - weaviate_client.py:32 (get_weaviate_client)",
+      "file": "pwbs/db",
+      "start_line": null,
+      "end_line": null,
+      "ai_attributed": false,
+      "metadata": {
+        "category": "error_handling",
+        "num_variants": 2,
+        "variant_count": 2,
+        "canonical_count": 4,
+        "canonical_variant": "{\"handler_count\": 1, \"handlers\": [{\"actions\": [\"return\"], \"e",
+        "module": "pwbs/db",
+        "total_instances": 6
+      }
+    },
+    {
+      "signal": "pattern_fragmentation",
+      "severity": "medium",
+      "score": 0.5,
+      "title": "error_handling: 2 variants in pwbs/dsgvo/",
+      "description": "2 error_handling variants in pwbs/dsgvo/ (7/8 use canonical pattern).\n  - export_service.py:117 (run_export)",
+      "file": "pwbs/dsgvo",
+      "start_line": null,
+      "end_line": null,
+      "ai_attributed": false,
+      "metadata": {
+        "category": "error_handling",
+        "num_variants": 2,
+        "variant_count": 2,
+        "canonical_count": 7,
+        "canonical_variant": "{\"handler_count\": 1, \"handlers\": [{\"actions\": [\"log\"], \"exce",
+        "module": "pwbs/dsgvo",
+        "total_instances": 8
+      }
+    },
+    {
+      "signal": "pattern_fragmentation",
+      "severity": "medium",
+      "score": 0.5,
+      "title": "error_handling: 2 variants in pwbs/graph/",
+      "description": "2 error_handling variants in pwbs/graph/ (3/4 use canonical pattern).\n  - query_service.py:162 (_safe_query)",
+      "file": "pwbs/graph",
+      "start_line": null,
+      "end_line": null,
+      "ai_attributed": false,
+      "metadata": {
+        "category": "error_handling",
+        "num_variants": 2,
+        "variant_count": 2,
+        "canonical_count": 3,
+        "canonical_variant": "{\"handler_count\": 1, \"handlers\": [{\"actions\": [\"other\", \"log",
+        "module": "pwbs/graph",
+        "total_instances": 4
+      }
+    },
+    {
+      "signal": "pattern_fragmentation",
+      "severity": "high",
+      "score": 0.8333333333333334,
+      "title": "error_handling: 6 variants in pwbs/marketplace/",
+      "description": "6 error_handling variants in pwbs/marketplace/ (3/8 use canonical pattern).\n  - cli.py:234 (validate)\n  - plugin_registry.py:163 (PluginRegistry.execute_sandboxed)\n  - sandbox.py:227 (_run_plugin_in_process)",
+      "file": "pwbs/marketplace",
+      "start_line": null,
+      "end_line": null,
+      "ai_attributed": false,
+      "metadata": {
+        "category": "error_handling",
+        "num_variants": 6,
+        "variant_count": 6,
+        "canonical_count": 3,
+        "canonical_variant": "{\"handler_count\": 1, \"handlers\": [{\"actions\": [\"return\"], \"e",
+        "module": "pwbs/marketplace",
+        "total_instances": 8
+      }
+    },
+    {
+      "signal": "pattern_fragmentation",
+      "severity": "high",
+      "score": 0.8571428571428572,
+      "title": "error_handling: 7 variants in pwbs/processing/",
+      "description": "7 error_handling variants in pwbs/processing/ (3/9 use canonical pattern).\n  - embedding.py:168 (EmbeddingService._call_api)\n  - embedding_pipeline.py:273 (EmbeddingPipelineHandler._process_batch_with_retry)\n  - entity_dedup.py:192 (EntityDeduplicationService.deduplicate_and_persist)",
+      "file": "pwbs/processing",
+      "start_line": null,
+      "end_line": null,
+      "ai_attributed": false,
+      "metadata": {
+        "category": "error_handling",
+        "num_variants": 7,
+        "variant_count": 7,
+        "canonical_count": 3,
+        "canonical_variant": "{\"handler_count\": 1, \"handlers\": [{\"actions\": [\"log\"], \"exce",
+        "module": "pwbs/processing",
+        "total_instances": 9
+      }
+    },
+    {
+      "signal": "pattern_fragmentation",
+      "severity": "medium",
+      "score": 0.5,
+      "title": "error_handling: 2 variants in pwbs/processing/multimodal/",
+      "description": "2 error_handling variants in pwbs/processing/multimodal/ (1/2 use canonical pattern).\n  - pipeline.py:118 (MultiModalPipeline.process_file)",
+      "file": "pwbs/processing/multimodal",
+      "start_line": null,
+      "end_line": null,
+      "ai_attributed": false,
+      "metadata": {
+        "category": "error_handling",
+        "num_variants": 2,
+        "variant_count": 2,
+        "canonical_count": 1,
+        "canonical_variant": "{\"handler_count\": 1, \"handlers\": [{\"actions\": [\"return\"], \"e",
+        "module": "pwbs/processing/multimodal",
+        "total_instances": 2
+      }
+    },
+    {
+      "signal": "pattern_fragmentation",
+      "severity": "medium",
+      "score": 0.5,
+      "title": "error_handling: 2 variants in pwbs/prompts/",
+      "description": "2 error_handling variants in pwbs/prompts/ (1/2 use canonical pattern).\n  - registry.py:236 (PromptRegistry._load_all)",
+      "file": "pwbs/prompts",
+      "start_line": null,
+      "end_line": null,
+      "ai_attributed": false,
+      "metadata": {
+        "category": "error_handling",
+        "num_variants": 2,
+        "variant_count": 2,
+        "canonical_count": 1,
+        "canonical_variant": "{\"handler_count\": 1, \"handlers\": [{\"actions\": [\"raise\"], \"ex",
+        "module": "pwbs/prompts",
+        "total_instances": 2
+      }
+    },
+    {
+      "signal": "pattern_fragmentation",
+      "severity": "medium",
+      "score": 0.5,
+      "title": "error_handling: 2 variants in pwbs/queue/",
+      "description": "2 error_handling variants in pwbs/queue/ (1/2 use canonical pattern).\n  - health.py:50 (get_active_workers)",
+      "file": "pwbs/queue",
+      "start_line": null,
+      "end_line": null,
+      "ai_attributed": false,
+      "metadata": {
+        "category": "error_handling",
+        "num_variants": 2,
+        "variant_count": 2,
+        "canonical_count": 1,
+        "canonical_variant": "{\"handler_count\": 1, \"handlers\": [{\"actions\": [\"other\"], \"ex",
+        "module": "pwbs/queue",
+        "total_instances": 2
+      }
+    },
+    {
+      "signal": "pattern_fragmentation",
+      "severity": "high",
+      "score": 0.8333333333333334,
+      "title": "error_handling: 6 variants in pwbs/queue/tasks/",
+      "description": "6 error_handling variants in pwbs/queue/tasks/ (13/28 use canonical pattern).\n  - briefing.py:23 (_run_async)\n  - embedding.py:22 (_run_async)\n  - extraction.py:22 (_run_async)",
+      "file": "pwbs/queue/tasks",
+      "start_line": null,
+      "end_line": null,
+      "ai_attributed": false,
+      "metadata": {
+        "category": "error_handling",
+        "num_variants": 6,
+        "variant_count": 6,
+        "canonical_count": 13,
+        "canonical_variant": "{\"handler_count\": 1, \"handlers\": [{\"actions\": [\"log\", \"raise",
+        "module": "pwbs/queue/tasks",
+        "total_instances": 28
+      }
+    },
+    {
+      "signal": "pattern_fragmentation",
+      "severity": "medium",
+      "score": 0.6666666666666667,
+      "title": "error_handling: 3 variants in pwbs/rbac/",
+      "description": "3 error_handling variants in pwbs/rbac/ (1/3 use canonical pattern).\n  - dependencies.py:55 (_dependency)\n  - dependencies.py:48 (_dependency)",
+      "file": "pwbs/rbac",
+      "start_line": null,
+      "end_line": null,
+      "ai_attributed": false,
+      "metadata": {
+        "category": "error_handling",
+        "num_variants": 3,
+        "variant_count": 3,
+        "canonical_count": 1,
+        "canonical_variant": "{\"handler_count\": 1, \"handlers\": [{\"actions\": [\"log\", \"retur",
+        "module": "pwbs/rbac",
+        "total_instances": 3
+      }
+    },
+    {
+      "signal": "pattern_fragmentation",
+      "severity": "medium",
+      "score": 0.5,
+      "title": "error_handling: 2 variants in pwbs/search/",
+      "description": "2 error_handling variants in pwbs/search/ (1/2 use canonical pattern).\n  - reranker.py:177 (_recency_factor)",
+      "file": "pwbs/search",
+      "start_line": null,
+      "end_line": null,
+      "ai_attributed": false,
+      "metadata": {
+        "category": "error_handling",
+        "num_variants": 2,
+        "variant_count": 2,
+        "canonical_count": 1,
+        "canonical_variant": "{\"handler_count\": 1, \"handlers\": [{\"actions\": [\"log\", \"retur",
+        "module": "pwbs/search",
+        "total_instances": 2
+      }
+    },
+    {
+      "signal": "pattern_fragmentation",
+      "severity": "high",
+      "score": 0.9,
+      "title": "error_handling: 10 variants in pwbs/services/",
+      "description": "10 error_handling variants in pwbs/services/ (3/12 use canonical pattern).\n  - auth.py:142 (validate_access_token)\n  - auth.py:129 (validate_access_token)\n  - email.py:104 (SmtpBackend.send)",
+      "file": "pwbs/services",
+      "start_line": null,
+      "end_line": null,
+      "ai_attributed": false,
+      "metadata": {
+        "category": "error_handling",
+        "num_variants": 10,
+        "variant_count": 10,
+        "canonical_count": 3,
+        "canonical_variant": "{\"handler_count\": 1, \"handlers\": [{\"actions\": [\"log\"], \"exce",
+        "module": "pwbs/services",
+        "total_instances": 12
+      }
+    },
+    {
+      "signal": "pattern_fragmentation",
+      "severity": "medium",
+      "score": 0.5,
+      "title": "error_handling: 2 variants in tests/",
+      "description": "2 error_handling variants in tests/ (2/3 use canonical pattern).\n  - conftest.py:300 (pg_engine)",
+      "file": "tests",
+      "start_line": null,
+      "end_line": null,
+      "ai_attributed": false,
+      "metadata": {
+        "category": "error_handling",
+        "num_variants": 2,
+        "variant_count": 2,
+        "canonical_count": 2,
+        "canonical_variant": "{\"handler_count\": 1, \"handlers\": [{\"actions\": [\"call\"], \"exc",
+        "module": "tests",
+        "total_instances": 3
+      }
+    },
+    {
+      "signal": "pattern_fragmentation",
+      "severity": "medium",
+      "score": 0.6666666666666667,
+      "title": "error_handling: 3 variants in tests/integration/",
+      "description": "3 error_handling variants in tests/integration/ (5/11 use canonical pattern).\n  - conftest.py:43 (_pg_engine)\n  - test_briefing_e2e.py:160 (pg_engine)\n  - test_briefing_e2e.py:197 (weaviate_client)",
+      "file": "tests/integration",
+      "start_line": null,
+      "end_line": null,
+      "ai_attributed": false,
+      "metadata": {
+        "category": "error_handling",
+        "num_variants": 3,
+        "variant_count": 3,
+        "canonical_count": 5,
+        "canonical_variant": "{\"handler_count\": 1, \"handlers\": [{\"actions\": [\"call\"], \"exc",
+        "module": "tests/integration",
+        "total_instances": 11
+      }
+    },
+    {
+      "signal": "pattern_fragmentation",
+      "severity": "medium",
+      "score": 0.5,
+      "title": "error_handling: 2 variants in tests/performance/",
+      "description": "2 error_handling variants in tests/performance/ (1/2 use canonical pattern).\n  - conftest.py:155 (perf_pg_engine)",
+      "file": "tests/performance",
+      "start_line": null,
+      "end_line": null,
+      "ai_attributed": false,
+      "metadata": {
+        "category": "error_handling",
+        "num_variants": 2,
+        "variant_count": 2,
+        "canonical_count": 1,
+        "canonical_variant": "{\"handler_count\": 1, \"handlers\": [{\"actions\": [\"call\"], \"exc",
+        "module": "tests/performance",
+        "total_instances": 2
+      }
+    },
+    {
+      "signal": "pattern_fragmentation",
+      "severity": "medium",
+      "score": 0.5,
+      "title": "error_handling: 2 variants in tests/unit/",
+      "description": "2 error_handling variants in tests/unit/ (20/21 use canonical pattern).\n  - test_circuit_breaker.py:327 (TestPartialFailure.test_partial_batch_failure)",
+      "file": "tests/unit",
+      "start_line": null,
+      "end_line": null,
+      "ai_attributed": false,
+      "metadata": {
+        "category": "error_handling",
+        "num_variants": 2,
+        "variant_count": 2,
+        "canonical_count": 20,
+        "canonical_variant": "{\"handler_count\": 0, \"handlers\": [], \"has_else\": false, \"has",
+        "module": "tests/unit",
+        "total_instances": 21
+      }
+    },
+    {
+      "signal": "pattern_fragmentation",
+      "severity": "high",
+      "score": 0.9285714285714286,
+      "title": "api_endpoint: 14 variants in _deferred/routes/",
+      "description": "14 api_endpoint variants in _deferred/routes/ (6/21 use canonical pattern).\n  - billing.py:85 (get_subscription)\n  - billing.py:115 (create_checkout)\n  - billing.py:144 (create_portal)",
+      "file": "_deferred/routes",
+      "start_line": null,
+      "end_line": null,
+      "ai_attributed": false,
+      "metadata": {
+        "category": "api_endpoint",
+        "num_variants": 14,
+        "variant_count": 14,
+        "canonical_count": 6,
+        "canonical_variant": "{\"has_auth\": true, \"has_error_handling\": false, \"is_async\": ",
+        "module": "_deferred/routes",
+        "total_instances": 21
+      }
+    },
+    {
+      "signal": "pattern_fragmentation",
+      "severity": "high",
+      "score": 0.9912280701754386,
+      "title": "api_endpoint: 114 variants in pwbs/api/v1/routes/",
+      "description": "114 api_endpoint variants in pwbs/api/v1/routes/ (16/157 use canonical pattern).\n  - admin.py:144 (get_org_dashboard)\n  - admin.py:210 (list_org_members)\n  - admin.py:253 (invite_member)",
+      "file": "pwbs/api/v1/routes",
+      "start_line": null,
+      "end_line": null,
+      "ai_attributed": false,
+      "metadata": {
+        "category": "api_endpoint",
+        "num_variants": 114,
+        "variant_count": 114,
+        "canonical_count": 16,
+        "canonical_variant": "{\"has_auth\": true, \"has_error_handling\": false, \"is_async\": ",
+        "module": "pwbs/api/v1/routes",
+        "total_instances": 157
+      }
+    }
+  ]
+}
