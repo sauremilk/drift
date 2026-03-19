@@ -28,13 +28,13 @@ from drift.models import RepoAnalysis, Severity, SignalType
 DRIFT_REPO = Path(__file__).resolve().parent.parent  # drift/ repo root
 
 
-def _shallow_clone(url: str, dest: Path, depth: int = 1) -> Path:
+def _shallow_clone(url: str, dest: Path, depth: int = 1, timeout: int = 120) -> Path:
     """Shallow-clone a git repo. Returns the clone directory."""
     subprocess.run(
         ["git", "clone", "--depth", str(depth), "--single-branch", url, str(dest)],
         check=True,
         capture_output=True,
-        timeout=120,
+        timeout=timeout,
     )
     return dest
 
@@ -91,9 +91,7 @@ class TestSelfAnalysis:
     def test_file_count_reasonable(self, analysis: RepoAnalysis) -> None:
         """Drift repo should have a known range of Python files."""
         # STUDY.md: drift has ~45 files
-        assert 20 <= analysis.total_files <= 200, (
-            f"Unexpected file count: {analysis.total_files}"
-        )
+        assert 20 <= analysis.total_files <= 200, f"Unexpected file count: {analysis.total_files}"
 
     def test_drift_score_in_range(self, analysis: RepoAnalysis) -> None:
         """Self-analysis score should be in the expected range.
@@ -107,17 +105,12 @@ class TestSelfAnalysis:
     def test_no_critical_findings(self, analysis: RepoAnalysis) -> None:
         """A well-maintained tool repo should have no CRITICAL findings."""
         criticals = analysis.findings_by_severity(Severity.CRITICAL)
-        assert len(criticals) == 0, (
-            f"Unexpected CRITICAL findings: "
-            f"{[f.title for f in criticals]}"
-        )
+        assert len(criticals) == 0, f"Unexpected CRITICAL findings: {[f.title for f in criticals]}"
 
     def test_multiple_signals_fire(self, analysis: RepoAnalysis) -> None:
         """At least 2 distinct signal types should produce findings."""
         dist = _signal_distribution(analysis)
-        assert len(dist) >= 2, (
-            f"Only {len(dist)} signal type(s) fired: {list(dist.keys())}"
-        )
+        assert len(dist) >= 2, f"Only {len(dist)} signal type(s) fired: {list(dist.keys())}"
 
     def test_findings_have_file_paths(self, analysis: RepoAnalysis) -> None:
         """Every finding should reference a concrete file."""
@@ -128,9 +121,9 @@ class TestSelfAnalysis:
         """Print signal distribution for manual inspection (always passes)."""
         dist = _signal_distribution(analysis)
         sev = _severity_distribution(analysis)
-        print(f"\n{'='*60}")
+        print(f"\n{'=' * 60}")
         print("Drift Self-Analysis Smoke Report")
-        print(f"{'='*60}")
+        print(f"{'=' * 60}")
         print(f"  Score:     {analysis.drift_score:.3f}")
         print(f"  Files:     {analysis.total_files}")
         print(f"  Functions: {analysis.total_functions}")
@@ -148,23 +141,74 @@ class TestSelfAnalysis:
 # ---------------------------------------------------------------------------
 
 # Each entry: (name, git_url, expected_score_min, expected_score_max,
-#              min_files, expected_signals_present)
+#              min_files, expected_signals_present, clone_timeout)
+# clone_timeout defaults to 120s; large repos like django need more.
 EXTERNAL_REPOS = [
+    # --- Baseline: small, hand-crafted libraries ---
     (
         "httpx",
         "https://github.com/encode/httpx.git",
-        0.10,  # hand-crafted, expect low drift
+        0.10,
         0.65,
         15,  # core package ~23 .py files (tests/docs excluded)
-        {SignalType.EXPLAINABILITY_DEFICIT},  # large codebase → some undocumented fns
+        {SignalType.EXPLAINABILITY_DEFICIT},
+        120,
     ),
+    (
+        "flask",
+        "https://github.com/pallets/flask.git",
+        0.05,  # small, clean, well-maintained → expect low drift
+        0.55,
+        10,  # core flask/ package
+        {SignalType.EXPLAINABILITY_DEFICIT},
+        120,
+    ),
+    (
+        "requests",
+        "https://github.com/psf/requests.git",
+        0.05,  # similar to httpx, small focused library
+        0.60,
+        8,   # core requests/ package
+        {SignalType.EXPLAINABILITY_DEFICIT},
+        120,
+    ),
+    # --- Stress: large frameworks with known complexity ---
     (
         "fastapi",
         "https://github.com/fastapi/fastapi.git",
-        0.25,  # large framework, expect moderate drift
+        0.15,  # expect moderate drift (docs_src now excluded by default)
+        0.75,
+        30,   # core fastapi/ package without docs_src
+        {SignalType.PATTERN_FRAGMENTATION},
+        120,
+    ),
+    (
+        "django",
+        "https://github.com/django/django.git",
+        0.20,  # mega-repo, historically grown → expect higher drift
         0.85,
-        200,  # STUDY.md: ~1118 files
+        500,  # huge codebase
         {SignalType.PATTERN_FRAGMENTATION, SignalType.MUTANT_DUPLICATE},
+        300,  # large repo needs more clone time
+    ),
+    # --- Structural diversity: dataclass-heavy, cross-author comparison ---
+    (
+        "pydantic",
+        "https://github.com/pydantic/pydantic.git",
+        0.15,  # complex metaclass internals, many model patterns
+        0.75,
+        30,   # core pydantic/ package
+        {SignalType.EXPLAINABILITY_DEFICIT},
+        120,
+    ),
+    (
+        "sqlmodel",
+        "https://github.com/fastapi/sqlmodel.git",
+        0.10,  # small, from fastapi author → cross-repo comparison
+        0.65,
+        5,    # small core
+        set(),  # no specific signal expectation — exploratory
+        120,
     ),
 ]
 
@@ -177,10 +221,12 @@ class TestExternalRepos:
     def repo_analysis(
         self, request: pytest.FixtureRequest, tmp_path: Path
     ) -> tuple[str, RepoAnalysis]:
-        name, url, *_ = request.param
+        name, url, score_min, score_max, min_files, expected_signals, clone_timeout = (
+            request.param
+        )
         clone_dir = tmp_path / name
         try:
-            _shallow_clone(url, clone_dir)
+            _shallow_clone(url, clone_dir, timeout=clone_timeout)
         except (subprocess.CalledProcessError, subprocess.TimeoutExpired) as exc:
             pytest.skip(f"Could not clone {name}: {exc}")
 
@@ -191,6 +237,8 @@ class TestExternalRepos:
                 "**/node_modules/**",
                 "**/.venv*/**",
                 "**/docs/**",
+                "**/docs_src/**",
+                "**/examples/**",
                 "**/tests/**",
                 "**/test_*",
             ],
@@ -199,9 +247,7 @@ class TestExternalRepos:
         analysis = analyze_repo(clone_dir, config=config, since_days=365)
         return name, analysis
 
-    def test_analysis_completes(
-        self, repo_analysis: tuple[str, RepoAnalysis]
-    ) -> None:
+    def test_analysis_completes(self, repo_analysis: tuple[str, RepoAnalysis]) -> None:
         name, analysis = repo_analysis
         _assert_analysis_sane(analysis, name)
 
@@ -212,8 +258,7 @@ class TestExternalRepos:
         params = next(r for r in EXTERNAL_REPOS if r[0] == name)
         _, _, score_min, score_max, *_ = params
         assert score_min <= analysis.drift_score <= score_max, (
-            f"{name}: score {analysis.drift_score:.3f} "
-            f"outside [{score_min}, {score_max}]"
+            f"{name}: score {analysis.drift_score:.3f} outside [{score_min}, {score_max}]"
         )
 
     def test_minimum_files_discovered(
@@ -234,14 +279,9 @@ class TestExternalRepos:
         expected_signals = params[5]
         actual_signals = {f.signal_type for f in analysis.findings}
         missing = expected_signals - actual_signals
-        assert not missing, (
-            f"{name}: expected signals not found: "
-            f"{[s.value for s in missing]}"
-        )
+        assert not missing, f"{name}: expected signals not found: {[s.value for s in missing]}"
 
-    def test_no_critical_on_maintained_repo(
-        self, repo_analysis: tuple[str, RepoAnalysis]
-    ) -> None:
+    def test_no_critical_on_maintained_repo(self, repo_analysis: tuple[str, RepoAnalysis]) -> None:
         name, analysis = repo_analysis
         criticals = analysis.findings_by_severity(Severity.CRITICAL)
         # Well-maintained repos should have very few criticals
@@ -250,16 +290,14 @@ class TestExternalRepos:
             f"{[f.title for f in criticals[:5]]}"
         )
 
-    def test_smoke_report(
-        self, repo_analysis: tuple[str, RepoAnalysis]
-    ) -> None:
+    def test_smoke_report(self, repo_analysis: tuple[str, RepoAnalysis]) -> None:
         """Print findings summary for manual FP review (always passes)."""
         name, analysis = repo_analysis
         dist = _signal_distribution(analysis)
         sev = _severity_distribution(analysis)
-        print(f"\n{'='*60}")
+        print(f"\n{'=' * 60}")
         print(f"Smoke Report: {name}")
-        print(f"{'='*60}")
+        print(f"{'=' * 60}")
         print(f"  Score:     {analysis.drift_score:.3f}")
         print(f"  Files:     {analysis.total_files}")
         print(f"  Functions: {analysis.total_functions}")

@@ -452,15 +452,31 @@ A `calibrate_weights()` function was added to `drift.scoring.engine` that comput
 
 **Current limitation:** Weights are fitted on the same fixture corpus used for evaluation. A train/validation split should be introduced as the fixture suite grows beyond ~30 cases per signal.
 
-### 11.5 Real-World Smoke Tests (2026-03-19, commit 8d93bd6)
+### 11.5 Real-World Smoke Tests (2026-03-19)
 
-To validate signal behavior beyond curated fixtures, we ran `analyze_repo()` on the drift codebase itself and two external open-source repositories (shallow-cloned, `docs/`, `examples/`, `tests/` excluded):
+To validate signal behavior beyond curated fixtures, we ran `analyze_repo()` on the drift codebase itself and 7 external open-source repositories (shallow-cloned, `docs/`, `docs_src/`, `examples/`, `tests/` excluded):
 
-| Repository | Score | Files | Findings | Dominant Signal | Key Observation |
-| ---------- | ----: | ----: | -------: | --------------- | -------------------------------------------------------------------------- |
-| **drift**  | 0.450 |    61 |       84 | DIA (33), EDS (32) | Self-analysis near STUDY.md baseline (0.442). 6/7 signals fire. |
-| **httpx**  | 0.486 |    23 |       64 | MDS (27), EDS (18) | Known FP: Decorator-pattern (`DeflateDecoder.flush ↔ GZipDecoder.flush`) — structurally identical implementations of distinct codecs. MDS cannot distinguish intentional interface-conformance from copy-paste. |
-| **fastapi** | 0.585 |   520 |      419 | MDS (200), SMS (100) | `docs_src/` dominates: tutorial code intentionally duplicated across Python-version variants. Findings are **true positives** but from a non-production source. Without excluding `docs_src/`, the score overstates production drift. |
+| Repository   | Score | Files | Functions | Findings | Dominant Signal              | Archetype                             |
+| ------------ | ----: | ----: | --------: | -------: | ---------------------------- | ------------------------------------- |
+| **requests** | 0.376 |    19 |       240 |       38 | EDS (23), DIA (9)            | Small, mature, hand-crafted           |
+| **flask**    | 0.413 |    24 |       388 |       26 | EDS (10), DIA (8)            | Small, clean, well-maintained         |
+| **drift**    | 0.450 |    61 |       388 |       84 | DIA (33), EDS (32)           | Self-analysis (dogfooding)            |
+| **httpx**    | 0.486 |    23 |       446 |       64 | MDS (27), EDS (18)           | Small, hand-crafted HTTP client       |
+| **sqlmodel** | 0.504 |    20 |       133 |       37 | EDS (14), DIA (13)           | Small, single-author                  |
+| **pydantic** | 0.531 |   114 |     1,989 |      215 | EDS (136), MDS (48)          | Complex metaclass internals           |
+| **fastapi**  | 0.582 |    72 |       426 |      278 | MDS (165), DIA (51)          | Large framework, many internal copies |
+| **django**   | 0.599 |   908 |     9,562 |    1,107 | EDS (828), SMS (108), PFS (74) | Mega-repo, historically grown       |
+
+**Score-Bandbreite: 0.376 (requests) – 0.599 (django).** Sorted by score, the ranking tracks expectations: hand-crafted libraries score lowest, large historically grown frameworks score highest. This is consistent with drift's design intent.
+
+**Key observations per archetype:**
+
+- **Hand-crafted baseline** (requests=0.376, flask=0.413): Low scores, few findings, EDS dominates — mostly undocumented internal helpers. Minimal MDS, confirming careful code. PFS fires on error-handling variants (30–39 per repo), which is normal for libraries with many exception paths.
+- **httpx** (0.486): MDS dominates due to known Decorator-Pattern FP (`DeflateDecoder.flush ↔ GZipDecoder.flush`). Without this FP class, score would be closer to flask/requests baseline.
+- **sqlmodel** (0.504): EDS+DIA driven. Small codebase but high function complexity (`get_column_from_field`). MDS finds intentional async/sync session overloads.
+- **pydantic** (0.531): EDS dominates (136 findings) — complex metaclass internals without docstrings. MDS finds `v1/` legacy duplicates. PFS detects 52 error-handling variants in `v1/` alone.
+- **fastapi** (0.582): With `docs_src/` excluded, MDS (165) still dominates — internal copies of `Param.__init__`, security classes, routing. These are structural findings worth reviewing.
+- **django** (0.599): EDS dominates (828 findings) driven by admin module complexity. 6/7 signals fire including AVS (47 architecture violations). SMS (108) reflects django's deeply layered module structure.
 
 **Consequence:** `docs/`, `docs_src/`, and `examples/` were added to the default exclude list in `DriftConfig` and `drift.example.yaml`. This prevents tutorial/example code — which is intentionally duplicated — from inflating scores for users who analyze framework repositories.
 
@@ -474,18 +490,20 @@ To validate signal behavior beyond curated fixtures, we ran `analyze_repo()` on 
 | `calibrate_weights()` without hold-out | Weights fitted on training data      | Introduce train/val split                                |
 | DIA weight still 0.00                  | Signal has 59% precision, not scored | Increase to 0.05 once precision > 70% on external corpus |
 | MDS Decorator-Pattern FP               | Inflates score on codec/adapter code | Add ABC-sibling heuristic or per-file suppressions       |
+| Temporal drift curve not validated     | No evidence that score predicts refactoring | Run drift on N historical commits per repo      |
 
 ---
 
 ## 12. Conclusion
 
-drift v0.2 demonstrates that deterministic static analysis — without LLM involvement — can detect meaningful structural erosion in Python codebases. Across 5 repositories:
+drift v0.2 demonstrates that deterministic static analysis — without LLM involvement — can detect meaningful structural erosion in Python codebases. Across 8 repositories (score range 0.376–0.599):
 
 - **85% precision** (strict) on 269 classified findings, with only **6 false positives** (down from 31 in v0.1)
 - **86% recall** on 14 controlled mutations, with misses occurring at threshold boundaries
 - **3 actionable findings** in a production codebase, including copy-pasted functions, error-handling fragmentation, and API inconsistency
+- **8 real-world smoke tests** confirm score ranking tracks expectations: hand-crafted libraries (requests=0.376) score lowest, large historically grown frameworks (django=0.599) score highest
 
-The tool produces the fewest findings (and lowest score) on carefully hand-crafted codebases like httpx, and the most on large or rapidly scaffolded codebases like FastAPI and PWBS — behavior consistent with its design intent.
+The tool produces the fewest findings (and lowest score) on carefully hand-crafted codebases like requests and flask, and the most on large or rapidly scaffolded codebases like django and FastAPI — behavior consistent with its design intent.
 
 **Limitations:** DIA precision (59%) has improved significantly but remains below scoring threshold. AI-attribution is currently uninformative (0% across all repos). Ground-truth classification is single-rater. Replication on a fully independent corpus is the most important next step for external validity.
 
