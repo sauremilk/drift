@@ -311,7 +311,52 @@ The mutation benchmark can be reproduced with `python scripts/mutation_benchmark
 
 ---
 
-## 9. Conclusion
+## 9. Tool Landscape Comparison
+
+drift addresses a gap in the existing static analysis ecosystem. This section compares drift's detection capabilities against established tools to clarify where drift provides unique signal versus overlap.
+
+### 9.1 Capability Matrix
+
+| Capability                                                        |  drift  |    SonarQube    | pylint / mypy | jscpd / CPD | Sourcegraph Cody |
+| ----------------------------------------------------------------- | :-----: | :-------------: | :-----------: | :---------: | :--------------: |
+| **Pattern Fragmentation** (N variants of same pattern per module) | **Yes** |       No        |      No       |     No      |        No        |
+| **Near-Duplicate Detection** (AST structural, ≥80% Jaccard)       | **Yes** | Partial (text)  |      No       | Yes (text)  |        No        |
+| **Architecture Violation** (layer boundary + circular deps)       | **Yes** |     Partial     |      No       |     No      |        No        |
+| **Temporal Volatility** (churn anomalies, author entropy)         | **Yes** |       No        |      No       |     No      |        No        |
+| **Explainability Deficit** (complex undocumented functions)       | **Yes** |     Partial     |    Partial    |     No      |        No        |
+| **System Misalignment** (novel imports in recent files)           | **Yes** |       No        |      No       |     No      |        No        |
+| **Composite Health Score** (weighted multi-signal)                | **Yes** | Yes (different) |      No       |     No      |        No        |
+| **Trend Tracking** (score evolution over time)                    | **Yes** |       Yes       |      No       |     No      |        No        |
+| **AI-Erosion Specific** (designed for AI-generated code drift)    | **Yes** |       No        |      No       |     No      |     Partial      |
+| **Deterministic** (no LLM in detection pipeline)                  | **Yes** |       Yes       |      Yes      |     Yes     |        No        |
+| **Zero Config** (runs with defaults, no server needed)            | **Yes** |   No (server)   |    Partial    |     Yes     |    No (cloud)    |
+| **SARIF Output** (GitHub Code Scanning integration)               | **Yes** |       Yes       |      No       |     No      |        No        |
+
+### 9.2 Key Differentiators
+
+**1. Pattern Fragmentation Score (PFS) — unique to drift.**
+No other tool measures how many distinct implementation variants exist for the same pattern category within a module. SonarQube reports duplicates and complexity but does not group error-handling, API endpoint, or data-access patterns by structural fingerprint and count divergence. PFS achieved **100% precision** in our ground-truth study.
+
+**2. AI-Erosion Focus.**
+SonarQube's 2025 report documents 8× increase in code duplicates and declining code reuse in AI-accelerated codebases. However, SonarQube's detection is generalized — it doesn't distinguish between organic technical debt and AI-induced architectural fragmentation. drift's signal design specifically targets the patterns that AI coding assistants produce: local correctness with global incoherence.
+
+**3. Composite Score as Codebase Health KPI.**
+While SonarQube provides a Maintainability Rating (A-E), drift's composite score is designed as a time-series metric: run weekly, track trend. The score encompasses structural signals (PFS, MDS, AVS) combined with temporal signals (TVS, SMS) that capture _how_ the codebase is evolving, not just its current state.
+
+**4. Zero-Infrastructure Operation.**
+drift runs as a CLI tool — no server, no database, no cloud account. This makes it suitable for daily local use, pre-commit hooks, and lightweight CI pipelines where SonarQube's infrastructure requirements are prohibitive.
+
+### 9.3 Where Existing Tools Excel
+
+- **SonarQube** provides broader language support (25+ languages), security vulnerability detection (SAST), and enterprise governance features that drift does not attempt to replicate.
+- **pylint / mypy** catch syntax errors, type inconsistencies, and style violations that drift intentionally ignores — drift only detects structural and architectural signals.
+- **jscpd / CPD** perform well on exact and near-exact text-level duplicates. drift's MDS signal uses AST-level comparison, which is more resilient to formatting changes but may miss text-level clones that don't share AST structure.
+
+drift is designed to **complement** these tools, not replace them. The recommended stack is: linter (style) + type checker (types) + drift (coherence) + SonarQube (security/enterprise governance, if applicable).
+
+---
+
+## 10. Conclusion
 
 drift v0.1 demonstrates that deterministic static analysis — without LLM involvement — can detect meaningful structural erosion in Python codebases. Across 5 repositories:
 

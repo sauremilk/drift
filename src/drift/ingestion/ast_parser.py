@@ -193,6 +193,30 @@ def _fingerprint_endpoint(
 
 
 # ---------------------------------------------------------------------------
+# AST n-gram computation (for Mutant Duplicate detection)
+# ---------------------------------------------------------------------------
+
+_NGRAM_N = 3
+
+
+def _compute_ast_ngrams(node: ast.AST) -> list[list[str]]:
+    """Extract n-grams of AST node types from a function AST node.
+
+    Names, string literals, and numeric constants are normalised away so that
+    renaming variables does not affect the fingerprint.  The result is stored
+    in FunctionInfo.ast_fingerprint["ngrams"] as a JSON-safe list of lists.
+    """
+    node_types: list[str] = []
+    for child in ast.walk(node):
+        node_types.append(type(child).__name__)
+
+    if len(node_types) < _NGRAM_N:
+        return [node_types] if node_types else []
+
+    return [node_types[i : i + _NGRAM_N] for i in range(len(node_types) - _NGRAM_N + 1)]
+
+
+# ---------------------------------------------------------------------------
 # Main parser
 # ---------------------------------------------------------------------------
 
@@ -283,6 +307,12 @@ class PythonFileParser(ast.NodeVisitor):
         body_source = ast.get_source_segment(self.source, node) or ""
         body_hash = hashlib.sha256(body_source.encode()).hexdigest()[:16]
 
+        # Pre-compute AST n-grams for MDS signal (avoids re-reading files later)
+        ast_fp: dict[str, Any] = {}
+        ngrams = _compute_ast_ngrams(node)
+        if ngrams:
+            ast_fp["ngrams"] = ngrams
+
         func_name = node.name
         if self._current_class:
             func_name = f"{self._current_class}.{node.name}"
@@ -300,6 +330,7 @@ class PythonFileParser(ast.NodeVisitor):
             decorators=decorators,
             has_docstring=has_docstring,
             body_hash=body_hash,
+            ast_fingerprint=ast_fp,
         )
         self.functions.append(info)
 

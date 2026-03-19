@@ -36,7 +36,20 @@ Drift is a static analysis tool that measures how well a codebase maintains its 
 
 AI coding assistants optimize for the _prompt context_, not the _codebase context_. The result: code that works but doesn't fit. Error handling fragments across 4 different patterns. Import boundaries erode. Near-duplicate functions accumulate. The codebase gradually loses the implicit contracts that made it maintainable.
 
+SonarSource [reports](https://www.sonarsource.com/blog/the-inevitable-rise-of-poor-code-quality-in-ai-accelerated-codebases/) an 8× increase in code duplicates and declining code reuse in AI-accelerated codebases. Linters catch syntax issues. SonarQube catches security issues. **Nothing catches the loss of architectural coherence — until drift.**
+
 **Drift doesn't detect bugs. It detects the loss of design intent.**
+
+### Why Not Existing Tools?
+
+| Tool                 | What it catches                  | What it misses                                           |
+| -------------------- | -------------------------------- | -------------------------------------------------------- |
+| **SonarQube**        | Duplicates, complexity, security | No pattern fragmentation; no AI-specific erosion signals |
+| **pylint / mypy**    | Syntax, types, style             | No architecture or coherence signals                     |
+| **jscpd / CPD**      | Text-level duplicates            | No AST-structural near-duplicates; no fragmentation      |
+| **Sourcegraph Cody** | AI-powered search                | Non-deterministic; requires cloud; no composite scoring  |
+
+**drift is the first tool that combines structural, temporal, and pattern-coherence signals into a deterministic Codebase Health Score — specifically designed for AI-accelerated development.**
 
 ## Measured Results
 
@@ -57,7 +70,10 @@ Top finding for each repo: FastAPI → 499 near-duplicate test functions (MDS), 
 ## Quick Start
 
 ```bash
-# Install
+# Install from PyPI (when published)
+pip install drift-analyzer
+
+# Or install from source
 pip install -e ".[dev]"
 
 # Analyze a repository
@@ -438,9 +454,17 @@ Without tree-sitter, TypeScript files are skipped during analysis.
 ## Roadmap
 
 - **v0.1 (current):** 6 active detection signals, Python support, CLI + CI integration, parse caching, trend history with ASCII charts, timeline root-cause analysis, actionable recommendations, `drift self` demo command, `drift badge` generator
-- **v0.2:** TypeScript support (tree-sitter — parser ready, optional install), Doc-Impl Drift signal, embedding-based duplicate detection
-- **v0.3:** IDE plugin (VS Code), ADR-to-code alignment, team dashboards
-- **v0.4:** PR bot, auto-fix suggestions, historical drift tracking
+- **v0.2:** PyPI release, performance optimization (<5s for 500-file repos), TypeScript support (tree-sitter — parser ready, optional install), Doc-Impl Drift signal improvements
+- **v0.3:** VS Code extension with inline annotations, embedding-based duplicate detection, ADR-to-code alignment
+- **v0.4:** GitHub App for automated PR comments, auto-fix suggestions for MDS/PFS findings (AST-based refactoring), team dashboards, historical drift tracking
+
+### Vision: AI Codebase Health Monitor
+
+drift aims to become the daily health check for AI-accelerated codebases — a deterministic, fast, zero-infrastructure tool that gives teams a single KPI for codebase coherence. Track it weekly. Gate PRs on it. Watch the trend, not the absolute score.
+
+## Benchmark Study
+
+Full evaluation methodology, ground-truth precision analysis (291 classified findings), controlled mutation benchmark (14 patterns, 86% recall), and a [tool landscape comparison](STUDY.md#9-tool-landscape-comparison) against SonarQube, pylint, and CPD: **[STUDY.md](STUDY.md)**
 
 ## License
 

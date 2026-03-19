@@ -5,25 +5,35 @@ build-backend = "hatchling.build"
 [project]
 name = "drift-analyzer"
 version = "0.1.0"
-description = "Detect architectural erosion from AI-generated code"
+description = "Detect architectural erosion from AI-generated code — the first deterministic codebase coherence analyzer for AI-accelerated development"
 readme = "README.md"
 license = "MIT"
 requires-python = ">=3.11"
+authors = [
+    { name = "sauremilk" },
+]
 keywords = [
     "code-analysis",
     "technical-debt",
     "architecture",
     "ai-code",
     "static-analysis",
+    "code-quality",
+    "codebase-health",
+    "design-erosion",
 ]
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Developers",
     "Topic :: Software Development :: Quality Assurance",
+    "Topic :: Software Development :: Testing",
     "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
+    "Environment :: Console",
+    "Typing :: Typed",
 ]
 dependencies = [
     "click>=8.1",
@@ -33,6 +43,13 @@ dependencies = [
     "gitpython>=3.1",
     "networkx>=3.0",
 ]
+
+[project.urls]
+Homepage = "https://github.com/sauremilk/drift"
+Repository = "https://github.com/sauremilk/drift"
+Issues = "https://github.com/sauremilk/drift/issues"
+Documentation = "https://github.com/sauremilk/drift/blob/master/STUDY.md"
+Changelog = "https://github.com/sauremilk/drift/blob/master/CHANGELOG.md"
 
 [project.optional-dependencies]
 typescript = [

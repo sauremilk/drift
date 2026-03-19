@@ -5,13 +5,12 @@ similar but differs in subtle ways, suggesting copy-paste-then-modify
 patterns typical of AI generation across multiple sessions.
 
 Optimization: Uses LOC-bucket pre-filtering and body_hash grouping to
-avoid the O(n²) all-pairs comparison.  Only functions within a similar
-size range (±40% LOC) are compared.
+avoid the O(n²) all-pairs comparison.  Pre-computed AST n-grams from the
+parsing phase are used directly — no disk I/O or re-parsing required.
 """
 
 from __future__ import annotations
 
-import ast
 from collections import defaultdict
 from itertools import combinations
 from pathlib import Path
@@ -37,39 +36,29 @@ _MAX_COMPARISONS_PER_BUCKET = 500
 _MAX_FINDINGS = 200
 
 
-def _function_body_text(
-    func: FunctionInfo, repo_path: Path, _cache: dict[Path, list[str]] | None = None
-) -> str:
-    """Read the function body from disk. Uses an optional line cache to avoid redundant I/O."""
-    try:
-        full = repo_path / func.file_path
-        if _cache is not None:
-            if full not in _cache:
-                _cache[full] = full.read_text(encoding="utf-8", errors="replace").splitlines()
-            lines = _cache[full]
-        else:
-            lines = full.read_text(encoding="utf-8", errors="replace").splitlines()
-        return "\n".join(lines[func.start_line - 1 : func.end_line])
-    except Exception:
-        return ""
+def _get_precomputed_ngrams(func: FunctionInfo) -> list[tuple[str, ...]] | None:
+    """Retrieve pre-computed AST n-grams from FunctionInfo.ast_fingerprint.
+
+    Returns None if n-grams were not pre-computed (e.g. non-Python files
+    or functions parsed before n-gram computation was added).
+    """
+    raw = func.ast_fingerprint.get("ngrams")
+    if raw is None:
+        return None
+    if not raw:
+        return []
+    # Convert from JSON-safe list[list[str]] to list[tuple[str, ...]]
+    return [tuple(ng) for ng in raw]
 
 
-# Sentinel for ngrams that failed to parse (distinct from None/empty).
-_NGRAM_PARSE_FAILED: list[tuple[str, ...]] = []
-
-
-def _structural_similarity_cached(
+def _structural_similarity(
     ngrams_a: list[tuple[str, ...]] | None,
     ngrams_b: list[tuple[str, ...]] | None,
 ) -> float:
     """Compute structural similarity from pre-computed AST n-gram lists.
 
-    Returns 0.0 when either side failed to parse (no expensive difflib
-    fallback — the vast majority of findings come from the AST path and
-    the difflib fallback dominated runtime for marginal benefit).
+    Returns 0.0 when either side has no n-grams.
     """
-    if ngrams_a is _NGRAM_PARSE_FAILED or ngrams_b is _NGRAM_PARSE_FAILED:
-        return 0.0
     if not ngrams_a or not ngrams_b:
         return 0.0
 
@@ -81,28 +70,6 @@ def _structural_similarity_cached(
             return size_ratio  # guaranteed below threshold
 
     return _jaccard(ngrams_a, ngrams_b)
-
-
-def _ast_ngrams(source: str, n: int = 3) -> list[tuple[str, ...]] | None:
-    """Extract n-grams of AST node types from a source snippet.
-
-    Returns None if the source cannot be parsed.  Names, string literals,
-    and numeric constants are normalised away so that renaming variables
-    does not affect the fingerprint.
-    """
-    try:
-        tree = ast.parse(source)
-    except SyntaxError:
-        return None
-
-    node_types: list[str] = []
-    for node in ast.walk(tree):
-        node_types.append(type(node).__name__)
-
-    if len(node_types) < n:
-        return node_types[:1] if node_types else None
-
-    return [tuple(node_types[i : i + n]) for i in range(len(node_types) - n + 1)]
 
 
 def _jaccard(a: list[tuple[str, ...]], b: list[tuple[str, ...]]) -> float:
@@ -203,18 +170,11 @@ class MutantDuplicateSignal(BaseSignal):
                     )
 
         # ---- Phase 2: Near-duplicates via LOC-bucket comparison ----
-        # Pre-compute AST ngrams per function ONCE (avoids re-parsing
-        # the same function body for every pair it participates in).
-        file_cache: dict[Path, list[str]] = {}
+        # Use pre-computed AST ngrams from the parsing phase (no disk I/O).
         ngram_cache: dict[str, list[tuple[str, ...]] | None] = {}
         for fn in functions:
             fn_key = f"{fn.file_path}:{fn.name}:{fn.start_line}"
-            text = _function_body_text(fn, self._repo_path, file_cache)
-            if text:
-                ngrams = _ast_ngrams(text)
-                ngram_cache[fn_key] = ngrams if ngrams is not None else _NGRAM_PARSE_FAILED
-            else:
-                ngram_cache[fn_key] = _NGRAM_PARSE_FAILED
+            ngram_cache[fn_key] = _get_precomputed_ngrams(fn)
 
         # Group functions into LOC buckets (bucket_size=10 lines) so we
         # only compare functions of approximately similar size.
@@ -262,7 +222,7 @@ class MutantDuplicateSignal(BaseSignal):
                 ng_a = ngram_cache.get(f"{a.file_path}:{a.name}:{a.start_line}")
                 ng_b = ngram_cache.get(f"{b.file_path}:{b.name}:{b.start_line}")
 
-                sim = _structural_similarity_cached(ng_a, ng_b)
+                sim = _structural_similarity(ng_a, ng_b)
                 if sim >= SIMILARITY_THRESHOLD and sim < 1.0:
                     checked.add(key)
 
