@@ -69,6 +69,7 @@ dev = [
     "pytest-cov>=5.0",
     "ruff>=0.4",
     "mistune>=3.0",
+    "numpy>=1.26",
 ]
 all = [
     "drift-analyzer[typescript,embeddings,markdown,dev]",
