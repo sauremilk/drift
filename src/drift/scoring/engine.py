@@ -133,8 +133,4 @@ def severity_gate_pass(
 
     blocking = threshold_map.get(fail_on, {Severity.CRITICAL, Severity.HIGH})
 
-    for f in findings:
-        if f.severity in blocking:
-            return False
-
-    return True
+    return all(f.severity not in blocking for f in findings)

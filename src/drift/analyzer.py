@@ -5,9 +5,9 @@ from __future__ import annotations
 import datetime
 import logging
 import time
+from collections.abc import Callable
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
-from typing import Callable
 
 from drift.cache import ParseCache
 from drift.config import DriftConfig
@@ -193,7 +193,7 @@ def analyze_repo(
 
     return RepoAnalysis(
         repo_path=repo_path,
-        analyzed_at=datetime.datetime.now(tz=datetime.timezone.utc),
+        analyzed_at=datetime.datetime.now(tz=datetime.UTC),
         drift_score=repo_score,
         module_scores=module_scores,
         findings=all_findings,
@@ -216,7 +216,6 @@ def analyze_diff(
     Useful for CI — only checks files in the current diff.
     Runs signals only on changed files rather than the entire repo.
     """
-    import logging
 
     logger = logging.getLogger("drift")
     repo_path = repo_path.resolve()
@@ -247,7 +246,7 @@ def analyze_diff(
     if not changed_files:
         return RepoAnalysis(
             repo_path=repo_path,
-            analyzed_at=datetime.datetime.now(tz=datetime.timezone.utc),
+            analyzed_at=datetime.datetime.now(tz=datetime.UTC),
             drift_score=0.0,
         )
 
@@ -266,7 +265,7 @@ def analyze_diff(
     if not files:
         return RepoAnalysis(
             repo_path=repo_path,
-            analyzed_at=datetime.datetime.now(tz=datetime.timezone.utc),
+            analyzed_at=datetime.datetime.now(tz=datetime.UTC),
             drift_score=0.0,
         )
 
@@ -309,7 +308,7 @@ def analyze_diff(
 
     return RepoAnalysis(
         repo_path=repo_path,
-        analyzed_at=datetime.datetime.now(tz=datetime.timezone.utc),
+        analyzed_at=datetime.datetime.now(tz=datetime.UTC),
         drift_score=score,
         module_scores=module_scores,
         findings=all_findings,

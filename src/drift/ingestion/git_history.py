@@ -99,16 +99,16 @@ def parse_git_history(
     stat calls via GitPython, which is orders of magnitude faster on
     large repositories.
     """
-    since_date = datetime.datetime.now(tz=datetime.timezone.utc) - datetime.timedelta(
+    since_date = datetime.datetime.now(tz=datetime.UTC) - datetime.timedelta(
         days=since_days
     )
-    since_iso = since_date.isoformat()
+    since_date.isoformat()
 
     # Use a unique record separator that won't appear in commit messages.
     # Format each commit as: RS hash RS author RS email RS timestamp RS message RS
     # followed by numstat lines until the next RS.
-    _RS = "\x1e"  # ASCII Record Separator
-    fmt = f"{_RS}%H{_RS}%aN{_RS}%aE{_RS}%aI{_RS}%B{_RS}"
+    rs = "\x1e"  # ASCII Record Separator
+    fmt = f"{rs}%H{rs}%aN{rs}%aE{rs}%aI{rs}%B{rs}"
 
     try:
         result = subprocess.run(
@@ -141,7 +141,7 @@ def parse_git_history(
     # Numstat lines follow AFTER the trailing RS, until the next commit's
     # leading RS.  So after splitting we get groups of 6 parts:
     #   [hash, author, email, ts, message, numstat_block]
-    parts = raw.split(_RS)
+    parts = raw.split(rs)
 
     i = 1  # skip leading empty part
     while i + 5 < len(parts):
@@ -227,7 +227,7 @@ def build_file_histories(
                 continue
             file_commits[fpath].append(commit)
 
-    now = datetime.datetime.now(tz=datetime.timezone.utc)
+    now = datetime.datetime.now(tz=datetime.UTC)
     thirty_days_ago = now - datetime.timedelta(days=30)
 
     histories: dict[str, FileHistory] = {}
@@ -238,7 +238,7 @@ def build_file_histories(
         recent = [
             c
             for c in fcommits
-            if c.timestamp.astimezone(datetime.timezone.utc) > thirty_days_ago
+            if c.timestamp.astimezone(datetime.UTC) > thirty_days_ago
         ]
         defect_commits = [c for c in fcommits if _is_defect_correlated(c.message)]
         timestamps = [c.timestamp for c in fcommits]

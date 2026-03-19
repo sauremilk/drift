@@ -45,9 +45,7 @@ def _function_body_text(
         full = repo_path / func.file_path
         if _cache is not None:
             if full not in _cache:
-                _cache[full] = full.read_text(
-                    encoding="utf-8", errors="replace"
-                ).splitlines()
+                _cache[full] = full.read_text(encoding="utf-8", errors="replace").splitlines()
             lines = _cache[full]
         else:
             lines = full.read_text(encoding="utf-8", errors="replace").splitlines()
@@ -94,9 +92,8 @@ class MutantDuplicateSignal(BaseSignal):
             return []
 
         # Resolve similarity threshold from config (if provided)
-        similarity_threshold = SIMILARITY_THRESHOLD
         if hasattr(config, "thresholds"):
-            similarity_threshold = config.thresholds.similarity_threshold
+            pass
 
         findings: list[Finding] = []
         checked: set[tuple[str, str]] = set()
@@ -110,9 +107,7 @@ class MutantDuplicateSignal(BaseSignal):
         for _h, group in hash_groups.items():
             if len(group) > 1:
                 for a, b in combinations(group, 2):
-                    key = tuple(
-                        sorted([f"{a.file_path}:{a.name}", f"{b.file_path}:{b.name}"])
-                    )
+                    key = tuple(sorted([f"{a.file_path}:{a.name}", f"{b.file_path}:{b.name}"]))
                     if key in checked:
                         continue
                     checked.add(key)
@@ -138,10 +133,10 @@ class MutantDuplicateSignal(BaseSignal):
         # ---- Phase 2: Near-duplicates via LOC-bucket comparison ----
         # Group functions into LOC buckets (bucket_size=10 lines) so we
         # only compare functions of approximately similar size.
-        _BUCKET_SIZE = 10
+        bucket_size = 10
         loc_buckets: dict[int, list[FunctionInfo]] = defaultdict(list)
         for fn in functions:
-            bucket = fn.loc // _BUCKET_SIZE
+            bucket = fn.loc // bucket_size
             loc_buckets[bucket].append(fn)
 
         file_cache: dict[Path, list[str]] = {}
@@ -165,9 +160,7 @@ class MutantDuplicateSignal(BaseSignal):
                 if len(findings) >= _MAX_FINDINGS:
                     break
 
-                key = tuple(
-                    sorted([f"{a.file_path}:{a.name}", f"{b.file_path}:{b.name}"])
-                )
+                key = tuple(sorted([f"{a.file_path}:{a.name}", f"{b.file_path}:{b.name}"]))
                 if key in checked:
                     continue
 

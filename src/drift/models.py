@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import datetime
 from dataclasses import dataclass, field
-from enum import Enum
+from enum import StrEnum
 from pathlib import Path
 from typing import Any
 
@@ -13,7 +13,7 @@ from typing import Any
 # ---------------------------------------------------------------------------
 
 
-class Severity(str, Enum):
+class Severity(StrEnum):
     CRITICAL = "critical"
     HIGH = "high"
     MEDIUM = "medium"
@@ -21,7 +21,7 @@ class Severity(str, Enum):
     INFO = "info"
 
 
-class SignalType(str, Enum):
+class SignalType(StrEnum):
     PATTERN_FRAGMENTATION = "pattern_fragmentation"
     ARCHITECTURE_VIOLATION = "architecture_violation"
     MUTANT_DUPLICATE = "mutant_duplicate"
@@ -31,7 +31,7 @@ class SignalType(str, Enum):
     SYSTEM_MISALIGNMENT = "system_misalignment"
 
 
-class PatternCategory(str, Enum):
+class PatternCategory(StrEnum):
     ERROR_HANDLING = "error_handling"
     DATA_ACCESS = "data_access"
     API_ENDPOINT = "api_endpoint"

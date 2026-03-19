@@ -26,10 +26,7 @@ def detect_language(path: Path) -> str | None:
 
 
 def _matches_any(path_str: str, patterns: list[str]) -> bool:
-    for pattern in patterns:
-        if fnmatch.fnmatch(path_str, pattern):
-            return True
-    return False
+    return any(fnmatch.fnmatch(path_str, pattern) for pattern in patterns)
 
 
 def discover_files(

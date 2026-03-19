@@ -41,7 +41,7 @@ def _module_imports(
         if history and history.last_modified:
             last_mod = history.last_modified
             if hasattr(last_mod, "astimezone"):
-                last_mod = last_mod.astimezone(datetime.timezone.utc)
+                last_mod = last_mod.astimezone(datetime.UTC)
             if last_mod >= cutoff:
                 continue
 
@@ -62,7 +62,7 @@ def _find_novel_imports(
     """Find imports in recent files that introduce novel dependencies to their module."""
     novel: list[tuple[ImportInfo, Path, str]] = []
 
-    cutoff = datetime.datetime.now(tz=datetime.timezone.utc) - datetime.timedelta(
+    cutoff = datetime.datetime.now(tz=datetime.UTC) - datetime.timedelta(
         days=recency_days
     )
 
@@ -74,7 +74,7 @@ def _find_novel_imports(
 
         last_mod = history.last_modified
         if hasattr(last_mod, "astimezone"):
-            last_mod = last_mod.astimezone(datetime.timezone.utc)
+            last_mod = last_mod.astimezone(datetime.UTC)
         if last_mod < cutoff:
             continue
 
@@ -112,7 +112,7 @@ class SystemMisalignmentSignal(BaseSignal):
         recency_days = 14
         if hasattr(config, "thresholds"):
             recency_days = config.thresholds.recency_days
-        cutoff = datetime.datetime.now(tz=datetime.timezone.utc) - datetime.timedelta(
+        cutoff = datetime.datetime.now(tz=datetime.UTC) - datetime.timedelta(
             days=recency_days
         )
         baseline = _module_imports(parse_results, file_histories, cutoff)

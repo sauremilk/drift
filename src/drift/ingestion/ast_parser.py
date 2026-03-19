@@ -179,13 +179,16 @@ def _fingerprint_endpoint(
             "Depends",
         ):
             has_auth_check = True
-        if isinstance(child, ast.Return) and child.value:
-            if isinstance(child.value, ast.Call):
-                func = child.value.func
-                if isinstance(func, ast.Name):
-                    return_patterns.append(func.id)
-                elif isinstance(func, ast.Attribute):
-                    return_patterns.append(func.attr)
+        if (
+            isinstance(child, ast.Return)
+            and child.value
+            and isinstance(child.value, ast.Call)
+        ):
+            func = child.value.func
+            if isinstance(func, ast.Name):
+                return_patterns.append(func.id)
+            elif isinstance(func, ast.Attribute):
+                return_patterns.append(func.attr)
 
     return {
         "has_error_handling": has_try,
@@ -458,24 +461,24 @@ def _parse_typescript_stub(file_path: Path, repo_path: Path) -> ParseResult:
     imports: list[ImportInfo] = []
     for i, line in enumerate(lines, 1):
         stripped = line.strip()
-        if stripped.startswith("import ") or stripped.startswith("from "):
-            # Simple regex-free detection of TS imports
-            if " from " in stripped:
-                parts = stripped.split(" from ")
-                module = parts[-1].strip().strip("'\";")
-                names_part = parts[0].replace("import", "").strip()
-                names = [
-                    n.strip().strip("{}") for n in names_part.split(",") if n.strip()
-                ]
-                imports.append(
-                    ImportInfo(
-                        source_file=file_path,
-                        imported_module=module,
-                        imported_names=names,
-                        line_number=i,
-                        is_relative=module.startswith("."),
-                    )
+        if (
+            stripped.startswith("import ") or stripped.startswith("from ")
+        ) and " from " in stripped:
+            parts = stripped.split(" from ")
+            module = parts[-1].strip().strip("'\";")
+            names_part = parts[0].replace("import", "").strip()
+            names = [
+                n.strip().strip("{}") for n in names_part.split(",") if n.strip()
+            ]
+            imports.append(
+                ImportInfo(
+                    source_file=file_path,
+                    imported_module=module,
+                    imported_names=names,
+                    line_number=i,
+                    is_relative=module.startswith("."),
                 )
+            )
 
     return ParseResult(
         file_path=file_path,

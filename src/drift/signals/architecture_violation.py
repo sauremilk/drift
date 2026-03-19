@@ -8,7 +8,6 @@ a service layer.
 from __future__ import annotations
 
 import fnmatch
-from collections import defaultdict
 from pathlib import Path
 from typing import Any
 
@@ -230,8 +229,7 @@ class ArchitectureViolationSignal(BaseSignal):
         if not sccs:
             return findings
 
-        reported = 0
-        for scc in sorted(sccs, key=len, reverse=True):
+        for reported, scc in enumerate(sorted(sccs, key=len, reverse=True)):
             if reported >= 5:
                 break
             cycle = sorted(scc)  # deterministic ordering
@@ -248,6 +246,5 @@ class ArchitectureViolationSignal(BaseSignal):
                     metadata={"cycle": cycle},
                 )
             )
-            reported += 1
 
         return findings

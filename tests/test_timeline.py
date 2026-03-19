@@ -23,7 +23,7 @@ def _make_commit(
     message: str = "some change",
     days_ago: int = 0,
 ) -> CommitInfo:
-    ts = datetime.datetime.now(tz=datetime.timezone.utc) - datetime.timedelta(days=days_ago)
+    ts = datetime.datetime.now(tz=datetime.UTC) - datetime.timedelta(days=days_ago)
     return CommitInfo(
         hash=hash,
         author=author,

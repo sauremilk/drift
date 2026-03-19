@@ -7,6 +7,7 @@ import textwrap
 from pathlib import Path
 
 import pytest
+
 from drift.analyzer import analyze_repo
 from drift.config import DriftConfig
 

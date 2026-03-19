@@ -127,7 +127,10 @@ class PatternFragmentationSignal(BaseSignal):
                         signal_type=self.signal_type,
                         severity=severity,
                         score=frag_score,
-                        title=f"{category.value}: {num_variants} variants in {module_path.as_posix()}/",
+                        title=(
+                            f"{category.value}: {num_variants} variants"
+                            f" in {module_path.as_posix()}/"
+                        ),
                         description="\n".join(desc_parts),
                         file_path=module_path,
                         related_files=[p.file_path for p in non_canonical],

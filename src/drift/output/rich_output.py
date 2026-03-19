@@ -242,11 +242,10 @@ def render_full_report(analysis: RepoAnalysis, console: Console | None = None) -
 
 
 def render_timeline(
-    timeline: "RepoTimeline",  # noqa: F821
+    timeline: RepoTimeline,  # noqa: F821
     console: Console | None = None,
 ) -> None:
     """Render the drift timeline showing *when* and *why* drift began."""
-    from drift.timeline import RepoTimeline  # noqa: F811
 
     if console is None:
         console = Console()
@@ -319,11 +318,10 @@ def render_timeline(
 
 
 def render_recommendations(
-    recommendations: list["Recommendation"],  # noqa: F821
+    recommendations: list[Recommendation],  # noqa: F821
     console: Console | None = None,
 ) -> None:
     """Render actionable recommendations."""
-    from drift.recommendations import Recommendation  # noqa: F811
 
     if console is None:
         console = Console()
@@ -340,16 +338,16 @@ def render_recommendations(
         )
     )
 
-    _IMPACT_ICONS = {"high": "🔴", "medium": "🟡", "low": "🟢"}
-    _EFFORT_LABELS = {
+    impact_icons = {"high": "🔴", "medium": "🟡", "low": "🟢"}
+    effort_labels = {
         "low": "[green]low[/green]",
         "medium": "[yellow]med[/yellow]",
         "high": "[red]high[/red]",
     }
 
     for i, rec in enumerate(recommendations, 1):
-        impact_icon = _IMPACT_ICONS.get(rec.impact, "?")
-        effort_label = _EFFORT_LABELS.get(rec.effort, rec.effort)
+        impact_icon = impact_icons.get(rec.impact, "?")
+        effort_label = effort_labels.get(rec.effort, rec.effort)
         file_hint = f"  [dim]{rec.file_path.as_posix()}[/dim]" if rec.file_path else ""
 
         console.print(f"  {impact_icon} [bold]{i}. {rec.title}[/bold]{file_hint}")

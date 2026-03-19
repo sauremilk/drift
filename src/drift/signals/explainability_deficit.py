@@ -90,7 +90,7 @@ class ExplainabilityDeficitSignal(BaseSignal):
 
         findings: list[Finding] = []
 
-        for key, func in all_functions.items():
+        for _key, func in all_functions.items():
             # Skip test files and trivial functions
             if "test" in func.file_path.as_posix().lower():
                 continue

@@ -304,7 +304,6 @@ def trend(repo: Path, days: int, config: Path | None) -> None:
 
     from drift.analyzer import analyze_repo
     from drift.config import DriftConfig
-    from drift.models import SignalType
 
     cfg = DriftConfig.load(repo, config)
     history_file = repo / cfg.cache_dir / "history.json"
