@@ -1,0 +1,443 @@
+{
+  "n_fixtures": 15,
+  "n_folds": 15,
+  "held_out_f1": 1.0,
+  "held_out_tp": 8,
+  "held_out_fp": 0,
+  "held_out_fn": 0,
+  "full_set_f1": 1.0,
+  "weight_means": {
+    "pattern_fragmentation": 0.12356,
+    "architecture_violation": 0.25856,
+    "mutant_duplicate": 0.12356,
+    "explainability_deficit": 0.12356,
+    "doc_impl_drift": 0.12356,
+    "temporal_volatility": 0.12356,
+    "system_misalignment": 0.12356
+  },
+  "weight_stdevs": {
+    "pattern_fragmentation": 0.02564092153458719,
+    "architecture_violation": 0.04891299564386895,
+    "mutant_duplicate": 0.02564092153458719,
+    "explainability_deficit": 0.02564092153458719,
+    "doc_impl_drift": 0.02564092153458719,
+    "temporal_volatility": 0.02564092153458719,
+    "system_misalignment": 0.02564092153458719
+  },
+  "full_set_weights": {
+    "pattern_fragmentation": 0.1228,
+    "architecture_violation": 0.2632,
+    "mutant_duplicate": 0.1228,
+    "explainability_deficit": 0.1228,
+    "doc_impl_drift": 0.1228,
+    "temporal_volatility": 0.1228,
+    "system_misalignment": 0.1228
+  },
+  "folds": [
+    {
+      "fold": 0,
+      "held_out": "pfs_tp",
+      "train_f1": 1.0,
+      "held_out_correct": true,
+      "held_out_tp": 1,
+      "held_out_fp": 0,
+      "held_out_fn": 0,
+      "weights": {
+        "pattern_fragmentation": 0.035,
+        "architecture_violation": 0.2917,
+        "mutant_duplicate": 0.1346,
+        "explainability_deficit": 0.1346,
+        "doc_impl_drift": 0.1346,
+        "temporal_volatility": 0.1346,
+        "system_misalignment": 0.1346
+      },
+      "ablation_deltas": {
+        "pattern_fragmentation": 0.0,
+        "architecture_violation": 0.16666666666666674,
+        "mutant_duplicate": 0.07692307692307698,
+        "explainability_deficit": 0.07692307692307698,
+        "temporal_volatility": 0.07692307692307698,
+        "system_misalignment": 0.07692307692307698,
+        "doc_impl_drift": 0.07692307692307698
+      }
+    },
+    {
+      "fold": 1,
+      "held_out": "pfs_tn",
+      "train_f1": 1.0,
+      "held_out_correct": true,
+      "held_out_tp": 0,
+      "held_out_fp": 0,
+      "held_out_fn": 0,
+      "weights": {
+        "pattern_fragmentation": 0.1228,
+        "architecture_violation": 0.2632,
+        "mutant_duplicate": 0.1228,
+        "explainability_deficit": 0.1228,
+        "doc_impl_drift": 0.1228,
+        "temporal_volatility": 0.1228,
+        "system_misalignment": 0.1228
+      },
+      "ablation_deltas": {
+        "pattern_fragmentation": 0.06666666666666665,
+        "architecture_violation": 0.1428571428571429,
+        "mutant_duplicate": 0.06666666666666665,
+        "explainability_deficit": 0.06666666666666665,
+        "temporal_volatility": 0.06666666666666665,
+        "system_misalignment": 0.06666666666666665,
+        "doc_impl_drift": 0.06666666666666665
+      }
+    },
+    {
+      "fold": 2,
+      "held_out": "avs_tp",
+      "train_f1": 1.0,
+      "held_out_correct": true,
+      "held_out_tp": 1,
+      "held_out_fp": 0,
+      "held_out_fn": 0,
+      "weights": {
+        "pattern_fragmentation": 0.1429,
+        "architecture_violation": 0.1429,
+        "mutant_duplicate": 0.1429,
+        "explainability_deficit": 0.1429,
+        "doc_impl_drift": 0.1429,
+        "temporal_volatility": 0.1429,
+        "system_misalignment": 0.1429
+      },
+      "ablation_deltas": {
+        "pattern_fragmentation": 0.07692307692307698,
+        "architecture_violation": 0.07692307692307698,
+        "mutant_duplicate": 0.07692307692307698,
+        "explainability_deficit": 0.07692307692307698,
+        "temporal_volatility": 0.07692307692307698,
+        "system_misalignment": 0.07692307692307698,
+        "doc_impl_drift": 0.07692307692307698
+      }
+    },
+    {
+      "fold": 3,
+      "held_out": "avs_tn",
+      "train_f1": 1.0,
+      "held_out_correct": true,
+      "held_out_tp": 0,
+      "held_out_fp": 0,
+      "held_out_fn": 0,
+      "weights": {
+        "pattern_fragmentation": 0.1228,
+        "architecture_violation": 0.2632,
+        "mutant_duplicate": 0.1228,
+        "explainability_deficit": 0.1228,
+        "doc_impl_drift": 0.1228,
+        "temporal_volatility": 0.1228,
+        "system_misalignment": 0.1228
+      },
+      "ablation_deltas": {
+        "pattern_fragmentation": 0.06666666666666665,
+        "architecture_violation": 0.1428571428571429,
+        "mutant_duplicate": 0.06666666666666665,
+        "explainability_deficit": 0.06666666666666665,
+        "temporal_volatility": 0.06666666666666665,
+        "system_misalignment": 0.06666666666666665,
+        "doc_impl_drift": 0.06666666666666665
+      }
+    },
+    {
+      "fold": 4,
+      "held_out": "avs_circular_tp",
+      "train_f1": 1.0,
+      "held_out_correct": true,
+      "held_out_tp": 1,
+      "held_out_fp": 0,
+      "held_out_fn": 0,
+      "weights": {
+        "pattern_fragmentation": 0.1429,
+        "architecture_violation": 0.1429,
+        "mutant_duplicate": 0.1429,
+        "explainability_deficit": 0.1429,
+        "doc_impl_drift": 0.1429,
+        "temporal_volatility": 0.1429,
+        "system_misalignment": 0.1429
+      },
+      "ablation_deltas": {
+        "pattern_fragmentation": 0.07692307692307698,
+        "architecture_violation": 0.07692307692307698,
+        "mutant_duplicate": 0.07692307692307698,
+        "explainability_deficit": 0.07692307692307698,
+        "temporal_volatility": 0.07692307692307698,
+        "system_misalignment": 0.07692307692307698,
+        "doc_impl_drift": 0.07692307692307698
+      }
+    },
+    {
+      "fold": 5,
+      "held_out": "mds_tp",
+      "train_f1": 1.0,
+      "held_out_correct": true,
+      "held_out_tp": 1,
+      "held_out_fp": 0,
+      "held_out_fn": 0,
+      "weights": {
+        "pattern_fragmentation": 0.1346,
+        "architecture_violation": 0.2917,
+        "mutant_duplicate": 0.035,
+        "explainability_deficit": 0.1346,
+        "doc_impl_drift": 0.1346,
+        "temporal_volatility": 0.1346,
+        "system_misalignment": 0.1346
+      },
+      "ablation_deltas": {
+        "pattern_fragmentation": 0.07692307692307698,
+        "architecture_violation": 0.16666666666666674,
+        "mutant_duplicate": 0.0,
+        "explainability_deficit": 0.07692307692307698,
+        "temporal_volatility": 0.07692307692307698,
+        "system_misalignment": 0.07692307692307698,
+        "doc_impl_drift": 0.07692307692307698
+      }
+    },
+    {
+      "fold": 6,
+      "held_out": "mds_tn",
+      "train_f1": 1.0,
+      "held_out_correct": true,
+      "held_out_tp": 0,
+      "held_out_fp": 0,
+      "held_out_fn": 0,
+      "weights": {
+        "pattern_fragmentation": 0.1228,
+        "architecture_violation": 0.2632,
+        "mutant_duplicate": 0.1228,
+        "explainability_deficit": 0.1228,
+        "doc_impl_drift": 0.1228,
+        "temporal_volatility": 0.1228,
+        "system_misalignment": 0.1228
+      },
+      "ablation_deltas": {
+        "pattern_fragmentation": 0.06666666666666665,
+        "architecture_violation": 0.1428571428571429,
+        "mutant_duplicate": 0.06666666666666665,
+        "explainability_deficit": 0.06666666666666665,
+        "temporal_volatility": 0.06666666666666665,
+        "system_misalignment": 0.06666666666666665,
+        "doc_impl_drift": 0.06666666666666665
+      }
+    },
+    {
+      "fold": 7,
+      "held_out": "eds_tp",
+      "train_f1": 1.0,
+      "held_out_correct": true,
+      "held_out_tp": 1,
+      "held_out_fp": 0,
+      "held_out_fn": 0,
+      "weights": {
+        "pattern_fragmentation": 0.1346,
+        "architecture_violation": 0.2917,
+        "mutant_duplicate": 0.1346,
+        "explainability_deficit": 0.035,
+        "doc_impl_drift": 0.1346,
+        "temporal_volatility": 0.1346,
+        "system_misalignment": 0.1346
+      },
+      "ablation_deltas": {
+        "pattern_fragmentation": 0.07692307692307698,
+        "architecture_violation": 0.16666666666666674,
+        "mutant_duplicate": 0.07692307692307698,
+        "explainability_deficit": 0.0,
+        "temporal_volatility": 0.07692307692307698,
+        "system_misalignment": 0.07692307692307698,
+        "doc_impl_drift": 0.07692307692307698
+      }
+    },
+    {
+      "fold": 8,
+      "held_out": "eds_tn",
+      "train_f1": 1.0,
+      "held_out_correct": true,
+      "held_out_tp": 0,
+      "held_out_fp": 0,
+      "held_out_fn": 0,
+      "weights": {
+        "pattern_fragmentation": 0.1228,
+        "architecture_violation": 0.2632,
+        "mutant_duplicate": 0.1228,
+        "explainability_deficit": 0.1228,
+        "doc_impl_drift": 0.1228,
+        "temporal_volatility": 0.1228,
+        "system_misalignment": 0.1228
+      },
+      "ablation_deltas": {
+        "pattern_fragmentation": 0.06666666666666665,
+        "architecture_violation": 0.1428571428571429,
+        "mutant_duplicate": 0.06666666666666665,
+        "explainability_deficit": 0.06666666666666665,
+        "temporal_volatility": 0.06666666666666665,
+        "system_misalignment": 0.06666666666666665,
+        "doc_impl_drift": 0.06666666666666665
+      }
+    },
+    {
+      "fold": 9,
+      "held_out": "tvs_tp",
+      "train_f1": 1.0,
+      "held_out_correct": true,
+      "held_out_tp": 1,
+      "held_out_fp": 0,
+      "held_out_fn": 0,
+      "weights": {
+        "pattern_fragmentation": 0.1346,
+        "architecture_violation": 0.2917,
+        "mutant_duplicate": 0.1346,
+        "explainability_deficit": 0.1346,
+        "doc_impl_drift": 0.1346,
+        "temporal_volatility": 0.035,
+        "system_misalignment": 0.1346
+      },
+      "ablation_deltas": {
+        "pattern_fragmentation": 0.07692307692307698,
+        "architecture_violation": 0.16666666666666674,
+        "mutant_duplicate": 0.07692307692307698,
+        "explainability_deficit": 0.07692307692307698,
+        "temporal_volatility": 0.0,
+        "system_misalignment": 0.07692307692307698,
+        "doc_impl_drift": 0.07692307692307698
+      }
+    },
+    {
+      "fold": 10,
+      "held_out": "tvs_tn",
+      "train_f1": 1.0,
+      "held_out_correct": true,
+      "held_out_tp": 0,
+      "held_out_fp": 0,
+      "held_out_fn": 0,
+      "weights": {
+        "pattern_fragmentation": 0.1228,
+        "architecture_violation": 0.2632,
+        "mutant_duplicate": 0.1228,
+        "explainability_deficit": 0.1228,
+        "doc_impl_drift": 0.1228,
+        "temporal_volatility": 0.1228,
+        "system_misalignment": 0.1228
+      },
+      "ablation_deltas": {
+        "pattern_fragmentation": 0.06666666666666665,
+        "architecture_violation": 0.1428571428571429,
+        "mutant_duplicate": 0.06666666666666665,
+        "explainability_deficit": 0.06666666666666665,
+        "temporal_volatility": 0.06666666666666665,
+        "system_misalignment": 0.06666666666666665,
+        "doc_impl_drift": 0.06666666666666665
+      }
+    },
+    {
+      "fold": 11,
+      "held_out": "sms_tp",
+      "train_f1": 1.0,
+      "held_out_correct": true,
+      "held_out_tp": 1,
+      "held_out_fp": 0,
+      "held_out_fn": 0,
+      "weights": {
+        "pattern_fragmentation": 0.1346,
+        "architecture_violation": 0.2917,
+        "mutant_duplicate": 0.1346,
+        "explainability_deficit": 0.1346,
+        "doc_impl_drift": 0.1346,
+        "temporal_volatility": 0.1346,
+        "system_misalignment": 0.035
+      },
+      "ablation_deltas": {
+        "pattern_fragmentation": 0.07692307692307698,
+        "architecture_violation": 0.16666666666666674,
+        "mutant_duplicate": 0.07692307692307698,
+        "explainability_deficit": 0.07692307692307698,
+        "temporal_volatility": 0.07692307692307698,
+        "system_misalignment": 0.0,
+        "doc_impl_drift": 0.07692307692307698
+      }
+    },
+    {
+      "fold": 12,
+      "held_out": "sms_tn",
+      "train_f1": 1.0,
+      "held_out_correct": true,
+      "held_out_tp": 0,
+      "held_out_fp": 0,
+      "held_out_fn": 0,
+      "weights": {
+        "pattern_fragmentation": 0.1228,
+        "architecture_violation": 0.2632,
+        "mutant_duplicate": 0.1228,
+        "explainability_deficit": 0.1228,
+        "doc_impl_drift": 0.1228,
+        "temporal_volatility": 0.1228,
+        "system_misalignment": 0.1228
+      },
+      "ablation_deltas": {
+        "pattern_fragmentation": 0.06666666666666665,
+        "architecture_violation": 0.1428571428571429,
+        "mutant_duplicate": 0.06666666666666665,
+        "explainability_deficit": 0.06666666666666665,
+        "temporal_volatility": 0.06666666666666665,
+        "system_misalignment": 0.06666666666666665,
+        "doc_impl_drift": 0.06666666666666665
+      }
+    },
+    {
+      "fold": 13,
+      "held_out": "dia_tp",
+      "train_f1": 1.0,
+      "held_out_correct": true,
+      "held_out_tp": 1,
+      "held_out_fp": 0,
+      "held_out_fn": 0,
+      "weights": {
+        "pattern_fragmentation": 0.1346,
+        "architecture_violation": 0.2917,
+        "mutant_duplicate": 0.1346,
+        "explainability_deficit": 0.1346,
+        "doc_impl_drift": 0.035,
+        "temporal_volatility": 0.1346,
+        "system_misalignment": 0.1346
+      },
+      "ablation_deltas": {
+        "pattern_fragmentation": 0.07692307692307698,
+        "architecture_violation": 0.16666666666666674,
+        "mutant_duplicate": 0.07692307692307698,
+        "explainability_deficit": 0.07692307692307698,
+        "temporal_volatility": 0.07692307692307698,
+        "system_misalignment": 0.07692307692307698,
+        "doc_impl_drift": 0.0
+      }
+    },
+    {
+      "fold": 14,
+      "held_out": "dia_tn",
+      "train_f1": 1.0,
+      "held_out_correct": true,
+      "held_out_tp": 0,
+      "held_out_fp": 0,
+      "held_out_fn": 0,
+      "weights": {
+        "pattern_fragmentation": 0.1228,
+        "architecture_violation": 0.2632,
+        "mutant_duplicate": 0.1228,
+        "explainability_deficit": 0.1228,
+        "doc_impl_drift": 0.1228,
+        "temporal_volatility": 0.1228,
+        "system_misalignment": 0.1228
+      },
+      "ablation_deltas": {
+        "pattern_fragmentation": 0.06666666666666665,
+        "architecture_violation": 0.1428571428571429,
+        "mutant_duplicate": 0.06666666666666665,
+        "explainability_deficit": 0.06666666666666665,
+        "temporal_volatility": 0.06666666666666665,
+        "system_misalignment": 0.06666666666666665,
+        "doc_impl_drift": 0.06666666666666665
+      }
+    }
+  ]
+}
