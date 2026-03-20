@@ -3,6 +3,26 @@
 All notable changes to drift-analyzer are documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.3.0] – 2026-03-20
+
+### Added
+
+- **Evaluation Framework**: Comprehensive precision/recall scoring system with 15-fold LOOCV validation (F1=1.000). TVS (Type Variation Signal) fixtures added.
+- **Temporal Drift Analysis**: New script for analyzing drift patterns over time with score interpretation ranges and bandbreite documentation.
+- **Real Repository Smoke Tests**: Expanded from single repo to 7 real-world repositories for comprehensive false-positive regression detection.
+- **Major-Version Correlation Study**: Django correlation analysis across 10 years and 17 releases (1.8–6.0), demonstrating drift's effectiveness on long-term architectural evolution.
+- **Score Bandbreite Documentation**: Added to smoke test findings for better signal interpretation.
+
+### Fixed
+
+- **Config**: Added `docs/` and `examples/` to default exclude patterns, reducing false positives from documentation.
+- **CI/Dependencies**: Added `numpy` and `mistune` to dev dependencies for test collection.
+- **Linting**: Fixed ruff lint errors in test suite.
+
+### Changed
+
+- **Test Suite**: Reorganized and expanded to validate against 7 repositories with documented score ranges.
+
 ## [0.2.0] – 2026-03-19
 
 ### Changed

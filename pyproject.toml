@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "drift-analyzer"
-version = "1.1.0"
+version = "0.3.0"
 description = "Detect architectural erosion from AI-generated code — the first deterministic codebase coherence analyzer for AI-accelerated development"
 readme = "README.md"
 license = "MIT"
