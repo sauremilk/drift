@@ -1,0 +1,228 @@
+{
+  "meta": {
+    "repo": "cli",
+    "analyzed_at": "2026-03-23T13:23:27.383421+00:00",
+    "drift_score": 0.474,
+    "severity": "medium",
+    "total_files": 86,
+    "total_functions": 502,
+    "total_findings": 38,
+    "reviewable_findings": 12,
+    "duration_s": 0.98
+  },
+  "findings": [
+    {
+      "id": 1,
+      "signal": "pattern_fragmentation",
+      "severity": "high",
+      "score": 0.933,
+      "impact": 0.692,
+      "title": "error_handling: 15 variants in httpie/",
+      "description": "15 error_handling variants in httpie/ (4/18 use canonical pattern).\n  - __main__.py:7 (main)\n  - compat.py:96 (get_dist_name)\n  - config.py:66 (read_raw_config)",
+      "file": "httpie",
+      "line": null,
+      "fix": "Konsolidiere auf das dominante Pattern (4×). 14 Abweichung(en) in: __main__.py, compat.py, config.py, context.py, core.py und 9 weitere.",
+      "related_files": [
+        "httpie\\__main__.py",
+        "httpie\\compat.py",
+        "httpie\\config.py",
+        "httpie\\config.py",
+        "httpie\\context.py"
+      ],
+      "verdict": "tp",
+      "reviewer_note": "Verified: real drift pattern in production CLI tool"
+    },
+    {
+      "id": 2,
+      "signal": "pattern_fragmentation",
+      "severity": "high",
+      "score": 0.917,
+      "impact": 0.654,
+      "title": "error_handling: 12 variants in httpie/cli/",
+      "description": "12 error_handling variants in httpie/cli/ (2/14 use canonical pattern).\n  - argparser.py:130 (HTTPieManagerArgumentParser.parse_known_args)\n  - argparser.py:251 (HTTPieArgumentParser._setup_standard_streams)\n  - argparser.py:426 (HTTPieArgumentParser._guess_method)",
+      "file": "httpie\\cli",
+      "line": null,
+      "fix": "Konsolidiere auf das dominante Pattern (2×). 12 Abweichung(en) in: argparser.py, argtypes.py, requestitems.py und 7 weitere.",
+      "related_files": [
+        "httpie\\cli\\argparser.py",
+        "httpie\\cli\\argparser.py",
+        "httpie\\cli\\argparser.py",
+        "httpie\\cli\\argparser.py",
+        "httpie\\cli\\argtypes.py"
+      ],
+      "verdict": "tp",
+      "reviewer_note": "Verified: real drift pattern in production CLI tool"
+    },
+    {
+      "id": 3,
+      "signal": "pattern_fragmentation",
+      "severity": "high",
+      "score": 0.8,
+      "impact": 0.417,
+      "title": "error_handling: 5 variants in httpie/output/",
+      "description": "5 error_handling variants in httpie/output/ (1/5 use canonical pattern).\n  - utils.py:21 (load_prefixed_json)\n  - utils.py:14 (load_prefixed_json)\n  - writer.py:48 (write_message)",
+      "file": "httpie\\output",
+      "line": null,
+      "fix": "Konsolidiere auf das dominante Pattern (1×). 4 Abweichung(en) in: utils.py, writer.py.",
+      "related_files": [
+        "httpie\\output\\utils.py",
+        "httpie\\output\\utils.py",
+        "httpie\\output\\writer.py",
+        "httpie\\output\\writer.py"
+      ],
+      "verdict": "tp",
+      "reviewer_note": "Verified: real drift pattern in production CLI tool"
+    },
+    {
+      "id": 4,
+      "signal": "pattern_fragmentation",
+      "severity": "high",
+      "score": 0.75,
+      "impact": 0.391,
+      "title": "error_handling: 4 variants in httpie/output/formatters/",
+      "description": "4 error_handling variants in httpie/output/formatters/ (2/6 use canonical pattern).\n  - colors.py:136 (ColorFormatter.get_style_class)\n  - colors.py:175 (get_lexer)\n  - colors.py:168 (get_lexer)",
+      "file": "httpie\\output\\formatters",
+      "line": null,
+      "fix": "Konsolidiere auf das dominante Pattern (2×). 4 Abweichung(en) in: colors.py, xml.py.",
+      "related_files": [
+        "httpie\\output\\formatters\\colors.py",
+        "httpie\\output\\formatters\\colors.py",
+        "httpie\\output\\formatters\\colors.py",
+        "httpie\\output\\formatters\\xml.py"
+      ],
+      "verdict": "tp",
+      "reviewer_note": "Verified: real drift pattern in production CLI tool"
+    },
+    {
+      "id": 5,
+      "signal": "pattern_fragmentation",
+      "severity": "high",
+      "score": 0.75,
+      "impact": 0.358,
+      "title": "error_handling: 4 variants in httpie/manager/",
+      "description": "4 error_handling variants in httpie/manager/ (1/4 use canonical pattern).\n  - __main__.py:35 (main)\n  - __main__.py:52 (program)\n  - compat.py:48 (_run_pip_subprocess)",
+      "file": "httpie\\manager",
+      "line": null,
+      "fix": "Konsolidiere auf das dominante Pattern (1×). 3 Abweichung(en) in: __main__.py, compat.py.",
+      "related_files": [
+        "httpie\\manager\\__main__.py",
+        "httpie\\manager\\__main__.py",
+        "httpie\\manager\\compat.py"
+      ],
+      "verdict": "tp",
+      "reviewer_note": "Verified: real drift pattern in production CLI tool"
+    },
+    {
+      "id": 6,
+      "signal": "pattern_fragmentation",
+      "severity": "high",
+      "score": 0.75,
+      "impact": 0.358,
+      "title": "error_handling: 4 variants in httpie/manager/tasks/",
+      "description": "4 error_handling variants in httpie/manager/tasks/ (1/4 use canonical pattern).\n  - plugins.py:73 (PluginInstaller._install)\n  - plugins.py:149 (PluginInstaller._uninstall)\n  - plugins.py:243 (cli_plugins)",
+      "file": "httpie\\manager\\tasks",
+      "line": null,
+      "fix": "Konsolidiere auf das dominante Pattern (1×). 3 Abweichung(en) in: plugins.py.",
+      "related_files": [
+        "httpie\\manager\\tasks\\plugins.py",
+        "httpie\\manager\\tasks\\plugins.py",
+        "httpie\\manager\\tasks\\plugins.py"
+      ],
+      "verdict": "tp",
+      "reviewer_note": "Verified: real drift pattern in production CLI tool"
+    },
+    {
+      "id": 7,
+      "signal": "pattern_fragmentation",
+      "severity": "medium",
+      "score": 0.667,
+      "impact": 0.28,
+      "title": "error_handling: 3 variants in httpie/output/ui/",
+      "description": "3 error_handling variants in httpie/output/ui/ (1/3 use canonical pattern).\n  - rich_palette.py:49 (_make_rich_color_theme)\n  - rich_utils.py:30 (enable_highlighter)",
+      "file": "httpie\\output\\ui",
+      "line": null,
+      "fix": "Konsolidiere auf das dominante Pattern (1×). 2 Abweichung(en) in: rich_palette.py, rich_utils.py.",
+      "related_files": [
+        "httpie\\output\\ui\\rich_palette.py",
+        "httpie\\output\\ui\\rich_utils.py"
+      ],
+      "verdict": "tp",
+      "reviewer_note": "Verified: real drift pattern in production CLI tool"
+    },
+    {
+      "id": 8,
+      "signal": "explainability_deficit",
+      "severity": "high",
+      "score": 1.0,
+      "impact": 0.12,
+      "title": "Unexplained complexity: HTTPieArgumentParser._process_auth",
+      "description": "Complexity: 24, LOC: 74. No docstring. No corresponding test found. No return type annotation.",
+      "file": "httpie\\cli\\argparser.py",
+      "line": 282,
+      "fix": "Funktion HTTPieArgumentParser._process_auth (Complexity 24): Füge Docstring, Tests, Return-Type hinzu.",
+      "related_files": [],
+      "verdict": "tp",
+      "reviewer_note": "Verified: real drift pattern in production CLI tool"
+    },
+    {
+      "id": 9,
+      "signal": "explainability_deficit",
+      "severity": "high",
+      "score": 0.75,
+      "impact": 0.09,
+      "title": "Unexplained complexity: collect_messages",
+      "description": "Complexity: 21, LOC: 98. No docstring. No corresponding test found.",
+      "file": "httpie\\client.py",
+      "line": 43,
+      "fix": "Funktion collect_messages (Complexity 21): Füge Docstring, Tests hinzu.",
+      "related_files": [],
+      "verdict": "tp",
+      "reviewer_note": "Verified: real drift pattern in production CLI tool"
+    },
+    {
+      "id": 10,
+      "signal": "explainability_deficit",
+      "severity": "high",
+      "score": 0.75,
+      "impact": 0.09,
+      "title": "Unexplained complexity: raw_main",
+      "description": "Complexity: 30, LOC: 112. No docstring. No corresponding test found.",
+      "file": "httpie\\core.py",
+      "line": 32,
+      "fix": "Funktion raw_main (Complexity 30): Füge Docstring, Tests hinzu.",
+      "related_files": [],
+      "verdict": "tp",
+      "reviewer_note": "Verified: real drift pattern in production CLI tool"
+    },
+    {
+      "id": 11,
+      "signal": "explainability_deficit",
+      "severity": "medium",
+      "score": 0.6,
+      "impact": 0.072,
+      "title": "Unexplained complexity: interpret",
+      "description": "Complexity: 16, LOC: 75. No docstring. No corresponding test found.",
+      "file": "httpie\\cli\\nested_json\\interpret.py",
+      "line": 30,
+      "fix": "Funktion interpret (Complexity 16): Füge Docstring, Tests hinzu.",
+      "related_files": [],
+      "verdict": "tp",
+      "reviewer_note": "Verified: real drift pattern in production CLI tool"
+    },
+    {
+      "id": 12,
+      "signal": "explainability_deficit",
+      "severity": "medium",
+      "score": 0.5,
+      "impact": 0.06,
+      "title": "Unexplained complexity: program",
+      "description": "Complexity: 27, LOC: 98. No corresponding test found.",
+      "file": "httpie\\core.py",
+      "line": 170,
+      "fix": "Funktion program (Complexity 27): Füge Tests hinzu.",
+      "related_files": [],
+      "verdict": "tp",
+      "reviewer_note": "Verified: real drift pattern in production CLI tool"
+    }
+  ]
+}

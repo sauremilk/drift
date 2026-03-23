@@ -142,7 +142,7 @@ class TemporalVolatilitySignal(BaseSignal):
             if defect_z > z_threshold:
                 fix_parts.append(
                     f"{history.defect_correlated_commits} defektorientierte Commits"
-                    " — Stabilität erhöhen"
+                    " — Stabilisiere durch Tests und Code-Review"
                 )
             fix = ". ".join(fix_parts) + "." if fix_parts else None
 

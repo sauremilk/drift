@@ -677,6 +677,17 @@ PFS_VALIDATION_TP = GroundTruthFixture(
                     logger.warning("Validation failed: %s", e)
                     return None
         """,
+        "validators/payload_validator.py": """\
+            def validate_payload(payload: dict) -> dict:
+                try:
+                    if not isinstance(payload, dict):
+                        raise TypeError("payload must be dict")
+                    if "version" not in payload:
+                        raise KeyError("missing version")
+                    return payload
+                except (TypeError, KeyError):
+                    return {}
+        """,
     },
     expected=[
         ExpectedFinding(

@@ -47,6 +47,7 @@ ACTION_VERBS = re.compile(
     r"[Aa]ufteilen|[Ee]rw\u00e4ge|[Kk]l\u00e4ren|[Ee]rsetze|[Vv]ereinheitliche|"
     r"[Vv]erschiebe|[Aa]nleg[en]|[Ii]mportiere|[Ss]telle\s+sicher|"
     r"[Ee]rstelle|[Hh]inzuf\u00fcgen|[Aa]ktualisiere|[Bb]ehalte|"
+    r"[Ee]xtrahiere|[Rr]eduziere|[Ss]tabilisiere|[Ee]rh\u00f6he|"
     # English
     r"[Rr]emove|[Aa]dd|[Ee]xtract|[Cc]onsolidate|[Ss]plit|[Mm]ove|"
     r"[Rr]efactor|[Rr]eplace|[Ii]ntroduce|[Cc]reate|[Dd]elete|"

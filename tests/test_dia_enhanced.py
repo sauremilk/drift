@@ -4,7 +4,9 @@ from __future__ import annotations
 
 from drift.signals.doc_impl_drift import (
     _extract_dir_refs_from_ast,
+    _is_likely_proper_noun,
     _is_url_segment,
+    _is_version_or_numeric_segment,
 )
 
 
@@ -27,6 +29,29 @@ class TestUrlSegmentFilter:
     def test_case_insensitive(self):
         assert _is_url_segment("ACTIONS") is True
         assert _is_url_segment("Badge") is True
+
+
+class TestNoiseFilters:
+    def test_likely_proper_noun_true(self):
+        assert _is_likely_proper_noun("TypeScript") is True
+        assert _is_likely_proper_noun("Basic") is True
+
+    def test_likely_proper_noun_false(self):
+        assert _is_likely_proper_noun("src") is False
+        assert _is_likely_proper_noun("utils") is False
+        assert _is_likely_proper_noun("API") is False
+
+    def test_version_or_numeric_segment_true(self):
+        assert _is_version_or_numeric_segment("v1") is True
+        assert _is_version_or_numeric_segment("v2_0") is True
+        assert _is_version_or_numeric_segment("2024") is True
+        assert _is_version_or_numeric_segment("20240315") is True
+
+    def test_version_or_numeric_segment_false(self):
+        assert _is_version_or_numeric_segment("src") is False
+        assert _is_version_or_numeric_segment("api") is False
+        # Short numeric fragments can be legitimate directory names
+        assert _is_version_or_numeric_segment("42") is False
 
 
 class TestMarkdownAstExtraction:
@@ -88,6 +113,24 @@ The `frontend/` directory has the UI.
         md = "This is a simple readme with no directory references."
         refs = _extract_dir_refs_from_ast(md)
         assert refs == set()
+
+    def test_proper_nouns_filtered(self):
+        md = "We also support TypeScript/ and Basic/ examples."
+        refs = _extract_dir_refs_from_ast(md)
+        assert "TypeScript" not in refs
+        assert "Basic" not in refs
+
+    def test_version_segments_filtered(self):
+        md = "See migration notes in v2/ and reports in 2024/."
+        refs = _extract_dir_refs_from_ast(md)
+        assert "v2" not in refs
+        assert "2024" not in refs
+
+    def test_single_char_segments_filtered(self):
+        md = "Avoid e/ and i/ as accidental path fragments."
+        refs = _extract_dir_refs_from_ast(md)
+        assert "e" not in refs
+        assert "i" not in refs
 
 
 class TestAdrScanning:
@@ -172,3 +215,40 @@ class TestAdrScanning:
             f for f in findings if "ADR" in f.title
         ]
         assert len(adr_findings) == 0
+
+    def test_discovers_doc_decisions_directory(self, tmp_path):
+        """Non-default ADR folder names should still be discovered."""
+        from drift.config import DriftConfig
+        from drift.ingestion.ast_parser import parse_file
+        from drift.ingestion.file_discovery import discover_files
+        from drift.signals.doc_impl_drift import DocImplDriftSignal
+
+        repo = tmp_path / "repo"
+        repo.mkdir()
+        (repo / "README.md").write_text("# Project\n\n- `src/` — code\n")
+        (repo / "src").mkdir()
+        (repo / "src" / "__init__.py").write_text("")
+
+        decisions = repo / "doc" / "decisions"
+        decisions.mkdir(parents=True)
+        (decisions / "0001.md").write_text(
+            "# Decision\n\n- `controllers/` handles routing\n"
+        )
+
+        config = DriftConfig(
+            include=["**/*.py"],
+            exclude=["**/__pycache__/**"],
+        )
+        files = discover_files(repo, config.include, config.exclude)
+        parse_results = []
+        for finfo in files:
+            pr = parse_file(finfo.path, repo, finfo.language)
+            parse_results.append(pr)
+
+        signal = DocImplDriftSignal(repo_path=repo)
+        findings = signal.analyze(parse_results, {}, config)
+
+        assert any(
+            f.title == "ADR references missing directory: controllers/"
+            for f in findings
+        )

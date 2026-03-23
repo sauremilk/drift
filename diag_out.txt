@@ -1,0 +1,59 @@
+Total findings with fix: 77
+Not actionable: 20
+
+[doc_impl_drift] README references missing directory: MDS/
+  Issues: no specific reference
+  Fix: "Entferne 'MDS/' aus README oder lege das Verzeichnis an."
+
+[doc_impl_drift] README references missing directory: _internal/
+  Issues: no specific reference
+  Fix: "Entferne '_internal/' aus README oder lege das Verzeichnis an."
+
+[doc_impl_drift] README references missing directory: config/
+  Issues: no specific reference
+  Fix: "Entferne 'config/' aus README oder lege das Verzeichnis an."
+
+[doc_impl_drift] README references missing directory: django/
+  Issues: no specific reference
+  Fix: "Entferne 'django/' aus README oder lege das Verzeichnis an."
+
+[doc_impl_drift] README references missing directory: drift/
+  Issues: no specific reference
+  Fix: "Entferne 'drift/' aus README oder lege das Verzeichnis an."
+
+[doc_impl_drift] README references missing directory: fastapi/
+  Issues: no specific reference
+  Fix: "Entferne 'fastapi/' aus README oder lege das Verzeichnis an."
+
+[doc_impl_drift] README references missing directory: imports/
+  Issues: no specific reference
+  Fix: "Entferne 'imports/' aus README oder lege das Verzeichnis an."
+
+[doc_impl_drift] README references missing directory: ingestion/
+  Issues: no specific reference
+  Fix: "Entferne 'ingestion/' aus README oder lege das Verzeichnis an."
+
+[doc_impl_drift] README references missing directory: pydantic/
+  Issues: no specific reference
+  Fix: "Entferne 'pydantic/' aus README oder lege das Verzeichnis an."
+
+[doc_impl_drift] README references missing directory: scoring/
+  Issues: no specific reference
+  Fix: "Entferne 'scoring/' aus README oder lege das Verzeichnis an."
+
+[doc_impl_drift] README references missing directory: signals/
+  Issues: no specific reference
+  Fix: "Entferne 'signals/' aus README oder lege das Verzeichnis an."
+
+[doc_impl_drift] README references missing directory: thresholds/
+  Issues: no specific reference
+  Fix: "Entferne 'thresholds/' aus README oder lege das Verzeichnis an."
+
+[doc_impl_drift] README references missing directory: types/
+  Issues: no specific reference
+  Fix: "Entferne 'types/' aus README oder lege das Verzeichnis an."
+
+[doc_impl_drift] README references missing directory: utils/
+  Issues: no specific reference
+  Fix: "Entferne 'utils/' aus README oder lege das Verzeichnis an."
+

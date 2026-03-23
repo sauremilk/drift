@@ -1,0 +1,27 @@
+Total findings with fix: 77
+Not actionable: 6
+
+[mutant_duplicate] Near-duplicate (83%): _compute_f1 ↔ _compute_fixture_f1
+  Issues: no action verb
+  Fix: 'Extrahiere _compute_f1() in scripts/shared.py. Similarity: 83%. Aufwand: M.'
+
+[mutant_duplicate] Near-duplicate (92%): _run_fixtures ↔ _run_all_signals_grouped
+  Issues: no action verb
+  Fix: 'Extrahiere _run_fixtures() in scripts/shared.py. Similarity: 92%. Aufwand: M.'
+
+[temporal_volatility] High volatility: src/drift/signals/pattern_fragmentation.py
+  Issues: no action verb
+  Fix: '6 defektorientierte Commits — Stabilisiere durch Tests und Code-Review.'
+
+[temporal_volatility] High volatility: src/drift/scoring/engine.py
+  Issues: no action verb
+  Fix: '6 defektorientierte Commits — Stabilisiere durch Tests und Code-Review.'
+
+[temporal_volatility] High volatility: src/drift/signals/system_misalignment.py
+  Issues: no action verb
+  Fix: '6 defektorientierte Commits — Stabilisiere durch Tests und Code-Review.'
+
+[temporal_volatility] High volatility: src/drift/ingestion/file_discovery.py
+  Issues: no action verb
+  Fix: '6 defektorientierte Commits — Stabilisiere durch Tests und Code-Review.'
+

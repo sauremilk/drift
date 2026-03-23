@@ -22,6 +22,32 @@ from drift.models import (
 )
 from drift.signals.base import BaseSignal, register_signal
 
+# Python stdlib top-level modules — never "novel" in any module
+_STDLIB_MODULES: frozenset[str] = frozenset({
+    "abc", "argparse", "ast", "asyncio", "base64", "bisect", "builtins",
+    "calendar", "cmath", "codecs", "collections", "colorsys", "compileall",
+    "concurrent", "configparser", "contextlib", "contextvars", "copy",
+    "csv", "ctypes", "dataclasses", "datetime", "decimal", "difflib",
+    "dis", "email", "enum", "errno", "faulthandler", "filecmp", "fnmatch",
+    "fractions", "ftplib", "functools", "gc", "getopt", "getpass", "glob",
+    "gzip", "hashlib", "heapq", "hmac", "html", "http", "imaplib",
+    "importlib", "inspect", "io", "ipaddress", "itertools", "json",
+    "keyword", "linecache", "locale", "logging", "lzma", "mailbox",
+    "math", "mimetypes", "mmap", "multiprocessing", "numbers", "operator",
+    "os", "pathlib", "pdb", "pickle", "pkgutil", "platform", "plistlib",
+    "pprint", "profile", "pydoc", "queue", "random", "re", "readline",
+    "reprlib", "runpy", "sched", "secrets", "select", "shelve", "shlex",
+    "shutil", "signal", "site", "smtplib", "socket", "socketserver",
+    "sqlite3", "stat", "statistics", "string", "struct", "subprocess",
+    "sys", "sysconfig", "syslog", "tempfile", "textwrap", "threading",
+    "time", "timeit", "token", "tokenize", "tomllib", "trace", "traceback",
+    "tracemalloc", "tty", "types", "typing", "unicodedata", "unittest",
+    "urllib", "uuid", "venv", "warnings", "wave", "weakref", "webbrowser",
+    "xml", "xmlrpc", "zipfile", "zipimport", "zlib",
+    # common C extension modules
+    "_thread", "_io", "_collections", "array", "binascii",
+})
+
 
 def _module_imports(
     parse_results: list[ParseResult],
@@ -83,6 +109,8 @@ def _find_novel_imports(
             if imp.is_relative:
                 continue
             top = imp.imported_module.split(".")[0]
+            if top in _STDLIB_MODULES:
+                continue
             if top not in baseline:
                 novel.append((imp, module, top))
 
@@ -113,6 +141,22 @@ class SystemMisalignmentSignal(BaseSignal):
             recency_days = config.thresholds.recency_days
         cutoff = datetime.datetime.now(tz=datetime.UTC) - datetime.timedelta(days=recency_days)
         baseline = _module_imports(parse_results, file_histories, cutoff)
+
+        # Guard against shallow clones / repos where nearly all files appear recent:
+        # if fewer than 10% of files have established history, the baseline is too
+        # thin to produce reliable "novel import" signals — skip SMS entirely.
+        established_count = 0
+        for pr in parse_results:
+            h = file_histories.get(pr.file_path.as_posix())
+            if not h or not h.last_modified:
+                continue
+            lm = h.last_modified
+            if hasattr(lm, "astimezone"):
+                lm = lm.astimezone(datetime.UTC)
+            if lm < cutoff:
+                established_count += 1
+        if parse_results and established_count / len(parse_results) < 0.10:
+            return []
 
         # Find novel imports in recently-modified files
         novel = _find_novel_imports(

@@ -1,0 +1,145 @@
+{
+  "meta": {
+    "repo": "arrow",
+    "analyzed_at": "2026-03-23T13:23:30.192022+00:00",
+    "drift_score": 0.339,
+    "severity": "low",
+    "total_files": 10,
+    "total_functions": 175,
+    "total_findings": 20,
+    "reviewable_findings": 8,
+    "duration_s": 1.75
+  },
+  "findings": [
+    {
+      "id": 1,
+      "signal": "pattern_fragmentation",
+      "severity": "high",
+      "score": 0.889,
+      "impact": 0.568,
+      "title": "error_handling: 9 variants in arrow/",
+      "description": "9 error_handling variants in arrow/ (2/10 use canonical pattern).\n  - arrow.py:783 (Arrow.interval)\n  - arrow.py:786 (Arrow.interval)\n  - arrow.py:1831 (Arrow._get_tzinfo)",
+      "file": "arrow",
+      "line": null,
+      "fix": "Konsolidiere auf das dominante Pattern (2×). 8 Abweichung(en) in: arrow.py, parser.py, util.py und 3 weitere.",
+      "related_files": [
+        "arrow\\arrow.py",
+        "arrow\\arrow.py",
+        "arrow\\arrow.py",
+        "arrow\\parser.py",
+        "arrow\\parser.py"
+      ],
+      "verdict": "tp",
+      "reviewer_note": "9 error handling variants across date library - real fragmentation"
+    },
+    {
+      "id": 2,
+      "signal": "mutant_duplicate",
+      "severity": "high",
+      "score": 0.9,
+      "impact": 0.229,
+      "title": "Exact duplicates (2×): CroatianLocale._format_timeframe, SerbianLocale._format_timeframe",
+      "description": "2 identical copies (10 lines each) at: arrow\\locales.py:4969, arrow\\locales.py:5560. Consider consolidating.",
+      "file": "arrow\\locales.py",
+      "line": 4969,
+      "fix": "Extrahiere CroatianLocale._format_timeframe() in arrow/shared.py. 2 identische Kopien (Similarity: 1.00). Aufwand: S.",
+      "related_files": [
+        "arrow\\locales.py"
+      ],
+      "verdict": "tp",
+      "reviewer_note": "Croatian/Serbian _format_timeframe: identical copy-paste locals"
+    },
+    {
+      "id": 3,
+      "signal": "mutant_duplicate",
+      "severity": "high",
+      "score": 0.85,
+      "impact": 0.216,
+      "title": "Near-duplicate (100%): CzechLocale._format_timeframe ↔ SlovakLocale._format_timeframe",
+      "description": "arrow\\locales.py:3296 and arrow\\locales.py:3427 are 100% similar. Small differences may indicate copy-paste divergence.",
+      "file": "arrow\\locales.py",
+      "line": 3296,
+      "fix": "Extrahiere CzechLocale._format_timeframe() in arrow/shared.py. Similarity: 100%. Aufwand: S.",
+      "related_files": [
+        "arrow\\locales.py"
+      ],
+      "verdict": "tp",
+      "reviewer_note": "Czech/Slovak _format_timeframe: 100% identical copy-paste"
+    },
+    {
+      "id": 4,
+      "signal": "explainability_deficit",
+      "severity": "high",
+      "score": 0.75,
+      "impact": 0.09,
+      "title": "Unexplained complexity: DateTimeFormatter._format_token",
+      "description": "Complexity: 38, LOC: 98. No docstring. No corresponding test found.",
+      "file": "arrow\\formatter.py",
+      "line": 43,
+      "fix": "Funktion DateTimeFormatter._format_token (Complexity 38): Füge Docstring, Tests hinzu.",
+      "related_files": [],
+      "verdict": "tp",
+      "reviewer_note": "DateTimeFormatter._format_token C38 without docstring, high complexity"
+    },
+    {
+      "id": 5,
+      "signal": "explainability_deficit",
+      "severity": "medium",
+      "score": 0.5,
+      "impact": 0.06,
+      "title": "Unexplained complexity: Arrow.humanize",
+      "description": "Complexity: 43, LOC: 212. No corresponding test found.",
+      "file": "arrow\\arrow.py",
+      "line": 1133,
+      "fix": "Funktion Arrow.humanize (Complexity 43): Füge Tests hinzu.",
+      "related_files": [],
+      "verdict": "tp",
+      "reviewer_note": "Arrow.humanize C43 - most complex public API without tests"
+    },
+    {
+      "id": 6,
+      "signal": "explainability_deficit",
+      "severity": "medium",
+      "score": 0.5,
+      "impact": 0.06,
+      "title": "Unexplained complexity: ArrowFactory.get",
+      "description": "Complexity: 28, LOC: 213. No corresponding test found.",
+      "file": "arrow\\factory.py",
+      "line": 85,
+      "fix": "Funktion ArrowFactory.get (Complexity 28): Füge Tests hinzu.",
+      "related_files": [],
+      "verdict": "tp",
+      "reviewer_note": "ArrowFactory.get C28 without tests"
+    },
+    {
+      "id": 7,
+      "signal": "explainability_deficit",
+      "severity": "medium",
+      "score": 0.5,
+      "impact": 0.06,
+      "title": "Unexplained complexity: DateTimeParser.parse_iso",
+      "description": "Complexity: 21, LOC: 120. No corresponding test found.",
+      "file": "arrow\\parser.py",
+      "line": 252,
+      "fix": "Funktion DateTimeParser.parse_iso (Complexity 21): Füge Tests hinzu.",
+      "related_files": [],
+      "verdict": "tp",
+      "reviewer_note": "DateTimeParser.parse_iso C21 without tests"
+    },
+    {
+      "id": 8,
+      "signal": "explainability_deficit",
+      "severity": "medium",
+      "score": 0.5,
+      "impact": 0.06,
+      "title": "Unexplained complexity: DateTimeParser._parse_token",
+      "description": "Complexity: 27, LOC: 103. No corresponding test found.",
+      "file": "arrow\\parser.py",
+      "line": 591,
+      "fix": "Funktion DateTimeParser._parse_token (Complexity 27): Füge Tests hinzu.",
+      "related_files": [],
+      "verdict": "tp",
+      "reviewer_note": "DateTimeParser._parse_token C27 without tests"
+    }
+  ]
+}

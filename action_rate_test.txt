@@ -1,0 +1,19 @@
+============================= test session starts =============================
+platform win32 -- Python 3.11.9, pytest-9.0.2, pluggy-1.6.0 -- C:\Users\mickg\AppData\Local\Programs\Python\Python311\python.exe
+cachedir: .pytest_cache
+hypothesis profile 'default'
+rootdir: C:\Users\mickg\PWBS\drift
+configfile: pyproject.toml
+plugins: anyio-4.10.0, dash-3.4.0, hydra-core-1.3.2, hypothesis-6.150.2, asyncio-0.18.3, cov-7.0.0, timeout-2.4.0, xdist-3.8.0
+asyncio: mode=Mode.LEGACY
+collecting ... collected 1 item
+
+tests/test_fix_actionability.py::TestFixTextActionability::test_self_analysis_actionability_rate PASSED [100%]
+
+============================== warnings summary ===============================
+..\..\AppData\Local\Programs\Python\Python311\Lib\site-packages\pytest_asyncio\plugin.py:191
+  C:\Users\mickg\AppData\Local\Programs\Python\Python311\Lib\site-packages\pytest_asyncio\plugin.py:191: DeprecationWarning: The 'asyncio_mode' default value will change to 'strict' in future, please explicitly use 'asyncio_mode=strict' or 'asyncio_mode=auto' in pytest configuration file.
+    config.issue_config_time_warning(LEGACY_MODE, stacklevel=2)
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+======================== 1 passed, 1 warning in 1.13s =========================

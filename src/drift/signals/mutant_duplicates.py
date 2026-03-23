@@ -48,6 +48,22 @@ _MAX_COMPARISONS_PER_BUCKET = 500
 # Maximum near-duplicate findings to report
 _MAX_FINDINGS = 200
 
+# Python dunder/special-method prefixes that are intentional Protocol
+# implementations — structurally similar by design, NOT copy-paste drift.
+_DUNDER_METHODS: frozenset[str] = frozenset({
+    "__eq__", "__ne__", "__lt__", "__le__", "__gt__", "__ge__",
+    "__add__", "__radd__", "__sub__", "__rsub__", "__mul__", "__rmul__",
+    "__truediv__", "__rtruediv__", "__floordiv__", "__mod__", "__pow__",
+    "__and__", "__or__", "__xor__", "__lshift__", "__rshift__",
+    "__iadd__", "__isub__", "__imul__", "__itruediv__",
+    "__hash__", "__bool__", "__len__", "__iter__", "__next__",
+    "__getitem__", "__setitem__", "__delitem__", "__contains__",
+    "__enter__", "__exit__", "__aenter__", "__aexit__",
+    "__get__", "__set__", "__delete__",
+    "__str__", "__repr__", "__bytes__", "__format__",
+    "__int__", "__float__", "__complex__", "__index__",
+})
+
 
 def _get_precomputed_ngrams(func: FunctionInfo) -> list[tuple[str, ...]] | None:
     """Retrieve pre-computed AST n-grams from FunctionInfo.ast_fingerprint."""
@@ -151,7 +167,9 @@ class MutantDuplicateSignal(BaseSignal):
         functions: list[FunctionInfo] = []
         for pr in parse_results:
             for fn in pr.functions:
-                if fn.loc >= 5:
+                # Strip class qualifier to get bare method name for dunder check
+                bare_name = fn.name.rsplit(".", 1)[-1]
+                if fn.loc >= 5 and fn.complexity >= 2 and bare_name not in _DUNDER_METHODS:
                     functions.append(fn)
 
         if len(functions) < 2:
