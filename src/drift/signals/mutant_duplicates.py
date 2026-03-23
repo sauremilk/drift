@@ -185,7 +185,9 @@ class MutantDuplicateSignal(BaseSignal):
                     common_parts = list(anchor.file_path.parts)
                     for fn in others:
                         common_parts = [
-                            p for p, q in zip(common_parts, fn.file_path.parts) if p == q
+                            p
+                            for p, q in zip(common_parts, fn.file_path.parts, strict=False)
+                            if p == q
                         ]
                     common_parent = Path(*common_parts) if common_parts else anchor.file_path.parent
 
@@ -194,9 +196,7 @@ class MutantDuplicateSignal(BaseSignal):
                     f"{len(group)} identische Kopien (Similarity: 1.00). Aufwand: S."
                 )
 
-                locations_desc = ", ".join(
-                    f"{fn.file_path}:{fn.start_line}" for fn in group
-                )
+                locations_desc = ", ".join(f"{fn.file_path}:{fn.start_line}" for fn in group)
 
                 findings.append(
                     Finding(
@@ -217,7 +217,11 @@ class MutantDuplicateSignal(BaseSignal):
                             "body_hash": _h,
                             "group_size": len(group),
                             "functions": [
-                                {"name": fn.name, "file": fn.file_path.as_posix(), "line": fn.start_line}
+                                {
+                                    "name": fn.name,
+                                    "file": fn.file_path.as_posix(),
+                                    "line": fn.start_line,
+                                }
                                 for fn in group
                             ],
                         },
@@ -321,9 +325,13 @@ class MutantDuplicateSignal(BaseSignal):
                     # Determine common extraction target
                     near_parent = a.file_path.parent
                     if a.file_path.parent != b.file_path.parent:
-                        near_parent = Path(
-                            *[p for p, q in zip(a.file_path.parts, b.file_path.parts) if p == q]
-                        ) if any(p == q for p, q in zip(a.file_path.parts, b.file_path.parts)) else a.file_path.parent
+                        parts_a, parts_b = a.file_path.parts, b.file_path.parts
+                        common = [p for p, q in zip(parts_a, parts_b, strict=False) if p == q]
+                        near_parent = (
+                            Path(*common)
+                            if any(p == q for p, q in zip(parts_a, parts_b, strict=False))
+                            else a.file_path.parent
+                        )
                     effort = "S" if a.file_path.parent == b.file_path.parent else "M"
                     fix_near = (
                         f"Extrahiere {a.name}() in {near_parent.as_posix()}/shared.py. "

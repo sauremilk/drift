@@ -141,7 +141,8 @@ class TemporalVolatilitySignal(BaseSignal):
                 fix_parts.append(f"{history.unique_authors} Autoren — Ownership klären")
             if defect_z > z_threshold:
                 fix_parts.append(
-                    f"{history.defect_correlated_commits} defektorientierte Commits — Stabilität erhöhen"
+                    f"{history.defect_correlated_commits} defektorientierte Commits"
+                    " — Stabilität erhöhen"
                 )
             fix = ". ".join(fix_parts) + "." if fix_parts else None
 

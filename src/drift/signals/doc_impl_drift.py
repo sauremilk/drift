@@ -132,9 +132,9 @@ def _extract_dir_refs_from_ast(markdown_text: str) -> set[str]:
     if mistune is None:
         # Regex fallback — less precise, but functional without mistune
         # Strip fenced code blocks (example code, not structure claims)
-        cleaned = re.sub(r'```[^`]*```', '', markdown_text, flags=re.DOTALL)
+        cleaned = re.sub(r"```[^`]*```", "", markdown_text, flags=re.DOTALL)
         # Strip inline links [text](url) to avoid extracting URL segments
-        cleaned = re.sub(r'\[([^\]]*)\]\([^)]+\)', r'\1', cleaned)
+        cleaned = re.sub(r"\[([^\]]*)\]\([^)]+\)", r"\1", cleaned)
         refs = set(_FALLBACK_DIR_RE.findall(cleaned))
         return {r for r in refs if not _is_url_segment(r)}
 
@@ -250,7 +250,10 @@ class DocImplDriftSignal(BaseSignal):
                         "The repository has no README file. "
                         "A README is essential for architectural context."
                     ),
-                    fix="Erstelle eine README.md im Repository-Wurzelverzeichnis mit Architekturüberblick.",
+                    fix=(
+                        "Erstelle eine README.md im Repository-Wurzelverzeichnis"
+                        " mit Architekturüberblick."
+                    ),
                 )
             )
             return findings
@@ -302,7 +305,10 @@ class DocImplDriftSignal(BaseSignal):
                                 f"but is not mentioned in README."
                             ),
                             file_path=Path(src_dir),
-                            fix=f"Ergänze '{src_dir}/' in README mit kurzer Beschreibung des Moduls.",
+                            fix=(
+                                f"Ergänze '{src_dir}/' in README"
+                                " mit kurzer Beschreibung des Moduls."
+                            ),
                             metadata={"undocumented_dir": src_dir},
                         )
                     )
