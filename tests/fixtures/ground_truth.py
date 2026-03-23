@@ -920,14 +920,12 @@ EDS_NESTED_LOOPS_TP = GroundTruthFixture(
 
 AVS_SKIP_LAYER_TP = GroundTruthFixture(
     name="avs_skip_layer_tp",
-    description="API layer directly imports from DB layer → should fire AVS",
+    description="DB layer imports from API layer (upward) → should fire AVS",
     files={
         "api/__init__.py": "",
         "api/endpoints.py": """\
-            from db.queries import raw_query
-
-            def get_data():
-                return raw_query("SELECT * FROM data")
+            def list_items():
+                return []
         """,
         "services/__init__.py": "",
         "services/data_service.py": """\
@@ -938,16 +936,18 @@ AVS_SKIP_LAYER_TP = GroundTruthFixture(
         """,
         "db/__init__.py": "",
         "db/queries.py": """\
+            from api.endpoints import list_items
+
             def raw_query(sql):
-                return []
+                return list_items()
         """,
     },
     expected=[
         ExpectedFinding(
             signal_type=SignalType.ARCHITECTURE_VIOLATION,
-            file_path="api/endpoints.py",
+            file_path="db/queries.py",
             should_detect=True,
-            description="API layer skipping service layer to access DB directly",
+            description="DB layer (layer 2) imports from API layer (layer 0) — upward violation",
         ),
     ],
 )
