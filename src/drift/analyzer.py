@@ -190,6 +190,7 @@ def _run_pipeline(
         parse_results=parse_results,
         file_histories=file_histories,
         embedding_service=emb_svc,
+        commits=commits,
     )
     signals = create_signals(ctx)
 

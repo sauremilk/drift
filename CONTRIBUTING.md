@@ -79,6 +79,8 @@ Every PR should pass these checks before merge:
 - [ ] `pytest` grün (alle Fixtures, Smoke Tests)
 - [ ] Neue Signal-Logik hat TP + TN Fixture
 - [ ] Mutations-Benchmark bei Signal-Änderung neu ausgeführt
+- [ ] Bei neuem Feature: empirischer Nachweis beigefügt (mindestens 1 Benchmark/Validation-Artefakt unter `benchmark_results/` oder `audit_results/`)
+- [ ] Bei neuem Feature: evidenzbasierte Zusammenfassung in PR (Datensatz, Baseline, Ergebnis, Reproduktionsbefehl)
 
 ### Architektur
 - [ ] `drift self` → Score ≤ vorheriger Score + 0.010
@@ -114,6 +116,23 @@ Ziel: Jede Iteration reduziert die Menge ungetesteter Risikoflächen systematisc
 3. Add tests for new behaviour
 4. Update the README if you add a feature
 5. Verify `drift self` score stays within SLO (Δ ≤ +0.010)
+6. For new features, include empirical evidence (benchmark/validation output + reproducible command)
+
+## Feature Evidence Gate (Required)
+
+For every PR that introduces a new feature (`feat:` commits), empirical evidence is mandatory.
+
+Minimum acceptance criteria:
+
+1. At least one behavioral test added or updated under `tests/`.
+2. At least one empirical artifact added or updated under `benchmark_results/` or `audit_results/`.
+3. A short evidence summary in the PR:
+	- dataset/repo scope
+	- baseline vs. new result
+	- interpretation of impact (precision/noise/runtime)
+	- exact command used for reproduction
+
+Without these three elements, feature work is considered unverified and must not be merged.
 
 ## Versioning
 

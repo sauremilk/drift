@@ -278,3 +278,79 @@ def build_file_histories(
         )
 
     return histories
+
+
+# ---------------------------------------------------------------------------
+# Co-Change Coupling
+# ---------------------------------------------------------------------------
+
+
+@dataclass
+class CoChangePair:
+    """Two files that are frequently changed together."""
+
+    file_a: str
+    file_b: str
+    co_change_count: int
+    total_commits_a: int
+    total_commits_b: int
+    confidence: float  # co_change_count / min(total_a, total_b)
+
+
+def build_co_change_pairs(
+    commits: list[CommitInfo],
+    known_files: set[str] | None = None,
+    *,
+    min_co_changes: int = 3,
+    min_confidence: float = 0.3,
+) -> list[CoChangePair]:
+    """Identify file pairs frequently changed together.
+
+    Only considers internal files (in *known_files* if given).
+    Returns pairs sorted by confidence descending.
+
+    Complexity: O(C × F²) where C = commits, F = avg files per commit.
+    Bounded by filtering commits with >20 files (bulk refactors).
+    """
+    from itertools import combinations
+
+    pair_counts: dict[tuple[str, str], int] = defaultdict(int)
+    file_commit_counts: dict[str, int] = defaultdict(int)
+
+    for commit in commits:
+        files = commit.files_changed
+        if known_files:
+            files = [f for f in files if f in known_files]
+        # Skip bulk commits (refactors, renames) that would create
+        # spurious co-change signals.
+        if len(files) > 20 or len(files) < 2:
+            continue
+
+        for f in files:
+            file_commit_counts[f] += 1
+
+        for a, b in combinations(sorted(files), 2):
+            pair_counts[(a, b)] += 1
+
+    pairs: list[CoChangePair] = []
+    for (a, b), count in pair_counts.items():
+        if count < min_co_changes:
+            continue
+        total_a = file_commit_counts[a]
+        total_b = file_commit_counts[b]
+        confidence = count / min(total_a, total_b)
+        if confidence < min_confidence:
+            continue
+        pairs.append(
+            CoChangePair(
+                file_a=a,
+                file_b=b,
+                co_change_count=count,
+                total_commits_a=total_a,
+                total_commits_b=total_b,
+                confidence=round(confidence, 3),
+            )
+        )
+
+    pairs.sort(key=lambda p: p.confidence, reverse=True)
+    return pairs

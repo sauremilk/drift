@@ -43,6 +43,29 @@ Current limitations to communicate explicitly:
 - temporal signals depend on repository history quality and clone depth
 - the composite score is orientation, not a substitute for reviewing the signal breakdown
 
+## How many cross-file erosion patterns exist?
+
+Use a three-level answer to avoid mixing taxonomy size with tool coverage:
+
+1. **Research taxonomy level:** literature reports hundreds of named architecture smells (for example, 549 names condensed to 19 essential categories in one mapping study).
+2. **Static determinism level:** only a subset is deterministically detectable with static analysis; runtime-only and intent-only violations are outside this boundary.
+3. **Drift modeling level:** drift currently models 7 signal families (6 scoring + 1 report-only), covering a subset of cross-file erosion patterns with strong reproducibility.
+
+This means a large research count does **not** imply that all patterns are statically detectable, and static detectability does **not** imply that all detectable patterns are already modeled in drift.
+
+### Practical coverage interpretation for drift
+
+- **Directly modeled:** cyclic/layer boundary violations (AVS), pattern fragmentation (PFS), structural near-duplicates (MDS).
+- **Partially approximated:** logical coupling and change-instability effects via TVS/SMS depending on repository history and novelty patterns.
+- **Not explicitly modeled as dedicated signals today:** unstable dependency as a named metric, god module, feature envy, interface bloat.
+- **Outside deterministic static scope:** pure runtime architecture violations and semantic intent divergence without structural evidence.
+
+For communication, prefer this formula:
+
+`total taxonomy` -> `statically deterministic subset` -> `currently modeled by drift`
+
+This keeps claims conservative, reproducible, and actionable.
+
 ## Practical trust guidance
 
 The most credible way to adopt drift is:

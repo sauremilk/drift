@@ -23,6 +23,20 @@
 - [ ] `drift self` delta checked (target: <= +0.010)
 - [ ] Added/updated tests for behavioral changes
 
+## Empirical evidence (required for new features)
+
+- [ ] This PR introduces no new feature (skip section)
+- [ ] OR: empirical artifact added/updated in `benchmark_results/` or `audit_results/`
+- [ ] OR: feature has benchmark/validation output attached in PR description
+
+Evidence summary (required when feature is introduced):
+
+- Scope / dataset:
+- Baseline result:
+- New result:
+- Reproduction command:
+- Interpretation (precision/noise/runtime impact):
+
 ## Checklist
 
 - [ ] PR is focused on one concern

@@ -23,6 +23,7 @@ from typing import TYPE_CHECKING, Any
 import networkx as nx
 
 from drift.config import DriftConfig
+from drift.ingestion.git_history import build_co_change_pairs
 from drift.models import (
     FileHistory,
     Finding,
@@ -261,6 +262,12 @@ class ArchitectureViolationSignal(BaseSignal):
         # Compute hub nodes for score dampening
         hub_nodes = _compute_hub_nodes(graph)
 
+        # Pre-compute transitive blast radius for internal nodes
+        blast_radius: dict[str, int] = {}
+        internal_nodes = [n for n in graph.nodes if not graph.nodes.get(n, {}).get("external")]
+        for node in internal_nodes:
+            blast_radius[node] = len(nx.descendants(graph, node))
+
         # Collect allowed_cross_layer patterns
         policies = getattr(config, "policies", None) if config else None
         allowed_patterns: list[str] = getattr(policies, "allowed_cross_layer", []) or []
@@ -280,11 +287,38 @@ class ArchitectureViolationSignal(BaseSignal):
                 proto_embeddings,
                 hub_nodes,
                 allowed_patterns,
+                blast_radius,
             )
         )
 
         # --- Check for circular dependencies ---
         findings.extend(self._check_circular_deps(graph))
+
+        # --- Check for high transitive blast radius ---
+        findings.extend(self._check_blast_radius(blast_radius, internal_nodes))
+
+        # --- Check instability / distance from main sequence ---
+        findings.extend(
+            self._check_instability(graph, parse_results, pr_by_path, internal_nodes)
+        )
+
+        # --- Check for over-centralized modules (god modules) ---
+        findings.extend(self._check_god_modules(graph, internal_nodes, blast_radius))
+
+        # --- Check for unstable dependency smell ---
+        findings.extend(
+            self._check_unstable_dependencies(
+                graph,
+                internal_nodes,
+                file_histories,
+            )
+        )
+
+        # --- Check co-change coupling (hidden logical dependencies) ---
+        commits = getattr(self, "_commits", None) or []
+        if commits:
+            known = {pr.file_path.as_posix() for pr in parse_results}
+            findings.extend(self._check_co_change(graph, commits, known))
 
         return findings
 
@@ -342,6 +376,7 @@ class ArchitectureViolationSignal(BaseSignal):
         proto_embeddings: dict[int, Any],
         hub_nodes: set[str],
         allowed_patterns: list[str],
+        blast_radius: dict[str, int] | None = None,
     ) -> list[Finding]:
         findings: list[Finding] = []
 
@@ -413,6 +448,7 @@ class ArchitectureViolationSignal(BaseSignal):
                             "src_layer": src_layer,
                             "dst_layer": dst_layer,
                             "hub_dampened": dst in hub_nodes,
+                            "blast_radius": blast_radius.get(src, 0) if blast_radius else 0,
                         },
                     )
                 )
@@ -451,4 +487,362 @@ class ArchitectureViolationSignal(BaseSignal):
                 )
             )
 
+        return findings
+
+    def _check_blast_radius(
+        self,
+        blast_radius: dict[str, int],
+        internal_nodes: list[str],
+    ) -> list[Finding]:
+        """Flag modules whose transitive blast radius is unusually high.
+
+        A high blast radius means a change in that module transitively
+        affects many downstream dependents, indicating poor encapsulation.
+        """
+        if not internal_nodes or not blast_radius:
+            return []
+
+        values = [blast_radius.get(n, 0) for n in internal_nodes]
+        if not values:
+            return []
+
+        mean_br = sum(values) / len(values)
+        # Only flag when there are enough modules to make the stat meaningful
+        # and threshold is at least 5 transitive dependents.
+        threshold = max(5, mean_br * 2)
+
+        findings: list[Finding] = []
+        for node in sorted(internal_nodes):
+            br = blast_radius.get(node, 0)
+            if br < threshold:
+                continue
+            total = len(internal_nodes)
+            pct = round(br / max(1, total - 1) * 100)
+            score = min(1.0, round(br / max(1, total) * 0.8, 2))
+            findings.append(
+                Finding(
+                    signal_type=self.signal_type,
+                    severity=Severity.MEDIUM if score < 0.6 else Severity.HIGH,
+                    score=score,
+                    title=(
+                        f"High blast radius: {Path(node).name} "
+                        f"({br} transitive dependents)"
+                    ),
+                    description=(
+                        f"A change in {node} transitively affects {br} of "
+                        f"{total} modules ({pct}%). This indicates tight "
+                        f"coupling and poor encapsulation."
+                    ),
+                    file_path=Path(node),
+                    fix=(
+                        f"Reduziere die transitive Kopplung von {Path(node).name} "
+                        f"durch Interface-Extraktion oder Aufteilung in "
+                        f"kleinere, stärker gekapselte Module."
+                    ),
+                    metadata={
+                        "blast_radius": br,
+                        "total_modules": total,
+                        "blast_pct": pct,
+                    },
+                )
+            )
+        return findings
+
+    def _check_instability(
+        self,
+        graph: nx.DiGraph,
+        parse_results: list[ParseResult],
+        pr_by_path: dict[str, ParseResult],
+        internal_nodes: list[str],
+    ) -> list[Finding]:
+        """Flag modules in the Zone of Pain (Robert C. Martin).
+
+        Instability  I = Ce / (Ca + Ce)
+        Abstraction  A = abstract_classes / total_classes  (0 if no classes)
+        Distance     D = |A + I - 1|
+
+        Modules with low abstraction AND low instability (D close to 1)
+        are concrete and hard to change yet heavily depended upon —
+        the "Zone of Pain".
+        """
+        if len(internal_nodes) < 4:
+            return []
+
+        findings: list[Finding] = []
+
+        for node in internal_nodes:
+            ca = graph.in_degree(node)   # afferent coupling
+            ce = graph.out_degree(node)  # efferent coupling
+            total_coupling = ca + ce
+            if total_coupling == 0:
+                continue
+
+            instability = ce / total_coupling
+
+            # Compute abstraction ratio from class info
+            pr = pr_by_path.get(node)
+            total_classes = len(pr.classes) if pr is not None else 0
+            if pr is not None and total_classes > 0:
+                abstract_count = 0
+                for c in pr.classes:
+                    if any(
+                        b in ("ABC", "ABCMeta", "Protocol", "Interface")
+                        for b in c.bases
+                    ):
+                        abstract_count += 1
+                abstraction = abstract_count / total_classes
+            else:
+                abstraction = 0.0
+
+            distance = abs(abstraction + instability - 1)
+
+            # Zone of Pain: low instability (stable) + low abstraction
+            # (concrete) → D ≈ 1.0 and I < 0.3
+            if distance < 0.6 or instability > 0.5:
+                continue
+            # Only flag if enough dependents to matter
+            if ca < 2:
+                continue
+
+            score = min(1.0, round(distance * 0.7, 2))
+            findings.append(
+                Finding(
+                    signal_type=self.signal_type,
+                    severity=Severity.MEDIUM if score < 0.5 else Severity.HIGH,
+                    score=score,
+                    title=(
+                        f"Zone of Pain: {Path(node).name} "
+                        f"(I={instability:.2f}, D={distance:.2f})"
+                    ),
+                    description=(
+                        f"{node} is concrete (A={abstraction:.2f}) and stable "
+                        f"(I={instability:.2f}) with {ca} dependents. "
+                        f"Distance from main sequence D={distance:.2f}. "
+                        f"Changes here are costly and propagate widely."
+                    ),
+                    file_path=Path(node),
+                    fix=(
+                        f"Extrahiere Abstraktionen (Interfaces/Protocols) aus "
+                        f"{Path(node).name} um Abhängigkeiten umkehrbar zu "
+                        f"machen, oder reduziere die Kopplung."
+                    ),
+                    metadata={
+                        "instability": round(instability, 3),
+                        "abstraction": round(abstraction, 3),
+                        "distance_main_seq": round(distance, 3),
+                        "afferent_coupling": ca,
+                        "efferent_coupling": ce,
+                    },
+                )
+            )
+        return findings
+
+    def _check_god_modules(
+        self,
+        graph: nx.DiGraph,
+        internal_nodes: list[str],
+        blast_radius: dict[str, int],
+    ) -> list[Finding]:
+        """Detect modules with excessive centrality and dependency load.
+
+        Heuristic:
+        - unusually high total coupling (in + out)
+        - non-trivial fan-in and fan-out
+        - meaningful transitive blast radius
+        """
+        if len(internal_nodes) < 6:
+            return []
+
+        total_degrees: list[int] = [
+            graph.in_degree(n) + graph.out_degree(n) for n in internal_nodes
+        ]
+        if not total_degrees:
+            return []
+
+        mean_degree = sum(total_degrees) / len(total_degrees)
+        threshold = max(6, int(mean_degree * 2))
+
+        findings: list[Finding] = []
+        for node in sorted(internal_nodes):
+            ca = graph.in_degree(node)
+            ce = graph.out_degree(node)
+            total = ca + ce
+            br = blast_radius.get(node, 0)
+
+            if total < threshold:
+                continue
+            if ca < 2 or ce < 2:
+                continue
+            if br < 3:
+                continue
+
+            score = min(1.0, round((total / max(1, len(internal_nodes))) * 1.5, 2))
+            findings.append(
+                Finding(
+                    signal_type=self.signal_type,
+                    severity=Severity.MEDIUM if score < 0.6 else Severity.HIGH,
+                    score=score,
+                    title=f"God module candidate: {Path(node).name}",
+                    description=(
+                        f"{node} has high coupling (Ca={ca}, Ce={ce}, total={total}) "
+                        f"and blast radius {br}. This concentration of responsibilities "
+                        f"increases change impact and architectural fragility."
+                    ),
+                    file_path=Path(node),
+                    fix=(
+                        f"Teile {Path(node).name} entlang fachlicher Verantwortlichkeiten "
+                        f"auf und extrahiere stabile Schnittstellen, um Fan-In/Fan-Out "
+                        f"zu reduzieren."
+                    ),
+                    metadata={
+                        "afferent_coupling": ca,
+                        "efferent_coupling": ce,
+                        "total_coupling": total,
+                        "blast_radius": br,
+                        "god_module_threshold": threshold,
+                    },
+                )
+            )
+        return findings
+
+    def _check_unstable_dependencies(
+        self,
+        graph: nx.DiGraph,
+        internal_nodes: list[str],
+        file_histories: dict[str, FileHistory],
+    ) -> list[Finding]:
+        """Detect stable modules depending on unstable/volatile modules.
+
+        Approximates the Unstable Dependency smell by combining
+        graph instability with observed recent change frequency.
+        """
+        if len(internal_nodes) < 4:
+            return []
+
+        instability: dict[str, float] = {}
+        for node in internal_nodes:
+            ca = graph.in_degree(node)
+            ce = graph.out_degree(node)
+            total = ca + ce
+            instability[node] = ce / total if total > 0 else 0.0
+
+        findings: list[Finding] = []
+        for src, dst in graph.edges():
+            if src not in instability or dst not in instability:
+                continue
+            if graph.nodes.get(dst, {}).get("external"):
+                continue
+
+            src_ca = graph.in_degree(src)
+            src_i = instability[src]
+            dst_i = instability[dst]
+            dst_hist = file_histories.get(dst)
+            dst_churn = (
+                float(dst_hist.change_frequency_30d)
+                if dst_hist is not None
+                else 0.0
+            )
+
+            # Stable source (widely depended upon + low instability)
+            is_stable_src = src_ca >= 2 and src_i <= 0.40
+            # Unstable dependency target (topology unstable and/or high churn)
+            is_unstable_dst = dst_i >= 0.70 or dst_churn >= 1.0
+
+            if not (is_stable_src and is_unstable_dst):
+                continue
+
+            score = min(1.0, round((dst_i * 0.6) + (min(dst_churn, 2.0) * 0.2), 2))
+            findings.append(
+                Finding(
+                    signal_type=self.signal_type,
+                    severity=Severity.MEDIUM if score < 0.6 else Severity.HIGH,
+                    score=score,
+                    title=(
+                        f"Unstable dependency: {Path(src).name} -> {Path(dst).name}"
+                    ),
+                    description=(
+                        f"Stable module {src} (I={src_i:.2f}, Ca={src_ca}) depends on "
+                        f"unstable/volatile module {dst} (I={dst_i:.2f}, "
+                        f"churn/week={dst_churn:.2f})."
+                    ),
+                    file_path=Path(src),
+                    related_files=[Path(dst)],
+                    fix=(
+                        f"Entkopple {Path(src).name} von dem instabilen Modul "
+                        f"{Path(dst).name} durch Interface-Inversion oder Adapter, "
+                        f"damit Änderungen an {Path(dst).name} nicht nach oben "
+                        f"propagieren."
+                    ),
+                    metadata={
+                        "src_instability": round(src_i, 3),
+                        "src_afferent": src_ca,
+                        "dst_instability": round(dst_i, 3),
+                        "dst_churn_week": round(dst_churn, 3),
+                    },
+                )
+            )
+        return findings
+
+    def _check_co_change(
+        self,
+        graph: nx.DiGraph,
+        commits: list,
+        known_files: set[str],
+    ) -> list[Finding]:
+        """Flag file pairs with high co-change coupling but no import edge.
+
+        These indicate hidden logical dependencies that the import graph
+        does not capture — a strong signal for architectural drift.
+        """
+        pairs = build_co_change_pairs(commits, known_files)
+        if not pairs:
+            return []
+
+        findings: list[Finding] = []
+        for pair in pairs[:10]:  # cap to avoid noise
+            # Only flag if there is NO static import relationship
+            has_edge = (
+                graph.has_edge(pair.file_a, pair.file_b)
+                or graph.has_edge(pair.file_b, pair.file_a)
+            )
+            if has_edge:
+                continue
+
+            score = min(1.0, round(pair.confidence * 0.7, 2))
+            if score < 0.2:
+                continue
+
+            findings.append(
+                Finding(
+                    signal_type=self.signal_type,
+                    severity=Severity.LOW if score < 0.4 else Severity.MEDIUM,
+                    score=score,
+                    title=(
+                        f"Hidden coupling: {Path(pair.file_a).name} ↔ "
+                        f"{Path(pair.file_b).name} "
+                        f"({pair.co_change_count} co-changes)"
+                    ),
+                    description=(
+                        f"{pair.file_a} and {pair.file_b} changed together in "
+                        f"{pair.co_change_count} commits "
+                        f"(confidence {pair.confidence:.0%}) but share no "
+                        f"import relationship. This suggests a hidden logical "
+                        f"dependency not visible in the import graph."
+                    ),
+                    file_path=Path(pair.file_a),
+                    related_files=[Path(pair.file_b)],
+                    fix=(
+                        f"Untersuche die versteckte Kopplung zwischen "
+                        f"{Path(pair.file_a).name} und {Path(pair.file_b).name}. "
+                        f"Extrahiere gemeinsame Logik oder mache die "
+                        f"Abhängigkeit explizit."
+                    ),
+                    metadata={
+                        "co_change_count": pair.co_change_count,
+                        "confidence": pair.confidence,
+                        "total_commits_a": pair.total_commits_a,
+                        "total_commits_b": pair.total_commits_b,
+                    },
+                )
+            )
         return findings

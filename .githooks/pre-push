@@ -5,6 +5,69 @@ set -e
 
 # Block private/non-tool paths from being pushed.
 blocked_pattern='^(tagesplanung/)'
+feature_pattern='^feat(\(.+\))?:'
+
+# Aggregated push state (captured while iterating updated refs)
+feature_commit_detected=0
+push_changed_files=""
+
+collect_push_context() {
+	local_ref="$1"
+	local_sha="$2"
+	remote_ref="$3"
+	remote_sha="$4"
+
+	# Deletion push (local ref removed) can be ignored here.
+	if [ "$local_sha" = "0000000000000000000000000000000000000000" ]; then
+		return 0
+	fi
+
+	if [ "$remote_sha" = "0000000000000000000000000000000000000000" ]; then
+		commit_list=$(git rev-list "$local_sha" --not --all)
+	else
+		commit_list=$(git rev-list "$remote_sha..$local_sha")
+	fi
+
+	for commit in $commit_list; do
+		subject=$(git log -1 --pretty=%s "$commit")
+		if echo "$subject" | grep -Eiq "$feature_pattern"; then
+			feature_commit_detected=1
+		fi
+
+		changed=$(git diff-tree --no-commit-id --name-only --diff-filter=ACMR -r "$commit" || true)
+		if [ -n "$changed" ]; then
+			push_changed_files="$push_changed_files
+$changed"
+		fi
+	done
+}
+
+enforce_feature_evidence_gate() {
+	if [ "$feature_commit_detected" -ne 1 ]; then
+		return 0
+	fi
+
+	has_tests=0
+	has_empirical=0
+
+	if echo "$push_changed_files" | grep -Eq '^tests/'; then
+		has_tests=1
+	fi
+
+	if echo "$push_changed_files" | grep -Eq '^(benchmark_results/|audit_results/)'; then
+		has_empirical=1
+	fi
+
+	if [ "$has_tests" -ne 1 ] || [ "$has_empirical" -ne 1 ]; then
+		echo ">>> [pre-push] ERROR: Feature-Evidence-Gate failed."
+		echo ">>> [pre-push] Detected feature commit (feat:)."
+		echo ">>> [pre-push] Required for feature pushes:"
+		echo ">>> [pre-push]   1) test changes under tests/"
+		echo ">>> [pre-push]   2) empirical artifact under benchmark_results/ or audit_results/"
+		echo ">>> [pre-push] Push blocked until empirical evidence is included."
+		exit 1
+	fi
+}
 
 reject_push_for_blocked_paths() {
 	local_ref="$1"
@@ -36,7 +99,10 @@ reject_push_for_blocked_paths() {
 
 while read local_ref local_sha remote_ref remote_sha; do
 	reject_push_for_blocked_paths "$local_ref" "$local_sha" "$remote_ref" "$remote_sha"
+	collect_push_context "$local_ref" "$local_sha" "$remote_ref" "$remote_sha"
 done
+
+enforce_feature_evidence_gate
 
 echo ">>> [pre-push] Starting local CI checks..."
 

@@ -8,7 +8,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING
 
 from drift.config import DriftConfig
-from drift.models import FileHistory, Finding, ParseResult, SignalType
+from drift.models import CommitInfo, FileHistory, Finding, ParseResult, SignalType
 
 if TYPE_CHECKING:
     from drift.embeddings import EmbeddingService
@@ -27,6 +27,7 @@ class AnalysisContext:
     parse_results: list[ParseResult] = field(default_factory=list)
     file_histories: dict[str, FileHistory] = field(default_factory=dict)
     embedding_service: EmbeddingService | None = None
+    commits: list[CommitInfo] = field(default_factory=list)
 
 
 class BaseSignal(ABC):
@@ -99,6 +100,8 @@ def create_signals(ctx: AnalysisContext) -> list[BaseSignal]:
         if "embedding_service" in params:
             kwargs["embedding_service"] = ctx.embedding_service
         inst = cls(**kwargs)  # type: ignore[arg-type]
+        # Inject commits for signals that use co-change analysis
+        inst._commits = ctx.commits  # type: ignore[attr-defined]
         signals.append(inst)
     return signals
 

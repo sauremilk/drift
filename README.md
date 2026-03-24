@@ -230,6 +230,8 @@ Drift is designed to earn trust through determinism and reproducibility:
 - signal-specific interpretation instead of score-only messaging
 - explicit benchmarking and known-limitations documentation
 
+> **Drift vs. erosion:** Without `layer_boundaries` in `drift.yaml`, drift detects *emergent drift* — structural patterns that diverge without explicit prohibition. With configured `layer_boundaries`, drift additionally performs *conformance checking* against a defined architecture. Both modes are complementary: drift does not replace dedicated architecture conformance frameworks (e.g. [PyTestArch](https://github.com/zyskarch/pytestarch) for executable layer rules in pytest), but catches cross-file coherence issues those tools do not model.
+
 Start with the strongest, most actionable findings first. If a signal is noisy for your repository shape, tune or de-emphasize it instead of forcing an early hard gate.
 
 Further reading:

@@ -826,6 +826,39 @@ different architectural patterns.
 - Architecture rules (AVS) require explicit configuration for optimal
   results; default heuristics may under-detect in flat project structures.
 
+### 12.6 Empirical Evidence for New AVS Features (2026-03-24)
+
+To satisfy the policy requirement that new features must be validated with
+reproducible evidence, we added a dedicated empirical suite for the newly
+introduced AVS capabilities:
+
+- God Module detection
+- Unstable Dependency detection
+- Hidden logical coupling (co-change without static import edge)
+
+**Evidence command:**
+```bash
+python -m pytest tests/test_avs_missing_patterns_evidence.py tests/test_architecture_violation.py tests/test_avs_mutations.py -v --tb=short
+```
+
+**Observed result (local run, deterministic):**
+
+- 64 tests collected
+- 64 passed
+- 0 failed
+
+**Controlled mini-corpus metrics (new suite):**
+
+| Pattern | Positive Scenarios | Negative Scenarios | Precision | Recall |
+| ------- | ------------------: | -----------------: | --------: | -----: |
+| God Module | 1 | 1 | 1.00 | 1.00 |
+| Unstable Dependency | 1 | 1 | 1.00 | 1.00 |
+| Hidden Coupling | 1 | 1 | 1.00 | 1.00 |
+
+These metrics are intentionally scoped to a synthetic micro-corpus and should
+be interpreted as an acceptance proof for deterministic behavior, not as an
+external validity claim over arbitrary repositories.
+
 ---
 
 ## 13. Conclusion
