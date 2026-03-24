@@ -179,7 +179,11 @@ def delta_gate_pass(
     Returns ``True`` if the gate passes (degradation within budget).
     If no history exists, the gate always passes.
     """
-    recent = [float(s["drift_score"]) for s in history[-window:]]
+    recent: list[float] = []
+    for snapshot in history[-window:]:
+        score = snapshot.get("drift_score")
+        if isinstance(score, (int, float)):
+            recent.append(float(score))
     if not recent:
         return True
     baseline = sum(recent) / len(recent)
