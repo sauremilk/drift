@@ -22,6 +22,16 @@ _IMPORT_SIDE_EFFECT_RE = re.compile(
     r"^\s*import\s+[\"']([^\"']+)[\"']\s*;?\s*$"
 )
 
+_IGNORED_PATH_PARTS = {
+    "node_modules",
+    "__pycache__",
+    "venv",
+    ".venv",
+    ".git",
+    "dist",
+    "build",
+}
+
 
 @dataclass(frozen=True)
 class ImportStatement:
@@ -33,15 +43,18 @@ class ImportStatement:
 
 def _iter_ts_sources(repo_path: Path) -> list[Path]:
     """Return repository-relative paths for all .ts and .tsx source files."""
+    def _is_ignored(path: Path) -> bool:
+        return any(part in _IGNORED_PATH_PARTS for part in path.parts)
+
     files = [
         p.relative_to(repo_path)
         for p in repo_path.rglob("*.ts")
-        if p.is_file()
+        if p.is_file() and not _is_ignored(p)
     ]
     files.extend(
         p.relative_to(repo_path)
         for p in repo_path.rglob("*.tsx")
-        if p.is_file()
+        if p.is_file() and not _is_ignored(p)
     )
     return sorted(set(files), key=lambda p: p.as_posix())
 

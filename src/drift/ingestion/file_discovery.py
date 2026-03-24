@@ -76,9 +76,10 @@ def discover_files(
     exclude: list[str] | None = None,
 ) -> list[FileInfo]:
     """Walk the repo and return all source files matching include/exclude patterns."""
+    supported = _detect_supported_languages()
+
     if include is None:
         include = ["**/*.py"]
-        supported = _detect_supported_languages()
         if "typescript" in supported:
             include.extend(["**/*.ts", "**/*.tsx"])
     if exclude is None:
@@ -100,7 +101,6 @@ def discover_files(
 
     # Pre-deuplicate: track seen paths during enumeration
     seen: set[str] = set()
-    supported = _detect_supported_languages()
     skipped_langs: dict[str, int] = {}
 
     for pattern in include:

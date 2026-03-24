@@ -3,10 +3,12 @@
 from __future__ import annotations
 
 import json
+import logging
 from pathlib import Path
 from typing import Any
 
 _ALLOWED_EXTENSIONS = {".ts", ".tsx"}
+logger = logging.getLogger("drift")
 
 
 def _load_compiler_options(tsconfig_path: Path) -> dict[str, object]:
@@ -37,6 +39,11 @@ def _resolve_extends_path(tsconfig_path: Path, extends_value: str) -> Path | Non
     extends_path = Path(extends_value)
     if not extends_path.is_absolute() and not extends_value.startswith("."):
         # Package-style extends (node_modules) is intentionally out of scope here.
+        logger.debug(
+            "Skipping non-local tsconfig extends reference '%s' in %s",
+            extends_value,
+            tsconfig_path.as_posix(),
+        )
         return None
 
     if extends_path.is_absolute():

@@ -192,3 +192,22 @@ class TestDiscoverFiles:
         paths = {f.path.as_posix() for f in files}
         assert "app.py" in paths
         assert "app.ts" in paths
+
+    def test_supported_languages_detected_once(self, tmp_path, monkeypatch):
+        (tmp_path / "app.py").write_text("x = 1")
+
+        calls = {"count": 0}
+
+        def _fake_supported() -> set[str]:
+            calls["count"] += 1
+            return {"python"}
+
+        monkeypatch.setattr(
+            "drift.ingestion.file_discovery._detect_supported_languages",
+            _fake_supported,
+        )
+
+        files = discover_files(tmp_path)
+
+        assert len(files) == 1
+        assert calls["count"] == 1

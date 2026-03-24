@@ -44,3 +44,25 @@ def test_exposes_package_membership_for_rule_modules() -> None:
         "packages/app": {"packages/app/src/main.ts"},
         "packages/ui": {"packages/ui/src/button.tsx"},
     }
+
+
+def test_assignments_ignore_node_modules_sources(tmp_path: Path) -> None:
+    (tmp_path / "package.json").write_text(
+        '{"name": "ws", "private": true, "workspaces": ["packages/*"]}\n',
+        encoding="utf-8",
+    )
+    (tmp_path / "packages" / "app" / "src").mkdir(parents=True)
+    (tmp_path / "packages" / "app" / "src" / "main.ts").write_text(
+        "export const main = 1;\n",
+        encoding="utf-8",
+    )
+
+    (tmp_path / "node_modules" / "pkg").mkdir(parents=True)
+    (tmp_path / "node_modules" / "pkg" / "index.ts").write_text(
+        "export const vendor = 1;\n",
+        encoding="utf-8",
+    )
+
+    assignments = assign_ts_sources_to_workspace_packages(tmp_path)
+
+    assert assignments == {"packages/app/src/main.ts": "packages/app"}
