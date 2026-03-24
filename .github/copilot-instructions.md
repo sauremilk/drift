@@ -3,7 +3,7 @@
 **Diese Datei ist für alle Copilot-Agenten, Coding-Agenten und KI-Assistenten im Drift-Workspace bindend.**
 
 Die vollständige Policy befindet sich in:
-`# Drift — Policy für Produkt, Prior.md` (Workspace-Root)
+`POLICY.md` (Workspace-Root)
 
 Lies diese Datei **vor jeder Arbeit** vollständig, sofern sie nicht bereits im Kontext ist.
 Die Policy ist ein Vertrag — keine Empfehlung, kein Vorschlag.

@@ -5,7 +5,7 @@ description: "Drift Policy — Bindende Arbeitsregeln für alle Dateien. MUSS ge
 
 # Drift — Policy (bindend für alle Dateioperationen)
 
-Vollständige Policy: `# Drift — Policy für Produkt, Prior.md` im Workspace-Root.
+Vollständige Policy: `POLICY.md` im Workspace-Root.
 Kurzfassung der Kern-Verbote und Anforderungen:
 
 ## PFLICHT-GATE: Zulässigkeitsprüfung — immer zuerst ausführen und ausgeben
