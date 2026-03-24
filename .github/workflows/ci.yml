@@ -1,9 +1,10 @@
 name: CI
 
-# Automatic triggers disabled while GitHub account billing is suspended.
-# Local CI is covered by the pre-push hook (.githooks/pre-push).
-# Re-enable by restoring the push/pull_request triggers below.
 on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
   workflow_dispatch:
 
 jobs:
@@ -49,7 +50,7 @@ jobs:
         run: python -m mypy src/drift
 
       - name: Run tests with coverage
-        run: pytest -v --tb=short --cov=drift --cov-report=xml --cov-report=term-missing
+        run: pytest -v --tb=short --cov=drift --cov-report=xml --cov-report=term-missing -m "not slow"
 
       - name: Upload coverage to Codecov
         if: matrix.python-version == '3.12'

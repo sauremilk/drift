@@ -126,3 +126,38 @@ Skalierungsmaßnahmen ohne gesichertes Vertrauen sind **nachrangig**.
 Diese Policy ist verbindlich (Policy §18).
 Abweichungen sind nur zulässig wenn: dokumentiert, begründet, als Ausnahme gekennzeichnet.
 Im Zweifel gilt: geringerer Interpretationsspielraum, höherer Erkenntniswert.
+
+---
+
+## Schnellreferenz für Agenten
+
+Vollständiger Developer Guide: **[DEVELOPER.md](../DEVELOPER.md)**
+
+### Architektur (Datenfluss)
+
+```
+ingestion/ → signals/ → scoring/ → output/
+  AST + Git     7 Detektoren   Score+Severity   Rich/JSON/SARIF
+```
+
+### Wichtigste Kommandos
+
+| Aufgabe | Befehl |
+|---------|--------|
+| Dev-Setup | `make install` |
+| Alle Checks | `make check` |
+| Nur Tests (schnell) | `make test-fast` |
+| Lint + Autofix | `make lint-fix` |
+| CI lokal replizieren | `make ci` |
+| Selbstanalyse | `make self` |
+
+### Verzeichnisstruktur
+
+| Pfad | Inhalt |
+|------|--------|
+| `src/drift/signals/` | 7 Signale (PFS, AVS, MDS, EDS, TVS, SMS, DIA) |
+| `src/drift/ingestion/` | AST-Parsing, Git-History, File-Discovery |
+| `src/drift/scoring/` | Composite-Score, Module-Scores, Severity |
+| `src/drift/output/` | Rich-Terminal, JSON, SARIF |
+| `src/drift/commands/` | Click-CLI-Subcommands |
+| `tests/` | 27+ Testdateien, conftest.py mit tmp_repo Fixture |

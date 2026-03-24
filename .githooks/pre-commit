@@ -1,5 +1,5 @@
 #!/usr/bin/env sh
-# pre-commit hook — block private/non-tool paths
+# pre-commit hook — block private paths + fast lint on staged files
 # Install once with: git config core.hooksPath .githooks
 set -e
 
@@ -12,4 +12,14 @@ if [ -n "$staged_blocked" ]; then
     echo "$staged_blocked"
     echo ">>> [pre-commit] Remove these files from staging before commit."
     exit 1
+fi
+
+# Fast lint on staged Python files (errors + import order only, <1s).
+# Full lint + typecheck + tests run in pre-push.
+staged_py=$(git diff --cached --name-only --diff-filter=ACMR -- '*.py' || true)
+if [ -n "$staged_py" ]; then
+    if command -v ruff >/dev/null 2>&1; then
+        echo ">>> [pre-commit] Running ruff quick-check on staged files..."
+        echo "$staged_py" | xargs ruff check --select E,F,I --no-fix
+    fi
 fi

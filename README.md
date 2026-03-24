@@ -268,6 +268,8 @@ Use `scripts/temporal_drift.py` to generate temporal score curves for any reposi
 
 ## Configuration
 
+> **Quick start:** Copy [`drift.example.yaml`](drift.example.yaml) to `drift.yaml` and adapt to your project — that's the fastest path to a working configuration.
+
 Create a `drift.yaml` in your project root:
 
 ```yaml

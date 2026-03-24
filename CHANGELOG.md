@@ -3,6 +3,35 @@
 All notable changes to drift-analyzer are documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.5.0] – 2026-03-23
+
+### Added
+
+- **CLI `--sort-by` + `--max-findings`**: `analyze` command now accepts `--sort-by impact|score` (default: impact) and `--max-findings N` (default: 20) for prioritised output.
+- **AVS Mutation Tests** (`tests/test_avs_mutations.py`): 41 new tests across 8 classes covering DB→API violations, omnilayer directions, circular-dependency detection, hub-dampening calibration, and policy-boundary enforcement.
+- **Benchmark corpus ×15**: Extended from 5 to 15 real-world repositories (+Flask, Starlette, Django, Celery, Poetry, Requests, SQLModel, Uvicorn, Sanic, Rich). 2 642 total findings. Precision strict 97.3%.
+- **CLI refactored into `src/drift/commands/` package**: `analyze`, `check`, `self`, `trend`, `timeline`, `patterns`, `badge` each in their own module.
+- **MkDocs documentation site** (`docs-site/`): algorithms deep-dive, signal reference, case studies (Django, FastAPI, Pydantic), getting-started guides.
+- `scripts/evaluate_benchmark.py` — precision reports against ground-truth labels.
+- `scripts/migrate_ground_truth.py` — migration helper for key-based label format.
+- `scripts/sensitivity_analysis.py` — threshold sensitivity analysis.
+- `scripts/ablation_mds_threshold.py` — MDS similarity threshold ablation.
+- Ground-truth labels migrated to key-based format (269 → key-based).
+
+### Changed
+
+- `render_findings()` / `render_full_report()` in `rich_output.py` accept `sort_by` / `max_findings`.
+- `drift.example.yaml` updated with current field set and inline comments.
+
+### Fixed
+
+- Type safety hardening across CLI entry points.
+- Cache eviction, auto-discovery, and git-history edge cases (DI refactor).
+- Ruff lint errors (E501, B905) from post-v0.3.0 changes.
+- Resilience coverage: coverage gates, quality gates hardened.
+- Coverage on critical paths: file-discovery, scoring engine, JSON output golden tests.
+- `tagesplanung/` and other workspace artifacts blocked from git push via pre-commit/pre-push hooks.
+
 ## [0.3.0] – 2026-03-20
 
 ### Added

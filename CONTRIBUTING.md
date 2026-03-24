@@ -7,11 +7,23 @@ Thanks for your interest in contributing! Drift is under active development and 
 ```bash
 git clone https://github.com/sauremilk/drift.git
 cd drift
+make install          # pip install -e ".[dev]" + git hooks
+make check            # lint + typecheck + test + self-analysis
+```
+
+See [DEVELOPER.md](DEVELOPER.md) for the full developer guide (architecture, commands, conventions).
+
+<details>
+<summary>Without Make</summary>
+
+```bash
 pip install -e ".[dev]"
 git config core.hooksPath .githooks
-pytest
 ruff check src/ tests/
+python -m mypy src/drift
+pytest -v --tb=short
 ```
+</details>
 
 ## Good First Issues
 

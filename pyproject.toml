@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "drift-analyzer"
-version = "0.3.0"
+version = "0.5.0"
 description = "Detect architectural erosion from AI-generated code — the first deterministic codebase coherence analyzer for AI-accelerated development"
 readme = "README.md"
 license = "MIT"
@@ -77,10 +77,26 @@ all = [
 ]
 
 [project.scripts]
-drift = "drift.cli:main"
+drift = "drift.cli:safe_main"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/drift"]
+
+[tool.hatch.build.targets.sdist]
+exclude = [
+    # Internal workspace artifacts — not for distribution
+    "# Drift*",
+    "tagesplanung/",
+    "audit_results/",
+    "benchmark_results/",
+    "demos/",
+    "scripts/",
+    "out.json",
+    "benchmark_pwbs.json",
+    "action_rate_err.txt",
+    "action_rate_test.txt",
+    "diag_err.txt",
+]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
@@ -95,7 +111,10 @@ branch = true
 
 [tool.coverage.report]
 show_missing = true
-# Ratchet to current real baseline; raise further as weak areas get tests.
+# Ratchet baseline: overall 68–69% as of 2026-03-24.
+# Weakest modules: cli.py (~45%), temporal signals (~55%).
+# Strongest: scoring/engine.py, signals/avs (~85%+).
+# Raise in increments of 2pp as test gaps on these modules close.
 fail_under = 65
 exclude_lines = [
     "pragma: no cover",

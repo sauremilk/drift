@@ -8,6 +8,7 @@ modules under ``src/drift/commands/`` to keep each file focused.
 from __future__ import annotations
 
 import logging
+import sys
 
 import click
 
@@ -50,5 +51,30 @@ main.add_command(self_analyze)
 main.add_command(badge)
 
 
+def safe_main() -> None:
+    """Entry point with user-friendly error handling."""
+    try:
+        main(standalone_mode=True)
+    except click.exceptions.Exit:
+        raise
+    except click.ClickException:
+        raise
+    except KeyboardInterrupt:
+        click.echo("\nInterrupted.", err=True)
+        sys.exit(130)
+    except FileNotFoundError as exc:
+        click.echo(f"Error: {exc}", err=True)
+        sys.exit(1)
+    except Exception as exc:
+        click.echo(f"Error: {exc}", err=True)
+        if logging.getLogger().isEnabledFor(logging.DEBUG):
+            import traceback
+
+            traceback.print_exc()
+        else:
+            click.echo("Hint: run with -v for the full traceback.", err=True)
+        sys.exit(1)
+
+
 if __name__ == "__main__":
-    main()
+    safe_main()
