@@ -140,3 +140,4 @@ def analyze(
         recs = generate_recommendations(analysis.findings)
         if recs:
             render_recommendations(recs, console)
+
