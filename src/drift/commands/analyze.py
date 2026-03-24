@@ -46,6 +46,12 @@ from drift.commands import console
     default=20,
     help="Maximum number of findings to display (default: 20).",
 )
+@click.option(
+    "--show-suppressed",
+    is_flag=True,
+    default=False,
+    help="Show findings suppressed via drift:ignore comments.",
+)
 def analyze(
     repo: Path,
     path: str | None,
@@ -57,6 +63,7 @@ def analyze(
     embedding_model: str | None,
     sort_by: str,
     max_findings: int,
+    show_suppressed: bool,
 ) -> None:
     """Analyze a repository for architectural drift."""
     from rich.progress import BarColumn, MofNCompleteColumn, Progress, TextColumn
@@ -120,6 +127,12 @@ def analyze(
             sort_by=sort_by,
             max_findings=max_findings,
         )
+
+        if show_suppressed and analysis.suppressed_count:
+            console.print(
+                f"[dim italic]{analysis.suppressed_count} finding(s) suppressed "
+                f"via drift:ignore comments.[/dim italic]"
+            )
 
         # Actionable recommendations
         from drift.recommendations import generate_recommendations

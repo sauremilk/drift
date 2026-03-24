@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import re
+from collections.abc import Mapping
 from pathlib import Path
 
 from drift.models import FileInfo, Finding
@@ -58,7 +59,7 @@ def scan_suppressions(
 
 def filter_findings(
     findings: list[Finding],
-    suppressions: dict[tuple[str, int], set[str] | None],
+    suppressions: Mapping[tuple[str, int], set[str] | None],
 ) -> tuple[list[Finding], list[Finding]]:
     """Partition findings into *active* and *suppressed*.
 

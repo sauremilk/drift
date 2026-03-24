@@ -53,6 +53,7 @@ def analysis_to_json(analysis: RepoAnalysis, indent: int = 2) -> str:
         },
         "modules": [_module_to_dict(m) for m in analysis.module_scores],
         "findings": [_finding_to_dict(f) for f in analysis.findings],
+        "suppressed_count": analysis.suppressed_count,
     }
 
     return json.dumps(data, indent=indent, default=str)

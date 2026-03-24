@@ -34,6 +34,7 @@ from drift.scoring.engine import (
     compute_signal_scores,
 )
 from drift.signals.base import AnalysisContext, create_signals
+from drift.suppression import filter_findings, scan_suppressions
 
 # Auto-discover all signal modules so @register_signal decorators execute.
 for _finder, _mod_name, _ispkg in pkgutil.iter_modules(drift.signals.__path__):
@@ -196,6 +197,12 @@ def _run_pipeline(
 
     # --- 5. Scoring ---
     assign_impact_scores(all_findings, config.weights)
+
+    # --- 5b. Inline suppression ---
+    suppressions = scan_suppressions(files, repo_path)
+    all_findings, suppressed_findings = filter_findings(all_findings, suppressions)
+    suppressed_count = len(suppressed_findings)
+
     signal_scores = compute_signal_scores(all_findings)
     repo_score = composite_score(signal_scores, config.weights)
     module_scores = compute_module_scores(all_findings, config.weights)
@@ -226,6 +233,7 @@ def _run_pipeline(
         analysis_duration_seconds=round(duration, 2),
         commits=commits,
         file_histories=file_histories,
+        suppressed_count=suppressed_count,
     )
 
 

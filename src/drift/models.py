@@ -230,6 +230,7 @@ class RepoAnalysis:
     analysis_duration_seconds: float = 0.0
     commits: list[CommitInfo] = field(default_factory=list)
     file_histories: dict[str, FileHistory] = field(default_factory=dict)
+    suppressed_count: int = 0
 
     @property
     def severity(self) -> Severity:

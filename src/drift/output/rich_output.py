@@ -87,6 +87,11 @@ def render_summary(analysis: RepoAnalysis, console: Console | None = None) -> No
                 (f"{analysis.total_functions} functions", ""),
                 ("  │  ", "dim"),
                 (f"AI: {analysis.ai_attributed_ratio:.0%}", ""),
+                *(
+                    (("  │  ", "dim"), (f"{analysis.suppressed_count} suppressed", "dim italic"))
+                    if analysis.suppressed_count
+                    else ()
+                ),
                 ("  │  ", "dim"),
                 (f"{analysis.analysis_duration_seconds:.1f}s", "dim"),
             ),

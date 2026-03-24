@@ -72,6 +72,7 @@ class TestJsonOutputGolden:
             "summary",
             "modules",
             "findings",
+            "suppressed_count",
         }
         assert set(data.keys()) == expected_keys
 
