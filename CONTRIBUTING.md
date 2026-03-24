@@ -8,6 +8,7 @@ Thanks for your interest in contributing! Drift is under active development and 
 git clone https://github.com/sauremilk/drift.git
 cd drift
 pip install -e ".[dev]"
+git config core.hooksPath .githooks
 pytest
 ruff check src/ tests/
 ```
@@ -74,7 +75,10 @@ Every PR should pass these checks before merge:
 ### Code-Qualität
 - [ ] Keine neue Funktion >30 LOC ohne Docstring
 - [ ] Kein direkter DB/Git-Import außerhalb von `ingestion/`
-- [ ] pre-commit hooks laufen durch (`ruff check`, `mypy`)
+- [ ] pre-commit hooks laufen durch (`git config core.hooksPath .githooks` gesetzt):
+	- [ ] `ruff check src/ tests/` grün
+	- [ ] `mypy src/drift` grün
+	- [ ] `pytest` grün
 
 ## Proactive Quality Loop (Required)
 

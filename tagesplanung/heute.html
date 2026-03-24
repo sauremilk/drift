@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Heute</title>
+  <style>
+    :root {
+      --bg: #f4efe7;
+      --panel: #fffaf3;
+      --line: #d9c9b5;
+      --text: #211b18;
+      --muted: #6c6157;
+      --accent: #b95c32;
+      --accent-soft: #f3dccf;
+      --shadow: 0 18px 40px rgba(56, 37, 23, 0.10);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: Georgia, "Times New Roman", serif;
+      color: var(--text);
+      background:
+        radial-gradient(circle at top left, rgba(185, 92, 50, 0.10), transparent 30%),
+        linear-gradient(180deg, #faf6ef 0%, var(--bg) 100%);
+    }
+
+    main {
+      width: min(1120px, calc(100% - 28px));
+      margin: 24px auto 40px;
+      display: grid;
+      gap: 18px;
+    }
+
+    .hero,
+    .phase,
+    .summary {
+      background: rgba(255, 250, 243, 0.96);
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      box-shadow: var(--shadow);
+    }
+
+    .hero,
+    .summary {
+      padding: 22px;
+    }
+
+    .eyebrow,
+    .label {
+      font-size: 12px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--accent);
+      font-weight: 700;
+    }
+
+    h1,
+    h2,
+    h3,
+    p {
+      margin: 0;
+    }
+
+    h1 {
+      font-size: clamp(34px, 5vw, 60px);
+      line-height: 1;
+      margin-top: 8px;
+      margin-bottom: 12px;
+      max-width: 9ch;
+    }
+
+    .hero p,
+    .summary p {
+      color: var(--muted);
+      line-height: 1.55;
+      max-width: 70ch;
+    }
+
+    .hero-actions {
+      margin-top: 16px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    a {
+      color: inherit;
+    }
+
+    .link {
+      display: inline-block;
+      padding: 10px 14px;
+      border-radius: 999px;
+      text-decoration: none;
+      border: 1px solid var(--line);
+      background: #fffefb;
+    }
+
+    .link.primary {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #fff7f2;
+    }
+
+    .phase-list {
+      display: grid;
+      gap: 14px;
+    }
+
+    .phase {
+      padding: 18px;
+      display: grid;
+      gap: 14px;
+    }
+
+    .phase-head {
+      display: grid;
+      gap: 8px;
+    }
+
+    .phase-head-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .time {
+      color: var(--accent);
+      font-size: 13px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      font-weight: 700;
+    }
+
+    h2 {
+      font-size: 26px;
+    }
+
+    .phase-grid {
+      display: grid;
+      grid-template-columns: 1.2fr 1fr 1fr;
+      gap: 12px;
+    }
+
+    .cell {
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: #fffefb;
+      padding: 14px;
+    }
+
+    .cell p {
+      line-height: 1.5;
+    }
+
+    .cell ul {
+      margin: 0;
+      padding-left: 18px;
+      line-height: 1.5;
+    }
+
+    .summary-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+      margin-top: 14px;
+    }
+
+    @media (max-width: 900px) {
+      .phase-grid,
+      .summary-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <section class="hero">
+      <div class="eyebrow">Heute</div>
+      <h1>Fuenf Phasen. Ein Arbeitstag.</h1>
+      <p>
+        Diese Ansicht ist bewusst knapp. Du gehst nur von oben nach unten und arbeitest jede Phase mit kleinem Scope ab.
+        Nicht lesen, nicht interpretieren, sondern der Reihenfolge folgen.
+      </p>
+      <div class="hero-actions">
+        <a class="link primary" href="heute.html">Heute-Ansicht</a>
+        <a class="link" href="index.html">Dashboard</a>
+      </div>
+    </section>
+
+    <section class="phase-list">
+      <article class="phase">
+        <div class="phase-head">
+          <div class="phase-head-top">
+            <div class="label">Phase 1</div>
+            <div class="time">09:00-09:30</div>
+          </div>
+          <h2>Architektur</h2>
+        </div>
+        <div class="phase-grid">
+          <div class="cell"><div class="label">Jetzt tun</div><p>Eine Problemzone waehlen und in einem Satz notieren, warum sie heute bremst.</p></div>
+          <div class="cell"><div class="label">Ziel</div><p>Einen kleinen Bereich sauberer strukturieren, ohne unnoetige API-Brueche.</p></div>
+          <div class="cell"><div class="label">Erledigt, wenn</div><ul><li>Bereich klarer</li><li>Verhalten stabil</li><li>Tests oder Typen okay</li></ul></div>
+        </div>
+      </article>
+
+      <article class="phase">
+        <div class="phase-head">
+          <div class="phase-head-top">
+            <div class="label">Phase 2</div>
+            <div class="time">09:30-10:15</div>
+          </div>
+          <h2>Tests</h2>
+        </div>
+        <div class="phase-grid">
+          <div class="cell"><div class="label">Jetzt tun</div><p>Die zwei riskantesten Ablaufe benennen und die groesste Testluecke markieren.</p></div>
+          <div class="cell"><div class="label">Ziel</div><p>Mindestens einen kritischen Pfad mit belastbaren Verhaltenstests absichern.</p></div>
+          <div class="cell"><div class="label">Erledigt, wenn</div><ul><li>Echte Fehlermodi abgedeckt</li><li>Tests stabil</li><li>Mehr Sicherheit fuer spaetere Aenderungen</li></ul></div>
+        </div>
+      </article>
+
+      <article class="phase">
+        <div class="phase-head">
+          <div class="phase-head-top">
+            <div class="label">Phase 3</div>
+            <div class="time">10:30-11:15</div>
+          </div>
+          <h2>Performance</h2>
+        </div>
+        <div class="phase-grid">
+          <div class="cell"><div class="label">Jetzt tun</div><p>Einen langsamen Workflow waehlen und die Ausgangszeit notieren.</p></div>
+          <div class="cell"><div class="label">Ziel</div><p>Einen echten Engpass messen, eingrenzen und spuerbar verbessern.</p></div>
+          <div class="cell"><div class="label">Erledigt, wenn</div><ul><li>Ausgangsmessung vorhanden</li><li>Verbesserung messbar</li><li>Verhalten stabil</li></ul></div>
+        </div>
+      </article>
+
+      <article class="phase">
+        <div class="phase-head">
+          <div class="phase-head-top">
+            <div class="label">Phase 4</div>
+            <div class="time">11:30-12:00</div>
+          </div>
+          <h2>Developer Experience</h2>
+        </div>
+        <div class="phase-grid">
+          <div class="cell"><div class="label">Jetzt tun</div><p>Genau einen Reibungspunkt im Workflow auswaehlen, der heute leichter werden soll.</p></div>
+          <div class="cell"><div class="label">Ziel</div><p>Einen wiederkehrenden Ablauf klarer, schneller oder einfacher machen.</p></div>
+          <div class="cell"><div class="label">Erledigt, wenn</div><ul><li>Reibungspunkt beseitigt</li><li>Arbeitsablauf klarer</li><li>Weniger Kontextbedarf fuer Agents</li></ul></div>
+        </div>
+      </article>
+
+      <article class="phase">
+        <div class="phase-head">
+          <div class="phase-head-top">
+            <div class="label">Phase 5</div>
+            <div class="time">13:00-14:30</div>
+          </div>
+          <h2>Feature</h2>
+        </div>
+        <div class="phase-grid">
+          <div class="cell"><div class="label">Jetzt tun</div><p>Ein kleines Feature mit Tagesumfang waehlen und das Ergebnis in einem Satz formulieren.</p></div>
+          <div class="cell"><div class="label">Ziel</div><p>Bis zum Abend eine erste nutzbare Version implementieren, pruefen und erklaerbar machen.</p></div>
+          <div class="cell"><div class="label">Erledigt, wenn</div><ul><li>Erste Version vorhanden</li><li>Erfolgsfall und Fehlerfall geprueft</li><li>Doku oder Bedienhinweis nicht vergessen</li></ul></div>
+        </div>
+      </article>
+    </section>
+
+    <section class="summary">
+      <div class="eyebrow">Tagesende</div>
+      <p>Ein guter Tag ist nicht perfekt. Er ist gut, wenn alle fuenf Phasen sichtbar bewegt wurden und der Featureblock am Ende echten Output liefert.</p>
+      <div class="summary-grid">
+        <div class="cell"><div class="label">Check 1</div><p>Alle fuenf Phasen bearbeitet</p></div>
+        <div class="cell"><div class="label">Check 2</div><p>Jede Phase mit kleinem, klarem Ergebnis</p></div>
+        <div class="cell"><div class="label">Check 3</div><p>Offene Punkte fuer morgen kurz notiert</p></div>
+      </div>
+    </section>
+  </main>
+</body>
+</html>

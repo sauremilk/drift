@@ -50,11 +50,20 @@ def _matches_any(path_str: str, patterns: list[str]) -> bool:
     """
     parts = path_str.split("/")
     for pattern in patterns:
-        if fnmatch.fnmatch(path_str, pattern):
+        norm_pattern = pattern.replace("\\", "/")
+
+        # Patterns without directory separators are filename globs.
+        # They only apply to top-level paths; nested paths never match.
+        if "/" not in norm_pattern:
+            if "/" not in path_str and fnmatch.fnmatch(path_str, norm_pattern):
+                return True
+            continue
+
+        if fnmatch.fnmatch(path_str, norm_pattern):
             return True
         # Recursive directory patterns: **/name/** or **/pattern/**
-        if pattern.startswith("**/") and pattern.endswith("/**"):
-            dir_pattern = pattern[3:-3]  # strip **/ and /**
+        if norm_pattern.startswith("**/") and norm_pattern.endswith("/**"):
+            dir_pattern = norm_pattern[3:-3]  # strip **/ and /**
             for part in parts:
                 if fnmatch.fnmatch(part, dir_pattern):
                     return True

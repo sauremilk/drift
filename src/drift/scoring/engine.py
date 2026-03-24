@@ -197,30 +197,79 @@ def calibrate_weights(
     """
     weight_fields = type(current_weights).model_fields
 
+    names = list(weight_fields)
+    n = len(names)
+
+    # Bounds must be feasible for a simplex of size n.
+    if min_weight * n > 1.0 or max_weight * n < 1.0:
+        return current_weights
+
     raw: dict[str, float] = {}
-    for field_name in weight_fields:
+    for field_name in names:
         delta = ablation_deltas.get(field_name, 0.0)
-        # Use absolute delta — both positive and negative indicate relevance
+        # Use absolute delta — both positive and negative indicate relevance.
         raw[field_name] = max(min_weight, abs(delta))
 
-    # Normalize to sum to 1.0
     total = sum(raw.values())
     if total < 0.001:
         return current_weights
 
-    calibrated: dict[str, float] = {}
-    for field_name, val in raw.items():
-        calibrated[field_name] = val / total
+    # Start from normalized raw weights and project onto the bounded simplex:
+    #   sum(w)=1 and min_weight <= w_i <= max_weight
+    base = {k: raw[k] / total for k in names}
+    fixed: dict[str, float] = {}
+    free = set(names)
 
-    # Clamp to bounds and re-normalize iteratively
-    for _ in range(5):
-        clamped = {k: max(min_weight, min(max_weight, v)) for k, v in calibrated.items()}
-        total_after = sum(clamped.values())
-        if total_after < 0.001:
+    for _ in range(n + 2):
+        remaining = 1.0 - sum(fixed.values())
+        if remaining <= 0:
             return current_weights
-        calibrated = {k: round(v / total_after, 4) for k, v in clamped.items()}
-        # Check if all values are within bounds
-        if all(min_weight <= v <= max_weight for v in calibrated.values()):
+        if not free:
+            calibrated = dict(fixed)
             break
 
-    return current_weights.model_copy(update=calibrated)
+        base_free_total = sum(base[k] for k in free)
+        if base_free_total < 0.001:
+            scaled = {k: remaining / len(free) for k in free}
+        else:
+            factor = remaining / base_free_total
+            scaled = {k: base[k] * factor for k in free}
+
+        too_high = [k for k, v in scaled.items() if v > max_weight]
+        if too_high:
+            for k in too_high:
+                fixed[k] = max_weight
+                free.remove(k)
+            continue
+
+        too_low = [k for k, v in scaled.items() if v < min_weight]
+        if too_low:
+            for k in too_low:
+                fixed[k] = min_weight
+                free.remove(k)
+            continue
+
+        if not too_low and not too_high:
+            calibrated = dict(fixed)
+            calibrated.update(scaled)
+            break
+    else:
+        return current_weights
+
+    # Final bound safety and rounding.
+    calibrated = {k: max(min_weight, min(max_weight, v)) for k, v in calibrated.items()}
+    rounded = {k: round(v, 4) for k, v in calibrated.items()}
+
+    # Adjust one non-capped key for rounding drift so sum remains near 1.0.
+    drift = round(1.0 - sum(rounded.values()), 4)
+    if abs(drift) > 0:
+        adjustable = [
+            k
+            for k, v in rounded.items()
+            if min_weight < v < max_weight
+        ]
+        target_keys = adjustable or names
+        target = target_keys[0]
+        rounded[target] = round(max(min_weight, min(max_weight, rounded[target] + drift)), 4)
+
+    return current_weights.model_copy(update=rounded)

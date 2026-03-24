@@ -69,59 +69,40 @@ def _fetch_git_history(
     return commits, file_histories
 
 
-def analyze_repo(
+def _run_pipeline(
     repo_path: Path,
-    config: DriftConfig | None = None,
+    files: list[FileInfo],
+    config: DriftConfig,
     since_days: int = 90,
-    target_path: str | None = None,
     on_progress: ProgressCallback | None = None,
     workers: int = _DEFAULT_WORKERS,
+    _start: float | None = None,
 ) -> RepoAnalysis:
-    """Run full drift analysis on a repository.
+    """Shared analysis pipeline: parse → git history → signals → score.
 
-    Args:
-        repo_path: Absolute path to the repository root.
-        config: Drift configuration. Loaded from drift.yaml if None.
-        since_days: How many days of git history to analyze.
-        target_path: Optional subdirectory to restrict analysis to.
-        on_progress: Optional callback (phase, current, total) for progress display.
-
-    Returns:
-        Complete RepoAnalysis with scores, findings, and module breakdowns.
+    Both ``analyze_repo`` and ``analyze_diff`` delegate here after resolving
+    which files to analyse.  Keeping the pipeline in one place eliminates
+    duplication and ensures every code-path benefits from caching, progress
+    reporting, and resilient signal execution.
     """
-    start = time.monotonic()
-    repo_path = repo_path.resolve()
-
-    if config is None:
-        config = DriftConfig.load(repo_path)
+    start = _start if _start is not None else time.monotonic()
 
     def _progress(phase: str, current: int, total: int) -> None:
         if on_progress:
             on_progress(phase, current, total)
 
-    # --- 1. File discovery ---
-    _progress("Discovering files", 0, 0)
-    files = discover_files(
-        repo_path,
-        include=config.include,
-        exclude=config.exclude,
-    )
-
-    if target_path:
-        target = Path(target_path)
-        files = [f for f in files if str(f.path).startswith(str(target))]
-
-    # --- 2. AST parsing (parallelized) + 3. Git history (concurrent) ---
     known_files = {f.path.as_posix() for f in files}
 
-    # Initialise cache (also creates the .drift-cache/parse directory).
+    # --- 1. AST parsing (parallelized, cache-aware) ---
     cache = ParseCache(repo_path / config.cache_dir)
 
-    # Pre-classify files into cache hits and files that need parsing.
     cached_results: dict[int, ParseResult] = {}
-    to_parse: list[tuple[int, FileInfo]] = []
+    # Keep the content hash for cache misses so we don't re-read each file
+    # after parsing just to compute the key again.
+    to_parse: list[tuple[int, FileInfo, str | None]] = []
     for idx, finfo in enumerate(files):
         full_path = repo_path / finfo.path
+        content_hash: str | None = None
         try:
             content_hash = ParseCache.file_hash(full_path)
             hit = cache.get(content_hash)
@@ -130,22 +111,20 @@ def analyze_repo(
                 continue
         except OSError:
             pass
-        to_parse.append((idx, finfo))
+        to_parse.append((idx, finfo, content_hash))
 
     _progress("Parsing files", len(cached_results), len(files))
 
-    # Check if this is a git repository — skip git history if not.
     has_git = _is_git_repo(repo_path)
 
-    # Launch git history in a background thread while we parse AST files.
     with ThreadPoolExecutor(max_workers=workers) as executor:
+        # --- 2. Git history (concurrent with parsing) ---
         git_future = (
             executor.submit(_fetch_git_history, repo_path, since_days, known_files)
             if has_git
             else None
         )
 
-        # Parse uncached files in parallel.
         parse_results: list[ParseResult] = [None] * len(files)  # type: ignore[list-item]
         for idx, cached in cached_results.items():
             parse_results[idx] = cached
@@ -153,21 +132,20 @@ def analyze_repo(
         if to_parse:
             new_results: list[tuple[int, str, ParseResult]] = [None] * len(to_parse)  # type: ignore[list-item]
             futures = {
-                executor.submit(parse_file, finfo.path, repo_path, finfo.language): (i, idx, finfo)
-                for i, (idx, finfo) in enumerate(to_parse)
+                executor.submit(parse_file, finfo.path, repo_path, finfo.language): (
+                    i,
+                    idx,
+                    content_hash,
+                )
+                for i, (idx, finfo, content_hash) in enumerate(to_parse)
             }
             for future in as_completed(futures):
-                i, idx, finfo = futures[future]
+                i, idx, content_hash = futures[future]
                 result = future.result()
                 parse_results[idx] = result
-                try:
-                    full_path = repo_path / finfo.path
-                    content_hash = ParseCache.file_hash(full_path)
+                if content_hash is not None:
                     new_results[i] = (idx, content_hash, result)
-                except OSError:
-                    pass
 
-            # Populate cache (main thread, no races).
             for entry in new_results:
                 if entry is not None:
                     _idx, h, r = entry
@@ -175,7 +153,6 @@ def analyze_repo(
 
         _progress("Parsing files", len(files), len(files))
 
-        # Collect git results (empty when not a git repo).
         if git_future is not None:
             commits, file_histories = git_future.result()
         else:
@@ -184,7 +161,7 @@ def analyze_repo(
 
     _progress("Analyzing git history", 0, 0)
 
-    # Initialise embedding service (None when deps missing or disabled).
+    # --- 3. Embedding service ---
     emb_svc = None
     if config.embeddings_enabled:
         emb_svc = get_embedding_service(
@@ -193,6 +170,7 @@ def analyze_repo(
             batch_size=config.embedding_batch_size,
         )
 
+    # --- 4. Signals ---
     ctx = AnalysisContext(
         repo_path=repo_path,
         config=config,
@@ -228,7 +206,7 @@ def analyze_repo(
         for pattern in pr.patterns:
             pattern_catalog.setdefault(pattern.category, []).append(pattern)
 
-    # --- 7. AI attribution ratio ---
+    # --- 7. Assemble result ---
     total_funcs = sum(len(pr.functions) for pr in parse_results)
     ai_commits = sum(1 for c in commits if c.is_ai_attributed)
     ai_ratio = ai_commits / max(1, len(commits))
@@ -251,20 +229,75 @@ def analyze_repo(
     )
 
 
+# ---------------------------------------------------------------------------
+# Public entry points
+# ---------------------------------------------------------------------------
+
+
+def analyze_repo(
+    repo_path: Path,
+    config: DriftConfig | None = None,
+    since_days: int = 90,
+    target_path: str | None = None,
+    on_progress: ProgressCallback | None = None,
+    workers: int = _DEFAULT_WORKERS,
+) -> RepoAnalysis:
+    """Run full drift analysis on a repository.
+
+    Args:
+        repo_path: Absolute path to the repository root.
+        config: Drift configuration. Loaded from drift.yaml if None.
+        since_days: How many days of git history to analyze.
+        target_path: Optional subdirectory to restrict analysis to.
+        on_progress: Optional callback (phase, current, total) for progress display.
+        workers: Number of parallel parsing threads.
+
+    Returns:
+        Complete RepoAnalysis with scores, findings, and module breakdowns.
+    """
+    repo_path = repo_path.resolve()
+    start = time.monotonic()
+
+    if config is None:
+        config = DriftConfig.load(repo_path)
+
+    if on_progress:
+        on_progress("Discovering files", 0, 0)
+
+    files = discover_files(
+        repo_path,
+        include=config.include,
+        exclude=config.exclude,
+    )
+
+    if target_path:
+        target = Path(target_path)
+        files = [f for f in files if str(f.path).startswith(str(target))]
+
+    return _run_pipeline(
+        repo_path, files, config,
+        since_days=since_days,
+        on_progress=on_progress,
+        workers=workers,
+        _start=start,
+    )
+
+
 def analyze_diff(
     repo_path: Path,
     config: DriftConfig | None = None,
     diff_ref: str = "HEAD~1",
     workers: int = _DEFAULT_WORKERS,
+    on_progress: ProgressCallback | None = None,
 ) -> RepoAnalysis:
     """Analyze only files changed since a given git ref.
 
     Useful for CI — only checks files in the current diff.
     Runs signals only on changed files rather than the entire repo.
     """
-
     logger = logging.getLogger("drift")
     repo_path = repo_path.resolve()
+    start = time.monotonic()
 
     if config is None:
         config = DriftConfig.load(repo_path)
@@ -297,10 +330,6 @@ def analyze_diff(
             drift_score=0.0,
         )
 
-    # Run targeted analysis on changed files only
-    start = time.monotonic()
-
-    # --- 1. File discovery (only changed files) ---
     all_files = discover_files(
         repo_path,
         include=config.include,
@@ -316,63 +345,10 @@ def analyze_diff(
             drift_score=0.0,
         )
 
-    # --- 2. AST parsing (parallelized) + 3. Git history (concurrent) ---
-    known_files = {f.path.as_posix() for f in files}
-
-    with ThreadPoolExecutor(max_workers=workers) as executor:
-        git_future = executor.submit(_fetch_git_history, repo_path, 90, known_files)
-        parse_results: list[ParseResult] = [None] * len(files)  # type: ignore[list-item]
-        futures = {
-            executor.submit(parse_file, finfo.path, repo_path, finfo.language): idx
-            for idx, finfo in enumerate(files)
-        }
-        for future in as_completed(futures):
-            parse_results[futures[future]] = future.result()
-        commits, file_histories = git_future.result()
-
-    # --- 4. Run signals ---
-    emb_svc = None
-    if config.embeddings_enabled:
-        emb_svc = get_embedding_service(
-            cache_dir=repo_path / config.cache_dir,
-            model_name=config.embedding_model,
-            batch_size=config.embedding_batch_size,
-        )
-
-    ctx = AnalysisContext(
-        repo_path=repo_path,
-        config=config,
-        parse_results=parse_results,
-        file_histories=file_histories,
-        embedding_service=emb_svc,
-    )
-    signals = create_signals(ctx)
-
-    all_findings: list[Finding] = []
-    for signal in signals:
-        findings = signal.analyze(parse_results, file_histories, config)
-        all_findings.extend(findings)
-
-    # --- 5. Scoring ---
-    assign_impact_scores(all_findings, config.weights)
-    signal_scores = compute_signal_scores(all_findings)
-    score = composite_score(signal_scores, config.weights)
-    module_scores = compute_module_scores(all_findings, config.weights)
-
-    duration = time.monotonic() - start
-
-    return RepoAnalysis(
-        repo_path=repo_path,
-        analyzed_at=datetime.datetime.now(tz=datetime.UTC),
-        drift_score=score,
-        module_scores=module_scores,
-        findings=all_findings,
-        total_files=len(files),
-        total_functions=sum(len(pr.functions) for pr in parse_results),
-        ai_attributed_ratio=round(
-            sum(1 for c in commits if c.is_ai_attributed) / max(1, len(commits)), 3
-        ),
-        analysis_duration_seconds=round(duration, 2),
-        commits=commits,
-        file_histories=file_histories,
+    return _run_pipeline(
+        repo_path, files, config,
+        since_days=90,
+        on_progress=on_progress,
+        workers=workers,
+        _start=start,
     )

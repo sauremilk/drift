@@ -19,6 +19,7 @@
 
 - [ ] `pytest` passes locally
 - [ ] `ruff check src/ tests/` passes locally
+- [ ] `mypy src/drift` passes locally
 - [ ] `drift self` delta checked (target: <= +0.010)
 - [ ] Added/updated tests for behavioral changes
 

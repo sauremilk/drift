@@ -201,3 +201,18 @@ def test_calibrate_weights_respects_bounds():
     for val in calibrated.as_dict().values():
         assert val >= 0.04  # small rounding tolerance
         assert val <= 0.36
+
+
+def test_calibrate_weights_zero_total_after_clamp_returns_current():
+    deltas = {
+        "pattern_fragmentation": 0.9,
+        "architecture_violation": 0.2,
+        "mutant_duplicate": 0.2,
+        "explainability_deficit": 0.2,
+        "doc_impl_drift": 0.2,
+        "temporal_volatility": 0.2,
+        "system_misalignment": 0.2,
+    }
+    original = SignalWeights()
+    calibrated = calibrate_weights(deltas, original, min_weight=0.0, max_weight=0.0)
+    assert calibrated == original

@@ -6,7 +6,11 @@ from pathlib import Path
 
 import pytest
 
-from drift.ingestion.git_history import parse_git_history
+from drift.ingestion.git_history import (
+    _detect_ai_attribution,
+    _is_defect_correlated,
+    parse_git_history,
+)
 
 
 def test_parse_git_history_uses_arg_list_not_shell(
@@ -62,3 +66,29 @@ def test_repo_path_with_shell_chars_is_never_injected_into_command(
     assert isinstance(cmd, list)
     assert str(malicious_repo) not in " ".join(cmd)
     assert kwargs["cwd"] == str(malicious_repo)
+
+
+def test_detect_ai_attribution_from_coauthor_marker() -> None:
+    is_ai, confidence = _detect_ai_attribution(
+        "Improve parser performance",
+        ["GitHub Copilot"],
+    )
+    assert is_ai is True
+    assert confidence == pytest.approx(0.95)
+
+
+def test_detect_ai_attribution_tier1_message() -> None:
+    is_ai, confidence = _detect_ai_attribution("Implement robust cache handling", [])
+    assert is_ai is True
+    assert confidence == pytest.approx(0.40)
+
+
+def test_detect_ai_attribution_tier2_is_weak_signal_only() -> None:
+    is_ai, confidence = _detect_ai_attribution("Fix parser bug", [])
+    assert is_ai is False
+    assert confidence == pytest.approx(0.15)
+
+
+def test_defect_correlation_markers() -> None:
+    assert _is_defect_correlated("hotfix: revert broken release") is True
+    assert _is_defect_correlated("docs: update contribution guide") is False

@@ -1,0 +1,620 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tagesplanung</title>
+  <style>
+    :root {
+      --bg: #f3efe6;
+      --panel: #fffaf2;
+      --panel-strong: #f7ead7;
+      --text: #1f1a17;
+      --muted: #6b5f56;
+      --line: #d7c8b3;
+      --accent: #b95c32;
+      --accent-soft: #f3d9c9;
+      --shadow: 0 14px 40px rgba(61, 39, 24, 0.12);
+      --radius: 18px;
+      --radius-sm: 12px;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: Georgia, "Times New Roman", serif;
+      background:
+        radial-gradient(circle at top left, rgba(185, 92, 50, 0.10), transparent 28%),
+        radial-gradient(circle at top right, rgba(103, 130, 94, 0.10), transparent 24%),
+        linear-gradient(180deg, #f8f3ea 0%, var(--bg) 100%);
+      color: var(--text);
+    }
+
+    .shell {
+      width: min(1180px, calc(100% - 32px));
+      margin: 32px auto 48px;
+      display: grid;
+      gap: 20px;
+    }
+
+    .hero,
+    .panel,
+    .detail {
+      background: rgba(255, 250, 242, 0.94);
+      border: 1px solid rgba(215, 200, 179, 0.85);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      -webkit-backdrop-filter: blur(8px);
+      backdrop-filter: blur(8px);
+    }
+
+    .hero {
+      padding: 28px;
+      display: grid;
+      gap: 18px;
+    }
+
+    .eyebrow {
+      font-size: 12px;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--accent);
+      font-weight: 700;
+    }
+
+    h1,
+    h2,
+    h3 {
+      margin: 0;
+      font-weight: 700;
+    }
+
+    h1 {
+      font-size: clamp(34px, 5vw, 56px);
+      line-height: 1;
+      max-width: 10ch;
+    }
+
+    .subtitle {
+      max-width: 70ch;
+      font-size: 18px;
+      line-height: 1.55;
+      color: var(--muted);
+    }
+
+    .quick-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      gap: 12px;
+    }
+
+    .quick-box {
+      padding: 14px;
+      border-radius: var(--radius-sm);
+      background: var(--panel-strong);
+      border: 1px solid var(--line);
+    }
+
+    .quick-box strong,
+    .meta strong {
+      display: block;
+      margin-bottom: 6px;
+      font-size: 12px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--accent);
+    }
+
+    .hero-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    .hero-link {
+      text-decoration: none;
+      color: var(--text);
+      border: 1px solid var(--line);
+      background: #fffdf8;
+      border-radius: 999px;
+      padding: 11px 16px;
+      font-size: 15px;
+    }
+
+    .hero-link.primary {
+      background: var(--accent);
+      color: #fff7f0;
+      border-color: var(--accent);
+    }
+
+    .pipeline {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .phase-tile {
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      background: rgba(255, 253, 248, 0.92);
+      padding: 14px;
+      cursor: pointer;
+      text-align: left;
+      color: inherit;
+      font: inherit;
+    }
+
+    .phase-tile.active {
+      border-color: var(--accent);
+      background: var(--accent-soft);
+    }
+
+    .phase-tile strong,
+    .time-chip,
+    .mini-label {
+      display: block;
+      font-size: 12px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .phase-tile strong,
+    .time-chip,
+    .mini-label {
+      color: var(--accent);
+    }
+
+    .phase-tile span {
+      display: block;
+      margin-top: 8px;
+      line-height: 1.45;
+    }
+
+    .main-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 420px) minmax(0, 1fr);
+      gap: 20px;
+      align-items: start;
+    }
+
+    .panel {
+      padding: 18px;
+    }
+
+    .panel h2,
+    .detail h2 {
+      font-size: 24px;
+      margin-bottom: 16px;
+    }
+
+    .card-list {
+      display: grid;
+      gap: 12px;
+    }
+
+    .topic-card {
+      width: 100%;
+      text-align: left;
+      border: 1px solid var(--line);
+      background: #fffdf8;
+      border-radius: 16px;
+      padding: 16px;
+      cursor: pointer;
+      transition: transform 140ms ease, border-color 140ms ease, background 140ms ease;
+      color: inherit;
+      font: inherit;
+    }
+
+    .topic-card:hover,
+    .topic-card:focus-visible {
+      transform: translateY(-1px);
+      border-color: var(--accent);
+      outline: none;
+    }
+
+    .topic-card.active {
+      background: var(--accent-soft);
+      border-color: var(--accent);
+    }
+
+    .topic-card h3 {
+      font-size: 20px;
+      margin-bottom: 8px;
+    }
+
+    .meta {
+      display: grid;
+      gap: 10px;
+      color: var(--muted);
+      font-size: 15px;
+      line-height: 1.45;
+    }
+
+    .detail {
+      padding: 24px;
+      display: grid;
+      gap: 20px;
+      min-height: 720px;
+    }
+
+    .detail-top {
+      display: grid;
+      gap: 12px;
+    }
+
+    .detail-top p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 17px;
+      line-height: 1.55;
+    }
+
+    .signal-grid,
+    .action-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 12px;
+    }
+
+    .focus-grid {
+      display: grid;
+      grid-template-columns: 1.3fr 1fr;
+      gap: 12px;
+    }
+
+    .signal,
+    .action-box,
+    .block {
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: #fffdf8;
+      padding: 14px;
+    }
+
+    .signal h3,
+    .action-box h3,
+    .block h3 {
+      font-size: 14px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      margin-bottom: 10px;
+      color: var(--accent);
+    }
+
+    .signal p,
+    .action-box p,
+    .block p {
+      margin: 0;
+      line-height: 1.5;
+      color: var(--text);
+    }
+
+    .block-list {
+      display: grid;
+      gap: 12px;
+    }
+
+    .mini-list {
+      display: grid;
+      gap: 8px;
+    }
+
+    .mini-item {
+      border-top: 1px solid rgba(215, 200, 179, 0.7);
+      padding-top: 8px;
+      color: var(--text);
+      line-height: 1.45;
+    }
+
+    .mini-item:first-of-type {
+      border-top: 0;
+      padding-top: 0;
+    }
+
+    ul {
+      margin: 0;
+      padding-left: 18px;
+      line-height: 1.55;
+    }
+
+    .footer-note {
+      font-size: 14px;
+      color: var(--muted);
+      border-top: 1px solid var(--line);
+      padding-top: 16px;
+    }
+
+    @media (max-width: 920px) {
+      .pipeline,
+      .main-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .detail {
+        min-height: 0;
+      }
+
+      .focus-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="shell">
+    <section class="hero">
+      <div class="eyebrow">Tagesplanung</div>
+      <h1>Heute nicht wählen, sondern durchziehen.</h1>
+      <p class="subtitle">
+        Diese Oberfläche ist für einen agentisch beschleunigten Arbeitstag gedacht, an dem alle fünf substantiellen Ergebnisse
+        nacheinander abgearbeitet werden. Links siehst du die fünf Tagesphasen. Rechts bekommst du für jede Phase sofort den Startpunkt,
+        das Ziel und die Erledigt-Kriterien.
+      </p>
+      <div class="quick-grid">
+        <div class="quick-box">
+          <strong>1. Reihenfolge</strong>
+          Arbeite die fünf Phasen der Reihe nach ab.
+        </div>
+        <div class="quick-box">
+          <strong>2. Start</strong>
+          Beginne in jeder Phase mit Heute zuerst.
+        </div>
+        <div class="quick-box">
+          <strong>3. Fokus</strong>
+          Nutze danach die vier Arbeitsblöcke als Rahmen.
+        </div>
+        <div class="quick-box">
+          <strong>4. Ende</strong>
+          Feierabend ist erst erreicht, wenn alle fünf Phasen sichtbar bearbeitet sind.
+        </div>
+      </div>
+      <div class="hero-actions">
+        <a class="hero-link primary" href="index.html">Dashboard</a>
+        <a class="hero-link" href="heute.html">Heute-Ansicht</a>
+      </div>
+    </section>
+
+    <section class="pipeline" id="pipeline"></section>
+
+    <section class="main-grid">
+      <aside class="panel">
+        <h2>Tagesphasen</h2>
+        <div class="card-list" id="card-list"></div>
+      </aside>
+
+      <section class="detail" id="detail-view" aria-live="polite"></section>
+    </section>
+  </main>
+
+  <script>
+    const topics = [
+      {
+        id: "architektur",
+        title: "1. Architektur",
+        short: "Fundament zuerst stabilisieren",
+        time: "09:00-09:30",
+        when: "Änderungen dauern zu lange, ein Modul ist unübersichtlich oder trägt zu viele Verantwortlichkeiten.",
+        first: "Wähle eine Problemzone und notiere in einem Satz, warum sie heute bremst.",
+        goal: "Ein Bereich ist am Abend sichtbar sauberer strukturiert und weiterhin sicher lauffähig.",
+        done: [
+          "Der betroffene Bereich ist klarer aufgeteilt.",
+          "Die Änderung blieb auf einen kleinen, beherrschbaren Ausschnitt begrenzt.",
+          "Tests und Typprüfung laufen sauber.",
+          "Das Verhalten ist nach dem Umbau plausibel unverändert."
+        ],
+        blocks: [
+          ["Analyse", "Agent auf Strukturprobleme ansetzen und eine kleine Zerlegung auswählen."],
+          ["Umsetzung", "Refactoring in kleinen Schritten mit minimaler API-Änderung umsetzen."],
+          ["Absicherung", "Regressionen prüfen, Tests ergänzen, Typprüfung laufen lassen."],
+          ["Abschluss", "Kurz festhalten, was jetzt strukturell besser ist und was bewusst liegen bleibt."]
+        ]
+      },
+      {
+        id: "tests",
+        title: "2. Tests",
+        short: "Danach das Risiko absenken",
+        time: "09:30-10:15",
+        when: "Du willst bald etwas umbauen oder ein kritischer Flow ist noch zu schwach abgesichert.",
+        first: "Benenne die zwei riskantesten Abläufe und markiere die größte Testlücke.",
+        goal: "Mindestens ein kritischer Pfad ist am Abend robust durch echte Verhaltenstests abgesichert.",
+        done: [
+          "Die neuen Tests decken reale Fehlermodi ab.",
+          "Mindestens ein kritischer Pfad hat spürbar besseren Schutz.",
+          "Die Tests laufen stabil.",
+          "Der Bereich ist jetzt sicherer für spätere Agenten-Refactorings."
+        ],
+        blocks: [
+          ["Analyse", "Vorhandene Lücken und schwache Assertions mit dem Agenten herausarbeiten."],
+          ["Umsetzung", "Regressionstests, Edge Cases und Negativfälle gezielt ergänzen."],
+          ["Absicherung", "Kompletten Testlauf ausführen und zu implementationsnahe Tests nachschärfen."],
+          ["Abschluss", "Notieren, welche Risiken jetzt konkret abgedeckt sind."]
+        ]
+      },
+      {
+        id: "performance",
+        title: "3. Performance",
+        short: "Dann Zeitverlust beseitigen",
+        time: "10:30-11:15",
+        when: "Ein häufiger Workflow kostet zu viel Zeit, Ressourcen oder skaliert schlecht.",
+        first: "Lege einen messbaren Ablauf fest und schreibe die Ausgangszeit oder Ausgangskosten auf.",
+        goal: "Ein echter Engpass ist bis zum Abend nachweisbar verbessert und dokumentiert.",
+        done: [
+          "Es gibt eine brauchbare Ausgangsmessung.",
+          "Ein klarer Engpass wurde isoliert.",
+          "Die Verbesserung ist messbar.",
+          "Funktionales Verhalten blieb stabil."
+        ],
+        blocks: [
+          ["Analyse", "Mit dem Agenten einen Profiling-Ansatz wählen und den Kostentreiber eingrenzen."],
+          ["Umsetzung", "Die wirksamste Optimierung mit engem Scope umsetzen."],
+          ["Absicherung", "Vorher-Nachher messen und funktionales Verhalten gegenprüfen."],
+          ["Abschluss", "Die Zahlen sichern und offene Performance-Hypothesen notieren."]
+        ]
+      },
+      {
+        id: "dx",
+        title: "4. Developer Experience",
+        short: "Dann den Workflow glätten",
+        time: "11:30-12:00",
+        when: "Zu viel läuft manuell, Abläufe sind unklar oder Agenten brauchen unnötig viel Zusatzkontext.",
+        first: "Wähle genau einen Reibungspunkt, der heute konkret einfacher werden soll.",
+        goal: "Ein alltäglicher Ablauf ist am Abend sichtbar klarer, schneller oder reibungsärmer.",
+        done: [
+          "Ein echter Reibungspunkt ist beseitigt.",
+          "Die Lösung spart künftig merklich Zeit oder mentale Last.",
+          "Die Änderung ist einfach nutzbar oder dokumentiert.",
+          "Künftige Agentenarbeit braucht weniger implizites Wissen."
+        ],
+        blocks: [
+          ["Analyse", "Mit dem Agenten prüfen, welche Befehle, Skripte oder Hinweise fehlen."],
+          ["Umsetzung", "Einen kleinen, hochwirksamen DX-Eingriff umsetzen."],
+          ["Absicherung", "Den neuen Ablauf einmal selbst durchspielen und unnötige Zusatzkomplexität streichen."],
+          ["Abschluss", "Festhalten, was jetzt einfacher ist und welche DX-Baustelle als Nächstes dran wäre."]
+        ]
+      },
+      {
+        id: "feature",
+        title: "5. Feature",
+        short: "Zum Schluss sichtbaren Output liefern",
+        time: "13:00-14:30",
+        when: "Du willst heute sichtbar etwas Neues liefern und das Projekt ist stabil genug für neue Funktionalität.",
+        first: "Wähle ein kleines Feature mit Tagesumfang und formuliere das Ergebnis in genau einem Satz.",
+        goal: "Eine erste nutzbare Version ist bis zum Abend implementiert, getestet und erklärbar.",
+        done: [
+          "Das Feature ist in einer ersten sinnvollen Form vorhanden.",
+          "Die wichtigsten Akzeptanzpunkte sind erfüllt.",
+          "Erfolgsfall und Fehlerfall wurden geprüft.",
+          "Doku oder Bedienhinweise fehlen nicht."
+        ],
+        blocks: [
+          ["Analyse", "Akzeptanzpunkte festziehen und vom Agenten die betroffenen Stellen eingrenzen lassen."],
+          ["Umsetzung", "Implementierung mit engem Scope und klaren Erfolgskriterien durchführen."],
+          ["Absicherung", "Tests für Erfolgsfall, Fehlerfall und wichtige Randfälle ergänzen."],
+          ["Abschluss", "Lieferzustand notieren und Ausbaupunkte für die nächste Iteration festhalten."]
+        ]
+      }
+    ];
+
+    const cardList = document.getElementById("card-list");
+    const detailView = document.getElementById("detail-view");
+    const pipeline = document.getElementById("pipeline");
+
+    function renderPipeline(activeId) {
+      pipeline.innerHTML = "";
+      for (const topic of topics) {
+        const button = document.createElement("button");
+        button.className = "phase-tile" + (topic.id === activeId ? " active" : "");
+        button.type = "button";
+        button.innerHTML = `
+          <strong>${topic.time}</strong>
+          <span>${topic.title}</span>
+          <span>${topic.short}</span>
+        `;
+        button.addEventListener("click", () => renderTopic(topic.id));
+        pipeline.appendChild(button);
+      }
+    }
+
+    function renderCards(activeId) {
+      cardList.innerHTML = "";
+      for (const topic of topics) {
+        const button = document.createElement("button");
+        button.className = "topic-card" + (topic.id === activeId ? " active" : "");
+        button.type = "button";
+        button.innerHTML = `
+          <h3>${topic.title}</h3>
+          <div class="meta">
+            <div><strong>Zeitfenster</strong>${topic.time}</div>
+            <div><strong>Phase</strong>${topic.short}</div>
+            <div><strong>Erster Schritt</strong>${topic.first}</div>
+          </div>
+        `;
+        button.addEventListener("click", () => renderTopic(topic.id));
+        cardList.appendChild(button);
+      }
+    }
+
+    function renderTopic(activeId) {
+      const topic = topics.find((entry) => entry.id === activeId) || topics[0];
+      renderPipeline(topic.id);
+      renderCards(topic.id);
+
+      detailView.innerHTML = `
+        <div class="detail-top">
+          <div class="eyebrow">Tagesphase</div>
+          <h2>${topic.title}</h2>
+          <p>${topic.when}</p>
+        </div>
+
+        <div class="focus-grid">
+          <div class="signal">
+            <h3>Zeitbox</h3>
+            <p>${topic.time}</p>
+          </div>
+          <div class="signal">
+            <h3>Phasenziel</h3>
+            <p>${topic.short}</p>
+          </div>
+        </div>
+
+        <div class="signal-grid">
+          <div class="signal">
+            <h3>Heute zuerst</h3>
+            <p>${topic.first}</p>
+          </div>
+          <div class="signal">
+            <h3>Feierabendziel</h3>
+            <p>${topic.goal}</p>
+          </div>
+        </div>
+
+        <div class="action-grid">
+          <div class="action-box">
+            <h3>Phasenlogik</h3>
+            <p>Diese Phase ist Teil eines Tages mit fünf Ergebnissen. Arbeite sie kompakt ab und gehe dann direkt zur nächsten über.</p>
+          </div>
+          <div class="action-box">
+            <h3>Wichtig</h3>
+            <p>Halte den Scope pro Phase klein. Die Gesamtleistung entsteht durch fünf saubere, begrenzte Fortschritte an einem Tag.</p>
+          </div>
+        </div>
+
+        <div class="block-list">
+          ${topic.blocks.map(([name, text], index) => `
+            <div class="block">
+              <h3>Schritt ${index + 1}: ${name}</h3>
+              <p>${text}</p>
+            </div>
+          `).join("")}
+        </div>
+
+        <div class="action-grid">
+          <div class="block">
+            <h3>Erledigt, wenn</h3>
+            <ul>
+              ${topic.done.map((item) => `<li>${item}</li>`).join("")}
+            </ul>
+          </div>
+          <div class="block">
+            <h3>Nur hier hinschauen</h3>
+            <div class="mini-list">
+              <div class="mini-item"><span class="mini-label">Start</span>${topic.first}</div>
+              <div class="mini-item"><span class="mini-label">Ziel</span>${topic.goal}</div>
+              <div class="mini-item"><span class="mini-label">Weiter</span>Danach direkt zur nächsten Phase in der Leiste oben.</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="footer-note">
+          Wenn du nur den blanken Ablauf ohne Erklärung willst, nutze heute.html. Diese Ansicht ist die etwas reichhaltigere Steuerzentrale.
+        </div>
+      `;
+    }
+
+    renderTopic(topics[0].id);
+  </script>
+</body>
+</html>
