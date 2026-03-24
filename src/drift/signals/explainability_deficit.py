@@ -71,9 +71,16 @@ class ExplainabilityDeficitSignal(BaseSignal):
             for fn in pr.functions:
                 all_functions[f"{fn.file_path}:{fn.name}"] = fn
 
+                file_posix = fn.file_path.as_posix().lower()
+                is_test_file = (
+                    "test" in file_posix
+                    or file_posix.endswith(".spec.ts")
+                    or file_posix.endswith(".spec.tsx")
+                )
+
                 # Heuristic: functions in test files suggest tests for other functions
-                if "test" in fn.file_path.as_posix().lower():
-                    # test_foo → foo, test_handle_payment → handle_payment
+                if is_test_file:
+                    # Python: test_foo → foo, test_handle_payment → handle_payment
                     target_name = fn.name.removeprefix("test_")
                     test_targets.add(target_name)
                     # Also handle class.method style
@@ -95,6 +102,16 @@ class ExplainabilityDeficitSignal(BaseSignal):
                             if not other.name.startswith("test_"):
                                 test_targets.add(other.name)
 
+                # TS/JS test patterns: describe("Foo", ...), it("should ...", ...)
+                # Functions named it/test/describe inside test files hint at testing
+                if fn.language in ("typescript", "tsx", "javascript", "jsx"):
+                    if is_test_file:
+                        # All non-test-framework functions in spec files
+                        # mark the subjects they exercise as "tested"
+                        if fn.name not in ("describe", "it", "test", "beforeEach",
+                                           "afterEach", "beforeAll", "afterAll"):
+                            test_targets.add(fn.name)
+
         # Resolve thresholds from config
         min_complexity = MEDIUM_COMPLEXITY
         min_func_loc = 10
@@ -106,7 +123,12 @@ class ExplainabilityDeficitSignal(BaseSignal):
 
         for _key, func in all_functions.items():
             # Skip test files and trivial functions
-            if "test" in func.file_path.as_posix().lower():
+            file_posix = func.file_path.as_posix().lower()
+            if (
+                "test" in file_posix
+                or file_posix.endswith(".spec.ts")
+                or file_posix.endswith(".spec.tsx")
+            ):
                 continue
             # Primary gate: cyclomatic complexity (better proxy for
             # "needs explanation" than raw LOC)

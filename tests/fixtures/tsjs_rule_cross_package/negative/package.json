@@ -1,0 +1,7 @@
+{
+  "name": "tsjs-cross-package-negative",
+  "private": true,
+  "workspaces": [
+    "packages/*"
+  ]
+}

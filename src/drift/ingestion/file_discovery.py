@@ -28,7 +28,7 @@ def _detect_supported_languages() -> set[str]:
         from drift.ingestion.ts_parser import tree_sitter_available
 
         if tree_sitter_available():
-            langs |= {"typescript", "tsx"}
+            langs |= {"typescript", "tsx", "javascript", "jsx"}
     except ImportError:
         pass
     return langs

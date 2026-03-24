@@ -1,0 +1,7 @@
+{
+  "file_to_layer": {
+    "src/ui/view.ts": "ui",
+    "src/ui/components/button.ts": "ui",
+    "src/infra/storage.ts": "infra"
+  }
+}

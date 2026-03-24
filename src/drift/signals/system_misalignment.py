@@ -48,6 +48,40 @@ _STDLIB_MODULES: frozenset[str] = frozenset({
     "_thread", "_io", "_collections", "array", "binascii",
 })
 
+# Node.js built-in modules — never "novel" in any TypeScript/JS module.
+# Covers both bare names (``fs``) and ``node:`` prefixed forms.
+_NODEJS_BUILTINS: frozenset[str] = frozenset({
+    "assert", "async_hooks", "buffer", "child_process", "cluster",
+    "console", "constants", "crypto", "dgram", "diagnostics_channel",
+    "dns", "domain", "events", "fs", "http", "http2", "https",
+    "inspector", "module", "net", "os", "path", "perf_hooks",
+    "process", "punycode", "querystring", "readline", "repl",
+    "stream", "string_decoder", "sys", "timers", "tls", "trace_events",
+    "tty", "url", "util", "v8", "vm", "wasi", "worker_threads", "zlib",
+    # node: prefix variants are handled at lookup time
+})
+
+# Combined set for quick lookup
+_ALL_STDLIB: frozenset[str] = _STDLIB_MODULES | _NODEJS_BUILTINS
+
+
+def _is_stdlib_import(module_spec: str, language: str) -> bool:
+    """Return True if *module_spec* is a known standard-library module."""
+    # Handle node: prefix
+    if module_spec.startswith("node:"):
+        return True
+    # For TS/JS: extract package name from scoped (``@scope/pkg``) or bare
+    if language in ("typescript", "tsx", "javascript", "jsx"):
+        top = module_spec.lstrip("./")
+        if top.startswith("@"):
+            # scoped packages are never stdlib
+            return False
+        top = top.split("/")[0]
+        return top in _NODEJS_BUILTINS
+    # Python: first dotted component
+    top = module_spec.split(".")[0]
+    return top in _STDLIB_MODULES
+
 
 def _module_imports(
     parse_results: list[ParseResult],
@@ -74,7 +108,18 @@ def _module_imports(
         module = pr.file_path.parent
         for imp in pr.imports:
             if not imp.is_relative:
-                top = imp.imported_module.split(".")[0]
+                if _is_stdlib_import(imp.imported_module, pr.language):
+                    continue
+                # TS/JS: extract top-level package name
+                if pr.language in ("typescript", "tsx", "javascript", "jsx"):
+                    spec = imp.imported_module
+                    if spec.startswith("@"):
+                        parts = spec.split("/")
+                        top = "/".join(parts[:2]) if len(parts) >= 2 else spec
+                    else:
+                        top = spec.split("/")[0]
+                else:
+                    top = imp.imported_module.split(".")[0]
                 module_imports[module].add(top)
     return module_imports
 
@@ -108,7 +153,18 @@ def _find_novel_imports(
         for imp in pr.imports:
             if imp.is_relative:
                 continue
-            top = imp.imported_module.split(".")[0]
+            if _is_stdlib_import(imp.imported_module, pr.language):
+                continue
+            # TS/JS: extract top-level package name
+            if pr.language in ("typescript", "tsx", "javascript", "jsx"):
+                spec = imp.imported_module
+                if spec.startswith("@"):
+                    parts = spec.split("/")
+                    top = "/".join(parts[:2]) if len(parts) >= 2 else spec
+                else:
+                    top = spec.split("/")[0]
+            else:
+                top = imp.imported_module.split(".")[0]
             if top in _STDLIB_MODULES:
                 continue
             if top not in baseline:

@@ -460,7 +460,7 @@ def parse_file(file_path: Path, repo_path: Path, language: str) -> ParseResult:
     if language == "python":
         return parse_python_file(file_path, repo_path)
 
-    if language in ("typescript", "tsx"):
+    if language in ("typescript", "tsx", "javascript", "jsx"):
         from drift.ingestion.ts_parser import parse_typescript_file
 
         return parse_typescript_file(file_path, repo_path, language)

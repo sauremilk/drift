@@ -8,6 +8,7 @@ from drift.signals.mutant_duplicates import MutantDuplicateSignal
 from drift.signals.pattern_fragmentation import PatternFragmentationSignal
 from drift.signals.system_misalignment import SystemMisalignmentSignal
 from drift.signals.temporal_volatility import TemporalVolatilitySignal
+from drift.signals.ts_architecture import TypeScriptArchitectureSignal
 
 __all__ = [
     "BaseSignal",
@@ -18,4 +19,5 @@ __all__ = [
     "TemporalVolatilitySignal",
     "SystemMisalignmentSignal",
     "DocImplDriftSignal",
+    "TypeScriptArchitectureSignal",
 ]

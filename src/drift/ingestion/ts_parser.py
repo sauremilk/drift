@@ -102,6 +102,36 @@ def _walk(node: Any) -> list[Any]:
 
 
 # ---------------------------------------------------------------------------
+# AST n-gram computation (for Mutant Duplicate detection)
+# ---------------------------------------------------------------------------
+
+_NGRAM_N = 3
+
+
+def _compute_ts_ast_ngrams(node: Any) -> list[list[str]]:
+    """Extract n-grams of tree-sitter node types from a function node.
+
+    Mirrors the Python ``_compute_ast_ngrams`` logic: names and literals are
+    normalised away so that renaming variables does not affect the fingerprint.
+    The result is stored in ``FunctionInfo.ast_fingerprint["ngrams"]``.
+    """
+    node_types: list[str] = []
+    for child in _walk(node):
+        # Normalise identifiers and literals to generic tokens
+        if child.type in ("identifier", "property_identifier", "shorthand_property_identifier"):
+            node_types.append("Identifier")
+        elif child.type in ("string", "template_string", "number", "true", "false", "null"):
+            node_types.append("Literal")
+        else:
+            node_types.append(child.type)
+
+    if len(node_types) < _NGRAM_N:
+        return [node_types] if node_types else []
+
+    return [node_types[i : i + _NGRAM_N] for i in range(len(node_types) - _NGRAM_N + 1)]
+
+
+# ---------------------------------------------------------------------------
 # Extraction
 # ---------------------------------------------------------------------------
 
@@ -213,6 +243,12 @@ def _extract_functions(
                 if cls_name:
                     name = f"{_node_text(cls_name, source)}.{name}"
 
+        # Pre-compute AST n-grams for MDS signal
+        ast_fp: dict[str, Any] = {}
+        ngrams = _compute_ts_ast_ngrams(func_node)
+        if ngrams:
+            ast_fp["ngrams"] = ngrams
+
         functions.append(
             FunctionInfo(
                 name=name,
@@ -227,6 +263,7 @@ def _extract_functions(
                 decorators=decorators,
                 has_docstring=has_docstring,
                 body_hash=body_hash,
+                ast_fingerprint=ast_fp,
             )
         )
 
@@ -408,6 +445,85 @@ def _extract_patterns(
 
 
 # ---------------------------------------------------------------------------
+# API endpoint pattern extraction (Express / Fastify / NestJS / Koa)
+# ---------------------------------------------------------------------------
+
+# HTTP method names used in framework router calls and decorators
+_TS_ROUTE_METHODS: frozenset[str] = frozenset({
+    "get", "post", "put", "patch", "delete", "head", "options", "all",
+    # NestJS decorators
+    "Get", "Post", "Put", "Patch", "Delete", "Head", "Options",
+})
+
+
+def _extract_api_patterns(
+    root: Any,
+    source: bytes,
+    file_path: Path,
+    functions: list[FunctionInfo],
+) -> list[PatternInstance]:
+    """Extract API endpoint patterns from Express/Fastify/NestJS-style routes."""
+    patterns: list[PatternInstance] = []
+
+    for node in _walk(root):
+        is_route = False
+        method = ""
+
+        # app.get("/path", handler) / router.post("/path", handler)
+        if node.type == "call_expression":
+            fn_node = _child_by_field(node, "function")
+            if fn_node and fn_node.type == "member_expression":
+                prop = _child_by_field(fn_node, "property")
+                if prop:
+                    method = _node_text(prop, source)
+                    if method.lower() in _TS_ROUTE_METHODS:
+                        is_route = True
+
+        # @Get("/path") / @Post("/path") NestJS decorators
+        elif node.type == "decorator":
+            dec_text = _node_text(node, source).lstrip("@")
+            dec_name = dec_text.split("(")[0]
+            if dec_name in _TS_ROUTE_METHODS:
+                is_route = True
+                method = dec_name
+
+        if not is_route:
+            continue
+
+        fn_name = "<module>"
+        for func in functions:
+            if func.start_line <= node.start_point[0] + 1 <= func.end_line:
+                fn_name = func.name
+                break
+
+        # Extract route path argument if present
+        route_path = ""
+        args_node = _child_by_field(node, "arguments")
+        if args_node:
+            for arg in args_node.children:
+                if arg.type in ("string", "template_string"):
+                    route_path = _node_text(arg, source).strip("'\"`")
+                    break
+
+        patterns.append(
+            PatternInstance(
+                category=PatternCategory.API_ENDPOINT,
+                file_path=file_path,
+                function_name=fn_name,
+                start_line=node.start_point[0] + 1,
+                end_line=node.end_point[0] + 1,
+                fingerprint={
+                    "method": method.upper(),
+                    "route": route_path,
+                    "framework": "express",  # generic label
+                },
+            )
+        )
+
+    return patterns
+
+
+# ---------------------------------------------------------------------------
 # Public API
 # ---------------------------------------------------------------------------
 
@@ -431,7 +547,7 @@ def parse_typescript_file(
     source_text = full_path.read_text(encoding="utf-8", errors="replace")
     source_bytes = source_text.encode("utf-8")
 
-    ts_lang = "tsx" if language == "tsx" else "typescript"
+    ts_lang = "tsx" if language in ("tsx", "jsx") else "typescript"
     parser = _get_parser(ts_lang)
     tree = parser.parse(source_bytes)
     root = tree.root_node
@@ -440,6 +556,7 @@ def parse_typescript_file(
     classes = _extract_classes(root, source_bytes, file_path, language, functions)
     imports = _extract_imports(root, source_bytes, file_path)
     patterns = _extract_patterns(root, source_bytes, file_path, functions)
+    patterns.extend(_extract_api_patterns(root, source_bytes, file_path, functions))
 
     return ParseResult(
         file_path=file_path,

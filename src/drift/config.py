@@ -68,7 +68,7 @@ def _default_includes() -> list[str]:
         from drift.ingestion.ts_parser import tree_sitter_available
 
         if tree_sitter_available():
-            patterns.extend(["**/*.ts", "**/*.tsx"])
+            patterns.extend(["**/*.ts", "**/*.tsx", "**/*.js", "**/*.jsx"])
     except ImportError:
         pass
     return patterns

@@ -1,0 +1,1 @@
+export const appEntry = "main";

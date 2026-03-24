@@ -1,0 +1,9 @@
+{
+  "compilerOptions": {
+    "baseUrl": "src",
+    "paths": {
+      "@core/*": ["core/*"],
+      "@shared/config": ["shared/config"]
+    }
+  }
+}
