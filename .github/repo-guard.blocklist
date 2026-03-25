@@ -1,0 +1,35 @@
+# Drift Repo Guard blocklist
+# One glob pattern per line (POSIX-style paths)
+# Comments and empty lines are ignored.
+
+# Private planning/worklog content
+tagesplanung/**
+
+# Dotenv and local environment leaks
+.env
+.env.*
+
+# Common private key and cert artifacts
+**/*.pem
+**/*.key
+**/*.p12
+**/*.pfx
+**/*.jks
+
+# SSH key material
+**/id_rsa
+**/id_dsa
+**/id_ecdsa
+**/id_ed25519
+
+# Runtime dumps and local-only databases
+**/*.sqlite
+**/*.sqlite3
+**/*.db
+**/*.dump
+
+# Generic secret-bearing local backups
+**/*secrets*.json
+**/*secret*.yaml
+**/*secret*.yml
+**/*private*.pem

@@ -1,0 +1,23 @@
+name: Repo Guard
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+  workflow_dispatch:
+
+jobs:
+  blocked-content-check:
+    name: Blocked content check
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Enforce repo guard blocklist
+        run: python scripts/check_repo_hygiene.py --config .github/repo-guard.blocklist

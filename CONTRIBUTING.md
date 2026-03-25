@@ -71,6 +71,22 @@ Signals must be:
 - `pytest` must pass
 - Private/worklog paths (for example `tagesplanung/`) must never be committed or pushed
 
+## Public repo hygiene guard (required)
+
+The repository enforces an additional remote guardrail via GitHub Actions:
+
+- Workflow: `Repo Guard` (`.github/workflows/repo-guard.yml`)
+- Rule source: `.github/repo-guard.blocklist`
+- Check logic: `scripts/check_repo_hygiene.py`
+
+This check is designed to prevent sensitive/local-only files from entering the public repository even if local hooks are bypassed (for example with `--no-verify`).
+
+Recommended branch protection setup:
+
+- Require status check: `Repo Guard / Blocked content check`
+- Require pull request before merge
+- Disallow force pushes on protected branches
+
 ## Pre-Merge Checklist
 
 Every PR should pass these checks before merge:
