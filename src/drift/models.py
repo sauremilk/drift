@@ -29,6 +29,9 @@ class SignalType(StrEnum):
     DOC_IMPL_DRIFT = "doc_impl_drift"
     TEMPORAL_VOLATILITY = "temporal_volatility"
     SYSTEM_MISALIGNMENT = "system_misalignment"
+    BROAD_EXCEPTION_MONOCULTURE = "broad_exception_monoculture"
+    TEST_POLARITY_DEFICIT = "test_polarity_deficit"
+    GUARD_CLAUSE_DEFICIT = "guard_clause_deficit"
 
 
 class PatternCategory(StrEnum):

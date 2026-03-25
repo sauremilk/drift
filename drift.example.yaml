@@ -34,6 +34,9 @@ weights:
   explainability_deficit: 0.12
   doc_impl_drift: 0.00 # Report-only until README/ADR extraction is more selective
   system_misalignment: 0.10
+  broad_exception_monoculture: 0.00  # Report-only — ADR-007 consistency proxy
+  test_polarity_deficit: 0.00        # Report-only — ADR-007 consistency proxy
+  guard_clause_deficit: 0.00         # Report-only — ADR-007 consistency proxy
 
 # Architecture policies
 policies:

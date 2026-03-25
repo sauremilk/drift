@@ -44,6 +44,9 @@ class ThresholdsConfig(BaseModel):
     recency_days: int = 14
     volatility_z_threshold: float = 1.5
     ai_confidence_threshold: float = 0.50
+    bem_min_handlers: int = 3
+    tpd_min_test_functions: int = 5
+    gcd_min_public_functions: int = 3
 
 
 class SignalWeights(BaseModel):
@@ -62,6 +65,9 @@ class SignalWeights(BaseModel):
     doc_impl_drift: float = 0.00  # report-only until extraction precision improves
     temporal_volatility: float = 0.17
     system_misalignment: float = 0.10
+    broad_exception_monoculture: float = 0.00  # report-only until ablation study
+    test_polarity_deficit: float = 0.00  # report-only until ablation study
+    guard_clause_deficit: float = 0.00  # report-only until ablation study
 
     def as_dict(self) -> dict[str, float]:
         return self.model_dump()
