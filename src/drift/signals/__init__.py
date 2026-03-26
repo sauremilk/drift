@@ -3,10 +3,12 @@
 from drift.signals.architecture_violation import ArchitectureViolationSignal
 from drift.signals.base import BaseSignal
 from drift.signals.broad_exception_monoculture import BroadExceptionMonocultureSignal
+from drift.signals.bypass_accumulation import BypassAccumulationSignal
 from drift.signals.doc_impl_drift import DocImplDriftSignal
 from drift.signals.explainability_deficit import ExplainabilityDeficitSignal
 from drift.signals.guard_clause_deficit import GuardClauseDeficitSignal
 from drift.signals.mutant_duplicates import MutantDuplicateSignal
+from drift.signals.naming_contract_violation import NamingContractViolationSignal
 from drift.signals.pattern_fragmentation import PatternFragmentationSignal
 from drift.signals.system_misalignment import SystemMisalignmentSignal
 from drift.signals.temporal_volatility import TemporalVolatilitySignal
@@ -25,5 +27,7 @@ __all__ = [
     "BroadExceptionMonocultureSignal",
     "TestPolarityDeficitSignal",
     "GuardClauseDeficitSignal",
+    "NamingContractViolationSignal",
+    "BypassAccumulationSignal",
     "TypeScriptArchitectureSignal",
 ]

@@ -47,6 +47,11 @@ class ThresholdsConfig(BaseModel):
     bem_min_handlers: int = 3
     tpd_min_test_functions: int = 5
     gcd_min_public_functions: int = 3
+    nbv_min_function_loc: int = 3  # ADR-008: ignore trivial stubs
+    bat_density_threshold: float = 0.05  # ADR-008: markers per LOC
+    bat_min_loc: int = 50  # ADR-008: skip tiny files
+    ecm_max_files: int = 50  # ADR-008: perf guardrail
+    ecm_lookback_commits: int = 20  # ADR-008: git history depth
 
 
 class SignalWeights(BaseModel):
@@ -68,6 +73,9 @@ class SignalWeights(BaseModel):
     broad_exception_monoculture: float = 0.00  # report-only (ADR-007)
     test_polarity_deficit: float = 0.00  # report-only (ADR-007)
     guard_clause_deficit: float = 0.00  # report-only (ADR-007)
+    naming_contract_violation: float = 0.00  # report-only (ADR-008)
+    bypass_accumulation: float = 0.00  # report-only (ADR-008)
+    exception_contract_drift: float = 0.00  # report-only (ADR-008)
 
     def as_dict(self) -> dict[str, float]:
         return self.model_dump()

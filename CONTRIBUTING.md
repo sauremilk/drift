@@ -170,6 +170,31 @@ Drift follows **Semantic Versioning (SemVer)**: `MAJOR.MINOR.PATCH`
 | **MINOR** `x.↑.0` | New feature, backward compatible                 | `v1.1.0` → `v1.2.0` |
 | **MAJOR** `↑.0.0` | Breaking change, incompatible API change         | `v1.1.0` → `v2.0.0` |
 
+### Release Discipline (Required)
+
+Releases must stay small enough to communicate one coherent user-visible step.
+This rule is binding.
+
+A release is allowed only when all of the following are true:
+
+1. **One primary claim:** The release can be summarized in one sentence and at most 3 to 5 bullets.
+2. **One coherent change set:** The included changes belong to one user-facing theme or one tightly related batch.
+	If there are multiple unrelated themes, split them into separate releases.
+3. **SemVer is explicit:** The release is clearly classified as patch, minor, or major before tagging.
+4. **Changelog is curated, not dumped:** The changelog groups changes by user impact (`Added`, `Changed`, `Fixed`) instead of mirroring raw commit history.
+5. **Evidence is complete:** Any feature content in the release already satisfies the feature-evidence gate.
+6. **Release state is reproducible:** Version bump, changelog entry, tag, and release notes all point to the same release scope.
+
+The following are not allowed:
+
+- catch-all releases that bundle multiple unrelated themes just because enough commits accumulated
+- changelog entries that simply replay commit messages without curation
+- retroactively moving changes between older releases and the new release without checking the actual tagged git state
+- releasing feature work without tests and empirical artifacts
+
+Default rule: when in doubt, release earlier and smaller.
+Drift should prefer two clean releases over one overloaded release.
+
 ### GitHub Actions Major-Version-Tag
 
 Because Drift is a GitHub Action (`uses: sauremilk/drift@v1`), there is one additional convention:
@@ -188,14 +213,16 @@ git tag -f v1 && git push -f origin v1
 
 ### Release Process
 
-Each meaningful commit batch (feature, fix, configuration change) should get its own
+Each meaningful, coherent commit batch (feature, fix, configuration change) must get its own
 versioned release so that the changelog stays clean and users can pin specific versions.
 
 1. Bump the version in `pyproject.toml` (for example `1.1.0` → `1.1.1`)
-2. Commit: `git commit -m "chore: bump version to v1.1.1"`
-3. Create the tag: `git tag v1.1.1`
-4. Push the tag: `git push origin v1.1.1`
-5. Create the GitHub release from the tag → CI moves `v1` automatically
+2. Write the changelog entry with one short summary sentence plus curated `Added` / `Changed` / `Fixed` bullets
+3. Verify the release scope against the actual tagged git history, not against memory or draft notes
+4. Commit the release files: `git commit -m "chore: release v1.1.1"`
+5. Create the tag: `git tag v1.1.1`
+6. Push the tag: `git push origin v1.1.1`
+7. Create the GitHub release from the tag → CI moves `v1` automatically
 
 ## Reporting issues
 

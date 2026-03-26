@@ -37,6 +37,9 @@ weights:
   broad_exception_monoculture: 0.00  # ADR-007: report-only until ablation validates
   test_polarity_deficit: 0.00        # ADR-007: report-only until ablation validates
   guard_clause_deficit: 0.00         # ADR-007: report-only until ablation validates
+  naming_contract_violation: 0.00    # ADR-008: report-only until ablation validates
+  bypass_accumulation: 0.00          # ADR-008: report-only until ablation validates
+  exception_contract_drift: 0.00     # ADR-008: report-only until ablation validates
 
 # Architecture policies
 policies:

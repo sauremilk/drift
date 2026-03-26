@@ -32,6 +32,9 @@ class SignalType(StrEnum):
     BROAD_EXCEPTION_MONOCULTURE = "broad_exception_monoculture"
     TEST_POLARITY_DEFICIT = "test_polarity_deficit"
     GUARD_CLAUSE_DEFICIT = "guard_clause_deficit"
+    NAMING_CONTRACT_VIOLATION = "naming_contract_violation"  # ADR-008
+    BYPASS_ACCUMULATION = "bypass_accumulation"  # ADR-008
+    EXCEPTION_CONTRACT_DRIFT = "exception_contract_drift"  # ADR-008
 
 
 class PatternCategory(StrEnum):
