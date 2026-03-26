@@ -21,23 +21,19 @@ drift analyze --repo .
 
 ## Choose Your Path
 
-- **Casual user:** start with [Quick Start](getting-started/quickstart.md) and [Configuration](getting-started/configuration.md) to get a first useful run.
-- **Evaluator:** review [Example Findings](product/example-findings.md), [Trust and Evidence](trust-evidence.md), and [Stability and Release Status](stability.md) before deciding on adoption.
-- **Contributor:** go to [Contributing](contributing.md) when you want to submit a fix, improve docs, or help reduce noise in the signals.
-- **Core maintainer:** use [Contributing](contributing.md), [Product Strategy](product-strategy.md), and the repository developer guide for the full quality and roadmap context.
+Use the central [Start Here](start-here.md) page if you want the documentation segmented by goal instead of by section.
 
-Recommended next steps:
+- I want to **use** drift
+- I want to **evaluate** drift
+- I want to **contribute**
+- I want to understand the **research and methodology**
+
+Direct shortcuts:
 
 - [Quick Start](getting-started/quickstart.md)
-- [Team Rollout](getting-started/team-rollout.md)
-- [Finding Triage](getting-started/finding-triage.md)
-
-If you are evaluating drift for a specific job-to-be-done, start here instead:
-
-- [Architecture Drift Detection for Python](use-cases/architecture-drift-python.md)
-- [Architectural Linter for AI Coding Teams](use-cases/architectural-linter-ai-teams.md)
-- [CI Architecture Checks with SARIF](use-cases/ci-architecture-checks-sarif.md)
-- [Architectural Technical Debt in AI-Assisted Codebases](use-cases/technical-debt-ai-codebases.md)
+- [Trust and Evidence](trust-evidence.md)
+- [Contributing](contributing.md)
+- [Algorithm Deep Dive](algorithms/deep-dive.md)
 
 Current public evidence: 15 real-world repositories in the study corpus, 6 scoring signals, and 4 report-only signals (DIA, BEM, TPD, GCD) with weight 0.00 until extraction precision improves.
 
