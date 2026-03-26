@@ -1,13 +1,14 @@
 {
   "_metadata": {
     "drift_version": "0.5.0",
-    "generated_at": "2026-03-26T16:42:46.411706+00:00",
+    "generated_at": "2026-03-26T18:46:07.260753+00:00",
     "methodology": "synthetic_controlled_repair",
     "description": "Validates agent-tasks correctness, repair causality, and verification sharpness using synthetic repos modeled after flask and httpx benchmark data."
   },
   "repos": {
     "webapp": {
       "description": "Flask-like web app with MDS + PFS + DIA patterns",
+      "repo_type": "synthetic",
       "mutations": {
         "mutant_duplicate": [
           "Exact duplicate: _make_timedelta in app.py and base_app.py"
@@ -120,14 +121,6 @@
               "post_score": 0.5,
               "score_delta": 0.0
             },
-            "mutant_duplicate": {
-              "baseline_count": 1,
-              "post_count": 0,
-              "count_delta": -1,
-              "baseline_score": 0.9,
-              "post_score": 0.0,
-              "score_delta": -0.9
-            },
             "temporal_volatility": {
               "baseline_count": 0,
               "post_count": 2,
@@ -135,6 +128,14 @@
               "baseline_score": 0.0,
               "post_score": 0.844,
               "score_delta": 0.844
+            },
+            "mutant_duplicate": {
+              "baseline_count": 1,
+              "post_count": 0,
+              "count_delta": -1,
+              "baseline_score": 0.9,
+              "post_score": 0.0,
+              "score_delta": -0.9
             }
           }
         },
@@ -165,12 +166,12 @@
               "post_score": 0.5,
               "score_delta": 0.0
             },
-            "architecture_violation": {
+            "mutant_duplicate": {
               "baseline_count": 1,
               "post_count": 1,
               "count_delta": 0,
-              "baseline_score": 0.7,
-              "post_score": 0.7,
+              "baseline_score": 0.9,
+              "post_score": 0.9,
               "score_delta": 0.0
             },
             "doc_impl_drift": {
@@ -181,20 +182,20 @@
               "post_score": 0.0,
               "score_delta": -0.9
             },
+            "architecture_violation": {
+              "baseline_count": 1,
+              "post_count": 1,
+              "count_delta": 0,
+              "baseline_score": 0.7,
+              "post_score": 0.7,
+              "score_delta": 0.0
+            },
             "temporal_volatility": {
               "baseline_count": 2,
               "post_count": 2,
               "count_delta": 0,
               "baseline_score": 0.898,
               "post_score": 0.898,
-              "score_delta": 0.0
-            },
-            "mutant_duplicate": {
-              "baseline_count": 1,
-              "post_count": 1,
-              "count_delta": 0,
-              "baseline_score": 0.9,
-              "post_score": 0.9,
               "score_delta": 0.0
             }
           }
@@ -226,12 +227,12 @@
               "post_score": 0.0,
               "score_delta": -0.5
             },
-            "architecture_violation": {
+            "mutant_duplicate": {
               "baseline_count": 1,
               "post_count": 1,
               "count_delta": 0,
-              "baseline_score": 0.7,
-              "post_score": 0.7,
+              "baseline_score": 0.9,
+              "post_score": 0.9,
               "score_delta": 0.0
             },
             "doc_impl_drift": {
@@ -242,6 +243,14 @@
               "post_score": 0.9,
               "score_delta": 0.0
             },
+            "architecture_violation": {
+              "baseline_count": 1,
+              "post_count": 1,
+              "count_delta": 0,
+              "baseline_score": 0.7,
+              "post_score": 0.7,
+              "score_delta": 0.0
+            },
             "temporal_volatility": {
               "baseline_count": 2,
               "post_count": 2,
@@ -249,14 +258,6 @@
               "baseline_score": 0.898,
               "post_score": 0.554,
               "score_delta": -0.344
-            },
-            "mutant_duplicate": {
-              "baseline_count": 1,
-              "post_count": 1,
-              "count_delta": 0,
-              "baseline_score": 0.9,
-              "post_score": 0.9,
-              "score_delta": 0.0
             }
           }
         }
@@ -289,13 +290,13 @@
               "post_score": 0.5,
               "score_delta": 0.0
             },
-            "architecture_violation": {
-              "baseline_count": 7,
-              "post_count": 7,
+            "mutant_duplicate": {
+              "baseline_count": 1,
+              "post_count": 1,
               "count_delta": 0,
-              "baseline_score": 4.9,
-              "post_score": 4.9,
-              "score_delta": 0.0
+              "baseline_score": 0.9,
+              "post_score": 0.85,
+              "score_delta": -0.05
             },
             "doc_impl_drift": {
               "baseline_count": 3,
@@ -305,6 +306,14 @@
               "post_score": 0.9,
               "score_delta": 0.0
             },
+            "architecture_violation": {
+              "baseline_count": 7,
+              "post_count": 7,
+              "count_delta": 0,
+              "baseline_score": 4.9,
+              "post_score": 4.9,
+              "score_delta": 0.0
+            },
             "temporal_volatility": {
               "baseline_count": 0,
               "post_count": 1,
@@ -312,14 +321,6 @@
               "baseline_score": 0.0,
               "post_score": 0.398,
               "score_delta": 0.398
-            },
-            "mutant_duplicate": {
-              "baseline_count": 1,
-              "post_count": 1,
-              "count_delta": 0,
-              "baseline_score": 0.9,
-              "post_score": 0.85,
-              "score_delta": -0.05
             }
           },
           "failure_analysis": "Renaming a function does not resolve MDS. Drift uses body hashes, not names. Identical body still triggers detection."
@@ -351,12 +352,12 @@
               "post_score": 0.5,
               "score_delta": 0.0
             },
-            "architecture_violation": {
-              "baseline_count": 7,
-              "post_count": 7,
+            "mutant_duplicate": {
+              "baseline_count": 1,
+              "post_count": 1,
               "count_delta": 0,
-              "baseline_score": 4.9,
-              "post_score": 4.9,
+              "baseline_score": 0.9,
+              "post_score": 0.9,
               "score_delta": 0.0
             },
             "doc_impl_drift": {
@@ -367,20 +368,20 @@
               "post_score": 0.9,
               "score_delta": 0.0
             },
+            "architecture_violation": {
+              "baseline_count": 7,
+              "post_count": 7,
+              "count_delta": 0,
+              "baseline_score": 4.9,
+              "post_score": 4.9,
+              "score_delta": 0.0
+            },
             "temporal_volatility": {
               "baseline_count": 1,
               "post_count": 1,
               "count_delta": 0,
               "baseline_score": 0.449,
               "post_score": 0.449,
-              "score_delta": 0.0
-            },
-            "mutant_duplicate": {
-              "baseline_count": 1,
-              "post_count": 1,
-              "count_delta": 0,
-              "baseline_score": 0.9,
-              "post_score": 0.9,
               "score_delta": 0.0
             }
           },
@@ -390,6 +391,7 @@
     },
     "datalib": {
       "description": "httpx-like data lib with MDS + EDS + SMS patterns",
+      "repo_type": "synthetic",
       "mutations": {
         "mutant_duplicate": [
           "Exact duplicate: DeflateDecoder.flush and GZipDecoder.flush"
@@ -398,7 +400,7 @@
           "Unexplained complexity: transform_records (CC>=12, 6 params, no docstring)"
         ],
         "system_misalignment": [
-          "Novel deps: native_optimizer.py uses ctypes/struct/mmap in data lib"
+          "Novel deps: native_optimizer.py uses numpy/pandas/pyarrow in data lib"
         ]
       },
       "baseline": {
@@ -505,14 +507,6 @@
               "post_score": 0.504,
               "score_delta": 0.504
             },
-            "mutant_duplicate": {
-              "baseline_count": 1,
-              "post_count": 0,
-              "count_delta": -1,
-              "baseline_score": 0.9,
-              "post_score": 0.0,
-              "score_delta": -0.9
-            },
             "explainability_deficit": {
               "baseline_count": 1,
               "post_count": 1,
@@ -520,6 +514,14 @@
               "baseline_score": 1.0,
               "post_score": 1.0,
               "score_delta": 0.0
+            },
+            "mutant_duplicate": {
+              "baseline_count": 1,
+              "post_count": 0,
+              "count_delta": -1,
+              "baseline_score": 0.9,
+              "post_score": 0.0,
+              "score_delta": -0.9
             }
           }
         },
@@ -606,6 +608,668 @@
               "post_score": 0.425,
               "score_delta": 0.425
             },
+            "explainability_deficit": {
+              "baseline_count": 1,
+              "post_count": 1,
+              "count_delta": 0,
+              "baseline_score": 1.0,
+              "post_score": 0.75,
+              "score_delta": -0.25
+            },
+            "mutant_duplicate": {
+              "baseline_count": 1,
+              "post_count": 1,
+              "count_delta": 0,
+              "baseline_score": 0.9,
+              "post_score": 0.9,
+              "score_delta": 0.0
+            }
+          },
+          "failure_analysis": "Adding a one-line docstring does not resolve EDS when the function retains high cyclomatic complexity (CC>=12) and 6 untyped parameters. Drift detects structural explainability deficit, not just missing docstrings."
+        }
+      ]
+    },
+    "datalib_sms": {
+      "description": "datalib with date-split history for SMS detection",
+      "repo_type": "synthetic",
+      "mutations": {
+        "system_misalignment": [
+          "Novel deps: native_optimizer.py uses numpy/pandas/pyarrow in data lib"
+        ]
+      },
+      "baseline": {
+        "drift_score": 0.202,
+        "findings_count": 7,
+        "sms_count": 1
+      },
+      "repairs": [
+        {
+          "signal": "system_misalignment",
+          "repair_type": "correct",
+          "repair_description": "Replaced numpy/pandas/pyarrow with pure-Python \u2014 aligns with module conventions",
+          "baseline_drift_score": 0.202,
+          "post_repair_drift_score": 0.225,
+          "drift_score_delta": 0.023,
+          "baseline_signal_findings": 1,
+          "post_repair_signal_findings": 0,
+          "net_finding_delta": -1,
+          "targeted_finding_resolved": true,
+          "verification": "PASS",
+          "diff_stats": {
+            "files_changed": 6,
+            "insertions": 35,
+            "deletions": 7,
+            "total_diff_lines": 42
+          },
+          "per_signal_deltas": {
+            "explainability_deficit": {
+              "baseline_count": 1,
+              "post_count": 1,
+              "count_delta": 0,
+              "baseline_score": 1.0,
+              "post_score": 1.0,
+              "score_delta": 0.0
+            },
+            "mutant_duplicate": {
+              "baseline_count": 1,
+              "post_count": 1,
+              "count_delta": 0,
+              "baseline_score": 0.9,
+              "post_score": 0.9,
+              "score_delta": 0.0
+            },
+            "system_misalignment": {
+              "baseline_count": 1,
+              "post_count": 0,
+              "count_delta": -1,
+              "baseline_score": 0.75,
+              "post_score": 0.0,
+              "score_delta": -0.75
+            },
+            "doc_impl_drift": {
+              "baseline_count": 3,
+              "post_count": 3,
+              "count_delta": 0,
+              "baseline_score": 0.9,
+              "post_score": 0.9,
+              "score_delta": 0.0
+            },
+            "temporal_volatility": {
+              "baseline_count": 1,
+              "post_count": 1,
+              "count_delta": 0,
+              "baseline_score": 0.252,
+              "post_score": 0.504,
+              "score_delta": 0.252
+            }
+          }
+        }
+      ],
+      "failure_cases": [
+        {
+          "signal": "system_misalignment",
+          "repair_type": "incorrect",
+          "repair_description": "Added justification comments (novel deps unchanged \u2014 SMS persists)",
+          "baseline_drift_score": 0.202,
+          "post_repair_drift_score": 0.224,
+          "drift_score_delta": 0.022,
+          "baseline_signal_findings": 1,
+          "post_repair_signal_findings": 1,
+          "net_finding_delta": 0,
+          "targeted_finding_resolved": false,
+          "verification": "PASS",
+          "diff_stats": {
+            "files_changed": 6,
+            "insertions": 26,
+            "deletions": 3,
+            "total_diff_lines": 29
+          },
+          "per_signal_deltas": {
+            "explainability_deficit": {
+              "baseline_count": 1,
+              "post_count": 1,
+              "count_delta": 0,
+              "baseline_score": 1.0,
+              "post_score": 1.0,
+              "score_delta": 0.0
+            },
+            "mutant_duplicate": {
+              "baseline_count": 1,
+              "post_count": 1,
+              "count_delta": 0,
+              "baseline_score": 0.9,
+              "post_score": 0.9,
+              "score_delta": 0.0
+            },
+            "system_misalignment": {
+              "baseline_count": 1,
+              "post_count": 1,
+              "count_delta": 0,
+              "baseline_score": 0.75,
+              "post_score": 0.75,
+              "score_delta": 0.0
+            },
+            "doc_impl_drift": {
+              "baseline_count": 3,
+              "post_count": 3,
+              "count_delta": 0,
+              "baseline_score": 0.9,
+              "post_score": 0.9,
+              "score_delta": 0.0
+            },
+            "temporal_volatility": {
+              "baseline_count": 1,
+              "post_count": 1,
+              "count_delta": 0,
+              "baseline_score": 0.252,
+              "post_score": 0.504,
+              "score_delta": 0.252
+            }
+          },
+          "failure_analysis": "Renaming the file does not remove novel dependencies. Drift tracks novel imports, not file names."
+        }
+      ]
+    },
+    "apiserver": {
+      "description": "API server with layering violation (DB imports API)",
+      "repo_type": "synthetic",
+      "mutations": {
+        "architecture_violation": [
+          "Upward layer import: db/user_repo.py imports from api/serializers.py (layer 2 -> layer 0)"
+        ]
+      },
+      "baseline": {
+        "drift_score": 0.072,
+        "findings_count": 3,
+        "avs_count": 1
+      },
+      "repairs": [
+        {
+          "signal": "architecture_violation",
+          "repair_type": "correct",
+          "repair_description": "Removed upward import from DB layer \u2014 returns raw data",
+          "baseline_drift_score": 0.072,
+          "post_repair_drift_score": 0.214,
+          "drift_score_delta": 0.142,
+          "baseline_signal_findings": 1,
+          "post_repair_signal_findings": 0,
+          "net_finding_delta": -1,
+          "targeted_finding_resolved": true,
+          "verification": "PASS",
+          "diff_stats": {
+            "files_changed": 10,
+            "insertions": 31,
+            "deletions": 4,
+            "total_diff_lines": 35
+          },
+          "per_signal_deltas": {
+            "architecture_violation": {
+              "baseline_count": 1,
+              "post_count": 0,
+              "count_delta": -1,
+              "baseline_score": 0.25,
+              "post_score": 0.0,
+              "score_delta": -0.25
+            },
+            "temporal_volatility": {
+              "baseline_count": 0,
+              "post_count": 1,
+              "count_delta": 1,
+              "baseline_score": 0.0,
+              "post_score": 0.74,
+              "score_delta": 0.74
+            },
+            "doc_impl_drift": {
+              "baseline_count": 2,
+              "post_count": 2,
+              "count_delta": 0,
+              "baseline_score": 0.6,
+              "post_score": 0.6,
+              "score_delta": 0.0
+            }
+          }
+        }
+      ],
+      "failure_cases": [
+        {
+          "signal": "architecture_violation",
+          "repair_type": "incorrect",
+          "repair_description": "Aliased import (serialize_user -> format_user) \u2014 violation persists",
+          "baseline_drift_score": 0.134,
+          "post_repair_drift_score": 0.134,
+          "drift_score_delta": 0.0,
+          "baseline_signal_findings": 1,
+          "post_repair_signal_findings": 1,
+          "net_finding_delta": 0,
+          "targeted_finding_resolved": false,
+          "verification": "PASS",
+          "diff_stats": {
+            "files_changed": 10,
+            "insertions": 24,
+            "deletions": 3,
+            "total_diff_lines": 27
+          },
+          "per_signal_deltas": {
+            "architecture_violation": {
+              "baseline_count": 1,
+              "post_count": 1,
+              "count_delta": 0,
+              "baseline_score": 0.25,
+              "post_score": 0.25,
+              "score_delta": 0.0
+            },
+            "temporal_volatility": {
+              "baseline_count": 1,
+              "post_count": 1,
+              "count_delta": 0,
+              "baseline_score": 0.74,
+              "post_score": 0.74,
+              "score_delta": 0.0
+            },
+            "doc_impl_drift": {
+              "baseline_count": 2,
+              "post_count": 2,
+              "count_delta": 0,
+              "baseline_score": 0.6,
+              "post_score": 0.6,
+              "score_delta": 0.0
+            }
+          },
+          "failure_analysis": "Aliasing an import does not change the dependency direction. Drift detects the layer violation via resolved import paths, not symbol names."
+        }
+      ]
+    },
+    "churnapp": {
+      "description": "App with high-churn config_loader for TVS detection",
+      "repo_type": "synthetic",
+      "mutations": {
+        "temporal_volatility": [
+          "High churn: config_loader.py modified 8+ times in 30 days while other files have 1-2 commits"
+        ]
+      },
+      "baseline": {
+        "drift_score": 0.159,
+        "findings_count": 3,
+        "tvs_count": 1
+      },
+      "repairs": [
+        {
+          "signal": "temporal_volatility",
+          "repair_type": "correct",
+          "repair_description": "Deleted config_loader.py, split into config.py + config_schema + config_env",
+          "baseline_drift_score": 0.159,
+          "post_repair_drift_score": 0.0,
+          "drift_score_delta": -0.159,
+          "baseline_signal_findings": 1,
+          "post_repair_signal_findings": 0,
+          "net_finding_delta": -1,
+          "targeted_finding_resolved": true,
+          "verification": "PASS",
+          "diff_stats": {
+            "files_changed": 10,
+            "insertions": 57,
+            "deletions": 9,
+            "total_diff_lines": 66
+          },
+          "per_signal_deltas": {
+            "doc_impl_drift": {
+              "baseline_count": 2,
+              "post_count": 2,
+              "count_delta": 0,
+              "baseline_score": 0.3,
+              "post_score": 0.3,
+              "score_delta": 0.0
+            },
+            "temporal_volatility": {
+              "baseline_count": 1,
+              "post_count": 0,
+              "count_delta": -1,
+              "baseline_score": 0.55,
+              "post_score": 0.0,
+              "score_delta": -0.55
+            }
+          }
+        }
+      ],
+      "failure_cases": [
+        {
+          "signal": "temporal_volatility",
+          "repair_type": "incorrect",
+          "repair_description": "Updated docstring only \u2014 file remains monolithic high-churn target",
+          "baseline_drift_score": 0.159,
+          "post_repair_drift_score": 0.159,
+          "drift_score_delta": 0.0,
+          "baseline_signal_findings": 1,
+          "post_repair_signal_findings": 1,
+          "net_finding_delta": 0,
+          "targeted_finding_resolved": false,
+          "verification": "PASS",
+          "diff_stats": {
+            "files_changed": 8,
+            "insertions": 22,
+            "deletions": 1,
+            "total_diff_lines": 23
+          },
+          "per_signal_deltas": {
+            "doc_impl_drift": {
+              "baseline_count": 2,
+              "post_count": 2,
+              "count_delta": 0,
+              "baseline_score": 0.3,
+              "post_score": 0.3,
+              "score_delta": 0.0
+            },
+            "temporal_volatility": {
+              "baseline_count": 1,
+              "post_count": 1,
+              "count_delta": 0,
+              "baseline_score": 0.55,
+              "post_score": 0.55,
+              "score_delta": 0.0
+            }
+          },
+          "failure_analysis": "Updating the docstring does not reduce churn. The file remains the single high-churn target. Drift tracks commit frequency, not content quality."
+        }
+      ]
+    },
+    "webapp_v2": {
+      "description": "Variant webapp \u2014 MDS (_format_size) + DIA (phantom dirs)",
+      "repo_type": "synthetic",
+      "mutations": {
+        "mutant_duplicate": [
+          "Exact duplicate: _format_size in uploads.py and display.py"
+        ],
+        "doc_impl_drift": [
+          "Phantom dirs: middleware/, plugins/, docs/ referenced in README"
+        ]
+      },
+      "baseline": {
+        "drift_score": 0.26,
+        "findings_count": 7,
+        "task_count": 7
+      },
+      "repairs": [
+        {
+          "signal": "mutant_duplicate",
+          "repair_type": "correct",
+          "repair_description": "Consolidated _format_size into utils/display.py",
+          "baseline_drift_score": 0.26,
+          "post_repair_drift_score": 0.131,
+          "drift_score_delta": -0.129,
+          "baseline_signal_findings": 1,
+          "post_repair_signal_findings": 0,
+          "net_finding_delta": -1,
+          "targeted_finding_resolved": true,
+          "verification": "PASS",
+          "diff_stats": {
+            "files_changed": 5,
+            "insertions": 26,
+            "deletions": 9,
+            "total_diff_lines": 35
+          },
+          "per_signal_deltas": {
+            "doc_impl_drift": {
+              "baseline_count": 6,
+              "post_count": 6,
+              "count_delta": 0,
+              "baseline_score": 1.8,
+              "post_score": 1.8,
+              "score_delta": 0.0
+            },
+            "temporal_volatility": {
+              "baseline_count": 0,
+              "post_count": 1,
+              "count_delta": 1,
+              "baseline_score": 0.0,
+              "post_score": 0.454,
+              "score_delta": 0.454
+            },
+            "mutant_duplicate": {
+              "baseline_count": 1,
+              "post_count": 0,
+              "count_delta": -1,
+              "baseline_score": 0.9,
+              "post_score": 0.0,
+              "score_delta": -0.9
+            }
+          }
+        },
+        {
+          "signal": "doc_impl_drift",
+          "repair_type": "correct",
+          "repair_description": "Fixed README: removed phantom middleware/ and docs/ refs",
+          "baseline_drift_score": 0.196,
+          "post_repair_drift_score": 0.196,
+          "drift_score_delta": 0.0,
+          "baseline_signal_findings": 6,
+          "post_repair_signal_findings": 0,
+          "net_finding_delta": -6,
+          "targeted_finding_resolved": true,
+          "verification": "PASS",
+          "diff_stats": {
+            "files_changed": 5,
+            "insertions": 17,
+            "deletions": 5,
+            "total_diff_lines": 22
+          },
+          "per_signal_deltas": {
+            "doc_impl_drift": {
+              "baseline_count": 6,
+              "post_count": 0,
+              "count_delta": -6,
+              "baseline_score": 1.8,
+              "post_score": 0.0,
+              "score_delta": -1.8
+            },
+            "temporal_volatility": {
+              "baseline_count": 1,
+              "post_count": 1,
+              "count_delta": 0,
+              "baseline_score": 0.454,
+              "post_score": 0.454,
+              "score_delta": 0.0
+            },
+            "mutant_duplicate": {
+              "baseline_count": 1,
+              "post_count": 1,
+              "count_delta": 0,
+              "baseline_score": 0.9,
+              "post_score": 0.9,
+              "score_delta": 0.0
+            }
+          }
+        }
+      ],
+      "failure_cases": [
+        {
+          "signal": "mutant_duplicate",
+          "repair_type": "incorrect",
+          "repair_description": "Renamed to _human_size (body identical \u2014 MDS persists)",
+          "baseline_drift_score": 0.196,
+          "post_repair_drift_score": 0.188,
+          "drift_score_delta": -0.008,
+          "baseline_signal_findings": 1,
+          "post_repair_signal_findings": 1,
+          "net_finding_delta": 0,
+          "targeted_finding_resolved": false,
+          "verification": "PASS",
+          "diff_stats": {
+            "files_changed": 5,
+            "insertions": 18,
+            "deletions": 2,
+            "total_diff_lines": 20
+          },
+          "per_signal_deltas": {
+            "doc_impl_drift": {
+              "baseline_count": 6,
+              "post_count": 6,
+              "count_delta": 0,
+              "baseline_score": 1.8,
+              "post_score": 1.8,
+              "score_delta": 0.0
+            },
+            "temporal_volatility": {
+              "baseline_count": 1,
+              "post_count": 1,
+              "count_delta": 0,
+              "baseline_score": 0.454,
+              "post_score": 0.454,
+              "score_delta": 0.0
+            },
+            "mutant_duplicate": {
+              "baseline_count": 1,
+              "post_count": 1,
+              "count_delta": 0,
+              "baseline_score": 0.9,
+              "post_score": 0.85,
+              "score_delta": -0.05
+            }
+          }
+        },
+        {
+          "signal": "doc_impl_drift",
+          "repair_type": "incorrect",
+          "repair_description": "Swapped phantom refs (deploy/, scripts/, monitoring/, infra/) \u2014 DIA still triggers",
+          "baseline_drift_score": 0.196,
+          "post_repair_drift_score": 0.196,
+          "drift_score_delta": 0.0,
+          "baseline_signal_findings": 6,
+          "post_repair_signal_findings": 7,
+          "net_finding_delta": 1,
+          "targeted_finding_resolved": false,
+          "verification": "PASS",
+          "diff_stats": {
+            "files_changed": 5,
+            "insertions": 20,
+            "deletions": 3,
+            "total_diff_lines": 23
+          },
+          "per_signal_deltas": {
+            "doc_impl_drift": {
+              "baseline_count": 6,
+              "post_count": 7,
+              "count_delta": 1,
+              "baseline_score": 1.8,
+              "post_score": 2.1,
+              "score_delta": 0.3
+            },
+            "temporal_volatility": {
+              "baseline_count": 1,
+              "post_count": 1,
+              "count_delta": 0,
+              "baseline_score": 0.454,
+              "post_score": 0.454,
+              "score_delta": 0.0
+            },
+            "mutant_duplicate": {
+              "baseline_count": 1,
+              "post_count": 1,
+              "count_delta": 0,
+              "baseline_score": 0.9,
+              "post_score": 0.9,
+              "score_delta": 0.0
+            }
+          }
+        }
+      ]
+    },
+    "datalib_v2": {
+      "description": "Variant datalib \u2014 MDS (_parse_header) + EDS (format_report)",
+      "repo_type": "synthetic",
+      "mutations": {
+        "mutant_duplicate": [
+          "Exact duplicate: _parse_header in binary.py and streaming.py"
+        ],
+        "explainability_deficit": [
+          "Unexplained complexity: format_report (CC>=10, 6 params, no docstring)"
+        ]
+      },
+      "baseline": {
+        "drift_score": 0.248,
+        "findings_count": 5,
+        "task_count": 5
+      },
+      "repairs": [
+        {
+          "signal": "mutant_duplicate",
+          "repair_type": "correct",
+          "repair_description": "Extracted _parse_header into parsers/common.py",
+          "baseline_drift_score": 0.248,
+          "post_repair_drift_score": 0.18,
+          "drift_score_delta": -0.068,
+          "baseline_signal_findings": 1,
+          "post_repair_signal_findings": 0,
+          "net_finding_delta": -1,
+          "targeted_finding_resolved": true,
+          "verification": "PASS",
+          "diff_stats": {
+            "files_changed": 8,
+            "insertions": 45,
+            "deletions": 22,
+            "total_diff_lines": 67
+          },
+          "per_signal_deltas": {
+            "doc_impl_drift": {
+              "baseline_count": 3,
+              "post_count": 3,
+              "count_delta": 0,
+              "baseline_score": 0.9,
+              "post_score": 0.9,
+              "score_delta": 0.0
+            },
+            "temporal_volatility": {
+              "baseline_count": 0,
+              "post_count": 2,
+              "count_delta": 2,
+              "baseline_score": 0.0,
+              "post_score": 0.628,
+              "score_delta": 0.628
+            },
+            "explainability_deficit": {
+              "baseline_count": 1,
+              "post_count": 1,
+              "count_delta": 0,
+              "baseline_score": 0.8,
+              "post_score": 0.8,
+              "score_delta": 0.0
+            },
+            "mutant_duplicate": {
+              "baseline_count": 1,
+              "post_count": 0,
+              "count_delta": -1,
+              "baseline_score": 0.9,
+              "post_score": 0.0,
+              "score_delta": -0.9
+            }
+          }
+        },
+        {
+          "signal": "explainability_deficit",
+          "repair_type": "correct",
+          "repair_description": "Split format_report into _transform + _build_row helpers with docs",
+          "baseline_drift_score": 0.228,
+          "post_repair_drift_score": 0.228,
+          "drift_score_delta": 0.0,
+          "baseline_signal_findings": 1,
+          "post_repair_signal_findings": 0,
+          "net_finding_delta": -1,
+          "targeted_finding_resolved": true,
+          "verification": "PASS",
+          "diff_stats": {
+            "files_changed": 6,
+            "insertions": 48,
+            "deletions": 25,
+            "total_diff_lines": 73
+          },
+          "per_signal_deltas": {
+            "architecture_violation": {
+              "baseline_count": 1,
+              "post_count": 1,
+              "count_delta": 0,
+              "baseline_score": 0.7,
+              "post_score": 0.7,
+              "score_delta": 0.0
+            },
             "mutant_duplicate": {
               "baseline_count": 1,
               "post_count": 1,
@@ -616,14 +1280,145 @@
             },
             "explainability_deficit": {
               "baseline_count": 1,
+              "post_count": 0,
+              "count_delta": -1,
+              "baseline_score": 0.8,
+              "post_score": 0.0,
+              "score_delta": -0.8
+            },
+            "doc_impl_drift": {
+              "baseline_count": 3,
+              "post_count": 3,
+              "count_delta": 0,
+              "baseline_score": 0.9,
+              "post_score": 0.9,
+              "score_delta": 0.0
+            }
+          }
+        }
+      ],
+      "failure_cases": [
+        {
+          "signal": "mutant_duplicate",
+          "repair_type": "incorrect",
+          "repair_description": "Renamed to _read_header (body unchanged \u2014 MDS persists)",
+          "baseline_drift_score": 0.228,
+          "post_repair_drift_score": 0.195,
+          "drift_score_delta": -0.033,
+          "baseline_signal_findings": 1,
+          "post_repair_signal_findings": 1,
+          "net_finding_delta": 0,
+          "targeted_finding_resolved": false,
+          "verification": "PASS",
+          "diff_stats": {
+            "files_changed": 6,
+            "insertions": 20,
+            "deletions": 2,
+            "total_diff_lines": 22
+          },
+          "per_signal_deltas": {
+            "explainability_deficit": {
+              "baseline_count": 1,
               "post_count": 1,
               "count_delta": 0,
-              "baseline_score": 1.0,
-              "post_score": 0.75,
-              "score_delta": -0.25
+              "baseline_score": 0.8,
+              "post_score": 0.8,
+              "score_delta": 0.0
+            },
+            "mutant_duplicate": {
+              "baseline_count": 1,
+              "post_count": 1,
+              "count_delta": 0,
+              "baseline_score": 0.9,
+              "post_score": 0.85,
+              "score_delta": -0.05
+            },
+            "doc_impl_drift": {
+              "baseline_count": 3,
+              "post_count": 3,
+              "count_delta": 0,
+              "baseline_score": 0.9,
+              "post_score": 0.9,
+              "score_delta": 0.0
+            },
+            "architecture_violation": {
+              "baseline_count": 1,
+              "post_count": 1,
+              "count_delta": 0,
+              "baseline_score": 0.7,
+              "post_score": 0.7,
+              "score_delta": 0.0
+            },
+            "temporal_volatility": {
+              "baseline_count": 0,
+              "post_count": 1,
+              "count_delta": 1,
+              "baseline_score": 0.0,
+              "post_score": 0.374,
+              "score_delta": 0.374
             }
+          }
+        },
+        {
+          "signal": "explainability_deficit",
+          "repair_type": "incorrect",
+          "repair_description": "Added trivial docstring (complexity unchanged \u2014 EDS persists)",
+          "baseline_drift_score": 0.2,
+          "post_repair_drift_score": 0.185,
+          "drift_score_delta": -0.015,
+          "baseline_signal_findings": 1,
+          "post_repair_signal_findings": 1,
+          "net_finding_delta": 0,
+          "targeted_finding_resolved": false,
+          "verification": "PASS",
+          "diff_stats": {
+            "files_changed": 6,
+            "insertions": 20,
+            "deletions": 0,
+            "total_diff_lines": 20
           },
-          "failure_analysis": "Adding a one-line docstring does not resolve EDS when the function retains high cyclomatic complexity (CC>=12) and 6 untyped parameters. Drift detects structural explainability deficit, not just missing docstrings."
+          "per_signal_deltas": {
+            "explainability_deficit": {
+              "baseline_count": 1,
+              "post_count": 1,
+              "count_delta": 0,
+              "baseline_score": 0.8,
+              "post_score": 0.6,
+              "score_delta": -0.2
+            },
+            "mutant_duplicate": {
+              "baseline_count": 1,
+              "post_count": 1,
+              "count_delta": 0,
+              "baseline_score": 0.9,
+              "post_score": 0.9,
+              "score_delta": 0.0
+            },
+            "doc_impl_drift": {
+              "baseline_count": 3,
+              "post_count": 3,
+              "count_delta": 0,
+              "baseline_score": 0.9,
+              "post_score": 0.9,
+              "score_delta": 0.0
+            },
+            "architecture_violation": {
+              "baseline_count": 1,
+              "post_count": 1,
+              "count_delta": 0,
+              "baseline_score": 0.7,
+              "post_score": 0.7,
+              "score_delta": 0.0
+            },
+            "temporal_volatility": {
+              "baseline_count": 1,
+              "post_count": 1,
+              "count_delta": 0,
+              "baseline_score": 0.403,
+              "post_score": 0.327,
+              "score_delta": -0.076
+            }
+          }
         }
       ]
     }
@@ -705,34 +1500,34 @@
     }
   },
   "summary": {
-    "total_repos": 2,
-    "total_repairs_attempted": 5,
-    "repairs_verified": 5,
+    "total_repos": 7,
+    "total_repairs_attempted": 12,
+    "repairs_verified": 12,
     "repair_success_rate": 1.0,
-    "total_failure_cases": 3,
-    "failures_correctly_detected": 3,
+    "total_failure_cases": 10,
+    "failures_correctly_detected": 10,
     "verification_metrics": {
       "false_acceptance_rate": 0.0,
       "false_rejection_rate": 0.0,
       "true_positive_rate": 1.0,
       "true_negative_rate": 1.0,
       "sample_sizes": {
-        "correct_repairs_n": 5,
-        "incorrect_repairs_n": 3
+        "correct_repairs_n": 12,
+        "incorrect_repairs_n": 10
       }
     },
     "signal_coverage": {
       "mutant_duplicate": {
-        "correct_attempted": 2,
-        "correct_passed": 2,
-        "incorrect_attempted": 1,
-        "incorrect_detected": 1
+        "correct_attempted": 4,
+        "correct_passed": 4,
+        "incorrect_attempted": 3,
+        "incorrect_detected": 3
       },
       "doc_impl_drift": {
-        "correct_attempted": 1,
-        "correct_passed": 1,
-        "incorrect_attempted": 1,
-        "incorrect_detected": 1
+        "correct_attempted": 2,
+        "correct_passed": 2,
+        "incorrect_attempted": 2,
+        "incorrect_detected": 2
       },
       "pattern_fragmentation": {
         "correct_attempted": 1,
@@ -741,6 +1536,24 @@
         "incorrect_detected": 0
       },
       "explainability_deficit": {
+        "correct_attempted": 2,
+        "correct_passed": 2,
+        "incorrect_attempted": 2,
+        "incorrect_detected": 2
+      },
+      "system_misalignment": {
+        "correct_attempted": 1,
+        "correct_passed": 1,
+        "incorrect_attempted": 1,
+        "incorrect_detected": 1
+      },
+      "architecture_violation": {
+        "correct_attempted": 1,
+        "correct_passed": 1,
+        "incorrect_attempted": 1,
+        "incorrect_detected": 1
+      },
+      "temporal_volatility": {
         "correct_attempted": 1,
         "correct_passed": 1,
         "incorrect_attempted": 1,
@@ -752,13 +1565,20 @@
       "runs_per_repo": 3
     },
     "effort_metrics": {
-      "median_diff_lines": 115,
+      "median_diff_lines": 67,
       "all_diff_lines": [
         127,
         30,
         80,
         125,
-        115
+        115,
+        42,
+        35,
+        66,
+        35,
+        22,
+        67,
+        73
       ]
     },
     "tvs_side_effects": [
@@ -773,10 +1593,36 @@
         "repair": "mutant_duplicate",
         "tvs_count_delta": 1,
         "tvs_score_delta": 0.504
+      },
+      {
+        "repo": "apiserver",
+        "repair": "architecture_violation",
+        "tvs_count_delta": 1,
+        "tvs_score_delta": 0.74
+      },
+      {
+        "repo": "webapp_v2",
+        "repair": "mutant_duplicate",
+        "tvs_count_delta": 1,
+        "tvs_score_delta": 0.454
+      },
+      {
+        "repo": "datalib_v2",
+        "repair": "mutant_duplicate",
+        "tvs_count_delta": 2,
+        "tvs_score_delta": 0.628
       }
     ],
     "tvs_cascade_stable": true,
     "real_data_repos_validated": 2,
+    "real_world_repair": {
+      "available": true,
+      "verdict": "PASS",
+      "repo": "httpx",
+      "repairs_count": 3,
+      "score_delta": -0.039,
+      "findings_delta": -3
+    },
     "claim_boundary": {
       "proven": [
         "Deterministic repair-task generation from analysis findings",
@@ -784,21 +1630,22 @@
         "Rejection sharpness: incorrect repairs are not falsely accepted",
         "Task schema completeness and priority ordering",
         "Reproducibility: identical input produces identical output",
-        "Multi-signal coverage: MDS, EDS, DIA, PFS verified with repairs"
+        "Signal coverage: MDS, EDS, DIA, PFS, AVS, TVS, SMS verified",
+        "Real-world repair verified on httpx (MDS, DIA)"
       ],
       "not_yet_proven": [
         "Real coding agents executing tasks autonomously in production repos",
         "Multi-step repair orchestration across dependent findings",
-        "Comparative advantage over unguided agent repair",
-        "TVS/SMS signal repair coverage (only observed as side-effects)"
+        "Comparative advantage over unguided agent repair (control group)",
+        "Longitudinal stability (T0 + T+4W)"
       ],
       "known_limitations": [
         "TVS side-effects: repair commits create temporal_volatility findings as a side effect. The TVS cascade test shows these stabilize and do not diverge, but sequential agent repairs must account for this.",
-        "Sample sizes: n=5 correct, n=3 incorrect. FAR/FRR are directionally valid but not yet statistically robust (need n>=10 per class).",
+        "Sample sizes: n=12 correct, n=10 incorrect. FAR/FRR are directionally valid but not yet statistically robust (need n>=10 per class).",
         "EDS repair reduces score but may leave a residual finding (e.g. high parameter count). targeted_finding_resolved tracks this precisely."
       ]
     },
-    "conclusion": "Translation + Verification benchmark: agent-tasks produce valid, correctly prioritized repair tasks across 4 signal types. Correct repairs measurably reduce drift scores. Incorrect repairs are rejected. Deterministic across repeated runs. TVS side-effects tracked and stable."
+    "conclusion": "Translation + Verification benchmark: agent-tasks produce valid, correctly prioritized repair tasks across 7 signal types. Correct repairs measurably reduce drift scores. Incorrect repairs are rejected. Deterministic across repeated runs. Signal coverage: 7/7. TVS side-effects tracked and stable."
   },
   "tvs_cascade_test": {
     "trajectory": [
@@ -835,6 +1682,71 @@
     "final_tvs": 0,
     "monotonically_increasing": false,
     "stabilized_or_decreased": true,
-    "conclusion": "TVS findings appear as side effects of repair commits but do not diverge. Sequential repairs do not create an unbounded TVS cascade."
+    "conclusion": "TVS findings appear as side effects of repair commits but do not diverge. Sequential repairs do not create an unbounded TVS cascade.",
+    "cross_signal_repair": {
+      "step_1_mds_repair": {
+        "mds_before": 1,
+        "mds_after": 0,
+        "tvs_side_effect": 2
+      },
+      "step_2_tvs_repair": {
+        "tvs_before": 2,
+        "tvs_after": 0,
+        "regressions": [],
+        "verdict": "PASS"
+      }
+    }
+  },
+  "real_world_validation": {
+    "repo": "httpx",
+    "sha": "b5addb64f0161ff6bfe94c124ef76f6a1fba5254",
+    "repo_type": "real",
+    "repairs": [
+      {
+        "description": "MDS: DeflateDecoder.flush/GZipDecoder.flush \u2192 _ZlibDecoder base class",
+        "signal": "mutant_duplicate"
+      },
+      {
+        "description": "MDS: test_digest_auth_rfc_7616 md5/sha256 \u2192 pytest.parametrize",
+        "signal": "mutant_duplicate"
+      },
+      {
+        "description": "DIA: README missing tests/ directory \u2192 added reference",
+        "signal": "doc_impl_drift"
+      }
+    ],
+    "before": {
+      "drift_score": 0.527,
+      "findings_count": 27,
+      "by_signal": {
+        "bypass_accumulation": 1,
+        "doc_impl_drift": 1,
+        "explainability_deficit": 12,
+        "mutant_duplicate": 7,
+        "pattern_fragmentation": 4,
+        "test_polarity_deficit": 2
+      }
+    },
+    "after": {
+      "drift_score": 0.488,
+      "findings_count": 24,
+      "by_signal": {
+        "bypass_accumulation": 1,
+        "explainability_deficit": 12,
+        "mutant_duplicate": 5,
+        "pattern_fragmentation": 4,
+        "test_polarity_deficit": 2
+      }
+    },
+    "delta": {
+      "drift_score": -0.039,
+      "findings": -3
+    },
+    "targeted_signals_reduced": {
+      "mutant_duplicate": true,
+      "doc_impl_drift": true
+    },
+    "regressions": [],
+    "verdict": "PASS"
   }
 }

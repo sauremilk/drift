@@ -590,6 +590,7 @@ def run_benchmark() -> dict:
 
         results["repos"]["webapp"] = {
             "description": "Flask-like web app with MDS + PFS + DIA patterns",
+            "repo_type": "synthetic",
             "mutations": muts,
             "baseline": {
                 "drift_score": bl["drift_score"],
@@ -693,6 +694,7 @@ def run_benchmark() -> dict:
 
         results["repos"]["datalib"] = {
             "description": "httpx-like data lib with MDS + EDS + SMS patterns",
+            "repo_type": "synthetic",
             "mutations": muts,
             "baseline": {
                 "drift_score": bl["drift_score"],
@@ -785,6 +787,7 @@ def run_benchmark() -> dict:
 
         results["repos"]["datalib_sms"] = {
             "description": "datalib with date-split history for SMS detection",
+            "repo_type": "synthetic",
             "mutations": {"system_misalignment": muts_sms.get("system_misalignment", [])},
             "baseline": {
                 "drift_score": bl_sms["drift_score"],
@@ -869,6 +872,7 @@ def run_benchmark() -> dict:
 
         results["repos"]["apiserver"] = {
             "description": "API server with layering violation (DB imports API)",
+            "repo_type": "synthetic",
             "mutations": muts_avs,
             "baseline": {
                 "drift_score": bl_avs["drift_score"],
@@ -963,6 +967,7 @@ def run_benchmark() -> dict:
 
         results["repos"]["churnapp"] = {
             "description": "App with high-churn config_loader for TVS detection",
+            "repo_type": "synthetic",
             "mutations": muts_tvs,
             "baseline": {
                 "drift_score": bl_tvs["drift_score"],
@@ -1071,6 +1076,7 @@ def run_benchmark() -> dict:
 
         results["repos"]["webapp_v2"] = {
             "description": "Variant webapp — MDS (_format_size) + DIA (phantom dirs)",
+            "repo_type": "synthetic",
             "mutations": muts_w2,
             "baseline": {
                 "drift_score": bl_w2["drift_score"],
@@ -1179,6 +1185,7 @@ def run_benchmark() -> dict:
 
         results["repos"]["datalib_v2"] = {
             "description": "Variant datalib — MDS (_parse_header) + EDS (format_report)",
+            "repo_type": "synthetic",
             "mutations": muts_d2,
             "baseline": {
                 "drift_score": bl_d2["drift_score"],
@@ -1208,6 +1215,10 @@ def run_benchmark() -> dict:
             )
 
     # ---- Phase C: TVS Cascade Control Test ----
+    # Tests two scenarios:
+    # C.1: Sequential MDS→DIA→PFS repairs — does TVS spike and stabilize?
+    # C.2: MDS→TVS repair — does repairing the TVS side-effect cause
+    #       secondary damage (code loss affecting other signals)?
     print("\n" + "=" * 60)
     print("Phase C: TVS Cascade Control (sequential repairs)")
     print("=" * 60)
@@ -1283,7 +1294,228 @@ def run_benchmark() -> dict:
         tag = "STABLE" if stabilized else "GROWING"
         print(f"  Cascade: {tag} (peak={peak}, final={final})")
 
+    # ---- Phase C.2: MDS→TVS cross-signal repair ----
+    # After MDS repair creates TVS side-effect, agent repairs TVS.
+    # Verify: (a) TVS drops, (b) other signals don't regress
+    print("\n  C.2: MDS->TVS cross-signal repair")
+    with tempfile.TemporaryDirectory(prefix="drift_tvs_cross_") as tmp:
+        d = Path(tmp)
+        create_webapp(d)
+        _init_git(d)
+
+        # Baseline
+        bl_cross = _analyze(d)
+        mds_bl = _sig_count(bl_cross, "mutant_duplicate")
+
+        # Step 1: MDS repair → triggers TVS side-effect
+        repair_webapp_mds_correct(d)
+        _commit(d, "Fix: consolidate _make_timedelta")
+        post_mds = _analyze(d)
+        tvs_after_mds = _sig_count(post_mds, "temporal_volatility")
+        mds_after = _sig_count(post_mds, "mutant_duplicate")
+
+        cross_repair_data: dict = {
+            "step_1_mds_repair": {
+                "mds_before": mds_bl,
+                "mds_after": mds_after,
+                "tvs_side_effect": tvs_after_mds,
+            },
+        }
+
+        if tvs_after_mds > 0:
+            # Step 2: Find TVS-flagged files and split them
+            tvs_findings = [
+                f for f in post_mds["findings"]
+                if f["signal"] == "temporal_volatility"
+            ]
+            tvs_files = [f.get("file", "") for f in tvs_findings]
+            print(f"    TVS spike after MDS repair: {tvs_after_mds} finding(s)")
+            print(f"    Affected files: {tvs_files}")
+
+            # Snapshot all signal counts before TVS repair
+            sigs_pre_tvs = _per_signal_breakdown(post_mds)
+
+            # TVS repair: split the churned files into smaller modules
+            # (This simulates what an agent would do with the TVS task)
+            for tvs_f in tvs_findings:
+                fp = tvs_f.get("file", "")
+                if not fp:
+                    continue
+                fpath = d / fp
+                if not fpath.exists():
+                    continue
+                # Read content, split into two modules
+                content = fpath.read_text()
+                stem = fpath.stem
+                parent = fpath.parent
+                # Create two smaller files from the original
+                half = len(content.splitlines()) // 2
+                lines = content.splitlines(True)
+                (parent / f"{stem}_core.py").write_text(
+                    "".join(lines[:half])
+                )
+                (parent / f"{stem}_ext.py").write_text(
+                    "".join(lines[half:])
+                )
+                fpath.unlink()
+            _commit(d, "Fix: split high-churn files for TVS")
+
+            post_tvs = _analyze(d)
+            tvs_final = _sig_count(post_tvs, "temporal_volatility")
+            sigs_post_tvs = _per_signal_breakdown(post_tvs)
+
+            # Check: did any non-TVS signal regress?
+            regressions: list[str] = []
+            for sig_name, pre_data in sigs_pre_tvs.items():
+                if sig_name == "temporal_volatility":
+                    continue
+                post_data = sigs_post_tvs.get(sig_name, {"count": 0})
+                if post_data["count"] > pre_data["count"]:
+                    regressions.append(
+                        f"{sig_name}: {pre_data['count']}->{post_data['count']}"
+                    )
+
+            cross_ok = tvs_final < tvs_after_mds and len(regressions) == 0
+            cross_repair_data["step_2_tvs_repair"] = {
+                "tvs_before": tvs_after_mds,
+                "tvs_after": tvs_final,
+                "regressions": regressions,
+                "verdict": "PASS" if cross_ok else "FAIL",
+            }
+            print(
+                f"    TVS after repair: {tvs_after_mds}->{tvs_final}, "
+                f"regressions: {len(regressions)}, "
+                f"verdict: {'PASS' if cross_ok else 'FAIL'}"
+            )
+            if regressions:
+                for reg in regressions:
+                    print(f"      REGRESSION: {reg}")
+        else:
+            cross_repair_data["step_2_tvs_repair"] = {
+                "skipped": True,
+                "reason": "No TVS side-effect after MDS repair",
+            }
+            print("    No TVS side-effect — cross-signal path not triggered")
+
+    tvs_cascade["cross_signal_repair"] = cross_repair_data
     results["tvs_cascade_test"] = tvs_cascade
+
+    # ---- Phase D: Real-world repair validation ----
+    # Uses pre-computed before/after analysis from httpx (fixed SHA).
+    # Repairs performed on httpx@b5addb64f0161ff6bfe94c124ef76f6a1fba5254:
+    #   1. MDS: DeflateDecoder.flush/GZipDecoder.flush → _ZlibDecoder base
+    #   2. MDS: test_digest_auth_rfc_7616_md5/sha_256 → parametrized
+    #   3. DIA: README missing tests/ directory → added reference
+    realworld_dir = OUT_DIR / "real_world"
+    real_results: dict = {}
+    if (realworld_dir / "httpx_before.json").exists() and (
+        realworld_dir / "httpx_after.json"
+    ).exists():
+        print("\n" + "=" * 60)
+        print("Phase D: Real-world repair validation (httpx)")
+        print("=" * 60)
+
+        before = json.loads(
+            (realworld_dir / "httpx_before.json").read_text(encoding="utf-8")
+        )
+        after = json.loads(
+            (realworld_dir / "httpx_after.json").read_text(encoding="utf-8")
+        )
+
+        before_by_sig: dict[str, int] = {}
+        for f in before["findings"]:
+            before_by_sig[f["signal"]] = before_by_sig.get(f["signal"], 0) + 1
+        after_by_sig: dict[str, int] = {}
+        for f in after["findings"]:
+            after_by_sig[f["signal"]] = after_by_sig.get(f["signal"], 0) + 1
+
+        score_delta = after["drift_score"] - before["drift_score"]
+        findings_delta = len(after["findings"]) - len(before["findings"])
+
+        # Check targeted signals reduced
+        mds_ok = after_by_sig.get("mutant_duplicate", 0) < before_by_sig.get(
+            "mutant_duplicate", 0
+        )
+        dia_ok = after_by_sig.get("doc_impl_drift", 0) < before_by_sig.get(
+            "doc_impl_drift", 0
+        )
+
+        # No regressions: no signal should increase
+        regressions = []
+        all_sigs = sorted(
+            set(list(before_by_sig.keys()) + list(after_by_sig.keys()))
+        )
+        for sig in all_sigs:
+            b = before_by_sig.get(sig, 0)
+            a = after_by_sig.get(sig, 0)
+            if a > b:
+                regressions.append(f"{sig}: {b}->{a} (+{a - b})")
+
+        verdict = (
+            "PASS"
+            if mds_ok and dia_ok and not regressions and score_delta < 0
+            else "FAIL"
+        )
+
+        real_results = {
+            "repo": "httpx",
+            "sha": "b5addb64f0161ff6bfe94c124ef76f6a1fba5254",
+            "repo_type": "real",
+            "repairs": [
+                {
+                    "description": "MDS: flush dedup via _ZlibDecoder base",
+                    "signal": "mutant_duplicate",
+                },
+                {
+                    "description": "MDS: test_digest_auth_rfc_7616 md5/sha256 → pytest.parametrize",
+                    "signal": "mutant_duplicate",
+                },
+                {
+                    "description": "DIA: README missing tests/ directory → added reference",
+                    "signal": "doc_impl_drift",
+                },
+            ],
+            "before": {
+                "drift_score": before["drift_score"],
+                "findings_count": len(before["findings"]),
+                "by_signal": before_by_sig,
+            },
+            "after": {
+                "drift_score": after["drift_score"],
+                "findings_count": len(after["findings"]),
+                "by_signal": after_by_sig,
+            },
+            "delta": {
+                "drift_score": round(score_delta, 4),
+                "findings": findings_delta,
+            },
+            "targeted_signals_reduced": {
+                "mutant_duplicate": mds_ok,
+                "doc_impl_drift": dia_ok,
+            },
+            "regressions": regressions,
+            "verdict": verdict,
+        }
+        results["real_world_validation"] = real_results
+
+        print(
+            f"  Before: score={before['drift_score']:.3f}, "
+            f"findings={len(before['findings'])}"
+        )
+        print(
+            f"  After:  score={after['drift_score']:.3f}, "
+            f"findings={len(after['findings'])}"
+        )
+        print(f"  Delta:  score={score_delta:+.4f}, findings={findings_delta:+d}")
+        print(f"  MDS reduced: {mds_ok}, DIA reduced: {dia_ok}")
+        if regressions:
+            for r in regressions:
+                print(f"  REGRESSION: {r}")
+        else:
+            print("  Regressions: none")
+        print(f"  Verdict: {verdict}")
+    else:
+        print("\n  [SKIP] Phase D: no real-world before/after data found")
 
     # ---- Summary ----
     tr = sum(len(r["repairs"]) for r in results["repos"].values())
@@ -1393,6 +1625,20 @@ def run_benchmark() -> dict:
         "real_data_repos_validated": len(
             [v for v in rv.values() if "error" not in v]
         ),
+        "real_world_repair": {
+            "available": bool(real_results),
+            "verdict": real_results.get("verdict", "N/A") if real_results else "N/A",
+            "repo": real_results.get("repo", "N/A") if real_results else "N/A",
+            "repairs_count": len(real_results.get("repairs", [])) if real_results else 0,
+            "score_delta": (
+                real_results.get("delta", {}).get("drift_score", 0)
+                if real_results else 0
+            ),
+            "findings_delta": (
+                real_results.get("delta", {}).get("findings", 0)
+                if real_results else 0
+            ),
+        },
         "claim_boundary": {
             "proven": [
                 "Deterministic repair-task generation from analysis findings",
@@ -1401,6 +1647,11 @@ def run_benchmark() -> dict:
                 "Task schema completeness and priority ordering",
                 "Reproducibility: identical input produces identical output",
                 "Signal coverage: MDS, EDS, DIA, PFS, AVS, TVS, SMS verified",
+                *(
+                    ["Real-world repair verified on httpx (MDS, DIA)"]
+                    if real_results and real_results.get("verdict") == "PASS"
+                    else []
+                ),
             ],
             "not_yet_proven": [
                 "Real coding agents executing tasks autonomously in production repos",
@@ -1445,16 +1696,39 @@ def run_benchmark() -> dict:
     print("=" * 60)
     s = results["summary"]
     vm = s["verification_metrics"]
-    print(f"  Repos tested:            {s['total_repos']}")
+    n_synth = sum(
+        1 for r in results["repos"].values()
+        if r.get("repo_type") == "synthetic"
+    )
+    n_real_val = s["real_data_repos_validated"]
+    print(f"  Repos tested:            {s['total_repos']} "
+          f"({n_synth} synthetic, {n_real_val} real-validated)")
     print(f"  Repairs verified:        {pr}/{tr}")
     print(f"  Failure cases detected:  {df}/{tf}")
     print(f"  Repair success rate:     {s['repair_success_rate']:.0%}")
-    print(f"  False acceptance rate:   {vm['false_acceptance_rate']:.0%}")
-    print(f"  False rejection rate:    {vm['false_rejection_rate']:.0%}")
+    print(f"  False acceptance rate:   {vm['false_acceptance_rate']:.0%} "
+          f"(n={tf})")
+    print(f"  False rejection rate:    {vm['false_rejection_rate']:.0%} "
+          f"(n={tr})")
     print(f"  Deterministic:           {'YES' if det_all else 'NO'}")
     print(f"  Median diff size:        {median_diff} lines")
     print(f"  Signals covered:         {', '.join(signal_coverage.keys())}")
-    print(f"  Real data validated:     {s['real_data_repos_validated']} repos")
+    print(f"  Real data validated:     {n_real_val} repos")
+    # Real-world repair
+    rw = s.get("real_world_repair", {})
+    if rw.get("available"):
+        print(
+            f"  Real-world repair:       {rw['repo']} — "
+            f"{rw['repairs_count']} repairs, "
+            f"score {rw['score_delta']:+.4f}, "
+            f"findings {rw['findings_delta']:+d} — "
+            f"{rw['verdict']}"
+        )
+    # Cross-signal cascade
+    cross = tvs_cascade.get("cross_signal_repair", {})
+    step2 = cross.get("step_2_tvs_repair", {})
+    if step2 and not step2.get("skipped"):
+        print(f"  Cross-signal MDS->TVS:    {step2.get('verdict', '?')}")
 
     return results
 

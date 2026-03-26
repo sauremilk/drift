@@ -1,0 +1,875 @@
+{
+  "version": "0.5.0",
+  "schema": "agent-tasks-v1",
+  "repo": "C:/Users/mickg/AppData/Local/Temp/drift_real_repair_httpx",
+  "analyzed_at": "2026-03-26T18:38:45.744796+00:00",
+  "drift_score": 0.527,
+  "severity": "medium",
+  "task_count": 27,
+  "tasks": [
+    {
+      "id": "pfs-0e20ef180c",
+      "signal_type": "pattern_fragmentation",
+      "severity": "high",
+      "priority": 1,
+      "title": "error_handling: 31 variants in httpx/",
+      "description": "31 error_handling variants in httpx/ (4/49 use canonical pattern).\n  - _auth.py:82 (Auth.sync_auth_flow)\n  - _auth.py:107 (Auth.async_auth_flow)\n  - _auth.py:242 (DigestAuth._parse_challenge)",
+      "action": "Found 31 variants of the same pattern. Adopt the canonical variant '{\"handler_count\": 0, \"handlers\": [], \"has_else\": false, \"has' across: httpx/_auth.py, httpx/_auth.py, httpx/_auth.py (+42 more). Extract a shared helper function and replace inline implementations.",
+      "file_path": "httpx",
+      "start_line": null,
+      "end_line": null,
+      "related_files": [
+        "httpx/_auth.py",
+        "httpx/_auth.py",
+        "httpx/_auth.py",
+        "httpx/_client.py",
+        "httpx/_client.py",
+        "httpx/_client.py",
+        "httpx/_client.py",
+        "httpx/_client.py",
+        "httpx/_client.py",
+        "httpx/_client.py",
+        "httpx/_client.py",
+        "httpx/_client.py",
+        "httpx/_client.py",
+        "httpx/_client.py",
+        "httpx/_decoders.py",
+        "httpx/_decoders.py",
+        "httpx/_decoders.py",
+        "httpx/_decoders.py",
+        "httpx/_decoders.py",
+        "httpx/_decoders.py",
+        "httpx/_decoders.py",
+        "httpx/_exceptions.py",
+        "httpx/_main.py",
+        "httpx/_main.py",
+        "httpx/_models.py",
+        "httpx/_models.py",
+        "httpx/_main.py",
+        "httpx/_main.py",
+        "httpx/_models.py",
+        "httpx/_models.py",
+        "httpx/_models.py",
+        "httpx/_models.py",
+        "httpx/_status_codes.py",
+        "httpx/_models.py",
+        "httpx/_models.py",
+        "httpx/_models.py",
+        "httpx/_multipart.py",
+        "httpx/_urlparse.py",
+        "httpx/_urlparse.py",
+        "httpx/_urlparse.py",
+        "httpx/_urlparse.py",
+        "httpx/_utils.py",
+        "httpx/_utils.py",
+        "httpx/_utils.py",
+        "httpx/_utils.py"
+      ],
+      "complexity": "medium",
+      "expected_effect": "Reduces pattern variants from 31 to 1 in httpx, lowering PFS signal contribution to the drift score",
+      "success_criteria": [
+        "Pattern variants in httpx reduced to 1 (canonical)",
+        "`drift analyze` reports no pattern_fragmentation finding for httpx",
+        "All existing tests pass after the change"
+      ],
+      "depends_on": [],
+      "metadata": {
+        "category": "error_handling",
+        "num_variants": 31,
+        "variant_count": 31,
+        "canonical_count": 4,
+        "canonical_variant": "{\"handler_count\": 0, \"handlers\": [], \"has_else\": false, \"has",
+        "module": "httpx",
+        "total_instances": 49,
+        "deliberate_pattern_risk": "May reflect architecture transition or deliberate variation. Review whether variants serve distinct purposes."
+      }
+    },
+    {
+      "id": "tes-a57f0da1ca",
+      "signal_type": "test_polarity_deficit",
+      "severity": "high",
+      "priority": 2,
+      "title": "Happy-path-only test suite in tests/client/",
+      "description": "168 test functions with 389 positive / 34 negative assertions (negative ratio 8.0%). 8 boundary-named tests.",
+      "action": "Add negative tests to tests/client/ (168 test functions, only 34 negative assertions): use pytest.raises for expected exceptions, test edge cases (empty, None, invalid input).",
+      "file_path": "tests/client",
+      "start_line": null,
+      "end_line": null,
+      "related_files": [],
+      "complexity": "medium",
+      "expected_effect": "Reduces architectural drift score",
+      "success_criteria": [
+        "All existing tests pass after the change"
+      ],
+      "depends_on": [],
+      "metadata": {
+        "test_functions": 168,
+        "positive_assertions": 389,
+        "negative_assertions": 34,
+        "negative_ratio": 0.08037825059101655,
+        "boundary_functions": 8
+      }
+    },
+    {
+      "id": "tes-04cb7dd1a0",
+      "signal_type": "test_polarity_deficit",
+      "severity": "high",
+      "priority": 3,
+      "title": "Happy-path-only test suite in tests/models/",
+      "description": "199 test functions with 517 positive / 50 negative assertions (negative ratio 8.8%). 21 boundary-named tests.",
+      "action": "Add negative tests to tests/models/ (199 test functions, only 50 negative assertions): use pytest.raises for expected exceptions, test edge cases (empty, None, invalid input).",
+      "file_path": "tests/models",
+      "start_line": null,
+      "end_line": null,
+      "related_files": [],
+      "complexity": "medium",
+      "expected_effect": "Reduces architectural drift score",
+      "success_criteria": [
+        "All existing tests pass after the change"
+      ],
+      "depends_on": [],
+      "metadata": {
+        "test_functions": 199,
+        "positive_assertions": 517,
+        "negative_assertions": 50,
+        "negative_ratio": 0.08818342151675485,
+        "boundary_functions": 21
+      }
+    },
+    {
+      "id": "mds-4c1b56add1",
+      "signal_type": "mutant_duplicate",
+      "severity": "high",
+      "priority": 4,
+      "title": "Exact duplicates (2\u00d7): DeflateDecoder.flush, GZipDecoder.flush",
+      "description": "2 identical copies (5 lines each) at: httpx\\_decoders.py:78, httpx\\_decoders.py:101. Consider consolidating.",
+      "action": "These two functions are 100% similar. Merge them into one, parameterizing the differences. If the differences are in data, pass them as arguments. If in behavior, use a strategy parameter or callback.",
+      "file_path": "httpx/_decoders.py",
+      "start_line": 78,
+      "end_line": null,
+      "related_files": [
+        "httpx/_decoders.py"
+      ],
+      "complexity": "low",
+      "expected_effect": "Eliminates near-duplicate (100% similar), reducing maintenance surface",
+      "success_criteria": [
+        "Functions '?' and '?' merged into a single implementation",
+        "No mutant_duplicate finding for these functions in `drift analyze`",
+        "All existing tests pass after the change"
+      ],
+      "depends_on": [],
+      "metadata": {
+        "similarity": 1.0,
+        "group_size": 2,
+        "functions": [
+          {
+            "name": "DeflateDecoder.flush",
+            "file": "httpx/_decoders.py",
+            "line": 78
+          },
+          {
+            "name": "GZipDecoder.flush",
+            "file": "httpx/_decoders.py",
+            "line": 101
+          }
+        ],
+        "deliberate_pattern_risk": "May reflect deliberate polymorphism (Strategy, Adapter, Plugin). Verify intent before consolidating."
+      }
+    },
+    {
+      "id": "mds-1fd02caed2",
+      "signal_type": "mutant_duplicate",
+      "severity": "high",
+      "priority": 5,
+      "title": "Near-duplicate (100%): test_digest_auth_rfc_7616_md5 \u2194 test_digest_auth_rfc_7616_sha_256",
+      "description": "tests\\test_auth.py:191 and tests\\test_auth.py:251 are 100% similar. Small differences may indicate copy-paste divergence.",
+      "action": "These two functions are 100% similar. Merge them into one, parameterizing the differences. If the differences are in data, pass them as arguments. If in behavior, use a strategy parameter or callback.",
+      "file_path": "tests/test_auth.py",
+      "start_line": 191,
+      "end_line": null,
+      "related_files": [
+        "tests/test_auth.py"
+      ],
+      "complexity": "low",
+      "expected_effect": "Eliminates near-duplicate (100% similar), reducing maintenance surface",
+      "success_criteria": [
+        "Functions 'test_digest_auth_rfc_7616_md5' and 'test_digest_auth_rfc_7616_sha_256' merged into a single implementation",
+        "No mutant_duplicate finding for these functions in `drift analyze`",
+        "All existing tests pass after the change"
+      ],
+      "depends_on": [],
+      "metadata": {
+        "similarity": 1.0,
+        "function_a": "test_digest_auth_rfc_7616_md5",
+        "function_b": "test_digest_auth_rfc_7616_sha_256",
+        "file_a": "tests/test_auth.py",
+        "file_b": "tests/test_auth.py",
+        "deliberate_pattern_risk": "May reflect deliberate polymorphism (Strategy, Adapter, Plugin). Verify intent before consolidating."
+      }
+    },
+    {
+      "id": "mds-c2954425f5",
+      "signal_type": "mutant_duplicate",
+      "severity": "high",
+      "priority": 6,
+      "title": "Near-duplicate (99%): HTTPTransport.__init__ \u2194 AsyncHTTPTransport.__init__",
+      "description": "httpx\\_transports\\default.py:136 and httpx\\_transports\\default.py:280 are 99% similar. Small differences may indicate copy-paste divergence.",
+      "action": "These two functions are 99% similar. Merge them into one, parameterizing the differences. If the differences are in data, pass them as arguments. If in behavior, use a strategy parameter or callback.",
+      "file_path": "httpx/_transports/default.py",
+      "start_line": 136,
+      "end_line": null,
+      "related_files": [
+        "httpx/_transports/default.py"
+      ],
+      "complexity": "low",
+      "expected_effect": "Eliminates near-duplicate (99% similar), reducing maintenance surface",
+      "success_criteria": [
+        "Functions 'HTTPTransport.__init__' and 'AsyncHTTPTransport.__init__' merged into a single implementation",
+        "No mutant_duplicate finding for these functions in `drift analyze`",
+        "All existing tests pass after the change"
+      ],
+      "depends_on": [],
+      "metadata": {
+        "similarity": 0.99,
+        "function_a": "HTTPTransport.__init__",
+        "function_b": "AsyncHTTPTransport.__init__",
+        "file_a": "httpx/_transports/default.py",
+        "file_b": "httpx/_transports/default.py",
+        "deliberate_pattern_risk": "May reflect deliberate polymorphism (Strategy, Adapter, Plugin). Verify intent before consolidating."
+      }
+    },
+    {
+      "id": "mds-5ce1d26889",
+      "signal_type": "mutant_duplicate",
+      "severity": "high",
+      "priority": 7,
+      "title": "Near-duplicate (97%): Client.__init__ \u2194 AsyncClient.__init__",
+      "description": "httpx\\_client.py:639 and httpx\\_client.py:1353 are 97% similar. Small differences may indicate copy-paste divergence.",
+      "action": "These two functions are 97% similar. Merge them into one, parameterizing the differences. If the differences are in data, pass them as arguments. If in behavior, use a strategy parameter or callback.",
+      "file_path": "httpx/_client.py",
+      "start_line": 639,
+      "end_line": null,
+      "related_files": [
+        "httpx/_client.py"
+      ],
+      "complexity": "low",
+      "expected_effect": "Eliminates near-duplicate (97% similar), reducing maintenance surface",
+      "success_criteria": [
+        "Functions 'Client.__init__' and 'AsyncClient.__init__' merged into a single implementation",
+        "No mutant_duplicate finding for these functions in `drift analyze`",
+        "All existing tests pass after the change"
+      ],
+      "depends_on": [],
+      "metadata": {
+        "similarity": 0.97,
+        "function_a": "Client.__init__",
+        "function_b": "AsyncClient.__init__",
+        "file_a": "httpx/_client.py",
+        "file_b": "httpx/_client.py",
+        "deliberate_pattern_risk": "May reflect deliberate polymorphism (Strategy, Adapter, Plugin). Verify intent before consolidating."
+      }
+    },
+    {
+      "id": "pfs-da2917f0c7",
+      "signal_type": "pattern_fragmentation",
+      "severity": "high",
+      "priority": 8,
+      "title": "error_handling: 5 variants in httpx/_transports/",
+      "description": "5 error_handling variants in httpx/_transports/ (2/6 use canonical pattern).\n  - asgi.py:30 (is_running_trio)\n  - asgi.py:169 (ASGITransport.handle_async_request)\n  - asgi.py:141 (ASGITransport.receive)",
+      "action": "Found 5 variants of the same pattern. Adopt the canonical variant '{\"handler_count\": 1, \"handlers\": [{\"actions\": [\"raise\"], \"ex' across: httpx/_transports/asgi.py, httpx/_transports/asgi.py, httpx/_transports/asgi.py (+1 more). Extract a shared helper function and replace inline implementations.",
+      "file_path": "httpx/_transports",
+      "start_line": null,
+      "end_line": null,
+      "related_files": [
+        "httpx/_transports/asgi.py",
+        "httpx/_transports/asgi.py",
+        "httpx/_transports/asgi.py",
+        "httpx/_transports/default.py"
+      ],
+      "complexity": "medium",
+      "expected_effect": "Reduces pattern variants from 5 to 1 in httpx/_transports, lowering PFS signal contribution to the drift score",
+      "success_criteria": [
+        "Pattern variants in httpx/_transports reduced to 1 (canonical)",
+        "`drift analyze` reports no pattern_fragmentation finding for httpx/_transports",
+        "All existing tests pass after the change"
+      ],
+      "depends_on": [],
+      "metadata": {
+        "category": "error_handling",
+        "num_variants": 5,
+        "variant_count": 5,
+        "canonical_count": 2,
+        "canonical_variant": "{\"handler_count\": 1, \"handlers\": [{\"actions\": [\"raise\"], \"ex",
+        "module": "httpx/_transports",
+        "total_instances": 6,
+        "deliberate_pattern_risk": "May reflect architecture transition or deliberate variation. Review whether variants serve distinct purposes."
+      }
+    },
+    {
+      "id": "byp-276f9fd643",
+      "signal_type": "bypass_accumulation",
+      "severity": "medium",
+      "priority": 9,
+      "title": "High bypass marker density in _types.py",
+      "description": "httpx\\_types.py has 9 bypass markers across ~115 LOC (density 0.078, threshold 0.050). Breakdown: coverage: 5, lint: 4.",
+      "action": "Review bypass markers in '_types.py' and resolve the underlying issues they suppress. Each marker represents a quality shortcut that may mask real problems.",
+      "file_path": "httpx/_types.py",
+      "start_line": 1,
+      "end_line": null,
+      "related_files": [],
+      "complexity": "medium",
+      "expected_effect": "Reduces architectural drift score",
+      "success_criteria": [
+        "All existing tests pass after the change"
+      ],
+      "depends_on": [],
+      "metadata": {
+        "total_markers": 9,
+        "markers_by_category": {
+          "type_safety": 0,
+          "lint": 4,
+          "coverage": 5,
+          "test": 0,
+          "deferred": 0
+        },
+        "bypass_density": 0.0783,
+        "module_median_density": 0.0116
+      }
+    },
+    {
+      "id": "mds-15eae4f096",
+      "signal_type": "mutant_duplicate",
+      "severity": "medium",
+      "priority": 10,
+      "title": "Near-duplicate (89%): test_multipart_files_content \u2194 test_multipart_data_and_files_content",
+      "description": "tests\\test_content.py:256 and tests\\test_content.py:299 are 89% similar. Small differences may indicate copy-paste divergence.",
+      "action": "These two functions are 89% similar. Merge them into one, parameterizing the differences. If the differences are in data, pass them as arguments. If in behavior, use a strategy parameter or callback.",
+      "file_path": "tests/test_content.py",
+      "start_line": 256,
+      "end_line": null,
+      "related_files": [
+        "tests/test_content.py"
+      ],
+      "complexity": "low",
+      "expected_effect": "Eliminates near-duplicate (89% similar), reducing maintenance surface",
+      "success_criteria": [
+        "Functions 'test_multipart_files_content' and 'test_multipart_data_and_files_content' merged into a single implementation",
+        "No mutant_duplicate finding for these functions in `drift analyze`",
+        "All existing tests pass after the change"
+      ],
+      "depends_on": [],
+      "metadata": {
+        "similarity": 0.894,
+        "function_a": "test_multipart_files_content",
+        "function_b": "test_multipart_data_and_files_content",
+        "file_a": "tests/test_content.py",
+        "file_b": "tests/test_content.py",
+        "deliberate_pattern_risk": "May reflect deliberate polymorphism (Strategy, Adapter, Plugin). Verify intent before consolidating."
+      }
+    },
+    {
+      "id": "mds-b9bcb9e35d",
+      "signal_type": "mutant_duplicate",
+      "severity": "medium",
+      "priority": 11,
+      "title": "Near-duplicate (89%): Client.request \u2194 AsyncClient.request",
+      "description": "httpx\\_client.py:771 and httpx\\_client.py:1485 are 89% similar. Small differences may indicate copy-paste divergence.",
+      "action": "These two functions are 89% similar. Merge them into one, parameterizing the differences. If the differences are in data, pass them as arguments. If in behavior, use a strategy parameter or callback.",
+      "file_path": "httpx/_client.py",
+      "start_line": 771,
+      "end_line": null,
+      "related_files": [
+        "httpx/_client.py"
+      ],
+      "complexity": "low",
+      "expected_effect": "Eliminates near-duplicate (89% similar), reducing maintenance surface",
+      "success_criteria": [
+        "Functions 'Client.request' and 'AsyncClient.request' merged into a single implementation",
+        "No mutant_duplicate finding for these functions in `drift analyze`",
+        "All existing tests pass after the change"
+      ],
+      "depends_on": [],
+      "metadata": {
+        "similarity": 0.89,
+        "function_a": "Client.request",
+        "function_b": "AsyncClient.request",
+        "file_a": "httpx/_client.py",
+        "file_b": "httpx/_client.py",
+        "deliberate_pattern_risk": "May reflect deliberate polymorphism (Strategy, Adapter, Plugin). Verify intent before consolidating."
+      }
+    },
+    {
+      "id": "mds-b5d6fd4ba4",
+      "signal_type": "mutant_duplicate",
+      "severity": "medium",
+      "priority": 12,
+      "title": "Near-duplicate (86%): Client._send_single_request \u2194 AsyncClient._send_single_request",
+      "description": "httpx\\_client.py:1001 and httpx\\_client.py:1717 are 86% similar. Small differences may indicate copy-paste divergence.",
+      "action": "These two functions are 86% similar. Merge them into one, parameterizing the differences. If the differences are in data, pass them as arguments. If in behavior, use a strategy parameter or callback.",
+      "file_path": "httpx/_client.py",
+      "start_line": 1001,
+      "end_line": null,
+      "related_files": [
+        "httpx/_client.py"
+      ],
+      "complexity": "low",
+      "expected_effect": "Eliminates near-duplicate (86% similar), reducing maintenance surface",
+      "success_criteria": [
+        "Functions 'Client._send_single_request' and 'AsyncClient._send_single_request' merged into a single implementation",
+        "No mutant_duplicate finding for these functions in `drift analyze`",
+        "All existing tests pass after the change"
+      ],
+      "depends_on": [],
+      "metadata": {
+        "similarity": 0.855,
+        "function_a": "Client._send_single_request",
+        "function_b": "AsyncClient._send_single_request",
+        "file_a": "httpx/_client.py",
+        "file_b": "httpx/_client.py",
+        "deliberate_pattern_risk": "May reflect deliberate polymorphism (Strategy, Adapter, Plugin). Verify intent before consolidating."
+      }
+    },
+    {
+      "id": "pfs-958c6a599e",
+      "signal_type": "pattern_fragmentation",
+      "severity": "medium",
+      "priority": 13,
+      "title": "error_handling: 3 variants in tests/",
+      "description": "3 error_handling variants in tests/ (1/3 use canonical pattern).\n  - conftest.py:274 (serve_in_thread)\n  - test_wsgi.py:79 (raise_exc)",
+      "action": "Found 3 variants of the same pattern. Adopt the canonical variant '{\"handler_count\": 1, \"handlers\": [{\"actions\": [\"other\"], \"ex' across: tests/conftest.py, tests/test_wsgi.py. Extract a shared helper function and replace inline implementations.",
+      "file_path": "tests",
+      "start_line": null,
+      "end_line": null,
+      "related_files": [
+        "tests/conftest.py",
+        "tests/test_wsgi.py"
+      ],
+      "complexity": "medium",
+      "expected_effect": "Reduces pattern variants from 3 to 1 in tests, lowering PFS signal contribution to the drift score",
+      "success_criteria": [
+        "Pattern variants in tests reduced to 1 (canonical)",
+        "`drift analyze` reports no pattern_fragmentation finding for tests",
+        "All existing tests pass after the change"
+      ],
+      "depends_on": [],
+      "metadata": {
+        "category": "error_handling",
+        "num_variants": 3,
+        "variant_count": 3,
+        "canonical_count": 1,
+        "canonical_variant": "{\"handler_count\": 1, \"handlers\": [{\"actions\": [\"other\"], \"ex",
+        "module": "tests",
+        "total_instances": 3,
+        "deliberate_pattern_risk": "May reflect architecture transition or deliberate variation. Review whether variants serve distinct purposes."
+      }
+    },
+    {
+      "id": "eds-94246943e0",
+      "signal_type": "explainability_deficit",
+      "severity": "medium",
+      "priority": 14,
+      "title": "Unexplained complexity: trace",
+      "description": "Complexity: 14, LOC: 37. No docstring. No corresponding test found.",
+      "action": "Add a docstring explaining what 'trace' does, its parameters, and return value. Consider splitting this function (complexity: 14) into smaller, well-named sub-functions.",
+      "file_path": "httpx/_main.py",
+      "start_line": 212,
+      "end_line": 248,
+      "related_files": [],
+      "complexity": "low",
+      "expected_effect": "Improves code explainability, reducing onboarding cost and review friction",
+      "success_criteria": [
+        "Function 'trace' complexity \u2264 10 or split into sub-functions",
+        "Function 'trace' has a docstring",
+        "All existing tests pass after the change"
+      ],
+      "depends_on": [],
+      "metadata": {
+        "function_name": "trace",
+        "complexity": 14,
+        "loc": 37,
+        "has_docstring": false,
+        "has_test": false,
+        "has_return_type": true,
+        "explanation_score": 0.25
+      }
+    },
+    {
+      "id": "pfs-8412312314",
+      "signal_type": "pattern_fragmentation",
+      "severity": "medium",
+      "priority": 15,
+      "title": "error_handling: 2 variants in tests/client/",
+      "description": "2 error_handling variants in tests/client/ (2/4 use canonical pattern).\n  - test_proxies.py:105 (test_async_proxy_close)\n  - test_proxies.py:115 (test_sync_proxy_close)",
+      "action": "Found 2 variants of the same pattern. Adopt the canonical variant '{\"handler_count\": 1, \"handlers\": [{\"actions\": [\"other\"], \"ex' across: tests/client/test_proxies.py, tests/client/test_proxies.py. Extract a shared helper function and replace inline implementations.",
+      "file_path": "tests/client",
+      "start_line": null,
+      "end_line": null,
+      "related_files": [
+        "tests/client/test_proxies.py",
+        "tests/client/test_proxies.py"
+      ],
+      "complexity": "medium",
+      "expected_effect": "Reduces pattern variants from 2 to 1 in tests/client, lowering PFS signal contribution to the drift score",
+      "success_criteria": [
+        "Pattern variants in tests/client reduced to 1 (canonical)",
+        "`drift analyze` reports no pattern_fragmentation finding for tests/client",
+        "All existing tests pass after the change"
+      ],
+      "depends_on": [],
+      "metadata": {
+        "category": "error_handling",
+        "num_variants": 2,
+        "variant_count": 2,
+        "canonical_count": 2,
+        "canonical_variant": "{\"handler_count\": 1, \"handlers\": [{\"actions\": [\"other\"], \"ex",
+        "module": "tests/client",
+        "total_instances": 4,
+        "deliberate_pattern_risk": "May reflect architecture transition or deliberate variation. Review whether variants serve distinct purposes."
+      }
+    },
+    {
+      "id": "eds-cb0f34bd8b",
+      "signal_type": "explainability_deficit",
+      "severity": "low",
+      "priority": 16,
+      "title": "Unexplained complexity: create_ssl_context",
+      "description": "Complexity: 11, LOC: 47. No docstring. No corresponding test found.",
+      "action": "Add a docstring explaining what 'create_ssl_context' does, its parameters, and return value. Consider splitting this function (complexity: 11) into smaller, well-named sub-functions.",
+      "file_path": "httpx/_config.py",
+      "start_line": 23,
+      "end_line": 69,
+      "related_files": [],
+      "complexity": "low",
+      "expected_effect": "Improves code explainability, reducing onboarding cost and review friction",
+      "success_criteria": [
+        "Function 'create_ssl_context' complexity \u2264 10 or split into sub-functions",
+        "Function 'create_ssl_context' has a docstring",
+        "All existing tests pass after the change"
+      ],
+      "depends_on": [],
+      "metadata": {
+        "function_name": "create_ssl_context",
+        "complexity": 11,
+        "loc": 47,
+        "has_docstring": false,
+        "has_test": false,
+        "has_return_type": true,
+        "explanation_score": 0.25
+      }
+    },
+    {
+      "id": "eds-b960d56067",
+      "signal_type": "explainability_deficit",
+      "severity": "low",
+      "priority": 17,
+      "title": "Unexplained complexity: urlparse",
+      "description": "Complexity: 42, LOC: 133. No docstring.",
+      "action": "Add a docstring explaining what 'urlparse' does, its parameters, and return value. Consider splitting this function (complexity: 42) into smaller, well-named sub-functions.",
+      "file_path": "httpx/_urlparse.py",
+      "start_line": 213,
+      "end_line": 345,
+      "related_files": [],
+      "complexity": "low",
+      "expected_effect": "Improves code explainability, reducing onboarding cost and review friction",
+      "success_criteria": [
+        "Function 'urlparse' complexity \u2264 10 or split into sub-functions",
+        "Function 'urlparse' has a docstring",
+        "All existing tests pass after the change"
+      ],
+      "depends_on": [],
+      "metadata": {
+        "function_name": "urlparse",
+        "complexity": 42,
+        "loc": 133,
+        "has_docstring": false,
+        "has_test": true,
+        "has_return_type": true,
+        "explanation_score": 0.625
+      }
+    },
+    {
+      "id": "eds-c3b53a7591",
+      "signal_type": "explainability_deficit",
+      "severity": "low",
+      "priority": 18,
+      "title": "Unexplained complexity: ASGITransport.handle_async_request",
+      "description": "Complexity: 19, LOC: 89. No docstring.",
+      "action": "Add a docstring explaining what 'ASGITransport.handle_async_request' does, its parameters, and return value. Consider splitting this function (complexity: 19) into smaller, well-named sub-functions.",
+      "file_path": "httpx/_transports/asgi.py",
+      "start_line": 99,
+      "end_line": 187,
+      "related_files": [],
+      "complexity": "low",
+      "expected_effect": "Improves code explainability, reducing onboarding cost and review friction",
+      "success_criteria": [
+        "Function 'ASGITransport.handle_async_request' complexity \u2264 10 or split into sub-functions",
+        "Function 'ASGITransport.handle_async_request' has a docstring",
+        "All existing tests pass after the change"
+      ],
+      "depends_on": [],
+      "metadata": {
+        "function_name": "ASGITransport.handle_async_request",
+        "complexity": 19,
+        "loc": 89,
+        "has_docstring": false,
+        "has_test": true,
+        "has_return_type": true,
+        "explanation_score": 0.625
+      }
+    },
+    {
+      "id": "eds-cebfe5c53e",
+      "signal_type": "explainability_deficit",
+      "severity": "low",
+      "priority": 19,
+      "title": "Unexplained complexity: Request._prepare",
+      "description": "Complexity: 9, LOC: 20. No docstring. No corresponding test found.",
+      "action": "Add a docstring explaining what 'Request._prepare' does, its parameters, and return value.",
+      "file_path": "httpx/_models.py",
+      "start_line": 441,
+      "end_line": 460,
+      "related_files": [],
+      "complexity": "low",
+      "expected_effect": "Improves code explainability, reducing onboarding cost and review friction",
+      "success_criteria": [
+        "Function 'Request._prepare' has a docstring",
+        "All existing tests pass after the change"
+      ],
+      "depends_on": [],
+      "metadata": {
+        "function_name": "Request._prepare",
+        "complexity": 9,
+        "loc": 20,
+        "has_docstring": false,
+        "has_test": false,
+        "has_return_type": true,
+        "explanation_score": 0.25
+      }
+    },
+    {
+      "id": "eds-6ca90ca129",
+      "signal_type": "explainability_deficit",
+      "severity": "low",
+      "priority": 20,
+      "title": "Unexplained complexity: Client._send_handling_redirects",
+      "description": "Complexity: 8, LOC: 36. No docstring. No corresponding test found.",
+      "action": "Add a docstring explaining what 'Client._send_handling_redirects' does, its parameters, and return value.",
+      "file_path": "httpx/_client.py",
+      "start_line": 964,
+      "end_line": 999,
+      "related_files": [],
+      "complexity": "low",
+      "expected_effect": "Improves code explainability, reducing onboarding cost and review friction",
+      "success_criteria": [
+        "Function 'Client._send_handling_redirects' has a docstring",
+        "All existing tests pass after the change"
+      ],
+      "depends_on": [],
+      "metadata": {
+        "function_name": "Client._send_handling_redirects",
+        "complexity": 8,
+        "loc": 36,
+        "has_docstring": false,
+        "has_test": false,
+        "has_return_type": true,
+        "explanation_score": 0.25
+      }
+    },
+    {
+      "id": "eds-e19c7105b7",
+      "signal_type": "explainability_deficit",
+      "severity": "low",
+      "priority": 21,
+      "title": "Unexplained complexity: AsyncClient._send_handling_redirects",
+      "description": "Complexity: 8, LOC: 37. No docstring. No corresponding test found.",
+      "action": "Add a docstring explaining what 'AsyncClient._send_handling_redirects' does, its parameters, and return value.",
+      "file_path": "httpx/_client.py",
+      "start_line": 1679,
+      "end_line": 1715,
+      "related_files": [],
+      "complexity": "low",
+      "expected_effect": "Improves code explainability, reducing onboarding cost and review friction",
+      "success_criteria": [
+        "Function 'AsyncClient._send_handling_redirects' has a docstring",
+        "All existing tests pass after the change"
+      ],
+      "depends_on": [],
+      "metadata": {
+        "function_name": "AsyncClient._send_handling_redirects",
+        "complexity": 8,
+        "loc": 37,
+        "has_docstring": false,
+        "has_test": false,
+        "has_return_type": true,
+        "explanation_score": 0.25
+      }
+    },
+    {
+      "id": "eds-edd39845df",
+      "signal_type": "explainability_deficit",
+      "severity": "low",
+      "priority": 22,
+      "title": "Unexplained complexity: LineDecoder.decode",
+      "description": "Complexity: 8, LOC: 37. No docstring. No corresponding test found.",
+      "action": "Add a docstring explaining what 'LineDecoder.decode' does, its parameters, and return value.",
+      "file_path": "httpx/_decoders.py",
+      "start_line": 333,
+      "end_line": 369,
+      "related_files": [],
+      "complexity": "low",
+      "expected_effect": "Improves code explainability, reducing onboarding cost and review friction",
+      "success_criteria": [
+        "Function 'LineDecoder.decode' has a docstring",
+        "All existing tests pass after the change"
+      ],
+      "depends_on": [],
+      "metadata": {
+        "function_name": "LineDecoder.decode",
+        "complexity": 8,
+        "loc": 37,
+        "has_docstring": false,
+        "has_test": false,
+        "has_return_type": true,
+        "explanation_score": 0.25
+      }
+    },
+    {
+      "id": "eds-b30151629b",
+      "signal_type": "explainability_deficit",
+      "severity": "low",
+      "priority": 23,
+      "title": "Unexplained complexity: format_certificate",
+      "description": "Complexity: 8, LOC: 16. No docstring. No corresponding test found.",
+      "action": "Add a docstring explaining what 'format_certificate' does, its parameters, and return value.",
+      "file_path": "httpx/_main.py",
+      "start_line": 194,
+      "end_line": 209,
+      "related_files": [],
+      "complexity": "low",
+      "expected_effect": "Improves code explainability, reducing onboarding cost and review friction",
+      "success_criteria": [
+        "Function 'format_certificate' has a docstring",
+        "All existing tests pass after the change"
+      ],
+      "depends_on": [],
+      "metadata": {
+        "function_name": "format_certificate",
+        "complexity": 8,
+        "loc": 16,
+        "has_docstring": false,
+        "has_test": false,
+        "has_return_type": true,
+        "explanation_score": 0.25
+      }
+    },
+    {
+      "id": "eds-80e3905185",
+      "signal_type": "explainability_deficit",
+      "severity": "low",
+      "priority": 24,
+      "title": "Unexplained complexity: ASGITransport.send",
+      "description": "Complexity: 8, LOC: 20. No docstring. No corresponding test found.",
+      "action": "Add a docstring explaining what 'ASGITransport.send' does, its parameters, and return value.",
+      "file_path": "httpx/_transports/asgi.py",
+      "start_line": 148,
+      "end_line": 167,
+      "related_files": [],
+      "complexity": "low",
+      "expected_effect": "Improves code explainability, reducing onboarding cost and review friction",
+      "success_criteria": [
+        "Function 'ASGITransport.send' has a docstring",
+        "All existing tests pass after the change"
+      ],
+      "depends_on": [],
+      "metadata": {
+        "function_name": "ASGITransport.send",
+        "complexity": 8,
+        "loc": 20,
+        "has_docstring": false,
+        "has_test": false,
+        "has_return_type": true,
+        "explanation_score": 0.25
+      }
+    },
+    {
+      "id": "eds-93349ea4c1",
+      "signal_type": "explainability_deficit",
+      "severity": "low",
+      "priority": 25,
+      "title": "Unexplained complexity: encode_host",
+      "description": "Complexity: 8, LOC: 45. No docstring. No corresponding test found.",
+      "action": "Add a docstring explaining what 'encode_host' does, its parameters, and return value.",
+      "file_path": "httpx/_urlparse.py",
+      "start_line": 348,
+      "end_line": 392,
+      "related_files": [],
+      "complexity": "low",
+      "expected_effect": "Improves code explainability, reducing onboarding cost and review friction",
+      "success_criteria": [
+        "Function 'encode_host' has a docstring",
+        "All existing tests pass after the change"
+      ],
+      "depends_on": [],
+      "metadata": {
+        "function_name": "encode_host",
+        "complexity": 8,
+        "loc": 45,
+        "has_docstring": false,
+        "has_test": false,
+        "has_return_type": true,
+        "explanation_score": 0.25
+      }
+    },
+    {
+      "id": "eds-605f4ad693",
+      "signal_type": "explainability_deficit",
+      "severity": "low",
+      "priority": 26,
+      "title": "Unexplained complexity: URLPattern.matches",
+      "description": "Complexity: 8, LOC: 12. No docstring. No corresponding test found.",
+      "action": "Add a docstring explaining what 'URLPattern.matches' does, its parameters, and return value.",
+      "file_path": "httpx/_utils.py",
+      "start_line": 192,
+      "end_line": 203,
+      "related_files": [],
+      "complexity": "low",
+      "expected_effect": "Improves code explainability, reducing onboarding cost and review friction",
+      "success_criteria": [
+        "Function 'URLPattern.matches' has a docstring",
+        "All existing tests pass after the change"
+      ],
+      "depends_on": [],
+      "metadata": {
+        "function_name": "URLPattern.matches",
+        "complexity": 8,
+        "loc": 12,
+        "has_docstring": false,
+        "has_test": false,
+        "has_return_type": true,
+        "explanation_score": 0.25
+      }
+    },
+    {
+      "id": "doc-52942989e2",
+      "signal_type": "doc_impl_drift",
+      "severity": "info",
+      "priority": 27,
+      "title": "Source directory not mentioned in README: tests/",
+      "description": "Directory 'tests/' contains source files but is not mentioned in README.",
+      "action": "Add a section for 'tests/' to README.md with a short description of the module.",
+      "file_path": "tests",
+      "start_line": null,
+      "end_line": null,
+      "related_files": [],
+      "complexity": "medium",
+      "expected_effect": "Reduces architectural drift score",
+      "success_criteria": [
+        "All existing tests pass after the change"
+      ],
+      "depends_on": [],
+      "metadata": {
+        "undocumented_dir": "tests"
+      }
+    }
+  ]
+}

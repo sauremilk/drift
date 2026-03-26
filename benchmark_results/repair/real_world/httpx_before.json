@@ -1,0 +1,777 @@
+{
+  "version": "0.5.0",
+  "repo": "C:/Users/mickg/AppData/Local/Temp/drift_real_repair_httpx",
+  "analyzed_at": "2026-03-26T18:38:45.744796+00:00",
+  "drift_score": 0.527,
+  "severity": "medium",
+  "trend": {
+    "previous_score": null,
+    "delta": null,
+    "direction": "baseline",
+    "recent_scores": [],
+    "history_depth": 0,
+    "transition_ratio": 0.0
+  },
+  "summary": {
+    "total_files": 60,
+    "total_functions": 1134,
+    "ai_attributed_ratio": 0.0,
+    "analysis_duration_seconds": 3.55
+  },
+  "modules": [
+    {
+      "path": "httpx",
+      "drift_score": 0.381,
+      "severity": "low",
+      "signal_scores": {
+        "pattern_fragmentation": 0.2797,
+        "mutant_duplicate": 0.5383,
+        "explainability_deficit": 0.3451,
+        "bypass_accumulation": 0.2891
+      },
+      "finding_count": 16,
+      "ai_ratio": 0.0
+    },
+    {
+      "path": "tests",
+      "drift_score": 0.27,
+      "severity": "low",
+      "signal_scores": {
+        "pattern_fragmentation": 0.1927,
+        "mutant_duplicate": 0.3689,
+        "doc_impl_drift": 0.0434
+      },
+      "finding_count": 4,
+      "ai_ratio": 0.0
+    },
+    {
+      "path": "httpx/_transports",
+      "drift_score": 0.216,
+      "severity": "low",
+      "signal_scores": {
+        "pattern_fragmentation": 0.2313,
+        "mutant_duplicate": 0.2432,
+        "explainability_deficit": 0.1503
+      },
+      "finding_count": 4,
+      "ai_ratio": 0.0
+    },
+    {
+      "path": "tests/client",
+      "drift_score": 0.144,
+      "severity": "info",
+      "signal_scores": {
+        "pattern_fragmentation": 0.1445,
+        "test_polarity_deficit": 0.2659
+      },
+      "finding_count": 2,
+      "ai_ratio": 0.0
+    },
+    {
+      "path": "tests/models",
+      "drift_score": 0.0,
+      "severity": "info",
+      "signal_scores": {
+        "test_polarity_deficit": 0.2636
+      },
+      "finding_count": 1,
+      "ai_ratio": 0.0
+    }
+  ],
+  "findings": [
+    {
+      "signal": "bypass_accumulation",
+      "severity": "medium",
+      "score": 1.0,
+      "impact": 0.0,
+      "title": "High bypass marker density in _types.py",
+      "description": "httpx\\_types.py has 9 bypass markers across ~115 LOC (density 0.078, threshold 0.050). Breakdown: coverage: 5, lint: 4.",
+      "fix": "Review bypass markers in '_types.py' and resolve the underlying issues they suppress. Each marker represents a quality shortcut that may mask real problems.",
+      "file": "httpx/_types.py",
+      "start_line": 1,
+      "end_line": null,
+      "related_files": [],
+      "ai_attributed": false,
+      "metadata": {
+        "total_markers": 9,
+        "markers_by_category": {
+          "type_safety": 0,
+          "lint": 4,
+          "coverage": 5,
+          "test": 0,
+          "deferred": 0
+        },
+        "bypass_density": 0.0783,
+        "module_median_density": 0.0116
+      }
+    },
+    {
+      "signal": "doc_impl_drift",
+      "severity": "info",
+      "score": 0.15,
+      "impact": 0.0,
+      "title": "Source directory not mentioned in README: tests/",
+      "description": "Directory 'tests/' contains source files but is not mentioned in README.",
+      "fix": "Add a section for 'tests/' to README.md with a short description of the module.",
+      "file": "tests",
+      "start_line": null,
+      "end_line": null,
+      "related_files": [],
+      "ai_attributed": false,
+      "metadata": {
+        "undocumented_dir": "tests"
+      }
+    },
+    {
+      "signal": "explainability_deficit",
+      "severity": "low",
+      "score": 0.3,
+      "impact": 0.036,
+      "title": "Unexplained complexity: Client._send_handling_redirects",
+      "description": "Complexity: 8, LOC: 36. No docstring. No corresponding test found.",
+      "fix": "Funktion Client._send_handling_redirects (Complexity 8): F\u00fcge Docstring, Tests hinzu.",
+      "file": "httpx/_client.py",
+      "start_line": 964,
+      "end_line": 999,
+      "related_files": [],
+      "ai_attributed": false,
+      "metadata": {
+        "function_name": "Client._send_handling_redirects",
+        "complexity": 8,
+        "loc": 36,
+        "has_docstring": false,
+        "has_test": false,
+        "has_return_type": true,
+        "explanation_score": 0.25
+      }
+    },
+    {
+      "signal": "explainability_deficit",
+      "severity": "low",
+      "score": 0.3,
+      "impact": 0.036,
+      "title": "Unexplained complexity: AsyncClient._send_handling_redirects",
+      "description": "Complexity: 8, LOC: 37. No docstring. No corresponding test found.",
+      "fix": "Funktion AsyncClient._send_handling_redirects (Complexity 8): F\u00fcge Docstring, Tests hinzu.",
+      "file": "httpx/_client.py",
+      "start_line": 1679,
+      "end_line": 1715,
+      "related_files": [],
+      "ai_attributed": false,
+      "metadata": {
+        "function_name": "AsyncClient._send_handling_redirects",
+        "complexity": 8,
+        "loc": 37,
+        "has_docstring": false,
+        "has_test": false,
+        "has_return_type": true,
+        "explanation_score": 0.25
+      }
+    },
+    {
+      "signal": "explainability_deficit",
+      "severity": "low",
+      "score": 0.413,
+      "impact": 0.0496,
+      "title": "Unexplained complexity: create_ssl_context",
+      "description": "Complexity: 11, LOC: 47. No docstring. No corresponding test found.",
+      "fix": "Funktion create_ssl_context (Complexity 11): F\u00fcge Docstring, Tests hinzu.",
+      "file": "httpx/_config.py",
+      "start_line": 23,
+      "end_line": 69,
+      "related_files": [],
+      "ai_attributed": false,
+      "metadata": {
+        "function_name": "create_ssl_context",
+        "complexity": 11,
+        "loc": 47,
+        "has_docstring": false,
+        "has_test": false,
+        "has_return_type": true,
+        "explanation_score": 0.25
+      }
+    },
+    {
+      "signal": "explainability_deficit",
+      "severity": "low",
+      "score": 0.3,
+      "impact": 0.036,
+      "title": "Unexplained complexity: LineDecoder.decode",
+      "description": "Complexity: 8, LOC: 37. No docstring. No corresponding test found.",
+      "fix": "Funktion LineDecoder.decode (Complexity 8): F\u00fcge Docstring, Tests hinzu.",
+      "file": "httpx/_decoders.py",
+      "start_line": 333,
+      "end_line": 369,
+      "related_files": [],
+      "ai_attributed": false,
+      "metadata": {
+        "function_name": "LineDecoder.decode",
+        "complexity": 8,
+        "loc": 37,
+        "has_docstring": false,
+        "has_test": false,
+        "has_return_type": true,
+        "explanation_score": 0.25
+      }
+    },
+    {
+      "signal": "explainability_deficit",
+      "severity": "low",
+      "score": 0.3,
+      "impact": 0.036,
+      "title": "Unexplained complexity: format_certificate",
+      "description": "Complexity: 8, LOC: 16. No docstring. No corresponding test found.",
+      "fix": "Funktion format_certificate (Complexity 8): F\u00fcge Docstring, Tests hinzu.",
+      "file": "httpx/_main.py",
+      "start_line": 194,
+      "end_line": 209,
+      "related_files": [],
+      "ai_attributed": false,
+      "metadata": {
+        "function_name": "format_certificate",
+        "complexity": 8,
+        "loc": 16,
+        "has_docstring": false,
+        "has_test": false,
+        "has_return_type": true,
+        "explanation_score": 0.25
+      }
+    },
+    {
+      "signal": "explainability_deficit",
+      "severity": "medium",
+      "score": 0.525,
+      "impact": 0.063,
+      "title": "Unexplained complexity: trace",
+      "description": "Complexity: 14, LOC: 37. No docstring. No corresponding test found.",
+      "fix": "Funktion trace (Complexity 14): F\u00fcge Docstring, Tests hinzu.",
+      "file": "httpx/_main.py",
+      "start_line": 212,
+      "end_line": 248,
+      "related_files": [],
+      "ai_attributed": false,
+      "metadata": {
+        "function_name": "trace",
+        "complexity": 14,
+        "loc": 37,
+        "has_docstring": false,
+        "has_test": false,
+        "has_return_type": true,
+        "explanation_score": 0.25
+      }
+    },
+    {
+      "signal": "explainability_deficit",
+      "severity": "low",
+      "score": 0.338,
+      "impact": 0.0406,
+      "title": "Unexplained complexity: Request._prepare",
+      "description": "Complexity: 9, LOC: 20. No docstring. No corresponding test found.",
+      "fix": "Funktion Request._prepare (Complexity 9): F\u00fcge Docstring, Tests hinzu.",
+      "file": "httpx/_models.py",
+      "start_line": 441,
+      "end_line": 460,
+      "related_files": [],
+      "ai_attributed": false,
+      "metadata": {
+        "function_name": "Request._prepare",
+        "complexity": 9,
+        "loc": 20,
+        "has_docstring": false,
+        "has_test": false,
+        "has_return_type": true,
+        "explanation_score": 0.25
+      }
+    },
+    {
+      "signal": "explainability_deficit",
+      "severity": "low",
+      "score": 0.356,
+      "impact": 0.0427,
+      "title": "Unexplained complexity: ASGITransport.handle_async_request",
+      "description": "Complexity: 19, LOC: 89. No docstring.",
+      "fix": "Funktion ASGITransport.handle_async_request (Complexity 19): F\u00fcge Docstring hinzu.",
+      "file": "httpx/_transports/asgi.py",
+      "start_line": 99,
+      "end_line": 187,
+      "related_files": [],
+      "ai_attributed": false,
+      "metadata": {
+        "function_name": "ASGITransport.handle_async_request",
+        "complexity": 19,
+        "loc": 89,
+        "has_docstring": false,
+        "has_test": true,
+        "has_return_type": true,
+        "explanation_score": 0.625
+      }
+    },
+    {
+      "signal": "explainability_deficit",
+      "severity": "low",
+      "score": 0.3,
+      "impact": 0.036,
+      "title": "Unexplained complexity: ASGITransport.send",
+      "description": "Complexity: 8, LOC: 20. No docstring. No corresponding test found.",
+      "fix": "Funktion ASGITransport.send (Complexity 8): F\u00fcge Docstring, Tests hinzu.",
+      "file": "httpx/_transports/asgi.py",
+      "start_line": 148,
+      "end_line": 167,
+      "related_files": [],
+      "ai_attributed": false,
+      "metadata": {
+        "function_name": "ASGITransport.send",
+        "complexity": 8,
+        "loc": 20,
+        "has_docstring": false,
+        "has_test": false,
+        "has_return_type": true,
+        "explanation_score": 0.25
+      }
+    },
+    {
+      "signal": "explainability_deficit",
+      "severity": "low",
+      "score": 0.375,
+      "impact": 0.045,
+      "title": "Unexplained complexity: urlparse",
+      "description": "Complexity: 42, LOC: 133. No docstring.",
+      "fix": "Funktion urlparse (Complexity 42): F\u00fcge Docstring hinzu.",
+      "file": "httpx/_urlparse.py",
+      "start_line": 213,
+      "end_line": 345,
+      "related_files": [],
+      "ai_attributed": false,
+      "metadata": {
+        "function_name": "urlparse",
+        "complexity": 42,
+        "loc": 133,
+        "has_docstring": false,
+        "has_test": true,
+        "has_return_type": true,
+        "explanation_score": 0.625
+      }
+    },
+    {
+      "signal": "explainability_deficit",
+      "severity": "low",
+      "score": 0.3,
+      "impact": 0.036,
+      "title": "Unexplained complexity: encode_host",
+      "description": "Complexity: 8, LOC: 45. No docstring. No corresponding test found.",
+      "fix": "Funktion encode_host (Complexity 8): F\u00fcge Docstring, Tests hinzu.",
+      "file": "httpx/_urlparse.py",
+      "start_line": 348,
+      "end_line": 392,
+      "related_files": [],
+      "ai_attributed": false,
+      "metadata": {
+        "function_name": "encode_host",
+        "complexity": 8,
+        "loc": 45,
+        "has_docstring": false,
+        "has_test": false,
+        "has_return_type": true,
+        "explanation_score": 0.25
+      }
+    },
+    {
+      "signal": "explainability_deficit",
+      "severity": "low",
+      "score": 0.3,
+      "impact": 0.036,
+      "title": "Unexplained complexity: URLPattern.matches",
+      "description": "Complexity: 8, LOC: 12. No docstring. No corresponding test found.",
+      "fix": "Funktion URLPattern.matches (Complexity 8): F\u00fcge Docstring, Tests hinzu.",
+      "file": "httpx/_utils.py",
+      "start_line": 192,
+      "end_line": 203,
+      "related_files": [],
+      "ai_attributed": false,
+      "metadata": {
+        "function_name": "URLPattern.matches",
+        "complexity": 8,
+        "loc": 12,
+        "has_docstring": false,
+        "has_test": false,
+        "has_return_type": true,
+        "explanation_score": 0.25
+      }
+    },
+    {
+      "signal": "mutant_duplicate",
+      "severity": "high",
+      "score": 0.9,
+      "impact": 0.2591,
+      "title": "Exact duplicates (2\u00d7): DeflateDecoder.flush, GZipDecoder.flush",
+      "description": "2 identical copies (5 lines each) at: httpx\\_decoders.py:78, httpx\\_decoders.py:101. Consider consolidating.",
+      "fix": "Extrahiere DeflateDecoder.flush() in httpx/shared.py. 2 identische Kopien (Similarity: 1.00). Aufwand: S.",
+      "file": "httpx/_decoders.py",
+      "start_line": 78,
+      "end_line": null,
+      "related_files": [
+        "httpx/_decoders.py"
+      ],
+      "ai_attributed": false,
+      "metadata": {
+        "similarity": 1.0,
+        "body_hash": "4b30f599640f2f76",
+        "group_size": 2,
+        "functions": [
+          {
+            "name": "DeflateDecoder.flush",
+            "file": "httpx/_decoders.py",
+            "line": 78
+          },
+          {
+            "name": "GZipDecoder.flush",
+            "file": "httpx/_decoders.py",
+            "line": 101
+          }
+        ],
+        "deliberate_pattern_risk": "May reflect deliberate polymorphism (Strategy, Adapter, Plugin). Verify intent before consolidating."
+      }
+    },
+    {
+      "signal": "mutant_duplicate",
+      "severity": "medium",
+      "score": 0.7270440251572328,
+      "impact": 0.2093,
+      "title": "Near-duplicate (86%): Client._send_single_request \u2194 AsyncClient._send_single_request",
+      "description": "httpx\\_client.py:1001 and httpx\\_client.py:1717 are 86% similar. Small differences may indicate copy-paste divergence.",
+      "fix": "Extrahiere Client._send_single_request() in httpx/shared.py. Similarity: 86%. Aufwand: S.",
+      "file": "httpx/_client.py",
+      "start_line": 1001,
+      "end_line": null,
+      "related_files": [
+        "httpx/_client.py"
+      ],
+      "ai_attributed": false,
+      "metadata": {
+        "similarity": 0.855,
+        "function_a": "Client._send_single_request",
+        "function_b": "AsyncClient._send_single_request",
+        "file_a": "httpx/_client.py",
+        "file_b": "httpx/_client.py",
+        "deliberate_pattern_risk": "May reflect deliberate polymorphism (Strategy, Adapter, Plugin). Verify intent before consolidating."
+      }
+    },
+    {
+      "signal": "mutant_duplicate",
+      "severity": "medium",
+      "score": 0.760248447204969,
+      "impact": 0.2188,
+      "title": "Near-duplicate (89%): test_multipart_files_content \u2194 test_multipart_data_and_files_content",
+      "description": "tests\\test_content.py:256 and tests\\test_content.py:299 are 89% similar. Small differences may indicate copy-paste divergence.",
+      "fix": "Extrahiere test_multipart_files_content() in tests/shared.py. Similarity: 89%. Aufwand: S.",
+      "file": "tests/test_content.py",
+      "start_line": 256,
+      "end_line": null,
+      "related_files": [
+        "tests/test_content.py"
+      ],
+      "ai_attributed": false,
+      "metadata": {
+        "similarity": 0.894,
+        "function_a": "test_multipart_files_content",
+        "function_b": "test_multipart_data_and_files_content",
+        "file_a": "tests/test_content.py",
+        "file_b": "tests/test_content.py",
+        "deliberate_pattern_risk": "May reflect deliberate polymorphism (Strategy, Adapter, Plugin). Verify intent before consolidating."
+      }
+    },
+    {
+      "signal": "mutant_duplicate",
+      "severity": "medium",
+      "score": 0.756544502617801,
+      "impact": 0.2178,
+      "title": "Near-duplicate (89%): Client.request \u2194 AsyncClient.request",
+      "description": "httpx\\_client.py:771 and httpx\\_client.py:1485 are 89% similar. Small differences may indicate copy-paste divergence.",
+      "fix": "Extrahiere Client.request() in httpx/shared.py. Similarity: 89%. Aufwand: S.",
+      "file": "httpx/_client.py",
+      "start_line": 771,
+      "end_line": null,
+      "related_files": [
+        "httpx/_client.py"
+      ],
+      "ai_attributed": false,
+      "metadata": {
+        "similarity": 0.89,
+        "function_a": "Client.request",
+        "function_b": "AsyncClient.request",
+        "file_a": "httpx/_client.py",
+        "file_b": "httpx/_client.py",
+        "deliberate_pattern_risk": "May reflect deliberate polymorphism (Strategy, Adapter, Plugin). Verify intent before consolidating."
+      }
+    },
+    {
+      "signal": "mutant_duplicate",
+      "severity": "high",
+      "score": 0.85,
+      "impact": 0.2447,
+      "title": "Near-duplicate (100%): test_digest_auth_rfc_7616_md5 \u2194 test_digest_auth_rfc_7616_sha_256",
+      "description": "tests\\test_auth.py:191 and tests\\test_auth.py:251 are 100% similar. Small differences may indicate copy-paste divergence.",
+      "fix": "Extrahiere test_digest_auth_rfc_7616_md5() in tests/shared.py. Similarity: 100%. Aufwand: S.",
+      "file": "tests/test_auth.py",
+      "start_line": 191,
+      "end_line": null,
+      "related_files": [
+        "tests/test_auth.py"
+      ],
+      "ai_attributed": false,
+      "metadata": {
+        "similarity": 1.0,
+        "function_a": "test_digest_auth_rfc_7616_md5",
+        "function_b": "test_digest_auth_rfc_7616_sha_256",
+        "file_a": "tests/test_auth.py",
+        "file_b": "tests/test_auth.py",
+        "deliberate_pattern_risk": "May reflect deliberate polymorphism (Strategy, Adapter, Plugin). Verify intent before consolidating."
+      }
+    },
+    {
+      "signal": "mutant_duplicate",
+      "severity": "high",
+      "score": 0.8245635910224438,
+      "impact": 0.2373,
+      "title": "Near-duplicate (97%): Client.__init__ \u2194 AsyncClient.__init__",
+      "description": "httpx\\_client.py:639 and httpx\\_client.py:1353 are 97% similar. Small differences may indicate copy-paste divergence.",
+      "fix": "Extrahiere Client.__init__() in httpx/shared.py. Similarity: 97%. Aufwand: S.",
+      "file": "httpx/_client.py",
+      "start_line": 639,
+      "end_line": null,
+      "related_files": [
+        "httpx/_client.py"
+      ],
+      "ai_attributed": false,
+      "metadata": {
+        "similarity": 0.97,
+        "function_a": "Client.__init__",
+        "function_b": "AsyncClient.__init__",
+        "file_a": "httpx/_client.py",
+        "file_b": "httpx/_client.py",
+        "deliberate_pattern_risk": "May reflect deliberate polymorphism (Strategy, Adapter, Plugin). Verify intent before consolidating."
+      }
+    },
+    {
+      "signal": "mutant_duplicate",
+      "severity": "high",
+      "score": 0.8411688311688311,
+      "impact": 0.2421,
+      "title": "Near-duplicate (99%): HTTPTransport.__init__ \u2194 AsyncHTTPTransport.__init__",
+      "description": "httpx\\_transports\\default.py:136 and httpx\\_transports\\default.py:280 are 99% similar. Small differences may indicate copy-paste divergence.",
+      "fix": "Extrahiere HTTPTransport.__init__() in httpx/_transports/shared.py. Similarity: 99%. Aufwand: S.",
+      "file": "httpx/_transports/default.py",
+      "start_line": 136,
+      "end_line": null,
+      "related_files": [
+        "httpx/_transports/default.py"
+      ],
+      "ai_attributed": false,
+      "metadata": {
+        "similarity": 0.99,
+        "function_a": "HTTPTransport.__init__",
+        "function_b": "AsyncHTTPTransport.__init__",
+        "file_a": "httpx/_transports/default.py",
+        "file_b": "httpx/_transports/default.py",
+        "deliberate_pattern_risk": "May reflect deliberate polymorphism (Strategy, Adapter, Plugin). Verify intent before consolidating."
+      }
+    },
+    {
+      "signal": "pattern_fragmentation",
+      "severity": "high",
+      "score": 0.967741935483871,
+      "impact": 1.028,
+      "title": "error_handling: 31 variants in httpx/",
+      "description": "31 error_handling variants in httpx/ (4/49 use canonical pattern).\n  - _auth.py:82 (Auth.sync_auth_flow)\n  - _auth.py:107 (Auth.async_auth_flow)\n  - _auth.py:242 (DigestAuth._parse_challenge)",
+      "fix": "Konsolidiere auf das dominante Pattern (4\u00d7). 45 Abweichung(en) in: _auth.py, _client.py, _decoders.py, _exceptions.py, _main.py und 40 weitere.",
+      "file": "httpx",
+      "start_line": null,
+      "end_line": null,
+      "related_files": [
+        "httpx/_auth.py",
+        "httpx/_auth.py",
+        "httpx/_auth.py",
+        "httpx/_client.py",
+        "httpx/_client.py",
+        "httpx/_client.py",
+        "httpx/_client.py",
+        "httpx/_client.py",
+        "httpx/_client.py",
+        "httpx/_client.py",
+        "httpx/_client.py",
+        "httpx/_client.py",
+        "httpx/_client.py",
+        "httpx/_client.py",
+        "httpx/_decoders.py",
+        "httpx/_decoders.py",
+        "httpx/_decoders.py",
+        "httpx/_decoders.py",
+        "httpx/_decoders.py",
+        "httpx/_decoders.py",
+        "httpx/_decoders.py",
+        "httpx/_exceptions.py",
+        "httpx/_main.py",
+        "httpx/_main.py",
+        "httpx/_models.py",
+        "httpx/_models.py",
+        "httpx/_main.py",
+        "httpx/_main.py",
+        "httpx/_models.py",
+        "httpx/_models.py",
+        "httpx/_models.py",
+        "httpx/_models.py",
+        "httpx/_status_codes.py",
+        "httpx/_models.py",
+        "httpx/_models.py",
+        "httpx/_models.py",
+        "httpx/_multipart.py",
+        "httpx/_urlparse.py",
+        "httpx/_urlparse.py",
+        "httpx/_urlparse.py",
+        "httpx/_urlparse.py",
+        "httpx/_utils.py",
+        "httpx/_utils.py",
+        "httpx/_utils.py",
+        "httpx/_utils.py"
+      ],
+      "ai_attributed": false,
+      "metadata": {
+        "category": "error_handling",
+        "num_variants": 31,
+        "variant_count": 31,
+        "canonical_count": 4,
+        "canonical_variant": "{\"handler_count\": 0, \"handlers\": [], \"has_else\": false, \"has",
+        "module": "httpx",
+        "total_instances": 49,
+        "deliberate_pattern_risk": "May reflect architecture transition or deliberate variation. Review whether variants serve distinct purposes."
+      }
+    },
+    {
+      "signal": "pattern_fragmentation",
+      "severity": "high",
+      "score": 0.8,
+      "impact": 0.4593,
+      "title": "error_handling: 5 variants in httpx/_transports/",
+      "description": "5 error_handling variants in httpx/_transports/ (2/6 use canonical pattern).\n  - asgi.py:30 (is_running_trio)\n  - asgi.py:169 (ASGITransport.handle_async_request)\n  - asgi.py:141 (ASGITransport.receive)",
+      "fix": "Konsolidiere auf das dominante Pattern (2\u00d7). 4 Abweichung(en) in: asgi.py, default.py.",
+      "file": "httpx/_transports",
+      "start_line": null,
+      "end_line": null,
+      "related_files": [
+        "httpx/_transports/asgi.py",
+        "httpx/_transports/asgi.py",
+        "httpx/_transports/asgi.py",
+        "httpx/_transports/default.py"
+      ],
+      "ai_attributed": false,
+      "metadata": {
+        "category": "error_handling",
+        "num_variants": 5,
+        "variant_count": 5,
+        "canonical_count": 2,
+        "canonical_variant": "{\"handler_count\": 1, \"handlers\": [{\"actions\": [\"raise\"], \"ex",
+        "module": "httpx/_transports",
+        "total_instances": 6,
+        "deliberate_pattern_risk": "May reflect architecture transition or deliberate variation. Review whether variants serve distinct purposes."
+      }
+    },
+    {
+      "signal": "pattern_fragmentation",
+      "severity": "medium",
+      "score": 0.5,
+      "impact": 0.2308,
+      "title": "error_handling: 2 variants in tests/client/",
+      "description": "2 error_handling variants in tests/client/ (2/4 use canonical pattern).\n  - test_proxies.py:105 (test_async_proxy_close)\n  - test_proxies.py:115 (test_sync_proxy_close)",
+      "fix": "Konsolidiere auf das dominante Pattern (2\u00d7). 2 Abweichung(en) in: test_proxies.py.",
+      "file": "tests/client",
+      "start_line": null,
+      "end_line": null,
+      "related_files": [
+        "tests/client/test_proxies.py",
+        "tests/client/test_proxies.py"
+      ],
+      "ai_attributed": false,
+      "metadata": {
+        "category": "error_handling",
+        "num_variants": 2,
+        "variant_count": 2,
+        "canonical_count": 2,
+        "canonical_variant": "{\"handler_count\": 1, \"handlers\": [{\"actions\": [\"other\"], \"ex",
+        "module": "tests/client",
+        "total_instances": 4,
+        "deliberate_pattern_risk": "May reflect architecture transition or deliberate variation. Review whether variants serve distinct purposes."
+      }
+    },
+    {
+      "signal": "pattern_fragmentation",
+      "severity": "medium",
+      "score": 0.6666666666666667,
+      "impact": 0.3078,
+      "title": "error_handling: 3 variants in tests/",
+      "description": "3 error_handling variants in tests/ (1/3 use canonical pattern).\n  - conftest.py:274 (serve_in_thread)\n  - test_wsgi.py:79 (raise_exc)",
+      "fix": "Konsolidiere auf das dominante Pattern (1\u00d7). 2 Abweichung(en) in: conftest.py, test_wsgi.py.",
+      "file": "tests",
+      "start_line": null,
+      "end_line": null,
+      "related_files": [
+        "tests/conftest.py",
+        "tests/test_wsgi.py"
+      ],
+      "ai_attributed": false,
+      "metadata": {
+        "category": "error_handling",
+        "num_variants": 3,
+        "variant_count": 3,
+        "canonical_count": 1,
+        "canonical_variant": "{\"handler_count\": 1, \"handlers\": [{\"actions\": [\"other\"], \"ex",
+        "module": "tests",
+        "total_instances": 3,
+        "deliberate_pattern_risk": "May reflect architecture transition or deliberate variation. Review whether variants serve distinct purposes."
+      }
+    },
+    {
+      "signal": "test_polarity_deficit",
+      "severity": "high",
+      "score": 0.92,
+      "impact": 0.0,
+      "title": "Happy-path-only test suite in tests/client/",
+      "description": "168 test functions with 389 positive / 34 negative assertions (negative ratio 8.0%). 8 boundary-named tests.",
+      "fix": "Add negative tests to tests/client/ (168 test functions, only 34 negative assertions): use pytest.raises for expected exceptions, test edge cases (empty, None, invalid input).",
+      "file": "tests/client",
+      "start_line": null,
+      "end_line": null,
+      "related_files": [],
+      "ai_attributed": false,
+      "metadata": {
+        "test_functions": 168,
+        "positive_assertions": 389,
+        "negative_assertions": 34,
+        "negative_ratio": 0.08037825059101655,
+        "boundary_functions": 8
+      }
+    },
+    {
+      "signal": "test_polarity_deficit",
+      "severity": "high",
+      "score": 0.912,
+      "impact": 0.0,
+      "title": "Happy-path-only test suite in tests/models/",
+      "description": "199 test functions with 517 positive / 50 negative assertions (negative ratio 8.8%). 21 boundary-named tests.",
+      "fix": "Add negative tests to tests/models/ (199 test functions, only 50 negative assertions): use pytest.raises for expected exceptions, test edge cases (empty, None, invalid input).",
+      "file": "tests/models",
+      "start_line": null,
+      "end_line": null,
+      "related_files": [],
+      "ai_attributed": false,
+      "metadata": {
+        "test_functions": 199,
+        "positive_assertions": 517,
+        "negative_assertions": 50,
+        "negative_ratio": 0.08818342151675485,
+        "boundary_functions": 21
+      }
+    }
+  ],
+  "suppressed_count": 0,
+  "context_tagged_count": 0
+}
