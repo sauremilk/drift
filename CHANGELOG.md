@@ -3,11 +3,31 @@
 All notable changes to drift-analyzer are documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.6.0] – 2026-03-26
+
+### Added
+
+- **Expanded TypeScript analysis**: Added full-semantic TypeScript support with improved import resolution, workspace assignment, vendor filtering, and dedicated TS/TSX architectural rules with benchmark coverage.
+- **Delta-first interpretation and context tags**: Added ADR-005 delta-first score interpretation and ADR-006 context tagging so score changes and migration phases are visible and actionable in CLI and JSON output.
+- **3 Consistency Proxy Signals (ADR-007)**: BEM (Broad Exception Monoculture), TPD (Test Polarity Deficit), and GCD (Guard Clause Deficit) added as report-only findings with weight `0.00` plus empirical validation artifacts.
+- **Adoption and trust material**: Added report-only CI onboarding guidance, concrete example findings, a central start-here path, and expanded trust/evidence documentation for safer rollout.
+
+### Changed
+
+- **Release hygiene and feature evidence**: Strengthened pre-push quality checks and enforced tests plus empirical artifacts for `feat:` work.
+- **Public docs and onboarding**: Expanded README, comparisons, integrations, FAQ, use cases, and rollout guidance to align public messaging with actual maturity.
+- **TypeScript performance and discovery**: Reduced redundant discovery work and improved workspace-boundary handling in TS analysis.
+
+### Fixed
+
+- **Core analysis hardening**: Improved pipeline, config, suppression, cache, and observational analysis behavior to reduce rollout surprises.
+- **Delta gate correctness**: Tightened typing and snapshot handling for delta-based checks while keeping existing `fail_on` behavior backward compatible.
+- **Trust and rollout defaults**: Aligned defaults and messaging around conservative report-only rollout.
+
 ## [0.5.0] – 2026-03-23
 
 ### Added
 
-- **3 Consistency Proxy Signals (ADR-007)**: BEM (Broad Exception Monoculture), TPD (Test Polarity Deficit), GCD (Guard Clause Deficit) — all report-only with weight `0.00`. Detects uniform broad exception handling, happy-path-only test suites, and modules uniformly missing early guard clauses. See [ADR-007](docs/adr/007-consistency-proxy-signals.md).
 - **CLI `--sort-by` + `--max-findings`**: `analyze` command now accepts `--sort-by impact|score` (default: impact) and `--max-findings N` (default: 20) for prioritised output.
 - **AVS Mutation Tests** (`tests/test_avs_mutations.py`): 41 new tests across 8 classes covering DB→API violations, omnilayer directions, circular-dependency detection, hub-dampening calibration, and policy-boundary enforcement.
 - **Benchmark corpus ×15**: Extended from 5 to 15 real-world repositories (+Flask, Starlette, Django, Celery, Poetry, Requests, SQLModel, Uvicorn, Sanic, Rich). 2 642 total findings. Precision strict 97.3%.
