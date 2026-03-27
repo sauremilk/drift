@@ -4,10 +4,11 @@
 
 | Version | Supported          |
 | ------- | ------------------ |
+| 0.8.x   | :white_check_mark: |
 | 0.7.x   | :white_check_mark: |
 | < 0.7   | :x:                |
 
-Current release line: **v0.7.1** (2026-03-27).
+Current release line: **v0.8.0**.
 
 ## Reporting a Vulnerability
 
