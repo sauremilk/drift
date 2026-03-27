@@ -3,6 +3,19 @@
 All notable changes to drift-analyzer are documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.7.2] - 2026-03-27
+
+Short version: architecture-violation detection is more robust, and release validation/workflow consistency is tightened for safer publication.
+
+### Changed
+
+- **AVS detection hardening**: Refined architecture-violation detection behavior and corresponding coverage to reduce ambiguity in boundary-violation interpretation.
+- **Release workflow consistency**: Updated release validation/publish workflow behavior so release checks are enforced consistently before publication.
+
+### Fixed
+
+- **Lint compatibility on Python 3.11+**: Moved `Callable` import in the signal base module to `collections.abc` to satisfy enforced Ruff typing/lint rules during push and release gates.
+
 ## [0.7.1] - 2026-03-27
 
 Short version: deterministic auto-calibration output, dedicated ECM signal coverage, and scoped trend-history persistence for diff-only CI pipelines.
