@@ -69,6 +69,7 @@ class TestJsonOutputGolden:
             "analyzed_at",
             "drift_score",
             "severity",
+            "analysis_status",
             "trend",
             "summary",
             "modules",

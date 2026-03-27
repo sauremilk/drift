@@ -78,6 +78,48 @@ def _fetch_git_history(
     return commits, file_histories
 
 
+def _make_degradation_event(
+    *,
+    cause: str,
+    component: str,
+    message: str,
+    details: dict[str, str] | None = None,
+) -> dict[str, object]:
+    """Build a machine-readable degradation event payload."""
+    event: dict[str, object] = {
+        "cause": cause,
+        "component": component,
+        "message": message,
+    }
+    if details:
+        event["details"] = details
+    return event
+
+
+def _mark_analysis_degraded(
+    analysis: RepoAnalysis,
+    *,
+    cause: str,
+    component: str,
+    message: str,
+    details: dict[str, str] | None = None,
+) -> None:
+    """Attach a degradation event to an existing analysis result."""
+    analysis.analysis_status = "degraded"
+    if cause not in analysis.degradation_causes:
+        analysis.degradation_causes.append(cause)
+    if component not in analysis.degradation_components:
+        analysis.degradation_components.append(component)
+    analysis.degradation_events.append(
+        _make_degradation_event(
+            cause=cause,
+            component=component,
+            message=message,
+            details=details,
+        )
+    )
+
+
 def _run_pipeline(
     repo_path: Path,
     files: list[FileInfo],
@@ -94,6 +136,27 @@ def _run_pipeline(
     reporting, and resilient signal execution.
     """
     start = time.monotonic()
+    degradation_events: list[dict[str, object]] = []
+    degradation_causes: set[str] = set()
+    degradation_components: set[str] = set()
+
+    def _record_degradation(
+        *,
+        cause: str,
+        component: str,
+        message: str,
+        details: dict[str, str] | None = None,
+    ) -> None:
+        degradation_causes.add(cause)
+        degradation_components.add(component)
+        degradation_events.append(
+            _make_degradation_event(
+                cause=cause,
+                component=component,
+                message=message,
+                details=details,
+            )
+        )
 
     def _progress(phase: str, current: int, total: int) -> None:
         if on_progress:
@@ -171,7 +234,20 @@ def _run_pipeline(
         _progress("Parsing files", len(files), len(files))
 
         if git_future is not None:
-            commits, file_histories = git_future.result()
+            try:
+                commits, file_histories = git_future.result()
+            except Exception as exc:
+                logging.getLogger("drift").warning(
+                    "Git history fetch failed; continuing without history.",
+                    exc_info=True,
+                )
+                commits, file_histories = [], {}
+                _record_degradation(
+                    cause="git_history_unavailable",
+                    component="git_history",
+                    message="Git history parsing failed; temporal/git-based context omitted.",
+                    details={"error": str(exc)},
+                )
         else:
             logging.getLogger("drift").info("Not a git repository — skipping git history analysis.")
             commits, file_histories = [], {}
@@ -210,6 +286,12 @@ def _run_pipeline(
                 "Signal '%s' failed; skipping.",
                 signal.name,
                 exc_info=True,
+            )
+            _record_degradation(
+                cause="signal_failure",
+                component=f"signal:{signal.name}",
+                message=f"Signal '{signal.name}' failed and was skipped.",
+                details={"signal": signal.name},
             )
 
     # --- 5. Scoring ---
@@ -275,6 +357,10 @@ def _run_pipeline(
         file_histories=file_histories,
         suppressed_count=suppressed_count,
         context_tagged_count=context_tagged_count,
+        analysis_status="degraded" if degradation_events else "complete",
+        degradation_causes=sorted(degradation_causes),
+        degradation_components=sorted(degradation_components),
+        degradation_events=degradation_events,
     )
 
 
@@ -287,12 +373,21 @@ _NOISE_FLOOR = 0.005  # |Δ| below this → "stable" (STUDY.md §11.6)
 
 def _load_history(history_file: Path) -> list[dict]:
     """Load snapshots from the history JSON file."""
+    snapshots, _is_corrupt = _load_history_with_status(history_file)
+    return snapshots
+
+
+def _load_history_with_status(history_file: Path) -> tuple[list[dict], bool]:
+    """Load snapshots and indicate whether the history file was corrupt."""
     if not history_file.exists():
-        return []
+        return [], False
     try:
-        return json.loads(history_file.read_text(encoding="utf-8"))  # type: ignore[no-any-return]
+        data = json.loads(history_file.read_text(encoding="utf-8"))
+        if isinstance(data, list):
+            return data, False
+        return [], True
     except Exception:
-        return []
+        return [], True
 
 
 def _save_history(history_file: Path, snapshots: list[dict]) -> None:
@@ -354,7 +449,16 @@ def _apply_trend_and_persist_snapshot(
 ) -> None:
     """Attach trend context and persist a scoped history snapshot."""
     history_file = repo_path / config.cache_dir / "history.json"
-    snapshots = _load_history(history_file)
+    snapshots, history_corrupt = _load_history_with_status(history_file)
+
+    if history_corrupt:
+        _mark_analysis_degraded(
+            analysis,
+            cause="history_cache_corrupt",
+            component="history_cache",
+            message="History cache could not be parsed; trend baseline restarted.",
+            details={"file": history_file.as_posix()},
+        )
 
     scoped_history = [s for s in snapshots if _snapshot_scope(s) == scope]
     analysis.trend = _build_trend_context(analysis.drift_score, scoped_history)
@@ -477,7 +581,15 @@ def analyze_diff(
             diff_ref,
             exc,
         )
-        return analyze_repo(repo_path, config, workers=workers)
+        analysis = analyze_repo(repo_path, config, workers=workers)
+        _mark_analysis_degraded(
+            analysis,
+            cause="diff_ref_invalid",
+            component="git_diff",
+            message="Diff reference could not be resolved; executed full-repository fallback.",
+            details={"diff_ref": diff_ref, "error": str(exc)},
+        )
+        return analysis
 
     if not changed_files:
         return RepoAnalysis(

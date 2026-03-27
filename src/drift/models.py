@@ -251,10 +251,22 @@ class RepoAnalysis:
     suppressed_count: int = 0
     context_tagged_count: int = 0
     trend: TrendContext | None = None
+    analysis_status: str = "complete"  # "complete" | "degraded"
+    degradation_causes: list[str] = field(default_factory=list)
+    degradation_components: list[str] = field(default_factory=list)
+    degradation_events: list[dict[str, Any]] = field(default_factory=list)
 
     @property
     def severity(self) -> Severity:
         return severity_for_score(self.drift_score)
+
+    @property
+    def is_degraded(self) -> bool:
+        return self.analysis_status == "degraded"
+
+    @property
+    def is_fully_reliable(self) -> bool:
+        return not self.is_degraded
 
     def findings_by_severity(self, severity: Severity) -> list[Finding]:
         return [f for f in self.findings if f.severity == severity]

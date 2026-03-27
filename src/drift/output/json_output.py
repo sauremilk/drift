@@ -38,6 +38,17 @@ def _module_to_dict(m: ModuleScore) -> dict[str, Any]:
     }
 
 
+def _analysis_status_to_dict(analysis: RepoAnalysis) -> dict[str, Any]:
+    return {
+        "status": analysis.analysis_status,
+        "degraded": analysis.is_degraded,
+        "is_fully_reliable": analysis.is_fully_reliable,
+        "causes": analysis.degradation_causes,
+        "affected_components": analysis.degradation_components,
+        "events": analysis.degradation_events,
+    }
+
+
 def analysis_to_json(analysis: RepoAnalysis, indent: int = 2) -> str:
     """Serialize a RepoAnalysis to JSON string."""
     data: dict[str, Any] = {
@@ -46,6 +57,7 @@ def analysis_to_json(analysis: RepoAnalysis, indent: int = 2) -> str:
         "analyzed_at": analysis.analyzed_at.isoformat(),
         "drift_score": analysis.drift_score,
         "severity": analysis.severity.value,
+        "analysis_status": _analysis_status_to_dict(analysis),
         "trend": {
             "previous_score": analysis.trend.previous_score,
             "delta": analysis.trend.delta,
@@ -150,16 +162,24 @@ def findings_to_sarif(analysis: RepoAnalysis) -> str:
             }
         },
         "results": results,
+        "properties": {
+            "drift:analysisStatus": {
+                "status": analysis.analysis_status,
+                "degraded": analysis.is_degraded,
+                "isFullyReliable": analysis.is_fully_reliable,
+                "causes": analysis.degradation_causes,
+                "affectedComponents": analysis.degradation_components,
+                "events": analysis.degradation_events,
+            }
+        },
     }
 
     # ADR-005: attach trend context as custom SARIF properties
     if analysis.trend and analysis.trend.direction != "baseline":
-        run_obj["properties"] = {
-            "drift:trend": {
-                "previousScore": analysis.trend.previous_score,
-                "delta": analysis.trend.delta,
-                "direction": analysis.trend.direction,
-            }
+        run_obj["properties"]["drift:trend"] = {
+            "previousScore": analysis.trend.previous_score,
+            "delta": analysis.trend.delta,
+            "direction": analysis.trend.direction,
         }
 
     sarif = {

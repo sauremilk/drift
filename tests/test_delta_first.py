@@ -305,4 +305,6 @@ class TestJsonTrendOutput:
         raw = findings_to_sarif(self._make_analysis(trend))
         data = json.loads(raw)
         run = data["runs"][0]
-        assert "properties" not in run
+        assert "properties" in run
+        assert run["properties"]["drift:analysisStatus"]["status"] == "complete"
+        assert "drift:trend" not in run["properties"]

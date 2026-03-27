@@ -126,11 +126,24 @@ def render_summary(analysis: RepoAnalysis, console: Console | None = None) -> No
                 ),
                 ("  │  ", "dim"),
                 (f"{analysis.analysis_duration_seconds:.1f}s", "dim"),
+                ("  │  ", "dim"),
+                (
+                    "DEGRADED" if analysis.is_degraded else "COMPLETE",
+                    "bold yellow" if analysis.is_degraded else "bold green",
+                ),
             ),
             title=f"[bold]drift analyze[/bold]  {analysis.repo_path}",
             border_style=header_color,
         )
     )
+
+    if analysis.is_degraded:
+        causes = ", ".join(analysis.degradation_causes) or "unknown"
+        components = ", ".join(analysis.degradation_components) or "unknown"
+        console.print(
+            f"  [bold yellow]Analysis degraded[/bold yellow]: causes={causes}; "
+            f"components={components}"
+        )
 
     # Trend sparkline (ADR-005)
     if trend and trend.recent_scores and trend.direction != "baseline":

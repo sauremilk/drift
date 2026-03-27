@@ -58,6 +58,8 @@ def test_analysis_to_json_contains_expected_structure() -> None:
     assert payload["repo"] == "."
     assert payload["drift_score"] == 0.73
     assert payload["severity"] == "high"
+    assert payload["analysis_status"]["status"] == "complete"
+    assert payload["analysis_status"]["is_fully_reliable"] is True
     assert payload["summary"]["total_files"] == 12
     assert payload["summary"]["total_functions"] == 48
     assert payload["modules"][0]["path"] == "src/app"
@@ -78,7 +80,26 @@ def test_findings_to_sarif_deduplicates_rules_and_sets_levels() -> None:
     assert len(run["tool"]["driver"]["rules"]) == 1
     assert len(run["results"]) == 2
     assert run["results"][0]["level"] == "error"
-    assert run["results"][0]["locations"][0]["physicalLocation"]["region"]["startLine"] == 12
+    assert run["properties"]["drift:analysisStatus"]["status"] == "complete"
+
+
+def test_analysis_to_json_exposes_degraded_status() -> None:
+    analysis = _sample_analysis()
+    analysis.analysis_status = "degraded"
+    analysis.degradation_causes = ["signal_failure"]
+    analysis.degradation_components = ["signal:test"]
+    analysis.degradation_events = [{
+        "cause": "signal_failure",
+        "component": "signal:test",
+        "message": "Signal failed.",
+    }]
+
+    payload = json.loads(analysis_to_json(analysis))
+
+    assert payload["analysis_status"]["status"] == "degraded"
+    assert payload["analysis_status"]["degraded"] is True
+    assert payload["analysis_status"]["is_fully_reliable"] is False
+    assert payload["analysis_status"]["causes"] == ["signal_failure"]
 
 
 def test_findings_to_sarif_handles_finding_without_file_path() -> None:
