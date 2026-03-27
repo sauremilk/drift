@@ -344,7 +344,7 @@ Recommended guides:
 
 ## Trust and limitations
 
-> **Public claims safe to repeat for v0.7.0:** Drift is deterministic, benchmarked on 15 real-world repositories in the current study corpus, and uses 13 scoring signals with auto-calibration for runtime weight rebalancing and small-repo noise suppression.
+> **Public claims safe to repeat for v0.7.1:** Drift is deterministic, benchmarked on 15 real-world repositories in the current study corpus, and uses 13 scoring signals with auto-calibration for runtime weight rebalancing and small-repo noise suppression.
 >
 > **What's limited:** Benchmark validation is single-rater; not yet independently replicated. Small repos can be noisy. Temporal signals depend on clone depth. The composite score is orientation, not a verdict.
 >

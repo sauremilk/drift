@@ -131,6 +131,8 @@ Im Zweifel gilt: geringerer Interpretationsspielraum, höherer Erkenntniswert.
 
 ## Schnellreferenz für Agenten
 
+Aktueller Release-Stand: **v0.7.1** (2026-03-27)
+
 Vollständiger Developer Guide: **[DEVELOPER.md](../DEVELOPER.md)**
 
 ### Architektur (Datenfluss)

@@ -7,6 +7,8 @@
 | 0.7.x   | :white_check_mark: |
 | < 0.7   | :x:                |
 
+Current release line: **v0.7.1** (2026-03-27).
+
 ## Reporting a Vulnerability
 
 If you discover a security vulnerability in drift, **please do not open a public issue.**

@@ -3,6 +3,23 @@
 All notable changes to drift-analyzer are documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.7.1] - 2026-03-27
+
+Short version: deterministic auto-calibration output, dedicated ECM signal coverage, and scoped trend-history persistence for diff-only CI pipelines.
+
+### Added
+
+- **Dedicated ECM tests**: Added a standalone ECM signal test module with explicit true-positive, true-negative, and edge-case coverage for signature changes, missing history, and private-function handling.
+
+### Changed
+
+- **Deterministic weight auto-calibration**: `auto_calibrate_weights()` now uses canonical key ordering and deterministic residual correction during renormalization, ensuring stable results for identical input across iteration-order differences.
+- **Diff trend/history parity**: `analyze_diff()` now computes trend context and persists snapshots, scoped to diff-mode history so CI pipelines that only run diff analysis retain functional trend and delta context without mixing full-repo snapshots.
+
+### Fixed
+
+- **Regression stability**: Added regression tests for deterministic auto-calibration output and for scoped diff-history persistence semantics.
+
 ## [0.7.0] – 2026-03-27
 
 Short version: all 13 signals are now scoring-active with automatic weight calibration and small-repo noise suppression.
