@@ -265,7 +265,7 @@ class NamingContractViolationSignal(BaseSignal):
                         start_line=fn.start_line,
                         end_line=fn.end_line,
                         fix=(
-                            f"Either add the missing behaviour to '{fn.name}' "
+                            f"Either add the missing behaviour to '{fn.name}()' "
                             f"(e.g. a raise statement or appropriate return) "
                             f"or rename it to reflect its actual purpose."
                         ),

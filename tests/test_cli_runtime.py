@@ -38,7 +38,7 @@ def test_safe_main_file_not_found(
     with pytest.raises(SystemExit) as exc_info:
         cli.safe_main()
 
-    assert exc_info.value.code == 1
+    assert exc_info.value.code == 2
     captured = capsys.readouterr()
     assert "Error: missing file" in captured.err
 
@@ -52,7 +52,7 @@ def test_safe_main_generic_exception_shows_hint(
     with pytest.raises(SystemExit) as exc_info:
         cli.safe_main()
 
-    assert exc_info.value.code == 1
+    assert exc_info.value.code == 2
     captured = capsys.readouterr()
     assert "Error: boom" in captured.err
     assert "Hint: run with -v for the full traceback." in captured.err

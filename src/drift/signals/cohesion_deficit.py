@@ -239,9 +239,9 @@ class CohesionDeficitSignal(BaseSignal):
                     file_path=file_path,
                     related_files=[file_path],
                     fix=(
-                        "Split unrelated responsibilities into focused modules and keep "
-                        "cohesive domains together. Start with isolated units: "
-                        f"{isolated_preview}."
+                        f"Split {len(isolated_names)} isolated units into focused modules. "
+                        f"Start with: {isolated_preview}. "
+                        f"Move each cohesive group into its own module."
                     ),
                     metadata={
                         "unit_count": len(units),

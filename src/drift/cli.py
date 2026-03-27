@@ -66,7 +66,7 @@ def safe_main() -> None:
         sys.exit(130)
     except FileNotFoundError as exc:
         click.echo(f"Error: {exc}", err=True)
-        sys.exit(1)
+        sys.exit(2)
     except Exception as exc:
         click.echo(f"Error: {exc}", err=True)
         if logging.getLogger().isEnabledFor(logging.DEBUG):
@@ -75,7 +75,7 @@ def safe_main() -> None:
             traceback.print_exc()
         else:
             click.echo("Hint: run with -v for the full traceback.", err=True)
-        sys.exit(1)
+        sys.exit(2)
 
 
 if __name__ == "__main__":

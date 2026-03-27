@@ -52,6 +52,19 @@ from drift.commands import console
     default=False,
     help="Show findings suppressed via drift:ignore comments.",
 )
+@click.option(
+    "--quiet",
+    "-q",
+    is_flag=True,
+    default=False,
+    help="Minimal output: score, severity, finding count, exit code only.",
+)
+@click.option(
+    "--no-code",
+    is_flag=True,
+    default=False,
+    help="Suppress inline code snippets in rich output.",
+)
 def analyze(
     repo: Path,
     path: str | None,
@@ -64,6 +77,8 @@ def analyze(
     sort_by: str,
     max_findings: int,
     show_suppressed: bool,
+    quiet: bool,
+    no_code: bool,
 ) -> None:
     """Analyze a repository for architectural drift."""
     from rich.progress import BarColumn, MofNCompleteColumn, Progress, TextColumn
@@ -110,7 +125,11 @@ def analyze(
         if task_id is not None:
             progress.update(task_id, completed=_last_total)
 
-    if output_format == "json":
+    if quiet:
+        sev = analysis.severity.value.upper()
+        n = len(analysis.findings)
+        click.echo(f"score: {analysis.drift_score:.2f}  severity: {sev}  findings: {n}")
+    elif output_format == "json":
         from drift.output.json_output import analysis_to_json
 
         click.echo(analysis_to_json(analysis))
@@ -130,6 +149,7 @@ def analyze(
             console,
             sort_by=sort_by,
             max_findings=max_findings,
+            show_code=not no_code,
         )
 
         if show_suppressed and analysis.suppressed_count:

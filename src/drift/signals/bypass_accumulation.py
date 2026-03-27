@@ -183,10 +183,9 @@ class BypassAccumulationSignal(BaseSignal):
                     start_line=1,
                     end_line=None,
                     fix=(
-                        f"Review bypass markers in '{pr.file_path.name}' and "
-                        f"resolve the underlying issues they suppress. "
-                        f"Each marker represents a quality shortcut that "
-                        f"may mask real problems."
+                        f"Remove or document each bypass marker in '{pr.file_path.name}': "
+                        f"replace Any with concrete types and add explicit "
+                        f"ignores only where the root cause is resolved."
                     ),
                     metadata={
                         "total_markers": total,

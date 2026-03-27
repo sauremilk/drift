@@ -44,6 +44,19 @@ from drift.commands import console
     type=int,
     help="Days of git history to consider.",
 )
+@click.option(
+    "--quiet",
+    "-q",
+    is_flag=True,
+    default=False,
+    help="Minimal output: score, severity, finding count, exit code only.",
+)
+@click.option(
+    "--no-code",
+    is_flag=True,
+    default=False,
+    help="Suppress inline code snippets in rich output.",
+)
 def check(
     repo: Path,
     diff_ref: str,
@@ -54,6 +67,8 @@ def check(
     no_embeddings: bool,
     embedding_model: str | None,
     since_days: int | None,
+    quiet: bool,
+    no_code: bool,
 ) -> None:
     """Check a diff for drift (CI mode)."""
     from drift.analyzer import _DEFAULT_WORKERS, analyze_diff
@@ -75,7 +90,11 @@ def check(
             since_days=effective_since,
         )
 
-    if output_format == "json":
+    if quiet:
+        sev = analysis.severity.value.upper()
+        n = len(analysis.findings)
+        click.echo(f"score: {analysis.drift_score:.2f}  severity: {sev}  findings: {n}")
+    elif output_format == "json":
         from drift.output.json_output import analysis_to_json
 
         click.echo(analysis_to_json(analysis))
@@ -90,7 +109,7 @@ def check(
     else:
         from drift.output.rich_output import render_full_report
 
-        render_full_report(analysis, console)
+        render_full_report(analysis, console, show_code=not no_code)
 
     if not severity_gate_pass(analysis.findings, threshold):
         console.print(
