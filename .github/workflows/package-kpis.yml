@@ -1,0 +1,71 @@
+name: Package KPIs
+
+on:
+  schedule:
+    - cron: "0 4 1 * *"
+  workflow_dispatch:
+    inputs:
+      package:
+        description: "PyPI package name"
+        required: false
+        default: "drift-analyzer"
+      usage_csv_path:
+        description: "Optional usage CSV path in repo (timestamp,project_id,version)"
+        required: false
+        default: ""
+      defects_csv_path:
+        description: "Optional defects CSV path in repo"
+        required: false
+        default: ""
+
+jobs:
+  collect-kpis:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install package
+        run: pip install -e ".[dev]"
+
+      - name: Fetch monthly PyPI downloads
+        run: |
+          python scripts/fetch_pypistats.py \
+            --package "${{ github.event.inputs.package || 'drift-analyzer' }}" \
+            --months 24 \
+            --output benchmark_results/package_kpis/pypi_downloads_monthly.csv
+
+      - name: Build KPI report (if usage data is available)
+        env:
+          USAGE_CSV_PATH: ${{ github.event.inputs.usage_csv_path }}
+          DEFECTS_CSV_PATH: ${{ github.event.inputs.defects_csv_path }}
+        run: |
+          if [ -n "$USAGE_CSV_PATH" ] && [ -f "$USAGE_CSV_PATH" ]; then
+            DEFECTS_ARG=""
+            if [ -n "$DEFECTS_CSV_PATH" ] && [ -f "$DEFECTS_CSV_PATH" ]; then
+              DEFECTS_ARG="--defects-csv $DEFECTS_CSV_PATH"
+            fi
+            python scripts/package_kpis.py \
+              --package "${{ github.event.inputs.package || 'drift-analyzer' }}" \
+              --usage-csv "$USAGE_CSV_PATH" \
+              $DEFECTS_ARG \
+              --downloads-csv benchmark_results/package_kpis/pypi_downloads_monthly.csv \
+              --thresholds-json examples/package-kpis/kpi-thresholds.json \
+              --months 24 \
+              --output benchmark_results/package_kpis/package_kpis_real.json
+          else
+            echo "Skipping KPI build: no usage_csv_path provided or file not found."
+          fi
+
+      - name: Upload KPI artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: package-kpis
+          path: |
+            benchmark_results/package_kpis/pypi_downloads_monthly.csv
+            benchmark_results/package_kpis/package_kpis_real.json
+          if-no-files-found: warn

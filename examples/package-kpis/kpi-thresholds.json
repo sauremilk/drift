@@ -1,0 +1,32 @@
+{
+  "maup": {
+    "direction": "higher_is_better",
+    "green": 50,
+    "yellow": 20
+  },
+  "retention_90d": {
+    "direction": "higher_is_better",
+    "green": 0.6,
+    "yellow": 0.35
+  },
+  "currency_rate": {
+    "direction": "higher_is_better",
+    "green": 0.75,
+    "yellow": 0.5
+  },
+  "friction_per_100_projects": {
+    "direction": "lower_is_better",
+    "green": 3.0,
+    "yellow": 8.0
+  },
+  "ttm_critical_median_days": {
+    "direction": "lower_is_better",
+    "green": 2.0,
+    "yellow": 5.0
+  },
+  "pypi_downloads": {
+    "direction": "higher_is_better",
+    "green": 10000,
+    "yellow": 2500
+  }
+}

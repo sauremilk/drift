@@ -1,0 +1,5 @@
+confirmed_at,fixed_at,severity,package_related
+2026-01-12T09:00:00Z,2026-01-15T17:00:00Z,critical,true
+2026-01-20T11:00:00Z,,medium,true
+2026-02-14T10:00:00Z,2026-02-18T09:30:00Z,critical,false
+2026-04-10T08:15:00Z,2026-04-12T14:20:00Z,critical,true

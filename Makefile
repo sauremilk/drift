@@ -14,7 +14,7 @@ MYPY     ?= $(PYTHON) -m mypy
 SRC      := src/
 TESTS    := tests/
 
-.PHONY: help install lint typecheck test test-fast test-all coverage check self ci clean
+.PHONY: help install lint typecheck test test-fast test-all coverage check self ci package-kpis-downloads package-kpis-example clean
 
 help:  ## Show all available commands
 	@grep -E '^[a-zA-Z_-]+:.*##' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*##"}; {printf "  \033[36m%-15s\033[0m %s\n", $$1, $$2}'
@@ -57,6 +57,22 @@ check:  ## Run all checks: lint + typecheck + tests + self-analysis
 
 self:  ## Drift self-analysis
 	drift analyze --repo . --format json > /dev/null
+
+package-kpis-downloads:  ## Fetch real monthly PyPI downloads to CSV
+	$(PYTHON) scripts/fetch_pypistats.py \
+		--package drift-analyzer \
+		--months 12 \
+		--output benchmark_results/package_kpis/pypi_downloads_monthly.csv
+
+package-kpis-example:  ## Generate monthly package KPI example report JSON
+	$(PYTHON) scripts/package_kpis.py \
+		--package drift-analyzer \
+		--usage-csv examples/package-kpis/usage.csv \
+		--defects-csv examples/package-kpis/defects.csv \
+		--currency-versions 1.4.1,1.4.0 \
+		--thresholds-json examples/package-kpis/kpi-thresholds.json \
+		--months 12 \
+		--output benchmark_results/package_kpis_example.json
 
 ci:  ## Replicate full CI pipeline locally
 	$(PYTHON) scripts/check_version.py --check-semver

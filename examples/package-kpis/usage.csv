@@ -1,0 +1,11 @@
+timestamp,project_id,version
+2026-01-05T10:00:00Z,acme.api,1.4.0
+2026-01-09T13:22:00Z,beta.worker,1.3.2
+2026-01-15T08:45:00Z,gamma.web,1.2.0
+2026-02-03T11:07:00Z,acme.api,1.4.0
+2026-02-17T09:11:00Z,gamma.web,1.2.1
+2026-03-01T15:40:00Z,acme.api,1.4.0
+2026-03-03T14:25:00Z,delta.cli,1.4.0
+2026-04-02T12:30:00Z,acme.api,1.4.1
+2026-04-08T10:20:00Z,beta.worker,1.3.2
+2026-04-17T18:02:00Z,epsilon.job,1.4.0
