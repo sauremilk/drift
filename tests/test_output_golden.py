@@ -75,6 +75,7 @@ class TestJsonOutputGolden:
             "summary",
             "modules",
             "findings",
+            "fix_first",
             "suppressed_count",
             "context_tagged_count",
         }
@@ -109,6 +110,7 @@ class TestJsonOutputGolden:
             "title",
             "description",
             "fix",
+            "remediation",
             "file",
             "start_line",
             "end_line",

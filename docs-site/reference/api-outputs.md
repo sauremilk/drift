@@ -138,9 +138,55 @@ Use the CLI when you only need stable commands in local or CI workflows.
 - summary counters
 - module scores
 - findings
+- fix_first list (prioritized "fix first" items)
+- remediation object per finding (when available)
 - suppressed and context-tagged counts
 
 This is the best current format for CI artifacts, snapshot comparison, and downstream scripts.
+
+## Exit code contract
+
+Drift CLI process exit codes are stable and intended for CI routing:
+
+| Exit code | Meaning | Typical action |
+|---|---|---|
+| `0` | Success (no blocking findings) | Continue pipeline |
+| `1` | Severity gate failed (`--fail-on`) | Mark quality gate failed |
+| `2` | Configuration or user input error | Fail fast, request config fix |
+| `3` | Analysis pipeline error | Fail analysis stage, inspect error payload |
+| `4` | System error (I/O, git, permissions) | Retry or fix environment |
+| `130` | Interrupted (Ctrl+C) | Treat as cancelled run |
+
+## Machine-readable CLI errors
+
+For deterministic CI parsing, enable structured error payloads with:
+
+```bash
+DRIFT_ERROR_FORMAT=json drift analyze --repo . --format json
+```
+
+When enabled, drift emits one JSON object on `stderr` for runtime errors.
+
+Current payload shape (`schema_version: "1.0"`):
+
+```json
+{
+    "schema_version": "1.0",
+    "type": "error",
+    "error_code": "DRIFT-1001",
+    "category": "user",
+    "message": "[DRIFT-1001] bad config",
+    "detail": "[DRIFT-1001] bad config\n\nRun 'drift explain DRIFT-1001' for details.",
+    "exit_code": 2,
+    "hint": "Run 'drift explain DRIFT-1001' for details."
+}
+```
+
+Notes:
+
+- Machine-readable error payloads are emitted on `stderr`.
+- For machine output formats with `--output`, the actual analysis JSON/SARIF is written only to the target file.
+- Human-readable error text remains the default when `DRIFT_ERROR_FORMAT` is not set to `json`.
 
 ## SARIF output
 

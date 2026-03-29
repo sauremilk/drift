@@ -6,14 +6,124 @@ import json
 from typing import Any
 
 from drift import __version__
-from drift.models import Finding, ModuleScore, RepoAnalysis, Severity
+from drift.models import Finding, ModuleScore, RepoAnalysis, Severity, SignalType
+from drift.recommendations import generate_recommendation
 
 # JSON schema version — increment on breaking output changes.
 # Major: incompatible field removals/renames.  Minor: additive new fields.
 SCHEMA_VERSION = "1.0"
 
 
+_ARCHITECTURE_BOUNDARY_SIGNALS = {
+    SignalType.ARCHITECTURE_VIOLATION,
+    SignalType.CIRCULAR_IMPORT,
+    SignalType.CO_CHANGE_COUPLING,
+    SignalType.COHESION_DEFICIT,
+    SignalType.FAN_OUT_EXPLOSION,
+}
+
+_STYLE_OR_HYGIENE_SIGNALS = {
+    SignalType.NAMING_CONTRACT_VIOLATION,
+    SignalType.DOC_IMPL_DRIFT,
+    SignalType.EXPLAINABILITY_DEFICIT,
+    SignalType.BROAD_EXCEPTION_MONOCULTURE,
+    SignalType.GUARD_CLAUSE_DEFICIT,
+    SignalType.DEAD_CODE_ACCUMULATION,
+}
+
+_SEVERITY_RANK = {
+    Severity.CRITICAL: 0,
+    Severity.HIGH: 1,
+    Severity.MEDIUM: 2,
+    Severity.LOW: 3,
+    Severity.INFO: 4,
+}
+
+
+def _priority_class(f: Finding) -> str:
+    """Map finding to a decision-priority class."""
+    if f.signal_type in _ARCHITECTURE_BOUNDARY_SIGNALS:
+        return "architecture_boundary"
+    if f.signal_type in _STYLE_OR_HYGIENE_SIGNALS:
+        return "style_or_hygiene"
+    return "structural_risk"
+
+
+def _priority_rank(priority_class: str) -> int:
+    if priority_class == "architecture_boundary":
+        return 0
+    if priority_class == "structural_risk":
+        return 1
+    return 2
+
+
+def _next_step_for_finding(f: Finding) -> str | None:
+    rec = generate_recommendation(f)
+    if rec:
+        return rec.title
+    return f.fix
+
+
+def _expected_benefit_for_finding(f: Finding) -> str:
+    rec = generate_recommendation(f)
+    if rec and rec.impact:
+        return rec.impact
+    if f.severity in (Severity.CRITICAL, Severity.HIGH):
+        return "high"
+    if f.severity == Severity.MEDIUM:
+        return "medium"
+    return "low"
+
+
+def _fix_first_list(ranked_findings: list[Finding], max_items: int = 10) -> list[dict[str, Any]]:
+    prioritized = sorted(
+        ranked_findings,
+        key=lambda f: (
+            _priority_rank(_priority_class(f)),
+            _SEVERITY_RANK[f.severity],
+            -float(f.impact),
+            -float(f.score_contribution),
+            f.signal_type.value,
+            f.file_path.as_posix() if f.file_path else "",
+            int(f.start_line or 0),
+        ),
+    )
+
+    items: list[dict[str, Any]] = []
+    for idx, f in enumerate(prioritized[:max_items], start=1):
+        items.append(
+            {
+                "rank": idx,
+                "priority_class": _priority_class(f),
+                "signal": f.signal_type.value,
+                "rule_id": f.rule_id,
+                "severity": f.severity.value,
+                "impact": f.impact,
+                "score_contribution": f.score_contribution,
+                "title": f.title,
+                "file": f.file_path.as_posix() if f.file_path else None,
+                "start_line": f.start_line,
+                "next_step": _next_step_for_finding(f),
+                "expected_benefit": _expected_benefit_for_finding(f),
+            },
+        )
+
+    return items
+
+
+def _finding_sort_key(f: Finding) -> tuple[float, str, str, int, int]:
+    """Stable ordering key for machine-readable finding output."""
+    return (
+        -float(f.impact),
+        f.signal_type.value,
+        f.file_path.as_posix() if f.file_path else "",
+        int(f.start_line or 0),
+        int(f.end_line or 0),
+    )
+
+
 def _finding_to_dict(f: Finding, *, impact_rank: int | None = None) -> dict[str, Any]:
+    rec = generate_recommendation(f)
     d: dict[str, Any] = {
         "signal": f.signal_type.value,
         "rule_id": f.rule_id,
@@ -33,6 +143,12 @@ def _finding_to_dict(f: Finding, *, impact_rank: int | None = None) -> dict[str,
         "ai_attributed": f.ai_attributed,
         "deferred": f.deferred,
         "metadata": f.metadata,
+        "remediation": {
+            "title": rec.title,
+            "description": rec.description,
+            "effort": rec.effort,
+            "impact": rec.impact,
+        } if rec else None,
     }
     return d
 
@@ -62,7 +178,7 @@ def _analysis_status_to_dict(analysis: RepoAnalysis) -> dict[str, Any]:
 def analysis_to_json(analysis: RepoAnalysis, indent: int = 2) -> str:
     """Serialize a RepoAnalysis to JSON string."""
     # Rank findings by impact (descending) for consumer convenience
-    ranked = sorted(analysis.findings, key=lambda f: f.impact, reverse=True)
+    ranked = sorted(analysis.findings, key=_finding_sort_key)
     impact_ranks: dict[int, int] = {id(f): rank for rank, f in enumerate(ranked, 1)}
 
     data: dict[str, Any] = {
@@ -91,13 +207,14 @@ def analysis_to_json(analysis: RepoAnalysis, indent: int = 2) -> str:
         "modules": [_module_to_dict(m) for m in analysis.module_scores],
         "findings": [
             _finding_to_dict(f, impact_rank=impact_ranks.get(id(f)))
-            for f in analysis.findings
+            for f in ranked
         ],
+        "fix_first": _fix_first_list(ranked),
         "suppressed_count": analysis.suppressed_count,
         "context_tagged_count": analysis.context_tagged_count,
     }
 
-    return json.dumps(data, indent=indent, default=str)
+    return json.dumps(data, indent=indent, default=str, sort_keys=True)
 
 
 def findings_to_sarif(analysis: RepoAnalysis) -> str:
@@ -106,7 +223,7 @@ def findings_to_sarif(analysis: RepoAnalysis) -> str:
     results: list[dict[str, object]] = []
 
     rule_ids: dict[str, int] = {}
-    for f in analysis.findings:
+    for f in sorted(analysis.findings, key=_finding_sort_key):
         rule_key = f.rule_id or f.signal_type.value
         if rule_key not in rule_ids:
             rule_ids[rule_key] = len(rules)
@@ -207,4 +324,4 @@ def findings_to_sarif(analysis: RepoAnalysis) -> str:
         "runs": [run_obj],
     }
 
-    return json.dumps(sarif, indent=2, default=str)
+    return json.dumps(sarif, indent=2, default=str, sort_keys=True)

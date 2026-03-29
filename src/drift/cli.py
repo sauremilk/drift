@@ -8,7 +8,9 @@ modules under ``src/drift/commands/`` to keep each file focused.
 from __future__ import annotations
 
 import difflib
+import json
 import logging
+import os
 import sys
 
 import click
@@ -16,11 +18,22 @@ import click
 from drift import __version__
 from drift.commands import console  # noqa: F401 — re-export for backwards compat
 from drift.errors import (
+    ERROR_REGISTRY,
     EXIT_ANALYSIS_ERROR,
     EXIT_INTERRUPTED,
     EXIT_SYSTEM_ERROR,
     DriftError,
 )
+
+
+def _machine_error_enabled() -> bool:
+    """Return True if CLI errors should be emitted as JSON."""
+    return os.getenv("DRIFT_ERROR_FORMAT", "").strip().lower() == "json"
+
+
+def _emit_error_payload(payload: dict[str, object]) -> None:
+    """Emit a single-line machine-readable error payload to stderr."""
+    click.echo(json.dumps(payload, sort_keys=True), err=True)
 
 
 def _configure_logging(verbose: bool = False) -> None:
@@ -70,6 +83,7 @@ main.add_command(badge)
 
 def safe_main() -> None:
     """Entry point with user-friendly error handling."""
+    machine_errors = _machine_error_enabled()
     try:
         main(standalone_mode=True)
     except click.exceptions.Exit:
@@ -79,22 +93,78 @@ def safe_main() -> None:
         _handle_click_error(exc)
         raise
     except KeyboardInterrupt:
-        click.echo("\nInterrupted.", err=True)
+        if machine_errors:
+            _emit_error_payload(
+                {
+                    "schema_version": "1.0",
+                    "type": "error",
+                    "error_code": "DRIFT-0000",
+                    "category": "system",
+                    "message": "Interrupted.",
+                    "exit_code": EXIT_INTERRUPTED,
+                    "hint": None,
+                },
+            )
+        else:
+            click.echo("\nInterrupted.", err=True)
         sys.exit(EXIT_INTERRUPTED)
     except DriftError as exc:
-        click.echo(exc.detail, err=True)
+        info = ERROR_REGISTRY.get(exc.code)
+        if machine_errors:
+            _emit_error_payload(
+                {
+                    "schema_version": "1.0",
+                    "type": "error",
+                    "error_code": exc.code,
+                    "category": info.category if info else "analysis",
+                    "message": str(exc),
+                    "detail": exc.detail,
+                    "exit_code": exc.exit_code,
+                    "hint": exc.hint,
+                },
+            )
+        else:
+            click.echo(exc.detail, err=True)
         sys.exit(exc.exit_code)
     except FileNotFoundError as exc:
-        click.echo(f"[DRIFT-2001] {exc}", err=True)
+        if machine_errors:
+            _emit_error_payload(
+                {
+                    "schema_version": "1.0",
+                    "type": "error",
+                    "error_code": "DRIFT-2001",
+                    "category": "system",
+                    "message": str(exc),
+                    "detail": f"[DRIFT-2001] {exc}",
+                    "exit_code": EXIT_SYSTEM_ERROR,
+                    "hint": None,
+                },
+            )
+        else:
+            click.echo(f"[DRIFT-2001] {exc}", err=True)
         sys.exit(EXIT_SYSTEM_ERROR)
     except Exception as exc:
-        click.echo(f"[DRIFT-2003] {exc}", err=True)
-        if logging.getLogger().isEnabledFor(logging.DEBUG):
-            import traceback
-
-            traceback.print_exc()
+        if machine_errors:
+            _emit_error_payload(
+                {
+                    "schema_version": "1.0",
+                    "type": "error",
+                    "error_code": "DRIFT-3002",
+                    "category": "analysis",
+                    "message": str(exc),
+                    "detail": f"[DRIFT-2003] {exc}",
+                    "exit_code": EXIT_ANALYSIS_ERROR,
+                    "hint": "Run with -v for the full traceback.",
+                },
+            )
         else:
-            click.echo("Hint: run with -v for the full traceback.", err=True)
+            click.echo(f"[DRIFT-2003] {exc}", err=True)
+            if logging.getLogger().isEnabledFor(logging.DEBUG):
+                import traceback
+
+                traceback.print_exc()
+            else:
+                click.echo("Hint: run with -v for the full traceback.", err=True)
         sys.exit(EXIT_ANALYSIS_ERROR)
 
 

@@ -6,6 +6,7 @@ import sys
 from pathlib import Path
 
 import click
+from rich.console import Console
 
 from drift.commands import console
 from drift.errors import EXIT_FINDINGS_ABOVE_THRESHOLD
@@ -129,7 +130,8 @@ def check(
 
     effective_workers = workers if workers is not None else _DEFAULT_WORKERS
     effective_since = since_days if since_days is not None else 90
-    with console.status("[bold blue]Checking diff..."):
+    status_console = Console(stderr=True) if output_format != "rich" else console
+    with status_console.status("[bold blue]Checking diff..."):
         analysis = analyze_diff(
             repo, cfg, diff_ref=diff_ref, workers=effective_workers,
             since_days=effective_since,
@@ -153,7 +155,7 @@ def check(
         json_text = analysis_to_json(analysis)
         if output_file:
             output_file.write_text(json_text + "\n", encoding="utf-8")
-            console.print(f"[dim]Output written to {output_file}[/dim]", highlight=False)
+            click.echo(f"Output written to {output_file}", err=True)
         else:
             click.echo(json_text)
     elif output_format == "sarif":
@@ -162,7 +164,7 @@ def check(
         sarif_text = findings_to_sarif(analysis)
         if output_file:
             output_file.write_text(sarif_text + "\n", encoding="utf-8")
-            console.print(f"[dim]Output written to {output_file}[/dim]", highlight=False)
+            click.echo(f"Output written to {output_file}", err=True)
         else:
             click.echo(sarif_text)
     elif output_format == "agent-tasks":
@@ -171,7 +173,7 @@ def check(
         tasks_text = analysis_to_agent_tasks_json(analysis)
         if output_file:
             output_file.write_text(tasks_text + "\n", encoding="utf-8")
-            console.print(f"[dim]Output written to {output_file}[/dim]", highlight=False)
+            click.echo(f"Output written to {output_file}", err=True)
         else:
             click.echo(tasks_text)
     elif output_format == "github":
@@ -180,7 +182,7 @@ def check(
         gh_text = findings_to_github_annotations(analysis)
         if output_file:
             output_file.write_text(gh_text + "\n", encoding="utf-8")
-            console.print(f"[dim]Output written to {output_file}[/dim]", highlight=False)
+            click.echo(f"Output written to {output_file}", err=True)
         else:
             click.echo(gh_text)
     else:

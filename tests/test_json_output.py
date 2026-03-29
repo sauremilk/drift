@@ -65,6 +65,11 @@ def test_analysis_to_json_contains_expected_structure() -> None:
     assert payload["modules"][0]["path"] == "src/app"
     assert payload["findings"][0]["signal"] == "system_misalignment"
     assert payload["findings"][0]["file"] == "src/app/service.py"
+    assert payload["findings"][0]["remediation"] is not None
+    assert payload["findings"][0]["remediation"]["effort"] in {"low", "medium", "high"}
+    assert isinstance(payload["fix_first"], list)
+    assert payload["fix_first"]
+    assert payload["fix_first"][0]["rank"] == 1
 
 
 def test_findings_to_sarif_deduplicates_rules_and_sets_levels() -> None:
@@ -113,3 +118,64 @@ def test_findings_to_sarif_handles_finding_without_file_path() -> None:
     assert "locations" not in result
     assert result["ruleId"] == "system_misalignment"
     assert "FIX:" in result["message"]["text"]
+
+
+def test_analysis_to_json_orders_findings_deterministically() -> None:
+    first = _sample_finding()
+    first.file_path = Path("src/a.py")
+    first.start_line = 10
+    first.end_line = 11
+    first.impact = 0.5
+
+    second = _sample_finding()
+    second.file_path = Path("src/b.py")
+    second.start_line = 10
+    second.end_line = 11
+    second.impact = 0.5
+
+    analysis_one = _sample_analysis()
+    analysis_one.findings = [second, first]
+
+    analysis_two = _sample_analysis()
+    analysis_two.findings = [first, second]
+
+    payload_one = json.loads(analysis_to_json(analysis_one))
+    payload_two = json.loads(analysis_to_json(analysis_two))
+
+    files_one = [f["file"] for f in payload_one["findings"]]
+    files_two = [f["file"] for f in payload_two["findings"]]
+
+    assert files_one == ["src/a.py", "src/b.py"]
+    assert files_two == ["src/a.py", "src/b.py"]
+
+
+def test_fix_first_prioritizes_architecture_boundary() -> None:
+    architecture = Finding(
+        signal_type=SignalType.ARCHITECTURE_VIOLATION,
+        severity=Severity.MEDIUM,
+        score=0.51,
+        title="Layer boundary violation",
+        description="Service imports API layer.",
+        file_path=Path("src/core/service.py"),
+        start_line=20,
+        fix="Move dependency behind interface.",
+        impact=0.4,
+    )
+    style = Finding(
+        signal_type=SignalType.NAMING_CONTRACT_VIOLATION,
+        severity=Severity.HIGH,
+        score=0.8,
+        title="Inconsistent naming",
+        description="Method does not follow naming contract.",
+        file_path=Path("src/core/naming.py"),
+        start_line=10,
+        impact=0.7,
+    )
+
+    analysis = _sample_analysis()
+    analysis.findings = [style, architecture]
+
+    payload = json.loads(analysis_to_json(analysis))
+
+    assert payload["fix_first"][0]["signal"] == "architecture_violation"
+    assert payload["fix_first"][0]["priority_class"] == "architecture_boundary"

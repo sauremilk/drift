@@ -172,7 +172,7 @@ class TestExitCodes:
 class TestDriftErrorExitCodes:
     """Verify structured error exceptions produce correct exit codes."""
 
-    def test_config_error_exits_1(self, monkeypatch, capsys) -> None:
+    def test_config_error_exits_2(self, monkeypatch, capsys) -> None:
         from drift.errors import DriftConfigError
 
         def _raise(*a, **kw):
@@ -184,11 +184,11 @@ class TestDriftErrorExitCodes:
         with pytest.raises(SystemExit) as exc_info:
             cli.safe_main()
 
-        assert exc_info.value.code == 1
+        assert exc_info.value.code == 2
         captured = capsys.readouterr()
         assert "DRIFT-1001" in captured.err
 
-    def test_system_error_exits_2(self, monkeypatch, capsys) -> None:
+    def test_system_error_exits_4(self, monkeypatch, capsys) -> None:
         from drift.errors import DriftSystemError
 
         def _raise(*a, **kw):
@@ -200,7 +200,7 @@ class TestDriftErrorExitCodes:
         with pytest.raises(SystemExit) as exc_info:
             cli.safe_main()
 
-        assert exc_info.value.code == 2
+        assert exc_info.value.code == 4
         captured = capsys.readouterr()
         assert "DRIFT-2001" in captured.err
 

@@ -200,15 +200,15 @@ class DriftError(Exception):
 
 
 class DriftConfigError(DriftError):
-    """User-caused configuration error.  Exit code 1."""
+    """User-caused configuration error.  Exit code 2."""
 
-    exit_code = 1
+    exit_code = EXIT_CONFIG_ERROR
 
 
 class DriftSystemError(DriftError):
-    """System/environment error.  Exit code 2."""
+    """System/environment error.  Exit code 4."""
 
-    exit_code = 2
+    exit_code = EXIT_SYSTEM_ERROR
 
 
 class DriftAnalysisError(DriftError):

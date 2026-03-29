@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import logging
 
 import click
@@ -72,3 +73,54 @@ def test_safe_main_exit_is_reraised(monkeypatch: pytest.MonkeyPatch) -> None:
 
     with pytest.raises(click.exceptions.Exit):
         cli.safe_main()
+
+
+def test_safe_main_drift_error_emits_json_payload_when_enabled(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    from drift.errors import DriftConfigError
+
+    def _raise_drift_error(*args, **kwargs):
+        raise DriftConfigError(
+            "DRIFT-1001",
+            "bad config",
+            config_path="drift.yaml",
+            field="weights.pfs",
+            reason="must be float",
+            line=4,
+        )
+
+    monkeypatch.setenv("DRIFT_ERROR_FORMAT", "json")
+    monkeypatch.setattr(cli, "main", _raise_drift_error)
+
+    with pytest.raises(SystemExit) as exc_info:
+        cli.safe_main()
+
+    assert exc_info.value.code == 2
+    captured = capsys.readouterr()
+    payload = json.loads(captured.err.strip())
+    assert payload["schema_version"] == "1.0"
+    assert payload["type"] == "error"
+    assert payload["error_code"] == "DRIFT-1001"
+    assert payload["category"] == "user"
+    assert payload["exit_code"] == 2
+
+
+def test_safe_main_generic_exception_emits_json_payload_when_enabled(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    monkeypatch.setenv("DRIFT_ERROR_FORMAT", "json")
+    monkeypatch.setattr(cli, "main", _raise(RuntimeError("boom")))
+
+    with pytest.raises(SystemExit) as exc_info:
+        cli.safe_main()
+
+    assert exc_info.value.code == 3
+    captured = capsys.readouterr()
+    payload = json.loads(captured.err.strip())
+    assert payload["schema_version"] == "1.0"
+    assert payload["type"] == "error"
+    assert payload["error_code"] == "DRIFT-3002"
+    assert payload["category"] == "analysis"
+    assert payload["exit_code"] == 3
+    assert payload["message"] == "boom"

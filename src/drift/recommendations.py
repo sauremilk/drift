@@ -289,6 +289,14 @@ _RECOMMENDERS = {
 }
 
 
+def generate_recommendation(finding: Finding) -> Recommendation | None:
+    """Generate one actionable recommendation for a single finding."""
+    recommender = _RECOMMENDERS.get(finding.signal_type)
+    if recommender is None:
+        return None
+    return recommender(finding)
+
+
 def generate_recommendations(
     findings: list[Finding],
     max_recommendations: int = 10,
@@ -304,11 +312,7 @@ def generate_recommendations(
 
     seen_titles: set[str] = set()
     for finding in sorted_findings:
-        recommender = _RECOMMENDERS.get(finding.signal_type)
-        if recommender is None:
-            continue
-
-        rec = recommender(finding)
+        rec = generate_recommendation(finding)
         if rec is None:
             continue
 

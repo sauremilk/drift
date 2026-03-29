@@ -3,6 +3,19 @@
 All notable changes to drift-analyzer are documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.10.3] - 2026-03-29
+
+Short version: drift adds deterministic machine-error contracts and a decision-ready fix-first queue so CI and sprint planning can act directly on analyzer output.
+
+### Added
+
+- **Machine-readable CLI error payloads**: Added opt-in `DRIFT_ERROR_FORMAT=json` support so runtime failures emit a single stable JSON object on stderr with explicit `error_code`, `category`, `exit_code`, and hint fields.
+- **Decision-ready `fix_first` output queue**: Added a top-level `fix_first` list in JSON output that ranks remediation work deterministically and exposes rank, priority class, next step, and expected benefit.
+
+### Changed
+
+- **Output contract documentation and tests**: Expanded API output docs and golden/contract coverage for error payloads, deterministic ordering, remediation objects, and fix-first prioritization.
+
 ## [0.10.2] - 2026-03-29
 
 Short version: drift hardens machine-output contracts and CI release ergonomics with deterministic file output, schema versioning, deferred-area governance, and explicit exit-code semantics.

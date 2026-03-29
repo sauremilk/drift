@@ -203,7 +203,7 @@ def analyze(
         json_text = analysis_to_json(analysis)
         if output_file:
             output_file.write_text(json_text + "\n", encoding="utf-8")
-            console.print(f"[dim]Output written to {output_file}[/dim]", highlight=False)
+            click.echo(f"Output written to {output_file}", err=True)
         else:
             click.echo(json_text)
     elif output_format == "sarif":
@@ -212,7 +212,7 @@ def analyze(
         sarif_text = findings_to_sarif(analysis)
         if output_file:
             output_file.write_text(sarif_text + "\n", encoding="utf-8")
-            console.print(f"[dim]Output written to {output_file}[/dim]", highlight=False)
+            click.echo(f"Output written to {output_file}", err=True)
         else:
             click.echo(sarif_text)
     elif output_format == "agent-tasks":
@@ -221,7 +221,7 @@ def analyze(
         tasks_text = analysis_to_agent_tasks_json(analysis)
         if output_file:
             output_file.write_text(tasks_text + "\n", encoding="utf-8")
-            console.print(f"[dim]Output written to {output_file}[/dim]", highlight=False)
+            click.echo(f"Output written to {output_file}", err=True)
         else:
             click.echo(tasks_text)
     elif output_format == "github":
@@ -230,7 +230,7 @@ def analyze(
         gh_text = findings_to_github_annotations(analysis)
         if output_file:
             output_file.write_text(gh_text + "\n", encoding="utf-8")
-            console.print(f"[dim]Output written to {output_file}[/dim]", highlight=False)
+            click.echo(f"Output written to {output_file}", err=True)
         else:
             click.echo(gh_text)
     else:
