@@ -3,6 +3,20 @@
 All notable changes to drift-analyzer are documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.10.0] - 2026-03-29
+
+Short version: drift broadens deterministic architecture coverage with five new Python coherence signals while improving runtime ergonomics for larger analysis workflows.
+
+### Added
+
+- **Five new Python coherence signals**: Added circular import, cognitive complexity, dead code accumulation, fan-out explosion, and guard-clause deficit detection with dedicated fixture-backed coverage.
+- **GitHub-friendly result rendering**: Added dedicated GitHub output formatting and structured error surfaces for CI and agent-driven workflows.
+
+### Changed
+
+- **Analysis throughput and cache behavior**: Refined cache, pipeline, and CLI execution paths to reduce friction in repeated analyzer runs and large benchmark workflows.
+- **Ground-truth and benchmark tooling**: Expanded benchmark label validation, synthetic mutation corpus metadata, and migration helpers so new signal evidence stays reproducible.
+
 ## [0.9.0] - 2026-03-28
 
 Short version: drift now ships first-class Copilot/MCP integration and extends core signal analysis to TypeScript/JavaScript for more actionable cross-tool architecture guidance.
