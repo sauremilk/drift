@@ -35,6 +35,49 @@ Common entry points:
 
 See [Quick Start](getting-started/quickstart.md) for first-run guidance.
 
+## pre-commit
+
+Drift provides two pre-commit hooks so you can add architectural checks to any repository without installing drift globally.
+
+### Recommended: remote hook
+
+```yaml
+# .pre-commit-config.yaml
+repos:
+  - repo: https://github.com/sauremilk/drift
+    rev: v0.9.0
+    hooks:
+      - id: drift-check          # blocks on high-severity findings
+      # - id: drift-report        # report-only (start here, then switch)
+```
+
+**`drift-check`** runs `drift check --fail-on high` and blocks the commit if any high-severity finding is detected.
+
+**`drift-report`** runs `drift check --fail-on none` and prints findings without blocking. Use this during the first week, then switch to `drift-check` once the team is comfortable with the signal quality.
+
+### Alternative: local hook
+
+Use this if drift is already installed in your environment:
+
+```yaml
+repos:
+  - repo: local
+    hooks:
+      - id: drift
+        name: drift
+        entry: drift check --fail-on high
+        language: system
+        pass_filenames: false
+        always_run: true
+```
+
+### Progressive rollout
+
+1. Start with `drift-report` (report-only) to see findings without disruption
+2. Review findings for 1–2 weeks alongside normal code review
+3. Switch to `drift-check` (`--fail-on high`) once the team trusts the signal
+4. Optionally tighten to `--fail-on medium` for stricter gating
+
 ## SARIF and JSON outputs
 
 Drift supports machine-readable outputs for review and automation:

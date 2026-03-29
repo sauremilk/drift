@@ -10,3 +10,17 @@
   pass_filenames: false
   always_run: true
   additional_dependencies: [drift-analyzer]
+
+- id: drift-report
+  name: Drift — Report Only
+  description: >
+    Report architectural drift without blocking the commit.
+    Use this to get started, then switch to drift-check once calibrated.
+  language: python
+  entry: drift check
+  args: [--fail-on, none]
+  types: [python]
+  pass_filenames: false
+  always_run: true
+  verbose: true
+  additional_dependencies: [drift-analyzer]

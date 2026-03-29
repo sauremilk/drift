@@ -1,0 +1,44 @@
+benchmark_id: synthetic_python_app_v1
+language: python
+base_commit: synthetic
+mutations:
+  - id: avs_001
+    signal: architecture_violation
+    class: injected_positive
+    severity_expectation: medium
+    expected_detection:
+      must_detect: true
+      min_findings: 1
+    rationale: "Upward import from lower layer into API layer"
+  - id: pfs_001
+    signal: pattern_fragmentation
+    class: injected_positive
+    severity_expectation: medium
+    expected_detection:
+      must_detect: true
+      min_findings: 1
+    rationale: "Inconsistent error-handling patterns in same module"
+  - id: mds_001
+    signal: mutant_duplicate
+    class: injected_positive
+    severity_expectation: medium
+    expected_detection:
+      must_detect: true
+      min_findings: 1
+    rationale: "Copy-paste duplicate logic across sibling files"
+  - id: eds_001
+    signal: explainability_deficit
+    class: injected_positive
+    severity_expectation: high
+    expected_detection:
+      must_detect: true
+      min_findings: 1
+    rationale: "High complexity without explanation or tests"
+  - id: dia_001
+    signal: doc_impl_drift
+    class: injected_positive
+    severity_expectation: low
+    expected_detection:
+      must_detect: true
+      min_findings: 1
+    rationale: "Documented directories missing in implementation"

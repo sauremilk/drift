@@ -1,6 +1,7 @@
-# Drift — Deterministic architectural drift detection for AI-accelerated Python codebases
+# Drift — Finds the architecture erosion that AI-generated code silently introduces
 
 [![CI](https://github.com/sauremilk/drift/actions/workflows/ci.yml/badge.svg)](https://github.com/sauremilk/drift/actions/workflows/ci.yml)
+[![Precision](https://img.shields.io/badge/precision-97.3%25-brightgreen)](docs/STUDY.md)
 [![Coverage](https://img.shields.io/badge/coverage-78%25-brightgreen)](https://github.com/sauremilk/drift/actions/workflows/ci.yml)
 [![PyPI version](https://img.shields.io/pypi/v/drift-analyzer?cacheSeconds=300)](https://pypi.org/project/drift-analyzer/)
 [![Downloads/month](https://static.pepy.tech/badge/drift-analyzer/month)](https://pepy.tech/project/drift-analyzer)
@@ -14,12 +15,14 @@
 [![Documentation](https://img.shields.io/badge/docs-mkdocs-blue)](https://sauremilk.github.io/drift/)
 
 > **Repo:** `sauremilk/drift` · **Package:** `drift-analyzer` · **Command:** `drift` · **Requires:** Python 3.11+
+>
+> **97.3% precision** on 263 ground-truth findings across 15 repositories · deterministic · no LLM in pipeline · [full study →](docs/STUDY.md)
 
 ## Start here
 
 **What is drift?**
 
-Drift is a deterministic static analyzer for architectural drift in AI-accelerated Python repositories. It detects architecture erosion through cross-file coherence problems such as pattern fragmentation, architecture violations, and structural hotspots before they become normal team habits.
+Drift is a deterministic static analyzer that finds the architecture erosion AI-generated code silently introduces — pattern fragmentation, boundary violations, and structural hotspots — before they become normal team habits. In seconds, without any LLM in the pipeline.
 
 **Who is it for?**
 
@@ -204,6 +207,20 @@ drift check --fail-on high    # block on high-severity findings
 ```
 
 ### pre-commit hook
+
+The fastest way to add drift to your workflow:
+
+```yaml
+# .pre-commit-config.yaml
+repos:
+  - repo: https://github.com/sauremilk/drift
+    rev: v0.9.0
+    hooks:
+      - id: drift-check          # blocks on high-severity findings
+      # - id: drift-report        # report-only alternative (start here)
+```
+
+Or use a local hook if you already have drift installed:
 
 ```yaml
 # .pre-commit-config.yaml

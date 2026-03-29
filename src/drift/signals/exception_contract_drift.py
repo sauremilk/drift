@@ -259,6 +259,94 @@ def _git_show_file(repo_path: Path, ref: str, file_posix: str) -> str | None:
         return None
 
 
+def _git_show_files_batch(
+    repo_path: Path, ref: str, file_posix_list: list[str],
+) -> dict[str, str | None]:
+    """Retrieve multiple file contents at *ref* in a single git process.
+
+    Uses ``git cat-file --batch`` which is dramatically faster than
+    spawning one ``git show`` subprocess per file (O(1) process instead
+    of O(n)).  Falls back per-file on parse error.
+    """
+    if not file_posix_list:
+        return {}
+
+    results: dict[str, str | None] = {}
+    queries = [f"{ref}:{fp}" for fp in file_posix_list]
+    stdin_data = "\n".join(queries) + "\n"
+
+    try:
+        proc = subprocess.run(
+            ["git", "cat-file", "--batch"],
+            input=stdin_data.encode(),
+            capture_output=True,
+            cwd=str(repo_path),
+            timeout=30,
+        )
+    except (subprocess.TimeoutExpired, FileNotFoundError):
+        # Fallback: individual calls
+        for fp in file_posix_list:
+            results[fp] = _git_show_file(repo_path, ref, fp)
+        return results
+
+    # Parse batch output: each object is
+    #   <sha> blob <size>\n<content>\n   (on success)
+    #   <query> missing\n                (on miss)
+    raw = proc.stdout
+    offset = 0
+    for fp in file_posix_list:
+        if offset >= len(raw):
+            results[fp] = None
+            continue
+
+        # Find the header line end
+        newline_pos = raw.find(b"\n", offset)
+        if newline_pos == -1:
+            results[fp] = None
+            continue
+
+        header = raw[offset:newline_pos]
+        if header.endswith(b"missing"):
+            results[fp] = None
+            offset = newline_pos + 1
+            continue
+
+        # Parse "<sha> blob <size>"
+        parts = header.split()
+        if len(parts) < 3:
+            results[fp] = None
+            offset = newline_pos + 1
+            continue
+
+        try:
+            blob_size = int(parts[2])
+        except (ValueError, IndexError):
+            results[fp] = None
+            offset = newline_pos + 1
+            continue
+
+        content_start = newline_pos + 1
+        content_end = content_start + blob_size
+        if content_end > len(raw):
+            results[fp] = None
+            break
+
+        try:
+            results[fp] = raw[content_start:content_end].decode("utf-8", errors="replace")
+        except Exception:
+            results[fp] = None
+
+        # Skip past content + trailing newline
+        offset = content_end + 1
+
+    # Fill any remaining files not covered by the batch response
+    for fp in file_posix_list:
+        if fp not in results:
+            results[fp] = None
+
+    return results
+
+
 @register_signal
 class ExceptionContractDriftSignal(BaseSignal):
     """Detect public functions with changed exception profiles."""
@@ -312,6 +400,10 @@ class ExceptionContractDriftSignal(BaseSignal):
         # Determine comparison ref — use first available lookback commit
         ref = f"HEAD~{min(lookback, 5)}"
 
+        # Batch-fetch all old file contents in a single git process
+        candidate_posix = [pr.file_path.as_posix() for pr in candidates]
+        old_sources = _git_show_files_batch(repo_path, ref, candidate_posix)
+
         # Group divergences by module
         module_divergences: dict[str, list[tuple[ParseResult, str, dict, dict]]] = defaultdict(list)
 
@@ -324,8 +416,8 @@ class ExceptionContractDriftSignal(BaseSignal):
             except (OSError, UnicodeDecodeError):
                 continue
 
-            # Get old source from git
-            old_source = _git_show_file(repo_path, ref, posix)
+            # Get old source from batch result
+            old_source = old_sources.get(posix)
             if old_source is None:
                 continue
 

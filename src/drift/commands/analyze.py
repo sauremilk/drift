@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import sys
 from pathlib import Path
 
 import click
@@ -21,12 +22,37 @@ from drift.commands import console
 @click.option("--path", "-p", default=None, help="Restrict analysis to a subdirectory.")
 @click.option("--since", "-s", default=90, type=int, help="Days of git history to analyze.")
 @click.option(
+    "--output-format",
     "--format",
     "-f",
     "output_format",
-    type=click.Choice(["rich", "json", "sarif", "agent-tasks"]),
+    type=click.Choice(["rich", "json", "sarif", "agent-tasks", "github"]),
     default="rich",
     help="Output format.",
+)
+@click.option(
+    "--fail-on",
+    type=click.Choice(["critical", "high", "medium", "low", "none"]),
+    default=None,
+    help="Exit code 1 if any finding at or above this severity.",
+)
+@click.option(
+    "--exit-zero",
+    is_flag=True,
+    default=False,
+    help="Always exit with code 0, even when findings exceed the severity gate.",
+)
+@click.option(
+    "--select",
+    "select_signals",
+    default=None,
+    help="Comma-separated signal IDs to include (e.g. PFS,AVS,MDS).",
+)
+@click.option(
+    "--ignore",
+    "ignore_signals",
+    default=None,
+    help="Comma-separated signal IDs to exclude (e.g. TVS,DIA).",
 )
 @click.option("--config", "-c", type=click.Path(path_type=Path), default=None)
 @click.option("--workers", "-w", default=None, type=int, help="Parallel workers for file parsing.")
@@ -77,6 +103,10 @@ def analyze(
     path: str | None,
     since: int,
     output_format: str,
+    fail_on: str | None,
+    exit_zero: bool,
+    select_signals: str | None,
+    ignore_signals: str | None,
     config: Path | None,
     workers: int | None,
     no_embeddings: bool,
@@ -99,6 +129,10 @@ def analyze(
         cfg.embeddings_enabled = False
     if embedding_model:
         cfg.embedding_model = embedding_model
+    if select_signals or ignore_signals:
+        from drift.config import apply_signal_filter
+
+        apply_signal_filter(cfg, select_signals, ignore_signals)
 
     # For machine-readable formats, send progress to stderr so stdout stays clean
     progress_console = Console(stderr=True) if output_format != "rich" else console
@@ -157,6 +191,10 @@ def analyze(
         from drift.output.agent_tasks import analysis_to_agent_tasks_json
 
         click.echo(analysis_to_agent_tasks_json(analysis))
+    elif output_format == "github":
+        from drift.output.github_format import findings_to_github_annotations
+
+        click.echo(findings_to_github_annotations(analysis))
     else:
         from drift.output.rich_output import render_full_report, render_recommendations
 
@@ -180,4 +218,22 @@ def analyze(
         recs = generate_recommendations(analysis.findings)
         if recs:
             render_recommendations(recs, console)
+
+    # Severity gate (opt-in via --fail-on)
+    threshold = fail_on or cfg.severity_gate()
+    if threshold and threshold != "none":
+        from drift.scoring.engine import severity_gate_pass
+
+        if not severity_gate_pass(analysis.findings, threshold):
+            console.print(
+                f"\n[bold red]\u2717 Drift check failed:[/bold red] "
+                f"findings at or above '{threshold}' severity.",
+            )
+            if not exit_zero:
+                sys.exit(1)
+        else:
+            console.print(
+                f"\n[bold green]\u2713 Drift check passed[/bold green] "
+                f"(threshold: {threshold}).",
+            )
 

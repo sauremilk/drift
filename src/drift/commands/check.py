@@ -25,11 +25,31 @@ from drift.commands import console
     help="Exit code 1 if any finding at or above this severity. Use 'none' for report-only.",
 )
 @click.option(
+    "--output-format",
     "--format",
     "-f",
     "output_format",
-    type=click.Choice(["rich", "json", "sarif", "agent-tasks"]),
+    type=click.Choice(["rich", "json", "sarif", "agent-tasks", "github"]),
     default="rich",
+    help="Output format.",
+)
+@click.option(
+    "--exit-zero",
+    is_flag=True,
+    default=False,
+    help="Always exit with code 0, even when findings exceed the severity gate.",
+)
+@click.option(
+    "--select",
+    "select_signals",
+    default=None,
+    help="Comma-separated signal IDs to include (e.g. PFS,AVS,MDS).",
+)
+@click.option(
+    "--ignore",
+    "ignore_signals",
+    default=None,
+    help="Comma-separated signal IDs to exclude (e.g. TVS,DIA).",
 )
 @click.option("--config", "-c", type=click.Path(path_type=Path), default=None)
 @click.option("--workers", "-w", default=None, type=int, help="Parallel workers for file parsing.")
@@ -69,6 +89,9 @@ def check(
     diff_ref: str,
     fail_on: str | None,
     output_format: str,
+    exit_zero: bool,
+    select_signals: str | None,
+    ignore_signals: str | None,
     config: Path | None,
     workers: int | None,
     no_embeddings: bool,
@@ -88,6 +111,10 @@ def check(
         cfg.embeddings_enabled = False
     if embedding_model:
         cfg.embedding_model = embedding_model
+    if select_signals or ignore_signals:
+        from drift.config import apply_signal_filter
+
+        apply_signal_filter(cfg, select_signals, ignore_signals)
     threshold = fail_on or cfg.severity_gate()
 
     effective_workers = workers if workers is not None else _DEFAULT_WORKERS
@@ -122,6 +149,10 @@ def check(
         from drift.output.agent_tasks import analysis_to_agent_tasks_json
 
         click.echo(analysis_to_agent_tasks_json(analysis))
+    elif output_format == "github":
+        from drift.output.github_format import findings_to_github_annotations
+
+        click.echo(findings_to_github_annotations(analysis))
     else:
         from drift.output.rich_output import render_full_report
 
@@ -132,7 +163,8 @@ def check(
             f"\n[bold red]✗ Drift check failed:[/bold red] "
             f"findings at or above '{threshold}' severity.",
         )
-        sys.exit(1)
+        if not exit_zero:
+            sys.exit(1)
     else:
         console.print(
             f"\n[bold green]✓ Drift check passed[/bold green] (threshold: {threshold}).",

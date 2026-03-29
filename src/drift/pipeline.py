@@ -11,7 +11,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any
 
-from drift.cache import ParseCache
+from drift.cache import ParseCache, SignalCache
 from drift.context_tags import apply_context_tags, scan_context_tags
 from drift.embeddings import get_embedding_service
 from drift.ingestion.ast_parser import parse_file
@@ -68,6 +68,7 @@ class ParsedInputs:
     commits: list[CommitInfo]
     file_histories: dict[str, FileHistory]
     ai_tools_detected: list[str] = field(default_factory=list)
+    file_hashes: dict[str, str] = field(default_factory=dict)
 
 
 @dataclass(slots=True)
@@ -187,11 +188,13 @@ class IngestionPhase:
 
         cached_results: dict[int, ParseResult] = {}
         to_parse: list[tuple[int, FileInfo, str | None]] = []
+        file_hashes: dict[str, str] = {}
         for idx, finfo in enumerate(files):
             full_path = repo_path / finfo.path
             content_hash: str | None = None
             try:
                 content_hash = ParseCache.file_hash(full_path)
+                file_hashes[finfo.path.as_posix()] = content_hash
                 hit = cache.get(content_hash)
                 if hit is not None:
                     cached_results[idx] = hit
@@ -294,11 +297,17 @@ class IngestionPhase:
             commits=commits,
             file_histories=file_histories,
             ai_tools_detected=ai_tools,
+            file_hashes=file_hashes,
         )
 
 
 class SignalPhase:
-    """Signal execution with resilient failure handling."""
+    """Signal execution with resilient failure handling.
+
+    Signals run in parallel via ThreadPoolExecutor because they operate
+    on shared *immutable* state (parse_results, file_histories, commits).
+    No signal writes to shared data, so concurrent reads are safe.
+    """
 
     def __init__(
         self,
@@ -317,6 +326,7 @@ class SignalPhase:
         *,
         degradation: DegradationInfo,
         progress: ProgressCallback | None = None,
+        workers: int = DEFAULT_WORKERS,
     ) -> SignalOutput:
         emb_svc = None
         if config.embeddings_enabled:
@@ -335,31 +345,72 @@ class SignalPhase:
             commits=parsed.commits,
         )
         signals = self._signal_factory(ctx)
-
-        all_findings: list[Finding] = []
         total_signals = len(signals)
-        for i, signal in enumerate(signals):
-            if progress:
-                progress(f"Signal: {signal.name}", i + 1, total_signals)
-            try:
-                findings = signal.analyze(parsed.parse_results, parsed.file_histories, config)
-                all_findings.extend(findings)
-            except Exception:
-                logging.getLogger("drift").warning(
-                    "Signal '%s' failed; skipping.",
-                    signal.name,
-                    exc_info=True,
-                )
-                degradation.causes.add("signal_failure")
-                degradation.components.add(f"signal:{signal.name}")
-                degradation.events.append(
-                    make_degradation_event(
-                        cause="signal_failure",
-                        component=f"signal:{signal.name}",
-                        message=f"Signal '{signal.name}' failed and was skipped.",
-                        details={"signal": signal.name},
-                    ),
-                )
+
+        # --- signal-level result cache ---
+        sig_cache = SignalCache(repo_path / config.cache_dir)
+        config_fp = SignalCache.config_fingerprint(config)
+        content_hash = SignalCache.content_hash_for_results(
+            parsed.parse_results, parsed.file_hashes,
+        )
+
+        def _run_or_cache(signal: BaseSignal) -> list[Finding]:
+            sig_type_enum = getattr(signal, "signal_type", None)
+            sig_type = sig_type_enum.value if sig_type_enum is not None else None
+            if sig_type is not None:
+                cached = sig_cache.get(sig_type, config_fp, content_hash)
+                if cached is not None:
+                    return cached
+            findings = signal.analyze(
+                parsed.parse_results, parsed.file_histories, config,
+            )
+            if sig_type is not None:
+                sig_cache.put(sig_type, config_fp, content_hash, findings)
+            return findings
+
+        # --- parallel signal execution ---
+        completed_count = 0
+        results: list[tuple[str, list[Finding]]] = []
+
+        max_workers = min(total_signals, workers)
+        with ThreadPoolExecutor(max_workers=max_workers) as pool:
+            futures = {
+                pool.submit(_run_or_cache, signal): signal
+                for signal in signals
+            }
+            for future in as_completed(futures):
+                signal = futures[future]
+                completed_count += 1
+                if progress:
+                    progress(f"Signal: {signal.name}", completed_count, total_signals)
+                try:
+                    findings = future.result()
+                    st_enum = getattr(signal, "signal_type", None)
+                    sort_key = st_enum.value if st_enum is not None else signal.name
+                    results.append((sort_key, findings))
+                except Exception:
+                    logging.getLogger("drift").warning(
+                        "Signal '%s' failed; skipping.",
+                        signal.name,
+                        exc_info=True,
+                    )
+                    degradation.causes.add("signal_failure")
+                    degradation.components.add(f"signal:{signal.name}")
+                    degradation.events.append(
+                        make_degradation_event(
+                            cause="signal_failure",
+                            component=f"signal:{signal.name}",
+                            message=f"Signal '{signal.name}' failed and was skipped.",
+                            details={"signal": signal.name},
+                        ),
+                    )
+
+        # Sort by signal type to guarantee deterministic finding order
+        # regardless of thread completion order.
+        results.sort(key=lambda r: r[0])
+        all_findings: list[Finding] = []
+        for _sig_type, findings in results:
+            all_findings.extend(findings)
 
         return SignalOutput(findings=all_findings)
 
@@ -548,6 +599,7 @@ class AnalysisPipeline:
             parsed,
             degradation=degradation,
             progress=on_progress,
+            workers=workers,
         )
         scored = self._scoring.run(repo_path, files, config, signaled.findings)
 

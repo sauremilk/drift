@@ -42,7 +42,13 @@ def _run(
     def _fake_git_show(_repo_path: Path, _ref: str, file_posix: str) -> str | None:
         return old_sources.get(file_posix)
 
+    def _fake_git_show_batch(
+        _repo_path: Path, _ref: str, file_posix_list: list[str],
+    ) -> dict[str, str | None]:
+        return {fp: old_sources.get(fp) for fp in file_posix_list}
+
     monkeypatch.setattr(ecm_mod, "_git_show_file", _fake_git_show)
+    monkeypatch.setattr(ecm_mod, "_git_show_files_batch", _fake_git_show_batch)
     return signal.analyze(parse_results, histories, DriftConfig())
 
 

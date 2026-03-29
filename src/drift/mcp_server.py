@@ -13,7 +13,28 @@ import time
 from pathlib import Path
 from typing import Any
 
-from mcp.server.fastmcp import FastMCP
+try:
+    from mcp.server.fastmcp import FastMCP
+
+    _MCP_AVAILABLE = True
+except ImportError:
+    _MCP_AVAILABLE = False
+
+    class FastMCP:  # type: ignore[override]
+        """Minimal fallback so helper functions stay importable without mcp extra."""
+
+        def __init__(self, *_args: object, **_kwargs: object) -> None:
+            pass
+
+        def tool(self):
+            def _decorator(func):
+                return func
+
+            return _decorator
+
+        def run(self, **_kwargs: object) -> None:
+            msg = "MCP server requires optional dependency 'mcp'."
+            raise RuntimeError(msg)
 
 from drift.analyzer import analyze_diff, analyze_repo
 from drift.config import DriftConfig
@@ -251,4 +272,7 @@ def drift_file_findings(
 
 def main() -> None:
     """Run the drift MCP server on stdio transport."""
+    if not _MCP_AVAILABLE:
+        msg = "MCP server requires optional dependency 'mcp'."
+        raise RuntimeError(msg)
     mcp.run(transport="stdio")

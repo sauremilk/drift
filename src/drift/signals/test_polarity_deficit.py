@@ -82,23 +82,41 @@ class _AssertionCounter(ast.NodeVisitor):
         self.negative = 0
         self.test_functions = 0
         self.boundary_functions = 0
+        self.zero_assertion_tests: list[str] = []
+        self._current_function: str | None = None
+        self._current_assertions: int = 0
 
     # --- function-level ---------------------------------------------------
 
     def visit_FunctionDef(self, node: ast.FunctionDef) -> None:  # noqa: N802
         if node.name.startswith("test_") or node.name.startswith("test"):
+            # Finalise previous test function tracking
+            self._finalise_current_test()
             self.test_functions += 1
+            self._current_function = node.name
+            self._current_assertions = 0
             lower = node.name.lower()
             if any(kw in lower for kw in _BOUNDARY_KEYWORDS):
                 self.boundary_functions += 1
         self.generic_visit(node)
+        # Finalise after visiting body
+        if node.name == self._current_function:
+            self._finalise_current_test()
 
     visit_AsyncFunctionDef = visit_FunctionDef  # type: ignore[assignment]  # noqa: N815
+
+    def _finalise_current_test(self) -> None:
+        """Record a zero-assertion test if the current function has no assertions."""
+        if self._current_function is not None and self._current_assertions == 0:
+            self.zero_assertion_tests.append(self._current_function)
+        self._current_function = None
+        self._current_assertions = 0
 
     # --- assertion counting -----------------------------------------------
 
     def visit_Assert(self, node: ast.Assert) -> None:  # noqa: N802
         self.positive += 1
+        self._current_assertions += 1
         self.generic_visit(node)
 
     def visit_With(self, node: ast.With) -> None:  # noqa: N802
@@ -108,14 +126,17 @@ class _AssertionCounter(ast.NodeVisitor):
                 func_name = _call_name(call)
                 if func_name in ("pytest.raises", "raises", "assertRaises"):
                     self.negative += 1
+                    self._current_assertions += 1
         self.generic_visit(node)
 
     def visit_Call(self, node: ast.Call) -> None:  # noqa: N802
         name = _call_name(node)
         if name in _NEGATIVE_METHODS or name.split(".")[-1] in _NEGATIVE_METHODS:
             self.negative += 1
+            self._current_assertions += 1
         elif name in _POSITIVE_METHODS or name.split(".")[-1] in _POSITIVE_METHODS:
             self.positive += 1
+            self._current_assertions += 1
         self.generic_visit(node)
 
 
@@ -354,6 +375,53 @@ class TestPolarityDeficitSignal(BaseSignal):
                     },
                 )
             )
+
+        # ── Assertion density check: flag modules with many zero-assertion tests ──
+        min_assertions = config.thresholds.tpd_min_assertions_per_test
+        if min_assertions > 0:
+            for module_key, c in module_counters.items():
+                if c.test_functions < min_test_functions:
+                    continue
+                zero_count = len(c.zero_assertion_tests)
+                if zero_count < 2:
+                    continue
+                zero_ratio = zero_count / max(1, c.test_functions)
+                if zero_ratio < 0.15:
+                    continue
+
+                score = round(min(1.0, zero_ratio * 0.8 + zero_count * 0.02), 3)
+                severity = Severity.HIGH if score >= 0.6 else Severity.MEDIUM
+
+                names_sample = c.zero_assertion_tests[:5]
+                findings.append(
+                    Finding(
+                        signal_type=self.signal_type,
+                        severity=severity,
+                        score=score,
+                        title=f"Zero-assertion tests in {module_key}/",
+                        description=(
+                            f"{zero_count}/{c.test_functions} test functions "
+                            f"contain no assertions ({zero_ratio:.0%}): "
+                            f"{', '.join(names_sample)}"
+                            f"{'…' if zero_count > 5 else ''}. "
+                            f"Tests without assertions provide no verification."
+                        ),
+                        file_path=Path(module_key),
+                        fix=(
+                            f"Add assertions to {zero_count} test functions in "
+                            f"{module_key}/: each test should verify at least "
+                            f"one expected outcome with assert, assertEqual, "
+                            f"or pytest.raises."
+                        ),
+                        metadata={
+                            "zero_assertion_count": zero_count,
+                            "total_test_functions": c.test_functions,
+                            "zero_ratio": round(zero_ratio, 3),
+                            "zero_assertion_tests": c.zero_assertion_tests[:10],
+                        },
+                        rule_id="assertion_density_deficit",
+                    )
+                )
 
         return findings
 

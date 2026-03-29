@@ -72,6 +72,23 @@ class TestConfigValidate:
         assert result.exit_code == 1
         assert "invalid" in result.output.lower() or "✗" in result.output
 
+    def test_invalid_config_shows_error_code(self, runner: CliRunner, invalid_config: Path) -> None:
+        result = runner.invoke(main, ["config", "validate", "--repo", str(invalid_config)])
+        assert result.exit_code == 1
+        assert "DRIFT-1001" in result.output
+
+    def test_invalid_config_shows_yaml_context(self, runner: CliRunner, tmp_path: Path) -> None:
+        cfg = tmp_path / "drift.yaml"
+        cfg.write_text(
+            "weights:\n  pattern_fragmentation: 0.16\n"
+            "  architecture_violation: not_a_number\n",
+            encoding="utf-8",
+        )
+        result = runner.invoke(main, ["config", "validate", "--repo", str(tmp_path)])
+        assert result.exit_code == 1
+        # Should show YAML context with line numbers
+        assert "│" in result.output
+
     def test_extreme_weights_warn(self, runner: CliRunner, extreme_weights_config: Path) -> None:
         result = runner.invoke(
             main, ["config", "validate", "--repo", str(extreme_weights_config)]

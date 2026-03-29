@@ -1,0 +1,9 @@
+{
+  "servers": {
+    "drift": {
+      "type": "stdio",
+      "command": "drift",
+      "args": ["mcp", "--serve"]
+    }
+  }
+}

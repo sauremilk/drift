@@ -8,9 +8,11 @@ from __future__ import annotations
 
 import hashlib
 import json
+import logging
+import pickle
 import time
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from drift.models import (
     ClassInfo,
@@ -20,6 +22,11 @@ from drift.models import (
     PatternCategory,
     PatternInstance,
 )
+
+if TYPE_CHECKING:
+    from drift.models import Finding
+
+logger = logging.getLogger("drift")
 
 
 class ParseCache:
@@ -210,3 +217,117 @@ def _deser_pattern(d: dict[str, Any]) -> PatternInstance:
         fingerprint=d.get("fingerprint", {}),
         variant_id=d.get("variant_id", ""),
     )
+
+
+# ---------------------------------------------------------------------------
+# Signal-level finding cache
+# ---------------------------------------------------------------------------
+
+# Version tag embedded in each cache entry.  Bump when the Finding
+# dataclass or signal contract changes in an incompatible way.
+_SIGNAL_CACHE_VERSION = 1
+
+
+class SignalCache:
+    """Disk-backed cache for per-signal findings keyed by content hashes.
+
+    The cache key is ``(signal_type, config_fingerprint, content_hash)``
+    where *content_hash* is the combined hash of all ParseResult content
+    hashes fed into the signal.  For per-file signals the content hash
+    is that of a single file; for cross-file signals it is a hash over
+    the sorted file hashes of all inputs.
+
+    Entries are stored as pickle because Finding contains Path objects
+    and enums.  A version tag invalidates stale entries automatically.
+    """
+
+    _EVICTION_MAX_AGE_SECONDS = 7 * 24 * 60 * 60
+
+    def __init__(self, cache_dir: Path) -> None:
+        self._cache_dir = cache_dir / "signals"
+        self._cache_dir.mkdir(parents=True, exist_ok=True)
+        self._evict_stale()
+
+    def _evict_stale(self) -> None:
+        cutoff = time.time() - self._EVICTION_MAX_AGE_SECONDS
+        for entry in self._cache_dir.glob("*.pkl"):
+            try:
+                if entry.stat().st_mtime < cutoff:
+                    entry.unlink(missing_ok=True)
+            except OSError:
+                pass
+
+    @staticmethod
+    def config_fingerprint(config: object) -> str:
+        """Derive a short fingerprint from the DriftConfig thresholds.
+
+        We hash the JSON-serialised thresholds + weights so that a
+        config change invalidates signal caches automatically.
+        """
+        from drift.config import DriftConfig
+
+        if not isinstance(config, DriftConfig):
+            return "unknown"
+        payload = json.dumps(
+            {
+                "weights": config.weights.model_dump(mode="python"),
+                "thresholds": config.thresholds.model_dump(mode="python"),
+            },
+            sort_keys=True,
+            default=str,
+        )
+        return hashlib.sha256(payload.encode()).hexdigest()[:16]
+
+    @staticmethod
+    def content_hash_for_results(
+        parse_results: list[ParseResult],
+        file_hashes: dict[str, str],
+    ) -> str:
+        """Compute a combined content hash over multiple ParseResults.
+
+        *file_hashes* maps ``file_path.as_posix()`` → content SHA-256
+        (the same hashes produced by ``ParseCache.file_hash``).
+        """
+        parts: list[str] = []
+        for pr in sorted(parse_results, key=lambda p: p.file_path.as_posix()):
+            h = file_hashes.get(pr.file_path.as_posix(), "")
+            parts.append(h)
+        combined = "|".join(parts)
+        return hashlib.sha256(combined.encode()).hexdigest()[:32]
+
+    def _cache_path(self, signal_type: str, config_fp: str, content_hash: str) -> Path:
+        key = f"{signal_type}_{config_fp}_{content_hash}"
+        return self._cache_dir / f"{key}.pkl"
+
+    def get(
+        self, signal_type: str, config_fp: str, content_hash: str,
+    ) -> list[Finding] | None:
+        """Retrieve cached findings or ``None`` on miss."""
+        path = self._cache_path(signal_type, config_fp, content_hash)
+        if not path.exists():
+            return None
+        try:
+            data = pickle.loads(path.read_bytes())  # noqa: S301
+            if data.get("_v") != _SIGNAL_CACHE_VERSION:
+                path.unlink(missing_ok=True)
+                return None
+            return data["findings"]
+        except Exception:
+            path.unlink(missing_ok=True)
+            return None
+
+    def put(
+        self,
+        signal_type: str,
+        config_fp: str,
+        content_hash: str,
+        findings: list[Finding],
+    ) -> None:
+        """Store findings in the cache."""
+        path = self._cache_path(signal_type, config_fp, content_hash)
+        try:
+            path.write_bytes(
+                pickle.dumps({"_v": _SIGNAL_CACHE_VERSION, "findings": findings}),
+            )
+        except OSError:
+            return

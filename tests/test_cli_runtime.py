@@ -40,7 +40,8 @@ def test_safe_main_file_not_found(
 
     assert exc_info.value.code == 2
     captured = capsys.readouterr()
-    assert "Error: missing file" in captured.err
+    assert "missing file" in captured.err
+    assert "DRIFT-2001" in captured.err
 
 
 def test_safe_main_generic_exception_shows_hint(
@@ -54,7 +55,8 @@ def test_safe_main_generic_exception_shows_hint(
 
     assert exc_info.value.code == 2
     captured = capsys.readouterr()
-    assert "Error: boom" in captured.err
+    assert "boom" in captured.err
+    assert "DRIFT-2003" in captured.err
     assert "Hint: run with -v for the full traceback." in captured.err
 
 

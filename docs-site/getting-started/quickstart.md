@@ -61,7 +61,20 @@ Drift can analyze its own codebase — useful to confirm everything works:
 drift self
 ```
 
-## Next: add to CI
+## Next: add to your workflow
+
+### pre-commit (fastest path)
+
+```yaml
+# .pre-commit-config.yaml
+repos:
+  - repo: https://github.com/sauremilk/drift
+    rev: v0.9.0
+    hooks:
+      - id: drift-report          # start report-only, switch to drift-check later
+```
+
+### CI (report-only first)
 
 The recommended first step is report-only CI (no build failures):
 
@@ -71,7 +84,7 @@ drift check --fail-on none    # report findings, never exit 1
 
 The GitHub Action now follows the same safe default. Tighten to `high` only after the team has reviewed a few real runs.
 
-See [Team Rollout](team-rollout.md) for the full progressive adoption path.
+See [Team Rollout](team-rollout.md) for the full progressive adoption path and [Integrations](../integrations.md) for pre-commit, GitHub Actions, and GitLab CI details.
 
 ## `analyze` vs `check` — when to use which
 

@@ -351,8 +351,15 @@ def explain(signal: str | None, list_all: bool) -> None:
         _print_signal_list()
         return
 
-    key = signal.lower().strip()
-    info = _LOOKUP.get(key)
+    key = signal.strip()
+
+    # Check for error code first (DRIFT-XXXX pattern)
+    if key.upper().startswith("DRIFT-"):
+        _print_error_code_detail(key.upper())
+        return
+
+    key_lower = key.lower()
+    info = _LOOKUP.get(key_lower)
     if info is None:
         abbrs = ", ".join(_all_abbreviations())
         console.print(
@@ -414,3 +421,41 @@ def _print_signal_detail(info: dict[str, str]) -> None:
     body.append(f"{info['fix_hint']}\n", style="green")
 
     console.print(Panel(body, border_style="cyan", title=f"[bold]Signal: {abbr}[/bold]"))
+
+
+def _print_error_code_detail(code: str) -> None:
+    """Print detailed explanation of a Drift error code (DRIFT-XXXX)."""
+    from rich.panel import Panel
+    from rich.text import Text
+
+    from drift.errors import ERROR_REGISTRY
+
+    info = ERROR_REGISTRY.get(code)
+    if info is None:
+        codes = ", ".join(sorted(ERROR_REGISTRY.keys()))
+        console.print(
+            f"[red]Unknown error code:[/red] '{code}'\n"
+            f"[dim]Known codes: {codes}[/dim]"
+        )
+        raise SystemExit(1)
+
+    category_label = {
+        "user": "User Error (exit code 1)",
+        "system": "System Error (exit code 2)",
+        "analysis": "Analysis Error (exit code 3)",
+    }
+
+    body = Text()
+    body.append(f"{code}\n", style="bold")
+    body.append(f"Category: {category_label.get(info.category, info.category)}\n\n", style="dim")
+
+    body.append("What happens\n", style="bold underline")
+    body.append(f"  {info.summary}\n\n")
+
+    body.append("Why\n", style="bold underline")
+    body.append(f"  {info.why}\n\n")
+
+    body.append("What to do\n", style="bold underline")
+    body.append(f"  {info.action}\n", style="green")
+
+    console.print(Panel(body, border_style="yellow", title=f"[bold]Error: {code}[/bold]"))

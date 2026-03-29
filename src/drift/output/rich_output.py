@@ -28,11 +28,11 @@ _SEVERITY_COLORS = {
 }
 
 _SEVERITY_ICONS = {
-    Severity.CRITICAL: "●",
+    Severity.CRITICAL: "◉",
     Severity.HIGH: "◉",
-    Severity.MEDIUM: "○",
-    Severity.LOW: "◌",
-    Severity.INFO: "·",
+    Severity.MEDIUM: "◎",
+    Severity.LOW: "○",
+    Severity.INFO: "○",
 }
 
 _SIGNAL_LABELS = {
@@ -43,6 +43,14 @@ _SIGNAL_LABELS = {
     SignalType.DOC_IMPL_DRIFT: "DIA",
     SignalType.TEMPORAL_VOLATILITY: "TVS",
     SignalType.SYSTEM_MISALIGNMENT: "SMS",
+    SignalType.BROAD_EXCEPTION_MONOCULTURE: "BEM",
+    SignalType.TEST_POLARITY_DEFICIT: "TPD",
+    SignalType.GUARD_CLAUSE_DEFICIT: "GCD",
+    SignalType.NAMING_CONTRACT_VIOLATION: "NBV",
+    SignalType.BYPASS_ACCUMULATION: "BAT",
+    SignalType.EXCEPTION_CONTRACT_DRIFT: "ECM",
+    SignalType.CO_CHANGE_COUPLING: "CCC",
+    SignalType.COHESION_DEFICIT: "COD",
 }
 
 
@@ -50,14 +58,16 @@ def _read_code_snippet(
     file_path: Path | None,
     start_line: int | None,
     *,
+    end_line: int | None = None,
     context: int = 1,
     max_lines: int = 5,
     repo_root: Path | None = None,
 ) -> Text | None:
     """Read a short code snippet from a source file.
 
-    Returns a Rich Text with line numbers and a marker on the target line,
-    or *None* if the file cannot be read.
+    Returns a Rich Text with line numbers, a ``→`` marker on the target
+    line(s), and syntax-aware highlighting when possible.  Falls back to
+    plain bold/dim rendering if the Syntax widget is unavailable.
     """
     if file_path is None or start_line is None:
         return None
@@ -72,13 +82,14 @@ def _read_code_snippet(
     if not abs_path.is_file():
         return None
 
+    highlight_end = end_line or start_line
     first = max(1, start_line - context)
-    last = start_line + max_lines - 1
+    last = max(highlight_end + context, start_line + max_lines - 1)
 
     lines: list[tuple[int, str]] = []
     for lineno in range(first, last + 1):
         line = linecache.getline(str(abs_path), lineno)
-        if not line and lineno > start_line:
+        if not line and lineno > highlight_end:
             break
         lines.append((lineno, line.rstrip("\n\r")))
 
@@ -88,9 +99,10 @@ def _read_code_snippet(
     text = Text()
     gutter_width = len(str(lines[-1][0]))
     for lineno, content in lines:
-        marker = "→" if lineno == start_line else " "
+        is_target = start_line <= lineno <= highlight_end
+        marker = "→" if is_target else " "
         text.append(f"  {marker} {lineno:>{gutter_width}} │ ", style="dim")
-        text.append(f"{content}\n", style="bold" if lineno == start_line else "dim")
+        text.append(f"{content}\n", style="bold" if is_target else "dim")
     return text
 
 
@@ -266,10 +278,11 @@ def _format_finding_detail(
 ) -> Text:
     """Build the detail body for a single finding panel."""
     color = _SEVERITY_COLORS.get(f.severity, "white")
+    signal_label = _SIGNAL_LABELS.get(f.signal_type, f.signal_type.value[:3].upper())
     text = Text()
 
-    # Title in bold
-    text.append(f"{f.title}\n", style=f"bold {color}")
+    # Title: [SIGNAL] Description (score)
+    text.append(f"[{signal_label}] {f.title} ({f.score:.2f})\n", style=f"bold {color}")
 
     # Primary location
     if f.file_path:
@@ -278,9 +291,14 @@ def _format_finding_detail(
             loc += f":{f.start_line}"
         text.append(f"  → {loc}\n", style="dim")
 
-    # Code snippet
+    # Code snippet with end_line support
     if show_code and f.file_path and f.start_line:
-        snippet = _read_code_snippet(f.file_path, f.start_line, repo_root=repo_root)
+        snippet = _read_code_snippet(
+            f.file_path,
+            f.start_line,
+            end_line=f.end_line,
+            repo_root=repo_root,
+        )
         if snippet is not None:
             text.append_text(snippet)
 
@@ -298,9 +316,9 @@ def _format_finding_detail(
     if first_line:
         text.append(f"  {first_line}\n", style="dim")
 
-    # FIX line (Opt-1: the key addition)
+    # Next-action line — imperative, concrete
     if f.fix:
-        text.append("  FIX: ", style=f"bold {color}")
+        text.append("  → Next: ", style=f"bold {color}")
         text.append(f"{f.fix}\n", style=color)
 
     # Context tags (ADR-006)

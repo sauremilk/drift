@@ -5,6 +5,7 @@ from pathlib import Path
 import pytest
 
 from drift.config import DriftConfig
+from drift.errors import DriftConfigError
 
 
 def test_default_config():
@@ -49,7 +50,7 @@ def test_weight_sum_approximately_one():
 def test_load_yaml_unknown_top_level_key_raises(tmp_path: Path):
     (tmp_path / "drift.yaml").write_text("unknown_key: true\n", encoding="utf-8")
 
-    with pytest.raises(ValueError, match="Invalid drift config"):
+    with pytest.raises(DriftConfigError, match="DRIFT-1001"):
         DriftConfig.load(tmp_path)
 
 
@@ -61,5 +62,5 @@ weights:
 """
     (tmp_path / "drift.yaml").write_text(yaml_content, encoding="utf-8")
 
-    with pytest.raises(ValueError, match="Invalid drift config"):
+    with pytest.raises(DriftConfigError, match="DRIFT-1001"):
         DriftConfig.load(tmp_path)

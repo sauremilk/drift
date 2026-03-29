@@ -18,16 +18,42 @@ LABELS_FILE = RESULTS_DIR / "ground_truth_labels.json"
 
 
 def _load_labels() -> dict[str, str]:
-    """Load ground-truth labels: {repo::title -> TP|FP|DISPUTED}."""
+    """Load ground-truth labels into a lookup map."""
     if not LABELS_FILE.exists():
         print(f"No labels file at {LABELS_FILE} — run classify first.", file=sys.stderr)
         return {}
     data = json.loads(LABELS_FILE.read_text(encoding="utf-8"))
-    return {entry["key"]: entry["label"] for entry in data}
+    labels: dict[str, str] = {}
+    for entry in data:
+        label = entry.get("label", "")
+        key = entry.get("key")
+        if key:
+            labels[key] = label
+        legacy_key = entry.get("legacy_key")
+        if legacy_key:
+            labels[legacy_key] = label
+    return labels
 
 
-def _finding_key(repo: str, title: str) -> str:
-    return f"{repo}::{title}"
+def _finding_keys(repo: str, finding: dict) -> list[str]:
+    """Return stable lookup keys ordered from strict to legacy.
+
+    Key v2 is resilient to title collisions by including signal + location.
+    Key v1 keeps compatibility with existing label sets.
+    """
+    title = str(finding.get("title", ""))
+    signal = str(finding.get("signal", "unknown"))
+    file_path = str(
+        finding.get("file")
+        or finding.get("file_path")
+        or finding.get("path")
+        or "?"
+    )
+    line = finding.get("line")
+    line_text = str(line) if isinstance(line, int) else "?"
+    key_v2 = f"{repo}::{signal}::{file_path}:{line_text}::{title}"
+    key_v1 = f"{repo}::{title}"
+    return [key_v2, key_v1]
 
 
 def main() -> None:
@@ -54,9 +80,12 @@ def main() -> None:
 
         for f in findings:
             signal = f.get("signal", "unknown")
-            title = f.get("title", "")
-            key = _finding_key(repo_name, title)
-            label = labels.get(key, "UNLABELED")
+            candidates = _finding_keys(repo_name, f)
+            label = "UNLABELED"
+            for key in candidates:
+                if key in labels:
+                    label = labels[key]
+                    break
 
             if signal not in stats:
                 stats[signal] = {"tp": 0, "fp": 0, "disputed": 0, "unlabeled": 0}

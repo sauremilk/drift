@@ -46,10 +46,27 @@ inputs:
     required: false
     default: "drift-analyzer"
 
+  comment:
+    description: >
+      Post a PR summary comment with drift score, severity distribution,
+      and top findings. Only works in pull_request events.
+      Requires the 'pull-requests: write' permission.
+    required: false
+    default: "false"
+
 outputs:
   sarif-file:
     description: "Absolute path to the generated SARIF file (only set when upload-sarif is 'true')."
     value: ${{ steps.drift-run.outputs.sarif-file }}
+  drift-score:
+    description: "The drift score (0.00–1.00) from the analysis."
+    value: ${{ steps.drift-json.outputs.drift-score }}
+  finding-count:
+    description: "Total number of findings."
+    value: ${{ steps.drift-json.outputs.finding-count }}
+  severity:
+    description: "Overall severity level."
+    value: ${{ steps.drift-json.outputs.severity }}
 
 runs:
   using: "composite"
@@ -74,6 +91,7 @@ runs:
         DRIFT_FORMAT: ${{ inputs.format }}
         DRIFT_CONFIG: ${{ inputs.config }}
         DRIFT_UPLOAD_SARIF: ${{ inputs.upload-sarif }}
+        DRIFT_COMMENT: ${{ inputs.comment }}
       run: |
         ARGS="--repo ${DRIFT_REPO} --fail-on ${DRIFT_FAIL_ON}"
 
@@ -90,10 +108,145 @@ runs:
           DRIFT_EXIT=0
           drift check ${ARGS} --format sarif > "${SARIF_FILE}" || DRIFT_EXIT=$?
           echo "sarif-file=${SARIF_FILE}" >> "${GITHUB_OUTPUT}"
+          # If comment is also requested, still produce JSON for the summary
+          if [ "${DRIFT_COMMENT}" = "true" ]; then
+            drift check ${ARGS} --format json --fail-on none > "${RUNNER_TEMP}/drift-results.json" 2>/dev/null || true
+          fi
           exit ${DRIFT_EXIT}
         else
-          drift check ${ARGS} --format "${DRIFT_FORMAT}"
+          if [ "${DRIFT_COMMENT}" = "true" ]; then
+            # Always produce JSON for PR comment; show user-chosen format too
+            JSON_FILE="${RUNNER_TEMP}/drift-results.json"
+            DRIFT_EXIT=0
+            drift check ${ARGS} --format json > "${JSON_FILE}" || DRIFT_EXIT=$?
+            # Also show the user-chosen format on stdout
+            if [ "${DRIFT_FORMAT}" != "json" ]; then
+              drift check ${ARGS} --format "${DRIFT_FORMAT}" --fail-on none 2>/dev/null || true
+            fi
+            exit ${DRIFT_EXIT}
+          else
+            drift check ${ARGS} --format "${DRIFT_FORMAT}"
+          fi
         fi
+
+    # Extract key metrics from JSON for outputs and PR comment.
+    - name: Extract drift metrics
+      id: drift-json
+      if: always() && inputs.comment == 'true'
+      shell: bash
+      run: |
+        JSON_FILE="${RUNNER_TEMP}/drift-results.json"
+        if [ ! -f "${JSON_FILE}" ]; then
+          echo "drift-score=N/A" >> "${GITHUB_OUTPUT}"
+          echo "severity=N/A" >> "${GITHUB_OUTPUT}"
+          echo "finding-count=0" >> "${GITHUB_OUTPUT}"
+          echo "comment-body=⚠️ Drift analysis produced no results." >> "${GITHUB_OUTPUT}"
+          exit 0
+        fi
+
+        SCORE=$(python3 -c "import json; d=json.load(open('${JSON_FILE}')); print(f\"{d['drift_score']:.2f}\")")
+        SEVERITY=$(python3 -c "import json; d=json.load(open('${JSON_FILE}')); print(d['severity'].upper())")
+        COUNT=$(python3 -c "import json; d=json.load(open('${JSON_FILE}')); print(len(d['findings']))")
+        TREND_DELTA=$(python3 -c "
+        import json
+        d=json.load(open('${JSON_FILE}'))
+        t = d.get('trend')
+        if t and t.get('delta') is not None:
+            delta = t['delta']
+            arrow = '⬆' if delta > 0.005 else '⬇' if delta < -0.005 else '→'
+            print(f'{delta:+.2f} {arrow}')
+        else:
+            print('N/A')
+        ")
+
+        # Build severity distribution
+        SEV_DIST=$(python3 -c "
+        import json
+        from collections import Counter
+        d=json.load(open('${JSON_FILE}'))
+        c = Counter(f['severity'] for f in d['findings'])
+        order = ['critical','high','medium','low','info']
+        parts = []
+        for s in order:
+            n = c.get(s, 0)
+            if n > 0:
+                parts.append(f'{s.upper()}: {n}')
+        print(' · '.join(parts) if parts else 'No findings')
+        ")
+
+        # Build top 3 findings summary
+        TOP_FINDINGS=$(python3 -c "
+        import json
+        d=json.load(open('${JSON_FILE}'))
+        findings = sorted(d['findings'], key=lambda f: f.get('impact', f.get('score', 0)), reverse=True)[:3]
+        for i, f in enumerate(findings, 1):
+            sig = f['signal']
+            title = f['title'][:80]
+            loc = f.get('file', '?')
+            line = f.get('start_line', '')
+            loc_str = f'{loc}:{line}' if line else loc
+            fix = (f.get('fix') or '')[:100]
+            print(f'| {sig} | {title} | \`{loc_str}\` | {fix} |')
+        " 2>/dev/null || echo "| — | Analysis produced no ranked findings | — | — |")
+
+        # Compose markdown comment body
+        {
+          echo "comment-body<<DRIFT_EOF"
+          echo "## 🏗️ Drift Report"
+          echo ""
+          echo "| Metric | Value |"
+          echo "|--------|-------|"
+          echo "| **Score** | \`${SCORE}\` |"
+          echo "| **Trend** | ${TREND_DELTA} |"
+          echo "| **Severity** | ${SEVERITY} |"
+          echo "| **Findings** | ${COUNT} |"
+          echo "| **Distribution** | ${SEV_DIST} |"
+          echo ""
+          if [ "${COUNT}" != "0" ]; then
+            echo "### Top Findings"
+            echo ""
+            echo "| Signal | Finding | Location | Fix |"
+            echo "|--------|---------|----------|-----|"
+            echo "${TOP_FINDINGS}"
+            echo ""
+          fi
+          echo "<sub>Posted by <a href=\"https://github.com/sauremilk/drift\">drift-analyzer</a> · report-only mode — no code was changed</sub>"
+          echo "DRIFT_EOF"
+        } >> "${GITHUB_OUTPUT}"
+
+        echo "drift-score=${SCORE}" >> "${GITHUB_OUTPUT}"
+        echo "severity=${SEVERITY}" >> "${GITHUB_OUTPUT}"
+        echo "finding-count=${COUNT}" >> "${GITHUB_OUTPUT}"
+
+    # Post PR summary comment. Updates existing comment if one exists.
+    - name: Post PR comment
+      if: always() && inputs.comment == 'true' && github.event_name == 'pull_request'
+      uses: actions/github-script@v7
+      with:
+        script: |
+          const body = `${{ steps.drift-json.outputs.comment-body }}`;
+          const marker = '## 🏗️ Drift Report';
+          const { data: comments } = await github.rest.issues.listComments({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            issue_number: context.issue.number,
+          });
+          const existing = comments.find(c => c.body?.startsWith(marker));
+          if (existing) {
+            await github.rest.issues.updateComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              comment_id: existing.id,
+              body,
+            });
+          } else {
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body,
+            });
+          }
 
     # Upload SARIF so findings appear as PR annotations in GitHub Code Scanning.
     # Runs even when the check step failed so that SARIF is never lost.

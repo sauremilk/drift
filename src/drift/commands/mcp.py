@@ -43,4 +43,13 @@ def mcp(serve: bool) -> None:
         )
         raise SystemExit(1)  # noqa: B904
 
-    mcp_main()
+    try:
+        mcp_main()
+    except RuntimeError as exc:
+        if "requires optional dependency 'mcp'" not in str(exc):
+            raise
+        console.print(
+            "[red]Error:[/] MCP server requires the 'mcp' extra.\n"
+            "Install with: [bold]pip install drift-analyzer\\[mcp][/]"
+        )
+        raise SystemExit(1)  # noqa: B904

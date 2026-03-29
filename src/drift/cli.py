@@ -7,6 +7,7 @@ modules under ``src/drift/commands/`` to keep each file focused.
 
 from __future__ import annotations
 
+import difflib
 import logging
 import sys
 
@@ -14,6 +15,7 @@ import click
 
 from drift import __version__
 from drift.commands import console  # noqa: F401 — re-export for backwards compat
+from drift.errors import DriftError
 
 
 def _configure_logging(verbose: bool = False) -> None:
@@ -67,16 +69,21 @@ def safe_main() -> None:
         main(standalone_mode=True)
     except click.exceptions.Exit:
         raise
-    except click.ClickException:
+    except click.ClickException as exc:
+        # Enhance "no such option" with did-you-mean suggestions
+        _handle_click_error(exc)
         raise
     except KeyboardInterrupt:
         click.echo("\nInterrupted.", err=True)
         sys.exit(130)
+    except DriftError as exc:
+        click.echo(exc.detail, err=True)
+        sys.exit(exc.exit_code)
     except FileNotFoundError as exc:
-        click.echo(f"Error: {exc}", err=True)
+        click.echo(f"[DRIFT-2001] {exc}", err=True)
         sys.exit(2)
     except Exception as exc:
-        click.echo(f"Error: {exc}", err=True)
+        click.echo(f"[DRIFT-2003] {exc}", err=True)
         if logging.getLogger().isEnabledFor(logging.DEBUG):
             import traceback
 
@@ -84,6 +91,38 @@ def safe_main() -> None:
         else:
             click.echo("Hint: run with -v for the full traceback.", err=True)
         sys.exit(2)
+
+
+def _handle_click_error(exc: click.ClickException) -> None:
+    """Add did-you-mean suggestions for unknown options."""
+    if not isinstance(exc, click.UsageError):
+        return
+    msg = str(exc.format_message())
+    if "No such option:" not in msg and "no such option:" not in msg:
+        return
+    # Extract the bad option from the message
+    for part in msg.split():
+        if part.startswith("-"):
+            bad_option = part.rstrip(".")
+            break
+    else:
+        return
+
+    # Collect known options from the failed command's context
+    ctx = exc.ctx
+    if ctx is None or ctx.command is None:
+        return
+    known = []
+    for param in ctx.command.params:
+        known.extend(param.opts)
+        known.extend(param.secondary_opts)
+
+    matches = difflib.get_close_matches(bad_option, known, n=1, cutoff=0.5)
+    if matches:
+        exc.message = (
+            f"{exc.format_message().rstrip()}\n"
+            f"  Hint: did you mean '{matches[0]}'?"
+        )
 
 
 if __name__ == "__main__":

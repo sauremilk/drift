@@ -165,6 +165,165 @@ class TestExitCodes:
 
 
 # ---------------------------------------------------------------------------
+# DriftError exit codes
+# ---------------------------------------------------------------------------
+
+
+class TestDriftErrorExitCodes:
+    """Verify structured error exceptions produce correct exit codes."""
+
+    def test_config_error_exits_1(self, monkeypatch, capsys) -> None:
+        from drift.errors import DriftConfigError
+
+        def _raise(*a, **kw):
+            raise DriftConfigError("DRIFT-1001", "bad config",
+                                   config_path="drift.yaml", field="x", reason="r", line=1)
+
+        monkeypatch.setattr(cli, "main", _raise)
+
+        with pytest.raises(SystemExit) as exc_info:
+            cli.safe_main()
+
+        assert exc_info.value.code == 1
+        captured = capsys.readouterr()
+        assert "DRIFT-1001" in captured.err
+
+    def test_system_error_exits_2(self, monkeypatch, capsys) -> None:
+        from drift.errors import DriftSystemError
+
+        def _raise(*a, **kw):
+            raise DriftSystemError("DRIFT-2001", "missing repo",
+                                   path="/nonexistent")
+
+        monkeypatch.setattr(cli, "main", _raise)
+
+        with pytest.raises(SystemExit) as exc_info:
+            cli.safe_main()
+
+        assert exc_info.value.code == 2
+        captured = capsys.readouterr()
+        assert "DRIFT-2001" in captured.err
+
+    def test_analysis_error_exits_3(self, monkeypatch, capsys) -> None:
+        from drift.errors import DriftAnalysisError
+
+        def _raise(*a, **kw):
+            raise DriftAnalysisError("DRIFT-3001", "parse failed",
+                                     path="bad.py", line=1, reason="syntax")
+
+        monkeypatch.setattr(cli, "main", _raise)
+
+        with pytest.raises(SystemExit) as exc_info:
+            cli.safe_main()
+
+        assert exc_info.value.code == 3
+        captured = capsys.readouterr()
+        assert "DRIFT-3001" in captured.err
+
+
+# ---------------------------------------------------------------------------
+# Error code explain
+# ---------------------------------------------------------------------------
+
+
+class TestExplainErrorCodes:
+    """Test drift explain for error codes."""
+
+    def test_explain_error_code(self, cli_runner) -> None:
+        result = cli_runner.invoke(explain, ["DRIFT-1001"])
+        assert result.exit_code == 0
+        assert "DRIFT-1001" in result.output
+        assert "User Error" in result.output
+
+    def test_explain_error_code_case_insensitive(self, cli_runner) -> None:
+        result = cli_runner.invoke(explain, ["drift-1001"])
+        assert result.exit_code == 0
+        assert "DRIFT-1001" in result.output
+
+    def test_explain_unknown_error_code(self, cli_runner) -> None:
+        result = cli_runner.invoke(explain, ["DRIFT-9999"])
+        assert result.exit_code != 0
+        assert "Unknown error code" in result.output
+
+    def test_explain_system_error_code(self, cli_runner) -> None:
+        result = cli_runner.invoke(explain, ["DRIFT-2001"])
+        assert result.exit_code == 0
+        assert "System Error" in result.output
+
+
+# ---------------------------------------------------------------------------
+# Error code registry
+# ---------------------------------------------------------------------------
+
+
+class TestErrorRegistry:
+    """Test the error code system itself."""
+
+    def test_error_format(self) -> None:
+        from drift.errors import ERROR_REGISTRY
+
+        info = ERROR_REGISTRY["DRIFT-1001"]
+        msg = info.format(config_path="drift.yaml", field="weights.pfs",
+                          reason="expects float", line=12)
+        assert "[DRIFT-1001]" in msg
+        assert "weights.pfs" in msg
+        assert "→" in msg
+
+    def test_drift_error_detail_includes_context(self) -> None:
+        from drift.errors import DriftConfigError
+
+        exc = DriftConfigError("DRIFT-1001", "bad value",
+                               context="  → 12 │   pfs: bad")
+        assert "→ 12" in exc.detail
+        assert "DRIFT-1001" in exc.detail
+
+    def test_drift_error_hint(self) -> None:
+        from drift.errors import DriftConfigError
+
+        exc = DriftConfigError("DRIFT-1001", "bad value")
+        assert "drift explain DRIFT-1001" in exc.hint
+
+    def test_yaml_context_snippet(self) -> None:
+        from drift.errors import yaml_context_snippet
+
+        raw = "a: 1\nb: 2\nc: 3\nd: 4\ne: 5\n"
+        snippet = yaml_context_snippet(raw, 3, context=1)
+        assert "→" in snippet
+        assert "c: 3" in snippet
+        assert "b: 2" in snippet
+        assert "d: 4" in snippet
+
+    def test_find_yaml_line(self) -> None:
+        from drift.errors import _find_yaml_line
+
+        raw = "weights:\n  pattern_fragmentation: 0.16\n  architecture_violation: bad\n"
+        line = _find_yaml_line(raw, ("weights", "architecture_violation"))
+        assert line == 3
+
+
+# ---------------------------------------------------------------------------
+# Code snippet end_line support
+# ---------------------------------------------------------------------------
+
+
+class TestCodeSnippetEndLine:
+    """Test end_line support in _read_code_snippet."""
+
+    def test_multi_line_highlight(self, tmp_path: Path) -> None:
+        src = tmp_path / "multi.py"
+        src.write_text("line1\nline2\nline3\nline4\nline5\nline6\n")
+        result = _read_code_snippet(src, 2, end_line=4, context=1, max_lines=6)
+        assert result is not None
+        plain = result.plain
+        # Lines 2-4 should have arrow markers
+        for line in plain.splitlines():
+            if "line2" in line or "line3" in line or "line4" in line:
+                assert "→" in line
+            elif "line1" in line or "line5" in line:
+                assert "→" not in line
+
+
+# ---------------------------------------------------------------------------
 # Fixtures
 # ---------------------------------------------------------------------------
 

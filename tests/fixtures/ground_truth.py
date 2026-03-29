@@ -3,15 +3,31 @@
 Each fixture defines a minimal codebase with known TP, FP, and FN
 expectations per signal type. Fixtures are deterministic — no git,
 no embeddings, no external deps required.
+
+Fixtures are classified by *kind* using :class:`FixtureKind`:
+- ``positive``   – must be detected (TP expectation)
+- ``negative``   – must *not* be detected (TN expectation)
+- ``boundary``   – near threshold; tests sensitivity calibration
+- ``confounder`` – looks similar to a real finding but is benign
 """
 
 from __future__ import annotations
 
+import enum
 import textwrap
 from dataclasses import dataclass, field
 from pathlib import Path
 
 from drift.models import SignalType
+
+
+class FixtureKind(str, enum.Enum):
+    """Classification of a ground-truth fixture."""
+
+    POSITIVE = "positive"
+    NEGATIVE = "negative"
+    BOUNDARY = "boundary"
+    CONFOUNDER = "confounder"
 
 
 @dataclass
@@ -42,6 +58,7 @@ class GroundTruthFixture:
     name: str
     description: str
     files: dict[str, str]  # relative path -> content
+    kind: FixtureKind | None = None
     expected: list[ExpectedFinding] = field(default_factory=list)
     file_history_overrides: dict[str, FileHistoryOverride] = field(default_factory=dict)
 
@@ -62,6 +79,15 @@ class GroundTruthFixture:
     @property
     def fp_expectations(self) -> list[ExpectedFinding]:
         return [e for e in self.expected if not e.should_detect]
+
+    @property
+    def inferred_kind(self) -> FixtureKind:
+        """Return explicit kind if set, otherwise infer from expectations."""
+        if self.kind is not None:
+            return self.kind
+        if self.expected and all(not e.should_detect for e in self.expected):
+            return FixtureKind.NEGATIVE
+        return FixtureKind.POSITIVE
 
 
 # ── Pattern Fragmentation (PFS) ──────────────────────────────────────────
@@ -744,6 +770,73 @@ PFS_LOGGING_TP = GroundTruthFixture(
     ],
 )
 
+PFS_BOUNDARY_TP = GroundTruthFixture(
+    name="pfs_boundary_tp",
+    description="Two handling styles at threshold; fragmentation should be detected.",
+    kind=FixtureKind.BOUNDARY,
+    files={
+        "workers/__init__.py": "",
+        "workers/task_a.py": """\
+            import logging
+            logger = logging.getLogger(__name__)
+
+            def run_task_a():
+                try:
+                    do_work()
+                except Exception as e:
+                    logger.error("Task A failed: %s", e)
+                    raise
+        """,
+        "workers/task_b.py": """\
+            def run_task_b():
+                try:
+                    do_work()
+                except Exception:
+                    return None
+        """,
+    },
+    expected=[
+        ExpectedFinding(
+            signal_type=SignalType.PATTERN_FRAGMENTATION,
+            file_path="workers/",
+            should_detect=True,
+            description="Boundary case at detector threshold should be reported",
+        ),
+    ],
+)
+
+PFS_CONFOUNDER_TN = GroundTruthFixture(
+    name="pfs_confounder_tn",
+    description="Variation exists only in tests; production module remains consistent.",
+    kind=FixtureKind.CONFOUNDER,
+    files={
+        "services/__init__.py": "",
+        "services/handler.py": """\
+            def handle(data):
+                try:
+                    process(data)
+                except ValueError as e:
+                    raise AppError(str(e)) from e
+        """,
+        "tests/__init__.py": "",
+        "tests/test_handler.py": """\
+            def test_handle_returns_none_on_error():
+                try:
+                    raise RuntimeError("boom")
+                except RuntimeError:
+                    assert True
+        """,
+    },
+    expected=[
+        ExpectedFinding(
+            signal_type=SignalType.PATTERN_FRAGMENTATION,
+            file_path="services/",
+            should_detect=False,
+            description="Test-only variation should not produce PFS for service module",
+        ),
+    ],
+)
+
 
 # ── Additional MDS fixtures ──────────────────────────────────────────────
 
@@ -959,6 +1052,74 @@ AVS_SKIP_LAYER_TP = GroundTruthFixture(
             file_path="db/queries.py",
             should_detect=True,
             description="DB layer (layer 2) imports from API layer (layer 0) — upward violation",
+        ),
+    ],
+)
+
+AVS_BOUNDARY_TN = GroundTruthFixture(
+    name="avs_boundary_tn",
+    description="Indirect import via allowed service dependency should not be flagged.",
+    kind=FixtureKind.BOUNDARY,
+    files={
+        "api/__init__.py": "",
+        "api/routes.py": """\
+            from services.user_service import get_user
+
+            def get_user_route(user_id: int):
+                return get_user(user_id)
+        """,
+        "services/__init__.py": "",
+        "services/user_service.py": """\
+            from db.models import User
+
+            def get_user(user_id: int) -> User:
+                return User()
+        """,
+        "db/__init__.py": "",
+        "db/models.py": """\
+            class User:
+                pass
+        """,
+    },
+    expected=[
+        ExpectedFinding(
+            signal_type=SignalType.ARCHITECTURE_VIOLATION,
+            file_path="services/user_service.py",
+            should_detect=False,
+            description="Transitive but allowed flow should remain non-violation",
+        ),
+    ],
+)
+
+AVS_CONFOUNDER_TN = GroundTruthFixture(
+    name="avs_confounder_tn",
+    description="Import in test file resembles upward dependency but must be ignored.",
+    kind=FixtureKind.CONFOUNDER,
+    files={
+        "api/__init__.py": "",
+        "api/routes.py": """\
+            def list_users():
+                return []
+        """,
+        "db/__init__.py": "",
+        "db/models.py": """\
+            class User:
+                pass
+        """,
+        "tests/__init__.py": "",
+        "tests/test_db_layer.py": """\
+            from api.routes import list_users
+
+            def test_fixture_import_for_mocks():
+                assert list_users() == []
+        """,
+    },
+    expected=[
+        ExpectedFinding(
+            signal_type=SignalType.ARCHITECTURE_VIOLATION,
+            file_path="db/models.py",
+            should_detect=False,
+            description="Test-only imports should not cause AVS violation",
         ),
     ],
 )
@@ -1895,10 +2056,14 @@ ALL_FIXTURES: list[GroundTruthFixture] = [
     PFS_TRUE_NEGATIVE,
     PFS_VALIDATION_TP,
     PFS_LOGGING_TP,
+    PFS_BOUNDARY_TP,
+    PFS_CONFOUNDER_TN,
     AVS_TRUE_POSITIVE,
     AVS_TRUE_NEGATIVE,
     AVS_CIRCULAR_TP,
     AVS_SKIP_LAYER_TP,
+    AVS_BOUNDARY_TN,
+    AVS_CONFOUNDER_TN,
     MDS_TRUE_POSITIVE,
     MDS_TRUE_NEGATIVE,
     MDS_NEAR_DUPLICATE_TP,
@@ -2261,3 +2426,10 @@ FIXTURES_BY_SIGNAL: dict[SignalType, list[GroundTruthFixture]] = {}
 for _fixture in ALL_FIXTURES:
     for _exp in _fixture.expected:
         FIXTURES_BY_SIGNAL.setdefault(_exp.signal_type, []).append(_fixture)
+
+
+FIXTURES_BY_KIND: dict[FixtureKind, list[GroundTruthFixture]] = {
+    kind: [] for kind in FixtureKind
+}
+for _fixture in ALL_FIXTURES:
+    FIXTURES_BY_KIND[_fixture.inferred_kind].append(_fixture)

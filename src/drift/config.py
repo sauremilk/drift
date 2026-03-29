@@ -46,12 +46,17 @@ class ThresholdsConfig(BaseModel):
     ai_confidence_threshold: float = 0.50
     bem_min_handlers: int = 3
     tpd_min_test_functions: int = 5
+    tpd_min_assertions_per_test: int = 1  # flag zero-assertion tests
     gcd_min_public_functions: int = 3
+    gcd_max_nesting_depth: int = 4  # deep nesting threshold per function
     nbv_min_function_loc: int = 3  # ADR-008: ignore trivial stubs
     bat_density_threshold: float = 0.05  # ADR-008: markers per LOC
     bat_min_loc: int = 50  # ADR-008: skip tiny files
     ecm_max_files: int = 50  # ADR-008: perf guardrail
     ecm_lookback_commits: int = 20  # ADR-008: git history depth
+    cxs_max_complexity: int = 15  # cognitive complexity threshold per function
+    foe_max_imports: int = 15  # fan-out explosion: unique imports threshold
+    dca_ignore_re_exports: bool = True  # dead-code: ignore __init__.py re-exports
     max_discovery_files: int = 10000  # safety guardrail for huge repos
     small_repo_module_threshold: int = 15  # adaptive dampening below this
     small_repo_min_findings: int = 2  # per-signal minimum to score
@@ -88,6 +93,12 @@ class SignalWeights(BaseModel):
     bypass_accumulation: float = 0.03
     exception_contract_drift: float = 0.03
     co_change_coupling: float = 0.005
+
+    # New signals — report-only until precision/recall validated
+    cognitive_complexity: float = 0.0
+    fan_out_explosion: float = 0.0
+    circular_import: float = 0.0
+    dead_code_accumulation: float = 0.0
 
     def as_dict(self) -> dict[str, float]:
         return self.model_dump()
@@ -163,7 +174,57 @@ class DriftConfig(BaseModel):
             candidate = repo_path / name
             if candidate.exists():
                 return candidate
+        # TOML config files (lower priority than YAML)
+        drift_toml = repo_path / "drift.toml"
+        if drift_toml.exists():
+            return drift_toml
+        pyproject = repo_path / "pyproject.toml"
+        if pyproject.exists():
+            return pyproject
         return None
+
+    @classmethod
+    def _load_toml(cls, config_path: Path) -> DriftConfig:
+        """Load configuration from a TOML file (drift.toml or pyproject.toml)."""
+        import tomllib
+
+        raw = config_path.read_bytes()
+        try:
+            data = tomllib.loads(raw.decode("utf-8"))
+        except Exception as exc:
+            from drift.errors import DriftConfigError
+
+            raise DriftConfigError(
+                "DRIFT-1002",
+                config_path=str(config_path),
+                reason=str(exc),
+                line="?",
+                context=None,
+            ) from exc
+
+        # For pyproject.toml, extract [tool.drift] section
+        if config_path.name == "pyproject.toml":
+            data = data.get("tool", {}).get("drift", {})
+            if not data:
+                return cls()
+
+        try:
+            return cls.model_validate(data)
+        except ValidationError as exc:
+            from drift.errors import DriftConfigError
+
+            first = exc.errors()[0] if exc.errors() else {}
+            loc = first.get("loc", ())
+            field_path = ".".join(str(s) for s in loc) if loc else "unknown"
+            reason = first.get("msg", str(exc))
+            raise DriftConfigError(
+                "DRIFT-1001",
+                config_path=str(config_path),
+                field=field_path,
+                reason=reason,
+                line="?",
+                context=None,
+            ) from exc
 
     @classmethod
     def load(cls, repo_path: Path, config_path: Path | None = None) -> DriftConfig:
@@ -171,14 +232,128 @@ class DriftConfig(BaseModel):
             config_path = cls._find_config_file(repo_path)
 
         if config_path and config_path.exists():
+            if config_path.suffix == ".toml":
+                return cls._load_toml(config_path)
+
             raw = config_path.read_text(encoding="utf-8")
-            data = yaml.safe_load(raw) or {}
+
+            try:
+                data = yaml.safe_load(raw) or {}
+            except yaml.YAMLError as exc:
+                from drift.errors import DriftConfigError, yaml_context_snippet
+
+                line = getattr(exc, "problem_mark", None)
+                lineno = (line.line + 1) if line else 1
+                context = yaml_context_snippet(raw, lineno)
+                raise DriftConfigError(
+                    "DRIFT-1002",
+                    config_path=str(config_path),
+                    reason=str(exc),
+                    line=lineno,
+                    context=context,
+                ) from exc
+
             try:
                 return cls.model_validate(data)
             except ValidationError as exc:
-                raise ValueError(f"Invalid drift config in {config_path}: {exc}") from exc
+                from drift.errors import (
+                    DriftConfigError,
+                    _find_yaml_line,
+                    yaml_context_snippet,
+                )
+
+                first = exc.errors()[0] if exc.errors() else {}
+                loc = first.get("loc", ())
+                field_path = ".".join(str(s) for s in loc) if loc else "unknown"
+                reason = first.get("msg", str(exc))
+                lineno = _find_yaml_line(raw, loc) if loc else None
+                context = yaml_context_snippet(raw, lineno or 1) if raw else None
+                raise DriftConfigError(
+                    "DRIFT-1001",
+                    config_path=str(config_path),
+                    field=field_path,
+                    reason=reason,
+                    line=lineno or "?",
+                    context=context,
+                ) from exc
 
         return cls()
 
     def severity_gate(self) -> str:
         return self.fail_on
+
+
+# ---------------------------------------------------------------------------
+# Signal abbreviation map & CLI filter helpers
+# ---------------------------------------------------------------------------
+
+SIGNAL_ABBREV: dict[str, str] = {
+    "PFS": "pattern_fragmentation",
+    "AVS": "architecture_violation",
+    "MDS": "mutant_duplicate",
+    "EDS": "explainability_deficit",
+    "TVS": "temporal_volatility",
+    "SMS": "system_misalignment",
+    "DIA": "doc_impl_drift",
+    "BEM": "broad_exception_monoculture",
+    "TPD": "test_polarity_deficit",
+    "GCD": "guard_clause_deficit",
+    "COD": "cohesion_deficit",
+    "NBV": "naming_contract_violation",
+    "BAT": "bypass_accumulation",
+    "ECM": "exception_contract_drift",
+    "CCC": "co_change_coupling",
+    "CXS": "cognitive_complexity",
+    "FOE": "fan_out_explosion",
+    "CIR": "circular_import",
+    "DCA": "dead_code_accumulation",
+}
+
+
+def resolve_signal_names(raw: str) -> list[str]:
+    """Resolve comma-separated signal IDs (abbreviations or full names) to full names.
+
+    Raises ValueError for unknown signal IDs.
+    """
+    all_known = set(SignalWeights.model_fields.keys())
+    result: list[str] = []
+    for token in raw.split(","):
+        token = token.strip()
+        if not token:
+            continue
+        upper = token.upper()
+        if upper in SIGNAL_ABBREV:
+            result.append(SIGNAL_ABBREV[upper])
+        elif token.lower() in all_known:
+            result.append(token.lower())
+        else:
+            abbrevs = ", ".join(sorted(SIGNAL_ABBREV))
+            raise ValueError(
+                f"Unknown signal: {token!r}. "
+                f"Use abbreviations ({abbrevs}) or full names."
+            )
+    return result
+
+
+def apply_signal_filter(
+    cfg: DriftConfig,
+    select: str | None,
+    ignore: str | None,
+) -> None:
+    """Modify config weights based on --select / --ignore CLI flags.
+
+    --select: only these signals are active (all others set to weight 0).
+    --ignore: these signals are deactivated (weight 0).
+    If both are given, --select is applied first, then --ignore removes
+    from the selected set.
+    """
+    if select:
+        selected = set(resolve_signal_names(select))
+        for key in SignalWeights.model_fields:
+            if key not in selected:
+                setattr(cfg.weights, key, 0.0)
+
+    if ignore:
+        ignored = set(resolve_signal_names(ignore))
+        for key in ignored:
+            setattr(cfg.weights, key, 0.0)

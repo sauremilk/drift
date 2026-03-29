@@ -9,6 +9,7 @@ from pydantic import ValidationError
 
 from drift.commands import console
 from drift.config import DriftConfig
+from drift.errors import DriftError
 
 
 @click.group("config")
@@ -37,6 +38,9 @@ def validate(repo: str, config_path: str | None) -> None:
 
     try:
         cfg = DriftConfig.load(repo_path, cfg_path)
+    except DriftError as exc:
+        console.print(f"[red]✗ Configuration invalid:[/red]\n{exc.detail}")
+        raise SystemExit(1) from None
     except (ValueError, ValidationError) as exc:
         console.print(f"[red]✗ Configuration invalid:[/red]\n{exc}")
         raise SystemExit(1) from None
@@ -90,6 +94,9 @@ def show(repo: str, config_path: str | None) -> None:
 
     try:
         cfg = DriftConfig.load(repo_path, cfg_path)
+    except DriftError as exc:
+        console.print(f"[red]Error loading config:[/red] {exc.detail}")
+        raise SystemExit(1) from None
     except (ValueError, ValidationError) as exc:
         console.print(f"[red]Error loading config:[/red] {exc}")
         raise SystemExit(1) from None
