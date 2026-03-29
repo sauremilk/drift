@@ -1,0 +1,35 @@
+{
+  "version": "0.10.0",
+  "date": "2026-03-29",
+  "scope": [
+    "five new deterministic Python coherence signals: circular import, cognitive complexity, dead code accumulation, fan-out explosion, and guard-clause deficit",
+    "GitHub-oriented output formatting and structured analyzer error surfacing",
+    "cache, pipeline, and CLI throughput refinements for repeated analysis runs",
+    "expanded benchmark metadata and migration helpers for reproducible signal validation"
+  ],
+  "related_commits": [
+    "4c14b92",
+    "cc154d2"
+  ],
+  "test_evidence": {
+    "suite": "pytest tests/test_circular_import.py tests/test_cognitive_complexity.py tests/test_dead_code_accumulation.py tests/test_fan_out_explosion.py tests/test_guard_clause_deficit.py tests/test_test_polarity_deficit.py tests/test_benchmark_structure.py tests/test_benchmark_label_keys.py tests/test_dx_features.py -q --tb=short --timeout=60",
+    "result": "passed",
+    "summary": "100 passed",
+    "coverage_percent": null
+  },
+  "new_tests": [
+    "tests/test_circular_import.py",
+    "tests/test_cognitive_complexity.py",
+    "tests/test_dead_code_accumulation.py",
+    "tests/test_fan_out_explosion.py",
+    "tests/test_guard_clause_deficit.py",
+    "tests/test_test_polarity_deficit.py",
+    "tests/test_benchmark_structure.py",
+    "tests/test_benchmark_label_keys.py"
+  ],
+  "notes": [
+    "Release metadata updated to 0.10.0 and validated with scripts/check_release_discipline.py and scripts/check_version.py --tag v0.10.0.",
+    "Repository root hygiene validated after moving ad-hoc JSON outputs into work_artifacts/.",
+    "Additional regression sweep passed for CLI/config/output compatibility: 56 passed."
+  ]
+}
