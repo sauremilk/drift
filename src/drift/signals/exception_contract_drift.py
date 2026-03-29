@@ -400,9 +400,13 @@ class ExceptionContractDriftSignal(BaseSignal):
         # Determine comparison ref — use first available lookback commit
         ref = f"HEAD~{min(lookback, 5)}"
 
-        # Batch-fetch all old file contents in a single git process
         candidate_posix = [pr.file_path.as_posix() for pr in candidates]
-        old_sources = _git_show_files_batch(repo_path, ref, candidate_posix)
+        if len(candidate_posix) == 1:
+            only_path = candidate_posix[0]
+            old_sources = {only_path: _git_show_file(repo_path, ref, only_path)}
+        else:
+            # Batch-fetch old file contents in a single git process for larger sets.
+            old_sources = _git_show_files_batch(repo_path, ref, candidate_posix)
 
         # Group divergences by module
         module_divergences: dict[str, list[tuple[ParseResult, str, dict, dict]]] = defaultdict(list)
