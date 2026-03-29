@@ -15,7 +15,41 @@ import shutil
 import subprocess
 import sys
 import tempfile
+from dataclasses import dataclass
 from pathlib import Path
+
+
+@dataclass
+class MutationEntity:
+    """Single benchmark mutation with explicit metadata."""
+
+    id: str
+    signal: str
+    description: str
+    klass: str = "injected_positive"
+    severity_expectation: str = "medium"
+    must_detect: bool = True
+    min_findings: int = 1
+    rationale: str = ""
+
+
+def _entity_id(signal: str, idx: int) -> str:
+    abbrev = {
+        "architecture_violation": "avs",
+        "pattern_fragmentation": "pfs",
+        "mutant_duplicate": "mds",
+        "explainability_deficit": "eds",
+        "temporal_volatility": "tvs",
+        "system_misalignment": "sms",
+        "doc_impl_drift": "dia",
+        "broad_exception_monoculture": "bem",
+        "test_polarity_deficit": "tpd",
+        "guard_clause_deficit": "gcd",
+        "naming_contract_violation": "nbv",
+        "bypass_accumulation": "bat",
+        "exception_contract_drift": "ecd",
+    }.get(signal, signal)
+    return f"{abbrev}_{idx:03d}"
 
 
 def _write(path: Path, content: str) -> None:

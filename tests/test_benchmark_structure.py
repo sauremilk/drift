@@ -1,7 +1,7 @@
 """Structural validation of the three-tier benchmark framework.
 
 Tier A — Deterministic micro-fixtures (ground_truth.py)
-Tier B — Controlled mutation benchmark (_mutation_benchmark.py)
+Tier B — Controlled mutation benchmark (mutation_benchmark.py)
 Tier C — Real-world gold-standard labels (evaluate_benchmark.py)
 
 These tests verify the *structure* of each tier, not the analysis itself.
@@ -101,7 +101,7 @@ def test_boundary_and_confounder_fixtures_exist() -> None:
 
 def test_mutation_entity_model_importable() -> None:
     """MutationEntity dataclass must be importable."""
-    from scripts._mutation_benchmark import MutationEntity
+    from scripts.mutation_benchmark import MutationEntity
 
     m = MutationEntity(
         id="avs_001",
@@ -114,7 +114,7 @@ def test_mutation_entity_model_importable() -> None:
 
 def test_entity_id_generation() -> None:
     """_entity_id must produce stable abbreviation-based IDs."""
-    from scripts._mutation_benchmark import _entity_id
+    from scripts.mutation_benchmark import _entity_id
 
     assert _entity_id("architecture_violation", 1) == "avs_001"
     assert _entity_id("pattern_fragmentation", 3) == "pfs_003"
