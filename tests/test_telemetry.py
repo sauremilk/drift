@@ -257,7 +257,7 @@ def test_api_scan_returns_acceptance_fields(monkeypatch) -> None:
     monkeypatch.setattr(analyzer_module, "analyze_repo", lambda *args, **kwargs: analysis)
     monkeypatch.setattr(api_module, "_emit_api_telemetry", lambda **kwargs: None)
     monkeypatch.setattr(api_module, "_finding_concise", lambda f: {"title": f.title})
-    monkeypatch.setattr(api_module, "_top_signals", lambda analysis: [])
+    monkeypatch.setattr(api_module, "_top_signals", lambda analysis, **_kw: [])
     monkeypatch.setattr(api_module, "_fix_first_concise", lambda analysis, max_items=5: [])
 
     result = scan(Path("."))
