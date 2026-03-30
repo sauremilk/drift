@@ -1019,6 +1019,41 @@ EDS_NESTED_LOOPS_TP = GroundTruthFixture(
     ],
 )
 
+EDS_INIT_TN = GroundTruthFixture(
+    name="eds_init_tn",
+    description="Complex __init__ without docstring → should NOT fire EDS",
+    files={
+        "models/__init__.py": "",
+        "models/pipeline.py": """\
+            class Pipeline:
+                def __init__(self, config, steps, hooks, timeout=30, retries=3):
+                    self.config = config
+                    self.steps = steps
+                    self.hooks = hooks
+                    self.timeout = timeout
+                    self.retries = retries
+                    if config.get("strict"):
+                        for step in steps:
+                            if not step.get("name"):
+                                raise ValueError("Each step must have a name")
+                            if step.get("timeout", 0) > timeout:
+                                raise ValueError("Step timeout exceeds pipeline timeout")
+                    for hook in hooks:
+                        if hook.get("on") not in ("start", "end", "error"):
+                            raise ValueError(f"Unknown hook event: {hook.get('on')}")
+                    self._state = "ready"
+        """,
+    },
+    expected=[
+        ExpectedFinding(
+            signal_type=SignalType.EXPLAINABILITY_DEFICIT,
+            file_path="models/pipeline.py",
+            should_detect=False,
+            description="Complex __init__ without docstring → EDS must not fire",
+        ),
+    ],
+)
+
 
 # ── Additional AVS fixtures ──────────────────────────────────────────────
 
@@ -2072,6 +2107,7 @@ ALL_FIXTURES: list[GroundTruthFixture] = [
     EDS_TRUE_NEGATIVE,
     EDS_STATE_MACHINE_TP,
     EDS_NESTED_LOOPS_TP,
+    EDS_INIT_TN,
     TVS_TRUE_POSITIVE,
     TVS_TRUE_NEGATIVE,
     SMS_TRUE_POSITIVE,

@@ -152,8 +152,12 @@ class ExplainabilityDeficitSignal(BaseSignal):
             if func.loc < min_func_loc:
                 continue
 
-            # Check if there's a corresponding test
+            # Skip __init__ methods – the class docstring covers their intent
             base_name = func.name.split(".")[-1] if "." in func.name else func.name
+            if base_name == "__init__":
+                continue
+
+            # Check if there's a corresponding test
             has_test = base_name in test_targets
 
             explanation = _explanation_score(func, has_test)
