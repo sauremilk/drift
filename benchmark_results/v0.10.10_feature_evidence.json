@@ -1,0 +1,32 @@
+{
+  "version": "0.10.10",
+  "date": "2026-03-30",
+  "scope": [
+    "add --target-path to fix-plan for agent-scoped repair task filtering",
+    "add explicit in_scope_accept hints in diff next_actions to unblock agents from pre-existing noise",
+    "add baseline-workflow recommendation in scan next_actions for high-finding legacy repos",
+    "improve agent decision guidance in _diff_next_actions and _scan_next_actions"
+  ],
+  "related_commits": [
+    "ff43a87"
+  ],
+  "test_evidence": {
+    "suite": "python -m pytest tests/ --tb=short --ignore=tests/test_smoke.py -q --maxfail=3",
+    "result": "passed",
+    "summary": "1065 passed, 5 skipped, 42 deselected, 1 warning",
+    "coverage_percent": null
+  },
+  "new_tests": [
+    "tests/test_agent_native_cli.py::test_fix_plan_help (updated: verify --target-path present)",
+    "tests/test_agent_native_cli.py::test_diff_next_actions_in_scope_accept_true",
+    "tests/test_agent_native_cli.py::test_diff_next_actions_in_scope_accept_false",
+    "tests/test_agent_native_cli.py::test_scan_next_actions_baseline_hint_many_findings",
+    "tests/test_agent_native_cli.py::test_scan_next_actions_no_baseline_hint_few_findings",
+    "tests/test_agent_native_cli.py::test_fix_plan_target_path_filters"
+  ],
+  "notes": [
+    "Agent-workflow analysis from real-world Coding Agent testing revealed three critical UX gaps: (1) agents could not scope fix-plan to specific subdirectories, causing information overload on large repos, (2) diff output exposed in_scope_accept field but agents didn't discover it without explicit guidance in next-actions, (3) scan on legacy codebases with >20 findings resulted in permanent accept_change=false loop until agents discovered baseline workflow.",
+    "All three improvements are backward-compatible: fix-plan --target-path is optional (defaults to full repo), diff next_actions are purely additive guidance, scan recommendations only appear when findings >20.",
+    "Empirical validation: 5 new unit tests verify each gate condition, and full test suite remains green at 1065 tests (net +6 tests)."
+  ]
+}
