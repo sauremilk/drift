@@ -322,7 +322,16 @@ class ArchitectureViolationSignal(BaseSignal):
             known = {pr.file_path.as_posix() for pr in parse_results}
             findings.extend(self._check_co_change(graph, commits, known))
 
-        return findings
+        # --- Deduplicate findings by (title, file_path) ---
+        seen: set[tuple[str, str]] = set()
+        deduped: list[Finding] = []
+        for f in findings:
+            key = (f.title, f.file_path.as_posix() if f.file_path else "")
+            if key not in seen:
+                seen.add(key)
+                deduped.append(f)
+
+        return deduped
 
     def _check_boundary(
         self,

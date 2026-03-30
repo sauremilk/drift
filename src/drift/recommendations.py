@@ -96,11 +96,21 @@ def _recommend_architecture_violation(finding: Finding) -> Recommendation | None
 def _recommend_mutant_duplicate(finding: Finding) -> Recommendation | None:
     """Suggest merging near-duplicate functions."""
     meta = finding.metadata
-    func_a = meta.get("function_a", "?")
-    func_b = meta.get("function_b", "?")
+
+    # Exact duplicates store a "functions" list instead of function_a/function_b.
+    funcs_list = meta.get("functions")
+    if funcs_list and len(funcs_list) >= 2:
+        func_a = funcs_list[0].get("name", "?")
+        func_b = funcs_list[1].get("name", "?")
+        file_a = funcs_list[0].get("file", "")
+        file_b = funcs_list[1].get("file", "")
+    else:
+        func_a = meta.get("function_a", "?")
+        func_b = meta.get("function_b", "?")
+        file_a = meta.get("file_a", "")
+        file_b = meta.get("file_b", "")
+
     similarity = meta.get("similarity", 0.0)
-    file_a = meta.get("file_a", "")
-    file_b = meta.get("file_b", "")
 
     if file_a == file_b:
         location = f"in {file_a}"

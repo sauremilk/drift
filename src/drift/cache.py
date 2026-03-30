@@ -225,7 +225,7 @@ def _deser_pattern(d: dict[str, Any]) -> PatternInstance:
 
 # Version tag embedded in each cache entry.  Bump when the Finding
 # dataclass or signal contract changes in an incompatible way.
-_SIGNAL_CACHE_VERSION = 1
+_SIGNAL_CACHE_VERSION = 2
 
 
 class SignalCache:
