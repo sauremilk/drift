@@ -3,12 +3,14 @@
 All notable changes to drift-analyzer are documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
-## [1.1.2] — 2026-03-30
+## [1.1.2] - 2026-03-30
+
+Short version: drift reduziert DCA-Fehlalarme für Framework-Entry-Points in API-Routern, damit Agenten keine aktiven Endpunkte als Dead-Code-Löschkandidaten priorisieren.
 
 ### Fixed
 - DCA reduziert False Positives für Framework-Entry-Points: Route-dekorierte Handler und schema-nahe Klassen in Router-Dateien werden nicht mehr als potenziell ungenutzte Exports priorisiert.
 
-## [1.1.1] — 2026-03-30
+## [1.1.1] - 2026-03-30
 
 ### Release
 - Version 1.1.1
