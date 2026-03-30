@@ -1,3 +1,11 @@
+## [1.1.9] – 2026-03-30
+
+Short version: Add --signals alias to analyze and check commands for consistency with scan. (+1 more commits)
+
+### Changed
+
+- Add --signals alias to analyze and check commands for consistency with scan. (+1 more commits)
+
 ## [1.1.8] – 2026-03-30
 
 Short version: Extract api helpers and improve mcp docs.
