@@ -34,6 +34,9 @@ _SIGNAL_PREFIX = {
     SignalType.FAN_OUT_EXPLOSION: "foe",
     SignalType.CIRCULAR_IMPORT: "cir",
     SignalType.DEAD_CODE_ACCUMULATION: "dca",
+    SignalType.MISSING_AUTHORIZATION: "maz",
+    SignalType.INSECURE_DEFAULT: "isd",
+    SignalType.HARDCODED_SECRET: "hsc",
 }
 
 

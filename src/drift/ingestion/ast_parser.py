@@ -143,7 +143,47 @@ _ROUTE_DECORATORS = {
     "route",
     "api_view",
     "action",
+    "websocket",
 }
+
+# Auth-related decorators recognised during endpoint fingerprinting.
+_AUTH_DECORATORS: frozenset[str] = frozenset({
+    "login_required",
+    "permission_required",
+    "requires",
+    "auth_required",
+    "roles_required",
+    "roles_accepted",
+    "user_passes_test",
+    "authentication_classes",
+    "permission_classes",
+    "jwt_required",
+    "token_required",
+    "protected",
+    "require_auth",
+    "require_login",
+    "staff_member_required",
+    "superuser_required",
+    "requires_auth",
+})
+
+# Names/attributes in function bodies that indicate an auth check.
+_AUTH_BODY_NAMES: frozenset[str] = frozenset({
+    "current_user",
+    "get_current_user",
+    "Depends",
+    "Security",
+})
+
+# Attribute access patterns that indicate auth (e.g. request.user).
+_AUTH_BODY_ATTRS: frozenset[str] = frozenset({
+    "user",
+    "auth",
+    "is_authenticated",
+    "has_perm",
+    "has_permission",
+    "check_permissions",
+})
 
 
 def _is_route_decorator(decorator: ast.expr) -> bool:
@@ -156,6 +196,26 @@ def _is_route_decorator(decorator: ast.expr) -> bool:
     return False
 
 
+def _decorator_name(dec: ast.expr) -> str:
+    """Extract a human-readable name from a decorator AST node."""
+    if isinstance(dec, ast.Call):
+        dec = dec.func
+    if isinstance(dec, ast.Attribute):
+        return dec.attr
+    if isinstance(dec, ast.Name):
+        return dec.id
+    return ""
+
+
+def _has_auth_decorator(node: ast.FunctionDef | ast.AsyncFunctionDef) -> bool:
+    """Return True if the function has any recognised auth decorator."""
+    for dec in node.decorator_list:
+        name = _decorator_name(dec).lower()
+        if name in _AUTH_DECORATORS:
+            return True
+    return False
+
+
 def _fingerprint_endpoint(
     node: ast.FunctionDef | ast.AsyncFunctionDef,
 ) -> dict[str, Any] | None:
@@ -165,18 +225,27 @@ def _fingerprint_endpoint(
         return None
 
     has_try = False
-    has_auth_check = False
+    has_auth_check = _has_auth_decorator(node)
+    auth_mechanism: str | None = None
     return_patterns: list[str] = []
+
+    if has_auth_check:
+        auth_mechanism = "decorator"
 
     for child in ast.walk(node):
         if isinstance(child, ast.Try):
             has_try = True
-        if isinstance(child, ast.Name) and child.id in (
-            "current_user",
-            "get_current_user",
-            "Depends",
+        if isinstance(child, ast.Name) and child.id in _AUTH_BODY_NAMES:
+            has_auth_check = True
+            if auth_mechanism is None:
+                auth_mechanism = "body_name"
+        if (
+            isinstance(child, ast.Attribute)
+            and child.attr in _AUTH_BODY_ATTRS
         ):
             has_auth_check = True
+            if auth_mechanism is None:
+                auth_mechanism = "body_attr"
         if isinstance(child, ast.Return) and child.value and isinstance(child.value, ast.Call):
             func = child.value.func
             if isinstance(func, ast.Name):
@@ -187,6 +256,7 @@ def _fingerprint_endpoint(
     return {
         "has_error_handling": has_try,
         "has_auth": has_auth_check,
+        "auth_mechanism": auth_mechanism,
         "return_patterns": return_patterns,
         "is_async": isinstance(node, ast.AsyncFunctionDef),
     }

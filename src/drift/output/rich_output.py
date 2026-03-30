@@ -55,6 +55,9 @@ _SIGNAL_LABELS = {
     SignalType.EXCEPTION_CONTRACT_DRIFT: "ECM",
     SignalType.CO_CHANGE_COUPLING: "CCC",
     SignalType.COHESION_DEFICIT: "COD",
+    SignalType.MISSING_AUTHORIZATION: "MAZ",
+    SignalType.INSECURE_DEFAULT: "ISD",
+    SignalType.HARDCODED_SECRET: "HSC",
 }
 
 

@@ -61,6 +61,29 @@ class ThresholdsConfig(BaseModel):
     small_repo_module_threshold: int = 15  # adaptive dampening below this
     small_repo_min_findings: int = 2  # per-signal minimum to score
 
+    # Security-by-default thresholds
+    hsc_min_entropy: float = 3.5  # Shannon entropy per char for secret detection
+    hsc_min_length: int = 16  # minimum string length for entropy-based detection
+    maz_public_endpoint_allowlist: list[str] = Field(
+        default_factory=lambda: [
+            "health",
+            "healthcheck",
+            "health_check",
+            "ping",
+            "ready",
+            "readiness",
+            "liveness",
+            "metrics",
+            "openapi",
+            "docs",
+            "redoc",
+            "favicon",
+            "robots",
+            "sitemap",
+            "schema",
+        ]
+    )
+
 
 class SignalWeights(BaseModel):
     """Weights for each detection signal in composite scoring.
@@ -99,6 +122,11 @@ class SignalWeights(BaseModel):
     fan_out_explosion: float = 0.0
     circular_import: float = 0.0
     dead_code_accumulation: float = 0.0
+
+    # Security-by-default signals (report-only until precision validated)
+    missing_authorization: float = 0.0
+    insecure_default: float = 0.0
+    hardcoded_secret: float = 0.0
 
     def as_dict(self) -> dict[str, float]:
         return self.model_dump()
@@ -325,6 +353,9 @@ SIGNAL_ABBREV: dict[str, str] = {
     "FOE": "fan_out_explosion",
     "CIR": "circular_import",
     "DCA": "dead_code_accumulation",
+    "MAZ": "missing_authorization",
+    "ISD": "insecure_default",
+    "HSC": "hardcoded_secret",
 }
 
 

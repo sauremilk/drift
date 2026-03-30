@@ -301,19 +301,25 @@ def findings_to_sarif(analysis: RepoAnalysis) -> str:
         rule_key = f.rule_id or f.signal_type.value
         if rule_key not in rule_ids:
             rule_ids[rule_key] = len(rules)
-            rules.append(
-                {
-                    "id": rule_key,
-                    "shortDescription": {"text": f.signal_type.value},
-                    "defaultConfiguration": {
-                        "level": "error"
-                        if f.severity in (Severity.CRITICAL, Severity.HIGH)
-                        else "warning"
-                        if f.severity == Severity.MEDIUM
-                        else "note",
-                    },
+            rule_obj: dict[str, object] = {
+                "id": rule_key,
+                "shortDescription": {"text": f.signal_type.value},
+                "defaultConfiguration": {
+                    "level": "error"
+                    if f.severity in (Severity.CRITICAL, Severity.HIGH)
+                    else "warning"
+                    if f.severity == Severity.MEDIUM
+                    else "note",
                 },
-            )
+            }
+            # Attach CWE reference for security-related findings.
+            cwe = f.metadata.get("cwe")
+            if cwe and isinstance(cwe, str) and cwe.startswith("CWE-"):
+                cwe_id = cwe.split("-", 1)[1]
+                rule_obj["helpUri"] = (
+                    f"https://cwe.mitre.org/data/definitions/{cwe_id}.html"
+                )
+            rules.append(rule_obj)
 
         result: dict[str, Any] = {
             "ruleId": rule_key,

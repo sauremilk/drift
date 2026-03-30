@@ -477,6 +477,79 @@ _SIGNAL_INFO: dict[str, dict[str, str]] = {
             "Verify framework entry-points are not false positives."
         ),
     },
+    "MAZ": {
+        "signal_type": "missing_authorization",
+        "name": "Missing Authorization",
+        "weight": "0.0 (report-only)",
+        "description": (
+            "Detects HTTP/API endpoints that lack any form of "
+            "authentication or authorization check (CWE-862)."
+        ),
+        "detects": (
+            "Route handler functions with @app.route / @router.get / etc. "
+            "decorators that have no auth decorator, no body-level auth "
+            "dependency, and are not on the public endpoint allowlist."
+        ),
+        "example": (
+            '  @app.get("/users/{user_id}")\n'
+            "  async def get_user(user_id: int):  # no auth check\n"
+            "      return db.get(user_id)"
+        ),
+        "fix_hint": (
+            "Add an authentication dependency (e.g. Depends(get_current_user) "
+            "for FastAPI, @login_required for Django) or add the endpoint to "
+            "maz_public_endpoint_allowlist in drift.yaml if intentionally public."
+        ),
+    },
+    "ISD": {
+        "signal_type": "insecure_default",
+        "name": "Insecure Default",
+        "weight": "0.0 (report-only)",
+        "description": (
+            "Detects insecure configuration defaults that are commonly "
+            "copy-pasted from tutorials or scaffolding (CWE-1188)."
+        ),
+        "detects": (
+            "DEBUG=True, ALLOWED_HOSTS=['*'], CORS_ALLOW_ALL_ORIGINS=True, "
+            "insecure cookie settings, SECURE_SSL_REDIRECT=False, and "
+            "requests.get(..., verify=False) patterns in non-test code."
+        ),
+        "example": (
+            "  DEBUG = True\n"
+            "  ALLOWED_HOSTS = ['*']\n"
+            "  SESSION_COOKIE_SECURE = False"
+        ),
+        "fix_hint": (
+            "Set DEBUG=False, restrict ALLOWED_HOSTS, enable CORS origin "
+            "validation, set cookie Secure flags to True, and use "
+            "verify=True for HTTP requests. Add # drift:ignore-security "
+            "for intentional local-dev overrides."
+        ),
+    },
+    "HSC": {
+        "signal_type": "hardcoded_secret",
+        "name": "Hardcoded Secret",
+        "weight": "0.0 (report-only)",
+        "description": (
+            "Detects hardcoded secrets, API tokens, and credentials "
+            "in Python source code (CWE-798)."
+        ),
+        "detects": (
+            "String literals assigned to variables with secret-related names "
+            "(SECRET_KEY, API_TOKEN, PASSWORD, etc.), known token prefixes "
+            "(ghp_, sk-, AKIA, xoxb-), and high-entropy strings that are "
+            "not loaded from environment or config."
+        ),
+        "example": (
+            '  SECRET_KEY = "django-insecure-abc123..."\n'
+            '  GITHUB_TOKEN = "ghp_xxxxxxxxxxxxxxxxxxxx"'
+        ),
+        "fix_hint": (
+            "Move secrets to environment variables (os.environ['SECRET_KEY']) "
+            "or a secrets manager. Never commit real credentials. Use "
+            "placeholder values only in example/template files."
+        ),
+    },
 }
 
 # Build a lookup by abbreviation (case-insensitive) and by signal_type value

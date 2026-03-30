@@ -43,6 +43,9 @@ class SignalType(StrEnum):
     FAN_OUT_EXPLOSION = "fan_out_explosion"
     CIRCULAR_IMPORT = "circular_import"
     DEAD_CODE_ACCUMULATION = "dead_code_accumulation"
+    MISSING_AUTHORIZATION = "missing_authorization"
+    INSECURE_DEFAULT = "insecure_default"
+    HARDCODED_SECRET = "hardcoded_secret"
 
 
 class PatternCategory(StrEnum):
