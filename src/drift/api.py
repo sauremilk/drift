@@ -182,22 +182,25 @@ def _top_signals(analysis: RepoAnalysis) -> list[dict[str, Any]]:
             {"signal": sig, "score": round(score_sums[sig], 3), "finding_count": counts[sig]}
             for sig in counts
         ],
-        key=lambda x: (-x["score"], x["signal"]),
+        key=lambda x: (-x["score"], -x["finding_count"], x["signal"]),
     )
 
 
 def _fix_first_concise(analysis: RepoAnalysis, max_items: int = 5) -> list[dict[str, Any]]:
-    """Build compact fix_first list."""
+    """Build compact fix_first list (deduplicated)."""
     from drift.output.json_output import (
         _SEVERITY_RANK,
+        _dedupe_findings,
         _expected_benefit_for_finding,
         _next_step_for_finding,
         _priority_class,
         _priority_rank,
     )
 
+    deduped, _counts = _dedupe_findings(analysis.findings)
+
     prioritized = sorted(
-        analysis.findings,
+        deduped,
         key=lambda f: (
             _priority_rank(_priority_class(f)),
             _SEVERITY_RANK[f.severity],
@@ -348,6 +351,9 @@ def _format_scan_response(
         response_truncated=len(analysis.findings) > max_findings,
         recommended_next_actions=_scan_next_actions(analysis),
     )
+    if getattr(analysis, "skipped_files", 0) > 0:
+        result["skipped_files"] = analysis.skipped_files
+        result["skipped_languages"] = sorted(analysis.skipped_languages.keys())
     return result
 
 
@@ -519,6 +525,23 @@ def diff(
         if out_of_scope_new:
             blocking_reasons.append("out_of_scope_diff_noise")
 
+        # Noise context: help agents distinguish pre-existing findings from
+        # change-caused findings when drift_detected=false but counts > 0.
+        pre_existing_count = len(out_of_scope_new)
+        noise_explanation = None
+        if not baseline_file and pre_existing_count > 0:
+            noise_explanation = (
+                f"{pre_existing_count} finding(s) are pre-existing out-of-scope noise, "
+                f"not caused by this change. Use 'drift baseline save' then "
+                f"'drift diff --baseline .drift-baseline.json' to suppress them."
+            )
+        elif not scoped_new and not out_of_scope_new:
+            noise_explanation = "No new findings detected."
+        noise_context = {
+            "pre_existing_count": pre_existing_count,
+            "explanation": noise_explanation,
+        }
+
         result = _base_response(
             drift_detected=delta > 0.0,
             status=status,
@@ -536,6 +559,7 @@ def diff(
             new_high_or_critical=high_count,
             resolved_count=len(scoped_resolved),
             out_of_scope_new_count=len(out_of_scope_new),
+            noise_context=noise_context,
             drift_categories=drift_categories,
             affected_components=affected,
             summary=", ".join(summary_parts),
@@ -545,6 +569,7 @@ def diff(
             recommended_next_actions=_diff_next_actions(
                 scoped_new, status, blocking_reasons,
                 in_scope_accept=not in_scope_blocking,
+                has_baseline=baseline_file is not None,
             ),
             response_truncated=len(scoped_new) > max_findings,
         )
@@ -577,6 +602,7 @@ def _diff_next_actions(
     blocking_reasons: list[str],
     *,
     in_scope_accept: bool = False,
+    has_baseline: bool = False,
 ) -> list[str]:
     """Derive next actions from diff results."""
     actions: list[str] = []
@@ -584,6 +610,11 @@ def _diff_next_actions(
         actions.append("drift_fix_plan for new findings")
     if any(f.severity.value in ("critical", "high") for f in new_findings):
         actions.append("drift_explain for high-severity signals")
+    if "out_of_scope_diff_noise" in blocking_reasons and not has_baseline:
+        actions.append(
+            "Use 'drift baseline save' then 'drift diff --baseline "
+            ".drift-baseline.json' to suppress pre-existing noise"
+        )
     if "out_of_scope_diff_noise" in blocking_reasons and in_scope_accept:
         actions.append(
             "accept_change is false due to out-of-scope noise only — "
@@ -858,13 +889,40 @@ def fix_plan(
 
         limited = tasks[:max_tasks]
 
+        # Path diagnostic: explain empty results when target_path was used
+        next_actions = ["drift_diff after applying fixes to verify improvement"]
+        path_diagnostic = None
+        if target_path and not tasks:
+            normalized = Path(target_path).as_posix().strip("/")
+            # Check if the path had any files in the analysis
+            analyzed_paths = {
+                f.file_path.as_posix().strip("/")
+                for f in analysis.findings
+                if f.file_path
+            }
+            if not any(
+                p == normalized or p.startswith(normalized + "/")
+                for p in analyzed_paths
+            ):
+                path_diagnostic = "no_matching_files"
+                next_actions = [
+                    f"Path '{target_path}' matched no analyzed files. "
+                    f"Check spelling or use 'drift scan' to see available paths."
+                ]
+            else:
+                path_diagnostic = "no_findings_in_path"
+                next_actions = [
+                    f"Path '{target_path}' contains analyzed files but has no actionable findings."
+                ]
+
         result = _base_response(
             drift_score=round(analysis.drift_score, 4),
             tasks=[_task_to_api_dict(t) for t in limited],
             task_count=len(limited),
             total_available=len(tasks),
             skipped_low_automation=skipped_low,
-            recommended_next_actions=["drift_diff after applying fixes to verify improvement"],
+            path_diagnostic=path_diagnostic,
+            recommended_next_actions=next_actions,
         )
         _emit_api_telemetry(
             tool_name="api.fix_plan",
@@ -918,6 +976,7 @@ def validate(
     path: str | Path = ".",
     *,
     config_file: str | None = None,
+    baseline_file: str | None = None,
 ) -> dict[str, Any]:
     """Validate configuration and environment before analysis.
 
@@ -927,6 +986,10 @@ def validate(
         Repository root directory.
     config_file:
         Explicit config file path (auto-discovered if ``None``).
+    baseline_file:
+        Optional baseline file for progress comparison.  When provided,
+        a quick scan is performed and the result is compared against the
+        baseline to report score progress, resolved/new finding counts.
     """
     import subprocess
 
@@ -934,7 +997,7 @@ def validate(
 
     repo_path = Path(path).resolve()
     elapsed_ms = timed_call()
-    params = {"path": str(path), "config_file": config_file}
+    params = {"path": str(path), "config_file": config_file, "baseline_file": baseline_file}
 
     try:
         # Check git availability
@@ -1029,6 +1092,58 @@ def validate(
             warnings=warnings,
             capabilities=capabilities,
         )
+
+        # Optional baseline progress comparison
+        if baseline_file and valid:
+            try:
+                from drift.baseline import load_baseline
+
+                bl_fingerprints = load_baseline(Path(baseline_file))
+
+                scan_result = scan(repo_path, max_findings=9999, response_detail="concise")
+                score_after = scan_result.get("drift_score", 0.0)
+
+                # Read baseline score from file
+                import json as _json
+
+                bl_data = _json.loads(Path(baseline_file).read_text(encoding="utf-8"))
+                score_before = bl_data.get("drift_score", 0.0)
+
+                # Count new vs resolved via fingerprints
+                from drift.analyzer import analyze_repo
+                from drift.baseline import baseline_diff as _bl_diff
+                from drift.config import DriftConfig as _DC
+
+                _cfg = _DC.load(repo_path)
+                _analysis = analyze_repo(repo_path, config=_cfg)
+                new_findings, known_findings = _bl_diff(
+                    _analysis.findings, bl_fingerprints
+                )
+
+                delta = round(score_after - score_before, 4)
+                direction = "improved" if delta < -0.01 else (
+                    "degraded" if delta > 0.01 else "stable"
+                )
+                result["progress"] = {
+                    "baseline_file": str(baseline_file),
+                    "score_before": round(score_before, 4),
+                    "score_after": round(score_after, 4),
+                    "delta": delta,
+                    "direction": direction,
+                    "resolved_count": len(known_findings),
+                    "new_count": len(new_findings),
+                    "progress_summary": (
+                        f"{len(known_findings)} finding(s) resolved, "
+                        f"{len(new_findings)} new, "
+                        f"score {'improved' if delta < 0 else 'worsened'} by "
+                        f"{abs(delta):.4f}"
+                    ),
+                }
+            except Exception as exc_bl:
+                result["progress"] = {
+                    "error": f"Baseline comparison failed: {exc_bl}",
+                }
+
         _emit_api_telemetry(
             tool_name="api.validate",
             params=params,

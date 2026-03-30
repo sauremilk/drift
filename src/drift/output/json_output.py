@@ -242,7 +242,7 @@ def analysis_to_json(analysis: RepoAnalysis, indent: int = 2, compact: bool = Fa
         for index, finding in enumerate(deduped_findings, start=1)
     ]
 
-    fix_first = _fix_first_list(ranked)
+    fix_first = _fix_first_list(deduped_findings)
 
     data: dict[str, Any] = {
         "schema_version": SCHEMA_VERSION,

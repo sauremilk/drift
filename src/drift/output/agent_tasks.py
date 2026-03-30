@@ -264,7 +264,7 @@ def _success_criteria_for(finding: Finding) -> list[str]:
         module = meta.get("module", path_str)
         return [
             f"Pattern variants in {module} reduced to 1 (canonical)",
-            f"`drift analyze` reports no pattern_fragmentation finding for {module}",
+            f"`drift scan` reports no pattern_fragmentation finding for {module}",
             *base,
             "FALSE-FIX CHECK: if variant_count unchanged but score drops, the fix is cosmetic",
         ]
@@ -275,20 +275,20 @@ def _success_criteria_for(finding: Finding) -> list[str]:
             cycle_str = " → ".join(str(c) for c in cycle[:5])
             return [
                 f"Circular dependency resolved: no cycle between {cycle_str}",
-                "`drift analyze` reports no circular dependency for these modules",
+                "`drift scan` reports no circular dependency for these modules",
                 *base,
                 "FALSE-FIX CHECK: if cycle length unchanged, the fix merely relocated the cycle",
             ]
         if "blast" in finding.title.lower():
             return [
                 f"Blast radius of {path_str} reduced below threshold",
-                "`drift analyze` reports no blast_radius finding for this module",
+                "`drift scan` reports no blast_radius finding for this module",
                 *base,
             ]
         # layer violation
         return [
             f"No upward layer import from {path_str}",
-            "`drift analyze` reports no layer violation for this file",
+            "`drift scan` reports no layer violation for this file",
             *base,
             "FALSE-FIX CHECK: if new upward imports appear elsewhere,"
             " the violation was shifted not fixed",
@@ -299,7 +299,7 @@ def _success_criteria_for(finding: Finding) -> list[str]:
         func_b = meta.get("function_b", "?")
         return [
             f"Functions '{func_a}' and '{func_b}' merged into a single implementation",
-            "No mutant_duplicate finding for these functions in `drift analyze`",
+            "No mutant_duplicate finding for these functions in `drift scan`",
             *base,
             "FALSE-FIX CHECK: renaming without body change will not resolve this"
             " — body hash must differ",
@@ -471,7 +471,7 @@ def _finding_to_task(
         file_path=finding.file_path.as_posix() if finding.file_path else None,
         start_line=finding.start_line,
         end_line=finding.end_line,
-        related_files=[rf.as_posix() for rf in finding.related_files],
+        related_files=list(dict.fromkeys(rf.as_posix() for rf in finding.related_files)),
         complexity=complexity,
         expected_effect=_expected_effect_for(finding),
         success_criteria=_success_criteria_for(finding),

@@ -75,8 +75,17 @@ def discover_files(
     include: list[str] | None = None,
     exclude: list[str] | None = None,
     max_files: int | None = None,
+    skipped_out: dict[str, int] | None = None,
 ) -> list[FileInfo]:
-    """Walk the repo and return all source files matching include/exclude patterns."""
+    """Walk the repo and return all source files matching include/exclude patterns.
+
+    Parameters
+    ----------
+    skipped_out:
+        If a mutable dict is passed, it is populated with ``{language: count}``
+        entries for files that were recognized but skipped because their
+        language runtime is not installed (e.g. TypeScript without tree-sitter).
+    """
     supported = _detect_supported_languages()
 
     if include is None:
@@ -163,5 +172,7 @@ def discover_files(
             sum(skipped_langs.values()),
             summary,
         )
+        if skipped_out is not None:
+            skipped_out.update(skipped_langs)
 
     return sorted(files, key=lambda f: f.path.as_posix())

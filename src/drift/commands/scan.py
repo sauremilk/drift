@@ -23,6 +23,8 @@ from drift.api import to_json
 @click.option("--since", "since_days", type=int, default=90, help="Days of git history.")
 @click.option(
     "--select",
+    "--signals",
+    "select",
     default=None,
     help="Comma-separated signal IDs to include (e.g. PFS,AVS).",
 )

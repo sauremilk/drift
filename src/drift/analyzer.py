@@ -207,11 +207,13 @@ def analyze_repo(
     if on_progress:
         on_progress("Discovering files", 0, 0)
 
+    skipped_langs: dict[str, int] = {}
     files = discover_files(
         repo_path,
         include=config.include,
         exclude=config.exclude,
         max_files=config.thresholds.max_discovery_files,
+        skipped_out=skipped_langs,
     )
 
     if target_path:
@@ -227,6 +229,8 @@ def analyze_repo(
         workers=workers,
     )
     analysis.analysis_duration_seconds = round(time.monotonic() - start, 2)
+    analysis.skipped_files = sum(skipped_langs.values())
+    analysis.skipped_languages = skipped_langs
 
     _apply_trend_and_persist_snapshot(
         repo_path,

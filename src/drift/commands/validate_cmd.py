@@ -27,15 +27,31 @@ from drift.api import validate as api_validate
     help="Explicit configuration file path.",
 )
 @click.option(
+    "--baseline",
+    "baseline_file",
+    type=click.Path(exists=True, path_type=Path),
+    default=None,
+    help="Baseline file for progress comparison (runs quick scan).",
+)
+@click.option(
     "--output",
     "-o",
     type=click.Path(path_type=Path),
     default=None,
     help="Write JSON output to a file instead of stdout.",
 )
-def validate(path: Path, config_file: Path | None, output: Path | None) -> None:
+def validate(
+    path: Path,
+    config_file: Path | None,
+    baseline_file: Path | None,
+    output: Path | None,
+) -> None:
     """Validate drift config and environment and emit structured JSON."""
-    result = api_validate(path, config_file=str(config_file) if config_file else None)
+    result = api_validate(
+        path,
+        config_file=str(config_file) if config_file else None,
+        baseline_file=str(baseline_file) if baseline_file else None,
+    )
     text = to_json(result)
     if output is not None:
         output.write_text(text + "\n", encoding="utf-8")

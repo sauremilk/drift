@@ -272,6 +272,8 @@ class RepoAnalysis:
     degradation_components: list[str] = field(default_factory=list)
     degradation_events: list[dict[str, Any]] = field(default_factory=list)
     ai_tools_detected: list[str] = field(default_factory=list)
+    skipped_files: int = 0
+    skipped_languages: dict[str, int] = field(default_factory=dict)
 
     @property
     def severity(self) -> Severity:

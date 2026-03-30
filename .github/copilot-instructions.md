@@ -113,6 +113,43 @@ Skalierungsmaßnahmen ohne gesichertes Vertrauen sind **nachrangig**.
 
 ---
 
+## Automatisierte Release-Pipeline für Coding-Agenten
+
+**WICHTIG:** Nach jeder erfolgreichen Code-Änderung an `src/drift/` MUSS der Agent automatisch den Release-Workflow durchführen.
+
+Siehe: `.github/instructions/drift-release-automation.instructions.md`
+
+### Release-Workflow (für Agenten verpflichtend)
+
+1. **Tests ausführen** (schnelle Tests ohne `--run-slow`)
+2. **Version berechnen** (Semantic Versioning basierend auf Commit-Mitteilungen)
+3. **CHANGELOG aktualisieren** (automatisch aus Commit-History)
+4. **Committen** (Version + CHANGELOG)
+5. **Tagen** (annotierter Git Tag mit Versionsnummer)
+6. **Pushen** (zu master + Tag)
+7. **Warten auf Workflow** (.github/workflows/publish.yml triggert automatisch → PyPI Publikation)
+
+**Commit-Nachricht-Format für Versionsbumps:**
+- `feat: ...` → MINOR Versions-Bump (0.x.0)
+- `fix: ...` → PATCH Versions-Bump (0.0.x)
+- `BREAKING CHANGE: ...` oder `BREAKING: ...` → MAJOR Versions-Bump (x.0.0)
+
+**Befehl für vollständigen Release:**
+```bash
+python scripts/release_automation.py --full-release
+```
+
+Dieser Befehl:
+- Führt Quick-Tests durch (stoppt bei Fehler)
+- Berechnet automatisch die nächste Versionsnummer
+- Aktualisiert CHANGELOG.md
+- Erstellt Release-Commit
+- Erstellt Git Tag
+- Pushed alles zu GitHub
+- Triggert automatisch GitHub Release + PyPI Publikation
+
+---
+
 ## Entscheidungsregel bei Unklarheit (Policy §16)
 
 > Wähle die Option, die die größte Unsicherheit reduziert.
@@ -152,6 +189,9 @@ ingestion/ → signals/ → scoring/ → output/
 | Lint + Autofix | `make lint-fix` |
 | CI lokal replizieren | `make ci` |
 | Selbstanalyse | `make self` |
+| **Release (vollständig)** | `python scripts/release_automation.py --full-release` |
+| Release: nur Version berechnen | `python scripts/release_automation.py --calc-version` |
+| Release: CHANGELOG aktualisieren | `python scripts/release_automation.py --update-changelog` |
 
 ### Verzeichnisstruktur
 
