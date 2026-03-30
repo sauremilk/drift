@@ -40,6 +40,38 @@ def run_tests() -> bool:
         return False
 
 
+def _get_commit_summary() -> str:
+    """Return a curated one-line summary of commits since last tag."""
+    try:
+        last_tag = subprocess.run(
+            ["git", "describe", "--tags", "--abbrev=0"],
+            cwd=ROOT,
+            capture_output=True,
+            text=True,
+            check=True,
+        ).stdout.strip()
+        log = subprocess.run(
+            ["git", "log", f"{last_tag}..HEAD", "--oneline", "--no-merges"],
+            cwd=ROOT,
+            capture_output=True,
+            text=True,
+            check=True,
+        ).stdout.strip()
+        lines = [line for line in log.splitlines() if line]
+        if not lines:
+            return "Maintenance and dependency updates."
+        subject = lines[0].split(" ", 1)[-1] if " " in lines[0] else lines[0]
+        # Strip conventional-commit prefixes (feat:, fix:, chore:, etc.)
+        subject = re.sub(r"^[a-z]+(\([^)]+\))?:\s*", "", subject)
+        extras = f" (+{len(lines) - 1} more commits)" if len(lines) > 1 else ""
+        subject = subject[0].upper() + subject[1:] if subject else subject
+        if not subject.endswith("."):
+            subject += "."
+        return subject + extras
+    except Exception:
+        return "Maintenance updates."
+
+
 def get_latest_version() -> tuple[int, int, int]:
     """Get latest version from git tags."""
     try:
@@ -212,11 +244,17 @@ def main() -> int:
         PYPROJECT.write_text(pyproject_content, "utf-8")
         print(f"✓ Updated pyproject.toml: {version_no_v}")
 
-        # Update CHANGELOG
+        # Update CHANGELOG with format required by check_release_discipline.py:
+        # - header: ## [x.y.z] – YYYY-MM-DD  (en-dash)
+        # - first line: Short version: <sentence>
+        # - curated bullets under ### Added / Changed / Fixed
         today = datetime.now().strftime("%Y-%m-%d")
+        commit_summary = _get_commit_summary()
         new_section = (
-            f"\n## [{version_no_v}] — {today}\n"
-            f"\n### Release\n- Version {version_no_v}\n"
+            f"## [{version_no_v}] \u2013 {today}\n\n"
+            f"Short version: {commit_summary}\n\n"
+            f"### Changed\n\n"
+            f"- {commit_summary}\n\n"
         )
         changelog_content = ""
         if CHANGELOG.exists():
