@@ -236,6 +236,7 @@ def scan(
     signals: list[str] | None = None,
     max_findings: int = 10,
     response_detail: str = "concise",
+    strategy: str = "diverse",
 ) -> dict[str, Any]:
     """Run full drift analysis and return a structured result dict.
 
@@ -253,6 +254,8 @@ def scan(
         Maximum number of findings in the response.
     response_detail:
         ``"concise"`` (token-sparing) or ``"detailed"`` (full fields).
+    strategy:
+        ``"diverse"`` (default) or ``"top-severity"`` (pure score sort).
     """
     from drift.analyzer import analyze_repo
     from drift.config import DriftConfig, apply_signal_filter
@@ -267,6 +270,7 @@ def scan(
         "signals": signals,
         "max_findings": max_findings,
         "response_detail": response_detail,
+        "strategy": strategy,
     }
 
     try:
@@ -286,6 +290,7 @@ def scan(
             analysis,
             max_findings=max_findings,
             detail=response_detail,
+            strategy=strategy,
         )
         _emit_api_telemetry(
             tool_name="api.scan",
@@ -310,15 +315,51 @@ def scan(
         raise
 
 
+def _diverse_findings(findings: list, max_findings: int) -> list:
+    """Select findings with signal diversity.
+
+    Algorithm:
+    1. One top finding per signal with score >= 0.5 (sorted by score desc)
+    2. Fill remaining slots with highest-scored remaining findings
+    """
+    by_score = sorted(findings, key=lambda f: f.impact, reverse=True)
+
+    # Phase 1: one top finding per signal (score >= 0.5)
+    seen_signals: set[str] = set()
+    phase1: list = []
+    phase1_set: set[int] = set()
+    for f in by_score:
+        sig = f.signal_type.value
+        if sig not in seen_signals and f.score >= 0.5:
+            seen_signals.add(sig)
+            phase1.append(f)
+            phase1_set.add(id(f))
+
+    # Phase 2: fill remaining slots from highest-scored remaining
+    remaining = [f for f in by_score if id(f) not in phase1_set]
+    budget = max_findings - len(phase1)
+    if budget > 0:
+        result = phase1 + remaining[:budget]
+    else:
+        result = phase1[:max_findings]
+    return result
+
+
 def _format_scan_response(
     analysis: RepoAnalysis,
     *,
     max_findings: int = 10,
     detail: str = "concise",
+    strategy: str = "diverse",
 ) -> dict[str, Any]:
     """Format a RepoAnalysis into the scan response schema."""
-    ranked = sorted(analysis.findings, key=lambda f: f.impact, reverse=True)
-    limited = ranked[:max_findings]
+    if strategy == "diverse":
+        limited = _diverse_findings(analysis.findings, max_findings)
+    else:
+        ranked = sorted(
+            analysis.findings, key=lambda f: f.impact, reverse=True,
+        )
+        limited = ranked[:max_findings]
     critical_count = sum(1 for f in analysis.findings if f.severity.value == "critical")
     high_count = sum(1 for f in analysis.findings if f.severity.value == "high")
     blocking_reasons: list[str] = []

@@ -48,6 +48,7 @@ def scan(
     since_days: int,
     select: str | None,
     max_findings: int,
+    strategy: str,
     response_detail: str,
     output: Path | None,
 ) -> None:
@@ -60,6 +61,7 @@ def scan(
         signals=signals,
         max_findings=max_findings,
         response_detail=response_detail,
+        strategy=strategy,
     )
     text = to_json(result)
     if output is not None:
