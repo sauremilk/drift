@@ -1,17 +1,74 @@
+## [1.1.6] – 2026-03-30
 
-## [1.1.5] — 2026-03-30
+Short version: Add missing --strategy click option to scan command. (+5 more commits)
+
+### Changed
+
+- Add missing --strategy click option to scan command. (+5 more commits)
+
+## [1.1.6] – 2026-03-30
+
+Short version: Use ternary for budget check in diverse strategy (ruff SIM108). (+4 more commits)
+
+### Changed
+
+- Use ternary for budget check in diverse strategy (ruff SIM108). (+4 more commits)
+
+## [1.1.6] – 2026-03-30
+
+Short version: Add feature evidence and STUDY.md update for v1.1.6 strategy param. (+3 more commits)
+
+### Changed
+
+- Add feature evidence and STUDY.md update for v1.1.6 strategy param. (+3 more commits)
+
+## [1.1.6] – 2026-03-30
+
+Short version: CHANGELOG generation passes release-discipline gate, strip commit prefixes. (+2 more commits)
+
+### Changed
+
+- CHANGELOG generation passes release-discipline gate, strip commit prefixes. (+2 more commits)
+
+## [1.1.6] – 2026-03-30
+
+Short version: Run pre-push preflight before commit/tag, not after.
+
+### Changed
+
+- Run pre-push preflight before commit/tag, not after.
+
+## [1.1.6] – 2026-03-30
+
+Short version: Fix: run pre-push preflight before commit/tag, not after.
+
+### Changed
+
+- Fix: run pre-push preflight before commit/tag, not after.
+
+
+## [1.1.6] — 2026-03-30
 
 ### Release
-- Version 1.1.5
+- Version 1.1.6
 # Changelog
 
 All notable changes to drift-analyzer are documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
-## [1.1.4] - 2026-03-30
+## [1.1.5] – 2026-03-30
 
-### Release
-- Patch: release metadata and changelog structure alignment
+Short version: drift stabilisiert die Release-Pipeline mit korrektem Pre-Push-Gate-Ablauf, damit die Automation keine invaliden Versionen mehr erzeugt.
+
+### Fixed
+- Release-Automation führt Pre-Push-Preflight vor Commit/Tag durch statt danach.
+
+## [1.1.4] – 2026-03-30
+
+Short version: drift bereinigt Changelog-Struktur und uv.lock für konsistente Metadaten beim Release-Gate.
+
+### Fixed
+- Changelog-Header-Reihenfolge und uv.lock-Synchronisierung für v1.1.4 Release-Gate.
 
 ## [1.1.2] - 2026-03-30
 
