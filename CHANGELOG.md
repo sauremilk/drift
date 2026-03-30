@@ -1,3 +1,19 @@
+## [1.1.3] – 2026-03-30
+
+Short version: Update _top_signals mock to accept keyword arguments. (+18 more commits)
+
+### Changed
+
+- Update _top_signals mock to accept keyword arguments. (+18 more commits)
+
+## [1.1.3] – 2026-03-30
+
+Short version: Use remote tags for version tracking and clean up release state. (+17 more commits)
+
+### Changed
+
+- Use remote tags for version tracking and clean up release state. (+17 more commits)
+
 ## [1.1.2] - 2026-03-30
 
 Short version: drift reduziert DCA-Fehlalarme für Framework-Entry-Points in API-Routern, damit Agenten keine aktiven Endpunkte als Dead-Code-Löschkandidaten priorisieren.
