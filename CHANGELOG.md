@@ -4,6 +4,15 @@
 
 - Make PyPI publish workflow runner-agnostic by using Twine upload for token-based publishing (works on Windows/self-hosted runners).
 
+## [1.1.17] – 2026-03-31
+
+Short version: Refine v1.1.16 release notes. (+2 more commits)
+
+### Changed
+
+- Refine v1.1.16 release notes. (+2 more commits)
+
+
 ## [1.1.16] – 2026-03-31
 
 Short version: Experimental release for agent navigation improvements across Phases 4-6.
