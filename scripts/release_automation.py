@@ -15,6 +15,17 @@ CHANGELOG = ROOT / "CHANGELOG.md"
 PRE_PUSH_HOOK = ROOT / ".githooks" / "pre-push"
 
 
+def _build_venv_first_env() -> dict[str, str]:
+    """Return environment with local venv Scripts/bin directory prepended to PATH."""
+    import os
+
+    env = dict(os.environ)
+    venv_bin = ROOT / ".venv" / ("Scripts" if os.name == "nt" else "bin")
+    if venv_bin.is_dir():
+        env["PATH"] = str(venv_bin) + os.pathsep + env.get("PATH", "")
+    return env
+
+
 def run_tests() -> bool:
     """Run quick tests."""
     print("\n▶ Running quick tests...")
@@ -170,14 +181,8 @@ def run_pre_push_preflight(tag_name: str) -> bool:
         f"refs/heads/{current_branch} {local_head} refs/heads/{current_branch} {remote_head}\n"
     )
 
-    # Ensure the venv's Scripts/bin directory is first in PATH so that the
-    # hook's bare `python`, `pytest`, `ruff`, `drift` etc. resolve correctly
-    # on Windows (where the Windows Store alias may otherwise intercept them).
-    import os as _os
-    venv_scripts = ROOT / ".venv" / ("Scripts" if _os.name == "nt" else "bin")
-    hook_env = dict(_os.environ)
-    if venv_scripts.is_dir():
-        hook_env["PATH"] = str(venv_scripts) + _os.pathsep + hook_env.get("PATH", "")
+    # Ensure the hook resolves python/drift from the project venv first.
+    hook_env = _build_venv_first_env()
 
     print(f"\n▶ Running pre-push preflight checks ({current_branch} branch)...")
     preflight = subprocess.run(
@@ -331,6 +336,7 @@ def main() -> int:
         subprocess.run(
             ["git", "push", "origin", current_branch, next_version],
             cwd=ROOT,
+            env=_build_venv_first_env(),
             check=True,
         )
         if not create_github_release(next_version, version_no_v):
