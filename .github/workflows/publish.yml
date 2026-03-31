@@ -30,7 +30,7 @@ jobs:
       - name: Check SemVer tag matches pyproject.toml
         # Fails if the tag is not vMAJOR.MINOR.PATCH or doesn't match
         # the version field in pyproject.toml. Abort before any build.
-        shell: pwsh
+        shell: powershell
         run: |
           $tag = "${{ github.event_name == 'workflow_dispatch' && inputs.release_tag || github.ref_name }}"
           python scripts/check_version.py --tag $tag
@@ -86,7 +86,7 @@ jobs:
         # Parses "v1.2.3" → "v1" and force-updates the tag so that
         # users pinning `uses: sauremilk/drift@v1` always get the
         # latest compatible release automatically.
-        shell: pwsh
+        shell: powershell
         run: |
           $tag = "${{ github.event_name == 'workflow_dispatch' && inputs.release_tag || github.ref_name }}"
           if ($tag -notmatch '^v\d+\.\d+\.\d+$') {
