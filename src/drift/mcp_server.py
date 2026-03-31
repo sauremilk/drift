@@ -62,11 +62,13 @@ mcp = MCPFastMCPImpl(
         "2. drift_scan — assess overall architectural health\n"
         "3. drift_diff — detect regressions in a PR or after changes\n"
         "4. drift_fix_plan — get actionable repair tasks with constraints\n"
-        "5. drift_explain — understand unfamiliar signals or findings\n\n"
-        "IMPORTANT: After each file change, call drift_diff(uncommitted=True) "
-        "before proceeding to the next file. Do not batch multiple file "
-        "changes without checking drift impact. Every response includes an "
-        "'agent_instruction' field — follow it."
+        "5. drift_explain — understand unfamiliar signals or findings\n"
+        "6. drift_nudge — get directional feedback after each file change "
+        "(do not batch)\n\n"
+        "IMPORTANT: After each file change, call drift_nudge for fast "
+        "directional feedback. Use drift_diff for full regression analysis. "
+        "Do not batch multiple file changes without checking drift impact. "
+        "Every response includes an 'agent_instruction' field — follow it."
     ),
 )
 
@@ -220,6 +222,39 @@ def drift_validate(
     from drift.api import validate
 
     result = validate(path, config_file=config_file)
+    return json.dumps(result, default=str)
+
+
+@mcp.tool()
+def drift_nudge(
+    path: str = ".",
+    changed_files: str | None = None,
+    uncommitted: bool = True,
+) -> str:
+    """Get directional feedback after a file change (experimental).
+
+    Returns direction (improving/stable/degrading), safe_to_commit flag,
+    and confidence per signal — without running a full scan.  Call this
+    after every file edit instead of drift_diff for faster feedback.
+
+    First call on a repository triggers a full baseline scan.  Subsequent
+    calls only re-analyze changed files for file-local signals and carry
+    forward cross-file results with estimated confidence.
+
+    Args:
+        path: Repository path (default: current directory).
+        changed_files: Comma-separated list of changed file paths
+            (posix, relative to repo root).  Auto-detected via git if omitted.
+        uncommitted: When auto-detecting, use uncommitted working-tree
+            changes (default) vs. staged-only.
+    """
+    from drift.api import nudge
+
+    file_list: list[str] | None = None
+    if changed_files is not None:
+        file_list = [f.strip() for f in changed_files.split(",") if f.strip()]
+
+    result = nudge(path, changed_files=file_list, uncommitted=uncommitted)
     return json.dumps(result, default=str)
 
 
