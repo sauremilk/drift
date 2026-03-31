@@ -2,15 +2,15 @@ name: CI
 
 on:
   push:
-    branches: [main]
+    branches: [master]
   pull_request:
-    branches: [main]
+    branches: [master]
   workflow_dispatch:
 
 jobs:
   version-check:
     name: Version format check
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
 
     steps:
       - uses: actions/checkout@v4
@@ -21,7 +21,7 @@ jobs:
 
       - name: Validate pyproject.toml version is SemVer
         # Ensures the version in pyproject.toml is always MAJOR.MINOR.PATCH –
-        # a merge to main with an invalid or missing version is blocked.
+        # a merge to master with an invalid or missing version is blocked.
         run: python scripts/check_version.py --check-semver
 
       - name: Enforce release discipline
@@ -31,7 +31,7 @@ jobs:
         run: python scripts/check_model_consistency.py
 
   test:
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
     needs: version-check
     strategy:
       matrix:

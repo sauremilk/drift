@@ -1,0 +1,32 @@
+# Path-based auto-labeling for PRs.
+# Used by .github/workflows/pr-triage.yml via actions/labeler.
+
+signal-quality:
+  - changed-files:
+      - any-glob-to-any-file: "src/drift/signals/**"
+
+docs:
+  - changed-files:
+      - any-glob-to-any-file:
+          - "docs/**"
+          - "docs-site/**"
+          - "*.md"
+          - "mkdocs.yml"
+
+tests:
+  - changed-files:
+      - any-glob-to-any-file: "tests/**"
+
+bug:
+  - changed-files:
+      - any-glob-to-any-file:
+          - "src/drift/ingestion/**"
+          - "src/drift/scoring/**"
+          - "src/drift/output/**"
+
+enhancement:
+  - changed-files:
+      - any-glob-to-any-file:
+          - "src/drift/commands/**"
+          - "src/drift/mcp_server.py"
+          - "src/drift/api.py"

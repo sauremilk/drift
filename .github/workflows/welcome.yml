@@ -12,7 +12,7 @@ permissions:
 
 jobs:
   welcome:
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/first-interaction@v1
         with:
@@ -21,7 +21,7 @@ jobs:
             Thanks for opening your first issue! 👋
 
             We'll get back to you within 72 hours. In the meantime:
-            - Check [SUPPORT.md](https://github.com/sauremilk/drift/blob/main/SUPPORT.md) for the right channel
+            - Check [SUPPORT.md](https://github.com/sauremilk/drift/blob/master/SUPPORT.md) for the right channel
             - Search existing [issues](https://github.com/sauremilk/drift/issues) and [discussions](https://github.com/sauremilk/drift/discussions)
 
             If this is a false-positive report, please include the drift version, signal name, and a minimal code example.
@@ -33,4 +33,4 @@ jobs:
             - [ ] The PR template is filled out
             - [ ] Tests are included for new behavior
 
-            See [CONTRIBUTING.md](https://github.com/sauremilk/drift/blob/main/CONTRIBUTING.md) for the full checklist.
+            See [CONTRIBUTING.md](https://github.com/sauremilk/drift/blob/master/CONTRIBUTING.md) for the full checklist.

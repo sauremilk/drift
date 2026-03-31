@@ -49,3 +49,46 @@
 - name: stale
   color: "ededed"
   description: Inactive for 90+ days — will auto-close if no further activity
+
+# --- Priority labels (Policy §7 hierarchy) ---
+- name: "priority: high"
+  color: "b60205"
+  description: Credibility, signal precision, or finding clarity
+
+- name: "priority: medium"
+  color: "d93f0b"
+  description: FP/FN reduction or adoptability improvements
+
+- name: "priority: low"
+  color: "fbca04"
+  description: Comfort features, cosmetic docs, or trend improvements
+
+# --- Size labels (review effort estimation) ---
+- name: "size: small"
+  color: "0e8a16"
+  description: "Less than 50 changed lines — quick review"
+
+- name: "size: medium"
+  color: "1d76db"
+  description: "50–200 changed lines"
+
+- name: "size: large"
+  color: "5319e7"
+  description: "More than 200 changed lines — needs dedicated review slot"
+
+# --- Review status labels ---
+- name: "needs: rebase"
+  color: "e99695"
+  description: Merge conflicts — contributor must rebase on master
+
+- name: "needs: tests"
+  color: "e99695"
+  description: Test coverage missing or incomplete
+
+- name: "needs: evidence"
+  color: "e99695"
+  description: Feature evidence artifact required (see PR template)
+
+- name: "needs: changes"
+  color: "e99695"
+  description: Reviewer requested changes
