@@ -304,6 +304,10 @@ class DocImplDriftSignal(BaseSignal):
         # Locate README
         readme_path = self._find_readme()
         if readme_path is None:
+            # Tiny bootstrap repos do not have enough structure for a missing
+            # README to be actionable architectural drift.
+            if len(parse_results) <= 1:
+                return findings
             findings.append(
                 Finding(
                     signal_type=self.signal_type,
