@@ -284,10 +284,8 @@ def main() -> int:
         CHANGELOG.write_text(new_section + changelog_content, "utf-8")
         print(f"✓ Updated CHANGELOG.md: {version_no_v}")
 
-        # Preflight: run push gates before committing/tagging anything
-        if not run_pre_push_preflight(next_version):
-            return 1
-
+        # Create release commit and tag BEFORE preflight, so the pre-push
+        # hook sees the CHANGELOG update in the committed state.
         print("\n▶ Creating release commit and tag...")
         subprocess.run(
             ["git", "add", "pyproject.toml", "CHANGELOG.md"],
@@ -304,6 +302,19 @@ def main() -> int:
             cwd=ROOT,
             check=True,
         )
+
+        # Preflight: run push gates AFTER commit so CHANGELOG gate sees
+        # the release commit.  On failure, undo the commit+tag.
+        if not run_pre_push_preflight(next_version):
+            print("▶ Rolling back release commit and tag...")
+            subprocess.run(["git", "tag", "-d", next_version], cwd=ROOT, check=False)
+            subprocess.run(["git", "reset", "--soft", "HEAD~1"], cwd=ROOT, check=False)
+            subprocess.run(
+                ["git", "checkout", "--", "pyproject.toml", "CHANGELOG.md"],
+                cwd=ROOT, check=False,
+            )
+            return 1
+
         current_branch = subprocess.run(
             ["git", "rev-parse", "--abbrev-ref", "HEAD"],
             cwd=ROOT,
