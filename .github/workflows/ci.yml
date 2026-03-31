@@ -10,7 +10,7 @@ on:
 jobs:
   version-check:
     name: Version format check
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
 
     steps:
       - uses: actions/checkout@v4
@@ -31,7 +31,7 @@ jobs:
         run: python scripts/check_model_consistency.py
 
   test:
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     needs: version-check
     strategy:
       matrix:
