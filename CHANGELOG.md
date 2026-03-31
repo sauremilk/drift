@@ -1,3 +1,11 @@
+## [1.1.15] – 2026-03-31
+
+Short version: Add IncrementalSignalRunner with signal scope registry (Phase 3). (+1 more commits)
+
+### Changed
+
+- Add IncrementalSignalRunner with signal scope registry (Phase 3). (+1 more commits)
+
 ## [1.1.14] – 2026-03-31
 
 Short version: Add BaselineSnapshot and per-file SignalCache key (Phase 2 foundation). (+1 more commits)
