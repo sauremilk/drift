@@ -62,7 +62,11 @@ mcp = MCPFastMCPImpl(
         "2. drift_scan — assess overall architectural health\n"
         "3. drift_diff — detect regressions in a PR or after changes\n"
         "4. drift_fix_plan — get actionable repair tasks with constraints\n"
-        "5. drift_explain — understand unfamiliar signals or findings"
+        "5. drift_explain — understand unfamiliar signals or findings\n\n"
+        "IMPORTANT: After each file change, call drift_diff(uncommitted=True) "
+        "before proceeding to the next file. Do not batch multiple file "
+        "changes without checking drift impact. Every response includes an "
+        "'agent_instruction' field — follow it."
     ),
 )
 

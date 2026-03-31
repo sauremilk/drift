@@ -365,3 +365,122 @@ class TestTopSignalsFilter:
         top_sigs = result["top_signals"]
         signal_ids = {s["signal"] for s in top_sigs}
         assert signal_ids == {"PFS"}
+
+
+# --- Task 6: agent_instruction in API responses ---
+
+
+class TestAgentInstruction:
+    """Every API response includes an agent_instruction field."""
+
+    def test_scan_response_has_agent_instruction(self, monkeypatch):
+        import drift.analyzer as analyzer_module
+        import drift.api as api_module
+        from drift.config import DriftConfig
+
+        analysis = SimpleNamespace(
+            findings=[],
+            drift_score=0.0,
+            severity=Severity.LOW,
+            total_files=5,
+            total_functions=10,
+            ai_attributed_ratio=0.0,
+            trend=None,
+        )
+        monkeypatch.setattr(
+            DriftConfig, "load",
+            staticmethod(lambda *a, **kw: object()),
+        )
+        monkeypatch.setattr(
+            analyzer_module, "analyze_repo",
+            lambda *a, **kw: analysis,
+        )
+        monkeypatch.setattr(
+            api_module, "_emit_api_telemetry",
+            lambda **kw: None,
+        )
+        monkeypatch.setattr(
+            api_module, "_fix_first_concise",
+            lambda analysis, max_items=5: [],
+        )
+
+        result = scan(Path("."))
+        assert "agent_instruction" in result
+        assert isinstance(result["agent_instruction"], str)
+        assert "drift_diff" in result["agent_instruction"]
+
+    def test_fix_plan_response_has_agent_instruction(self, monkeypatch):
+        import drift.analyzer as analyzer_module
+        import drift.api as api_module
+        from drift.config import DriftConfig
+
+        analysis = SimpleNamespace(
+            findings=[],
+            drift_score=0.0,
+            severity=Severity.LOW,
+            total_files=5,
+            total_functions=10,
+            ai_attributed_ratio=0.0,
+            trend=None,
+        )
+        monkeypatch.setattr(
+            DriftConfig, "load",
+            staticmethod(lambda *a, **kw: object()),
+        )
+        monkeypatch.setattr(
+            analyzer_module, "analyze_repo",
+            lambda *a, **kw: analysis,
+        )
+        monkeypatch.setattr(
+            api_module, "_emit_api_telemetry",
+            lambda **kw: None,
+        )
+        monkeypatch.setattr(
+            "drift.output.agent_tasks.analysis_to_agent_tasks",
+            lambda *a, **kw: [],
+        )
+
+        from drift.api import fix_plan
+
+        result = fix_plan(Path("."))
+        assert "agent_instruction" in result
+        assert "drift_diff" in result["agent_instruction"]
+        assert "Do not batch" in result["agent_instruction"]
+
+    def test_diff_response_has_agent_instruction(self, monkeypatch):
+        import drift.analyzer as analyzer_module
+        import drift.api as api_module
+        from drift.config import DriftConfig
+
+        analysis = SimpleNamespace(
+            findings=[],
+            drift_score=0.0,
+            severity=Severity.LOW,
+            total_files=10,
+            total_functions=50,
+            ai_attributed_ratio=0.1,
+            trend=SimpleNamespace(
+                direction="stable",
+                previous_score=0.0,
+                delta=0.0,
+            ),
+            is_degraded=False,
+        )
+        monkeypatch.setattr(
+            DriftConfig, "load",
+            staticmethod(lambda *a, **kw: object()),
+        )
+        monkeypatch.setattr(
+            analyzer_module, "analyze_diff",
+            lambda *a, **kw: analysis,
+        )
+        monkeypatch.setattr(
+            api_module, "_emit_api_telemetry",
+            lambda **kw: None,
+        )
+
+        from drift.api import diff
+
+        result = diff(Path("."), uncommitted=True)
+        assert "agent_instruction" in result
+        assert isinstance(result["agent_instruction"], str)

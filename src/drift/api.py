@@ -232,6 +232,11 @@ def _format_scan_response(
         blocking_reasons=blocking_reasons,
         response_truncated=len(analysis.findings) > max_findings,
         recommended_next_actions=_scan_next_actions(analysis),
+        agent_instruction=(
+            "Use drift_fix_plan to get prioritised repair tasks. "
+            "After each file change, call drift_diff(uncommitted=True) "
+            "to verify improvement before proceeding."
+        ),
     )
     if getattr(analysis, "skipped_files", 0) > 0:
         result["skipped_files"] = analysis.skipped_files
@@ -488,6 +493,16 @@ def diff(
             has_out_of_scope_noise=bool(out_of_scope_new),
         )
 
+        _agent_hint = (
+            "Score is improving. Safe to continue with next task."
+            if status == "improved"
+            else (
+                "Score degraded. Call drift_fix_plan to address "
+                "new findings before proceeding."
+            )
+            if status in ("degraded", "new_critical")
+            else "No drift change detected. Safe to proceed."
+        )
         result = _base_response(
             drift_detected=delta > 0.0,
             status=status,
@@ -521,6 +536,7 @@ def diff(
                 has_baseline=baseline_file is not None,
             ),
             response_truncated=len(scoped_new) > max_findings,
+            agent_instruction=_agent_hint,
         )
         _emit_api_telemetry(
             tool_name="api.diff",
@@ -880,6 +896,10 @@ def fix_plan(
             skipped_low_automation=skipped_low,
             path_diagnostic=path_diagnostic,
             recommended_next_actions=next_actions,
+            agent_instruction=(
+                "After each file change, call drift_diff(uncommitted=True) "
+                "before proceeding to the next file. Do not batch changes."
+            ),
         )
         if warnings:
             result["warnings"] = warnings
