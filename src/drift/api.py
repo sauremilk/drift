@@ -1129,7 +1129,8 @@ def validate(
 # Delta threshold above which safe_to_commit is False
 _NUDGE_SIGNIFICANT_DELTA = 0.05
 
-# Module-level baseline store: repo_path_posix → (baseline, findings, parse_map)
+# Legacy module-level baseline store — kept for backward compatibility
+# but nudge() now uses BaselineManager.instance() instead.
 _baseline_store: dict[
     str,
     tuple[
@@ -1231,9 +1232,13 @@ def nudge(
             )
         changed_set = set(changed_files)
 
-        # -- Ensure baseline exists -----------------------------------------
-        stored = _baseline_store.get(repo_key)
-        if stored is None or not stored[0].is_valid():
+        # -- Ensure baseline exists via BaselineManager (Phase 5) -----------
+        from drift.incremental import BaselineManager
+
+        mgr = BaselineManager.instance()
+        stored = mgr.get(repo_path)
+
+        if stored is None:
             # Run full scan to create baseline
             from drift.analyzer import analyze_repo
 
@@ -1270,7 +1275,9 @@ def nudge(
                 file_hashes=file_hashes,
                 score=analysis.drift_score,
             )
+            mgr.store(repo_path, baseline, list(analysis.findings), parse_map)
             stored = (baseline, list(analysis.findings), parse_map)
+            # Sync legacy store for backward compat
             _baseline_store[repo_key] = stored
 
         baseline, baseline_findings, baseline_parse_map = stored
@@ -1406,7 +1413,12 @@ def nudge(
 
 def invalidate_nudge_baseline(path: str | Path = ".") -> None:
     """Force a fresh baseline on the next nudge call for *path*."""
-    repo_key = Path(path).resolve().as_posix()
+    from drift.incremental import BaselineManager
+
+    repo_path = Path(path).resolve()
+    repo_key = repo_path.as_posix()
+    # Invalidate both BaselineManager and legacy store
+    BaselineManager.instance().invalidate(repo_path)
     _baseline_store.pop(repo_key, None)
 
 

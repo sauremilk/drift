@@ -5,14 +5,17 @@ Provides:
 * ``BaselineSnapshot`` — lightweight checkpoint of analysis state.
 * ``IncrementalResult`` — outcome of an incremental signal run.
 * ``IncrementalSignalRunner`` — runs only the signals affected by file changes.
+* ``BaselineManager`` — singleton that manages baselines with git-event detection.
 """
 
 from __future__ import annotations
 
 import logging
+import subprocess
 import time
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, Literal
+from pathlib import Path
+from typing import TYPE_CHECKING, ClassVar, Literal
 
 if TYPE_CHECKING:
     from drift.config import DriftConfig
@@ -146,6 +149,190 @@ def _finding_key(f: Finding) -> str:
     """Deterministic identity key for a finding (signal + file + location)."""
     fp = f.file_path.as_posix() if f.file_path else ""
     return f"{f.signal_type.value}::{fp}::{f.start_line}::{f.title}"
+
+
+# ---------------------------------------------------------------------------
+# Git state tracking (Phase 5 — Step 19)
+# ---------------------------------------------------------------------------
+
+_MAX_CHANGED_FILES_BEFORE_INVALIDATION = 10
+
+
+@dataclass(slots=True)
+class _GitState:
+    """Captures point-in-time git state for change detection."""
+
+    head_commit: str
+    stash_hash: str  # hash of ``git stash list`` output
+    changed_file_count: int
+
+
+def _capture_git_state(repo_path: Path) -> _GitState | None:
+    """Snapshot current HEAD, stash list, and dirty-file count.
+
+    Returns ``None`` when git is unavailable or the path is not a repo.
+    """
+    import hashlib
+
+    def _git(*args: str) -> str | None:
+        try:
+            proc = subprocess.run(
+                ["git", *args],
+                capture_output=True,
+                text=True,
+                encoding="utf-8",
+                errors="replace",
+                cwd=repo_path,
+                check=True,
+            )
+            return proc.stdout.strip()
+        except Exception:
+            return None
+
+    head = _git("rev-parse", "HEAD")
+    if head is None:
+        return None
+
+    stash_raw = _git("stash", "list") or ""
+    stash_hash = hashlib.sha256(stash_raw.encode()).hexdigest()[:16]
+
+    diff_raw = _git("diff", "--name-only", "HEAD") or ""
+    changed_count = len([line for line in diff_raw.splitlines() if line])
+
+    return _GitState(
+        head_commit=head,
+        stash_hash=stash_hash,
+        changed_file_count=changed_count,
+    )
+
+
+# ---------------------------------------------------------------------------
+# BaselineManager singleton (Phase 5 — Step 18)
+# ---------------------------------------------------------------------------
+
+
+class BaselineManager:
+    """Per-repo baseline management with automatic git-event invalidation.
+
+    Usage::
+
+        mgr = BaselineManager.instance()
+        stored = mgr.get(repo_path)
+        if stored is None:
+            # create baseline via full scan …
+            mgr.store(repo_path, baseline, findings, parse_map)
+
+    The manager automatically invalidates a cached baseline when it
+    detects that the git state has changed (branch switch, new commit,
+    stash change, or many file changes beyond a threshold).
+    """
+
+    _instance: ClassVar[BaselineManager | None] = None
+
+    def __init__(self) -> None:
+        self._store: dict[
+            str,
+            tuple[BaselineSnapshot, list[Finding], dict[str, ParseResult]],
+        ] = {}
+        self._git_state: dict[str, _GitState] = {}
+
+    @classmethod
+    def instance(cls) -> BaselineManager:
+        """Return the module-level singleton (created on first call)."""
+        if cls._instance is None:
+            cls._instance = cls()
+        return cls._instance
+
+    @classmethod
+    def reset_instance(cls) -> None:
+        """Destroy the singleton (for testing only)."""
+        cls._instance = None
+
+    # -- public API ----------------------------------------------------------
+
+    def get(
+        self,
+        repo_path: Path,
+    ) -> tuple[BaselineSnapshot, list[Finding], dict[str, ParseResult]] | None:
+        """Return stored baseline or ``None`` if missing / expired / invalidated.
+
+        Performs a git-state check: if HEAD, stash, or changed-file count
+        diverged since the baseline was stored, the entry is silently
+        invalidated and ``None`` is returned.
+        """
+        repo_key = repo_path.resolve().as_posix()
+        stored = self._store.get(repo_key)
+        if stored is None:
+            return None
+
+        # TTL expiry
+        if not stored[0].is_valid():
+            logger.debug("Baseline expired for %s (TTL).", repo_key)
+            self.invalidate(repo_path)
+            return None
+
+        # Git-event invalidation (Step 19)
+        if self._git_state_changed(repo_path):
+            logger.info(
+                "Git state changed for %s — invalidating baseline.",
+                repo_key,
+            )
+            self.invalidate(repo_path)
+            return None
+
+        return stored
+
+    def store(
+        self,
+        repo_path: Path,
+        baseline: BaselineSnapshot,
+        findings: list[Finding],
+        parse_map: dict[str, ParseResult],
+    ) -> None:
+        """Cache a baseline and snapshot the current git state."""
+        repo_key = repo_path.resolve().as_posix()
+        self._store[repo_key] = (baseline, findings, parse_map)
+
+        git_state = _capture_git_state(repo_path)
+        if git_state is not None:
+            self._git_state[repo_key] = git_state
+
+    def invalidate(self, repo_path: Path) -> None:
+        """Remove cached baseline for *repo_path*."""
+        repo_key = repo_path.resolve().as_posix()
+        self._store.pop(repo_key, None)
+        self._git_state.pop(repo_key, None)
+
+    def has_baseline(self, repo_path: Path) -> bool:
+        """Return ``True`` if a valid baseline is cached (no git check)."""
+        repo_key = repo_path.resolve().as_posix()
+        stored = self._store.get(repo_key)
+        return stored is not None and stored[0].is_valid()
+
+    # -- internal ------------------------------------------------------------
+
+    def _git_state_changed(self, repo_path: Path) -> bool:
+        """Compare current git state against the snapshot taken at store time."""
+        repo_key = repo_path.resolve().as_posix()
+        previous = self._git_state.get(repo_key)
+        if previous is None:
+            # No git state recorded — cannot detect changes
+            return False
+
+        current = _capture_git_state(repo_path)
+        if current is None:
+            return False
+
+        # (a) Branch switch or new commit
+        if current.head_commit != previous.head_commit:
+            return True
+
+        # (b) Stash changed
+        if current.stash_hash != previous.stash_hash:
+            return True
+
+        # (c) Many files changed since baseline was stored
+        return current.changed_file_count > _MAX_CHANGED_FILES_BEFORE_INVALIDATION
 
 
 # ---------------------------------------------------------------------------

@@ -1,4 +1,4 @@
-"""Tests for Phase 4 — drift_nudge API and MCP tool.
+"""Tests for Phase 4+5 — drift_nudge API, MCP tool, BaselineManager.
 
 Covers:
 - ``nudge()`` API function with mocked baseline and signals
@@ -6,6 +6,7 @@ Covers:
 - ``drift_nudge`` MCP tool returns valid JSON
 - ``invalidate_nudge_baseline()``
 - Response schema validation
+- ``BaselineManager`` singleton with git-event invalidation
 """
 
 from __future__ import annotations
@@ -22,7 +23,7 @@ from drift.api import (
     invalidate_nudge_baseline,
     nudge,
 )
-from drift.incremental import BaselineSnapshot
+from drift.incremental import BaselineManager, BaselineSnapshot
 from drift.models import Finding, Severity, SignalType
 
 # ---------------------------------------------------------------------------
@@ -82,6 +83,7 @@ class TestNudgeAPI:
     def _clear_baseline_store(self) -> None:
         """Ensure baseline store is clean before each test."""
         _baseline_store.clear()
+        BaselineManager.reset_instance()
 
     def test_nudge_returns_schema_version(
         self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
@@ -221,6 +223,7 @@ class TestSafeToCommitHardrule:
     @pytest.fixture(autouse=True)
     def _clear_baseline_store(self) -> None:
         _baseline_store.clear()
+        BaselineManager.reset_instance()
 
     def test_safe_when_no_issues(
         self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
@@ -235,11 +238,12 @@ class TestSafeToCommitHardrule:
         self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
     ) -> None:
         """New critical finding → safe_to_commit=False."""
-        # Pre-seed baseline with empty findings
-        repo_key = tmp_path.resolve().as_posix()
-        _baseline_store[repo_key] = (
+        # Pre-seed baseline via BaselineManager with empty findings
+        mgr = BaselineManager.instance()
+        mgr.store(
+            tmp_path.resolve(),
             BaselineSnapshot(file_hashes={}, score=0.0),
-            [],  # no baseline findings
+            [],
             {},
         )
 
@@ -258,6 +262,11 @@ class TestSafeToCommitHardrule:
             "drift.api._emit_api_telemetry",
             lambda **kw: None,
         )
+        # Suppress git-state check (tmp_path is not a git repo)
+        monkeypatch.setattr(
+            "drift.incremental._capture_git_state",
+            lambda *a, **kw: None,
+        )
 
         result = nudge(tmp_path, changed_files=[])
         # The runner itself may produce findings that trigger blocking
@@ -268,15 +277,16 @@ class TestSafeToCommitHardrule:
     def test_blocks_on_expired_baseline(
         self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
     ) -> None:
-        """Expired baseline TTL → safe_to_commit=False."""
-        repo_key = tmp_path.resolve().as_posix()
+        """Expired baseline TTL → BaselineManager returns None → full rescan."""
+        # Seed expired baseline via BaselineManager
+        mgr = BaselineManager.instance()
         expired_baseline = BaselineSnapshot(
             file_hashes={},
             score=0.0,
             created_at=time.time() - 9999,
             ttl_seconds=60,
         )
-        _baseline_store[repo_key] = (expired_baseline, [], {})
+        mgr.store(tmp_path.resolve(), expired_baseline, [], {})
 
         from drift.config import DriftConfig
 
@@ -293,9 +303,13 @@ class TestSafeToCommitHardrule:
             "drift.api._emit_api_telemetry",
             lambda **kw: None,
         )
+        # Suppress git-state check
+        monkeypatch.setattr(
+            "drift.incremental._capture_git_state",
+            lambda *a, **kw: None,
+        )
 
         # Expired baseline → nudge runs full scan to refresh
-        # So we need to mock analyze_repo too
         monkeypatch.setattr(
             "drift.analyzer.analyze_repo",
             lambda *a, **kw: _stub_analysis(),
@@ -315,16 +329,26 @@ class TestInvalidateBaseline:
     @pytest.fixture(autouse=True)
     def _clear_baseline_store(self) -> None:
         _baseline_store.clear()
+        BaselineManager.reset_instance()
 
     def test_invalidate_removes_entry(self, tmp_path: Path) -> None:
         repo_key = tmp_path.resolve().as_posix()
+        # Seed via both legacy store and BaselineManager
         _baseline_store[repo_key] = (
+            BaselineSnapshot(file_hashes={}, score=0.0),
+            [],
+            {},
+        )
+        mgr = BaselineManager.instance()
+        mgr.store(
+            tmp_path.resolve(),
             BaselineSnapshot(file_hashes={}, score=0.0),
             [],
             {},
         )
         invalidate_nudge_baseline(tmp_path)
         assert repo_key not in _baseline_store
+        assert not mgr.has_baseline(tmp_path.resolve())
 
     def test_invalidate_noop_when_empty(self, tmp_path: Path) -> None:
         """No error when invalidating a non-existent baseline."""
@@ -342,6 +366,7 @@ class TestMcpDriftNudge:
     @pytest.fixture(autouse=True)
     def _clear_baseline_store(self) -> None:
         _baseline_store.clear()
+        BaselineManager.reset_instance()
 
     def test_drift_nudge_importable(self) -> None:
         from drift.mcp_server import drift_nudge
@@ -406,3 +431,303 @@ class TestMcpInstructions:
             import drift.mcp_server as _mod
 
             assert "drift_nudge" in inspect.getsource(_mod)
+
+
+# ---------------------------------------------------------------------------
+# Phase 5 — BaselineManager tests
+# ---------------------------------------------------------------------------
+
+
+class TestBaselineManager:
+    """Test BaselineManager singleton and git-event invalidation."""
+
+    @pytest.fixture(autouse=True)
+    def _reset_singleton(self) -> None:
+        BaselineManager.reset_instance()
+        yield
+        BaselineManager.reset_instance()
+
+    def test_singleton_identity(self) -> None:
+        """instance() returns the same object on repeated calls."""
+        a = BaselineManager.instance()
+        b = BaselineManager.instance()
+        assert a is b
+
+    def test_reset_creates_new_instance(self) -> None:
+        a = BaselineManager.instance()
+        BaselineManager.reset_instance()
+        b = BaselineManager.instance()
+        assert a is not b
+
+    def test_store_and_get(self, tmp_path: Path) -> None:
+        mgr = BaselineManager.instance()
+        baseline = BaselineSnapshot(file_hashes={"a.py": "abc"}, score=0.2)
+        mgr.store(tmp_path, baseline, [], {})
+
+        stored = mgr.get(tmp_path)
+        assert stored is not None
+        assert stored[0] is baseline
+
+    def test_get_returns_none_when_empty(self, tmp_path: Path) -> None:
+        mgr = BaselineManager.instance()
+        assert mgr.get(tmp_path) is None
+
+    def test_get_returns_none_when_expired(self, tmp_path: Path) -> None:
+        mgr = BaselineManager.instance()
+        expired = BaselineSnapshot(
+            file_hashes={},
+            score=0.0,
+            created_at=time.time() - 9999,
+            ttl_seconds=60,
+        )
+        mgr.store(tmp_path, expired, [], {})
+        assert mgr.get(tmp_path) is None
+
+    def test_invalidate(self, tmp_path: Path) -> None:
+        mgr = BaselineManager.instance()
+        mgr.store(
+            tmp_path,
+            BaselineSnapshot(file_hashes={}, score=0.0),
+            [],
+            {},
+        )
+        assert mgr.has_baseline(tmp_path)
+        mgr.invalidate(tmp_path)
+        assert not mgr.has_baseline(tmp_path)
+
+    def test_has_baseline(self, tmp_path: Path) -> None:
+        mgr = BaselineManager.instance()
+        assert not mgr.has_baseline(tmp_path)
+        mgr.store(
+            tmp_path,
+            BaselineSnapshot(file_hashes={}, score=0.0),
+            [],
+            {},
+        )
+        assert mgr.has_baseline(tmp_path)
+
+
+class TestGitEventInvalidation:
+    """Test that BaselineManager detects git-state changes."""
+
+    @pytest.fixture(autouse=True)
+    def _reset_singleton(self) -> None:
+        BaselineManager.reset_instance()
+        yield
+        BaselineManager.reset_instance()
+
+    def test_head_change_invalidates(
+        self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+    ) -> None:
+        """HEAD commit change → baseline invalidated."""
+        from drift.incremental import _GitState
+
+        call_count = {"n": 0}
+
+        def _fake_capture(repo_path: Path) -> _GitState:
+            call_count["n"] += 1
+            if call_count["n"] <= 1:
+                return _GitState(
+                    head_commit="aaa111",
+                    stash_hash="s1",
+                    changed_file_count=0,
+                )
+            return _GitState(
+                head_commit="bbb222",
+                stash_hash="s1",
+                changed_file_count=0,
+            )
+
+        monkeypatch.setattr(
+            "drift.incremental._capture_git_state", _fake_capture
+        )
+
+        mgr = BaselineManager.instance()
+        mgr.store(
+            tmp_path,
+            BaselineSnapshot(file_hashes={}, score=0.0),
+            [],
+            {},
+        )
+        assert mgr.get(tmp_path) is None
+
+    def test_stash_change_invalidates(
+        self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+    ) -> None:
+        """Stash list change → baseline invalidated."""
+        from drift.incremental import _GitState
+
+        call_count = {"n": 0}
+
+        def _fake_capture(repo_path: Path) -> _GitState:
+            call_count["n"] += 1
+            if call_count["n"] <= 1:
+                return _GitState(
+                    head_commit="aaa111",
+                    stash_hash="stash_v1",
+                    changed_file_count=0,
+                )
+            return _GitState(
+                head_commit="aaa111",
+                stash_hash="stash_v2",
+                changed_file_count=0,
+            )
+
+        monkeypatch.setattr(
+            "drift.incremental._capture_git_state", _fake_capture
+        )
+
+        mgr = BaselineManager.instance()
+        mgr.store(
+            tmp_path,
+            BaselineSnapshot(file_hashes={}, score=0.0),
+            [],
+            {},
+        )
+        assert mgr.get(tmp_path) is None
+
+    def test_many_changed_files_invalidates(
+        self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+    ) -> None:
+        """> threshold changed files → baseline invalidated."""
+        from drift.incremental import (
+            _MAX_CHANGED_FILES_BEFORE_INVALIDATION,
+            _GitState,
+        )
+
+        call_count = {"n": 0}
+
+        def _fake_capture(repo_path: Path) -> _GitState:
+            call_count["n"] += 1
+            if call_count["n"] <= 1:
+                return _GitState(
+                    head_commit="aaa111",
+                    stash_hash="s1",
+                    changed_file_count=2,
+                )
+            return _GitState(
+                head_commit="aaa111",
+                stash_hash="s1",
+                changed_file_count=_MAX_CHANGED_FILES_BEFORE_INVALIDATION + 1,
+            )
+
+        monkeypatch.setattr(
+            "drift.incremental._capture_git_state", _fake_capture
+        )
+
+        mgr = BaselineManager.instance()
+        mgr.store(
+            tmp_path,
+            BaselineSnapshot(file_hashes={}, score=0.0),
+            [],
+            {},
+        )
+        assert mgr.get(tmp_path) is None
+
+    def test_no_change_keeps_baseline(
+        self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+    ) -> None:
+        """Unchanged git state → baseline remains valid."""
+        from drift.incremental import _GitState
+
+        stable_state = _GitState(
+            head_commit="aaa111",
+            stash_hash="s1",
+            changed_file_count=2,
+        )
+        monkeypatch.setattr(
+            "drift.incremental._capture_git_state",
+            lambda *a, **kw: stable_state,
+        )
+
+        mgr = BaselineManager.instance()
+        mgr.store(
+            tmp_path,
+            BaselineSnapshot(file_hashes={}, score=0.0),
+            [],
+            {},
+        )
+        assert mgr.get(tmp_path) is not None
+
+    def test_no_git_repo_keeps_baseline(
+        self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+    ) -> None:
+        """Non-git directory → git state check returns None → baseline kept."""
+        monkeypatch.setattr(
+            "drift.incremental._capture_git_state",
+            lambda *a, **kw: None,
+        )
+
+        mgr = BaselineManager.instance()
+        mgr.store(
+            tmp_path,
+            BaselineSnapshot(file_hashes={}, score=0.0),
+            [],
+            {},
+        )
+        assert mgr.get(tmp_path) is not None
+
+
+class TestNudgeUsesBaselineManager:
+    """Verify that nudge() integrates with BaselineManager (Step 20)."""
+
+    @pytest.fixture(autouse=True)
+    def _reset(self) -> None:
+        _baseline_store.clear()
+        BaselineManager.reset_instance()
+        yield
+        BaselineManager.reset_instance()
+
+    def test_nudge_creates_baseline_in_manager(
+        self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+    ) -> None:
+        """First nudge() call stores baseline via BaselineManager."""
+        TestNudgeAPI._mock_nudge_deps(monkeypatch, tmp_path)
+        nudge(tmp_path, changed_files=[])
+
+        mgr = BaselineManager.instance()
+        assert mgr.has_baseline(tmp_path.resolve())
+
+    def test_nudge_detects_git_state_change(
+        self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+    ) -> None:
+        """Git-state change triggers full rescan on next nudge() call."""
+        from drift.incremental import _GitState
+
+        TestNudgeAPI._mock_nudge_deps(monkeypatch, tmp_path)
+
+        call_count = {"n": 0, "analyze_count": 0}
+
+        def _fake_capture(repo_path: Path) -> _GitState:
+            call_count["n"] += 1
+            if call_count["n"] <= 1:
+                return _GitState(
+                    head_commit="commit_1",
+                    stash_hash="s1",
+                    changed_file_count=0,
+                )
+            return _GitState(
+                head_commit="commit_2",
+                stash_hash="s1",
+                changed_file_count=0,
+            )
+
+        monkeypatch.setattr(
+            "drift.incremental._capture_git_state", _fake_capture
+        )
+
+        def _counting_analyze(*a, **kw):
+            call_count["analyze_count"] += 1
+            return _stub_analysis()
+
+        monkeypatch.setattr(
+            "drift.analyzer.analyze_repo", _counting_analyze
+        )
+
+        # First call → creates baseline (1 analyze call)
+        nudge(tmp_path, changed_files=[])
+        first_analyze = call_count["analyze_count"]
+
+        # Second call → git state changed → rescan (another analyze call)
+        nudge(tmp_path, changed_files=[])
+        assert call_count["analyze_count"] > first_analyze
