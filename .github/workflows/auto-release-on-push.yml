@@ -1,4 +1,4 @@
-name: Auto Create Release On Push
+﻿name: Auto Create Release On Push
 
 on:
   push:
@@ -15,7 +15,7 @@ concurrency:
 jobs:
   create-release-if-needed:
     name: Create tag + release when version is untagged
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
 
     steps:
       - uses: actions/checkout@v4
@@ -31,69 +31,65 @@ jobs:
 
       - name: Resolve release tag from pyproject.toml
         id: version
-        shell: powershell
         run: |
-          $version = python -c "import tomllib, pathlib; data=tomllib.loads(pathlib.Path('pyproject.toml').read_text(encoding='utf-8')); print(data['project']['version'])"
-          "tag=v$version" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
-          Write-Host "Resolved release tag: v$version"
+          VERSION=$(python - <<'PY'
+          import tomllib
+          from pathlib import Path
+
+          data = tomllib.loads(Path("pyproject.toml").read_text(encoding="utf-8"))
+          print(data["project"]["version"])
+          PY
+          )
+          echo "tag=v$VERSION" >> "$GITHUB_OUTPUT"
+          echo "Resolved release tag: v$VERSION"
 
       - name: Check whether tag and release already exist
         id: check
-        shell: powershell
         env:
           GH_TOKEN: ${{ github.token }}
           TAG: ${{ steps.version.outputs.tag }}
         run: |
-          cmd /c "git ls-remote --exit-code --tags origin refs/tags/%TAG% >nul 2>nul"
-          if ($LASTEXITCODE -eq 0) {
-            "tag_exists=true" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
-          } else {
-            "tag_exists=false" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
-          }
+          if git ls-remote --exit-code --tags origin "refs/tags/$TAG" >/dev/null 2>&1; then
+            echo "tag_exists=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "tag_exists=false" >> "$GITHUB_OUTPUT"
+          fi
 
-          cmd /c "gh release view %TAG% >nul 2>nul"
-          if ($LASTEXITCODE -eq 0) {
-            "release_exists=true" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
-          } else {
-            "release_exists=false" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
-          }
-
-          # Missing tag/release is an expected state; this probe step must not fail.
-          exit 0
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            echo "release_exists=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "release_exists=false" >> "$GITHUB_OUTPUT"
+          fi
 
       - name: Create and push missing version tag
         if: steps.check.outputs.tag_exists != 'true'
-        shell: powershell
         env:
           TAG: ${{ steps.version.outputs.tag }}
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git tag "$env:TAG" "$env:GITHUB_SHA"
-          git push origin "$env:TAG"
-          Write-Host "Created missing tag $env:TAG"
+          git tag "$TAG" "${GITHUB_SHA}"
+          git push origin "$TAG"
+          echo "Created missing tag $TAG"
 
       - name: Create missing GitHub release
         if: steps.check.outputs.release_exists != 'true'
-        shell: powershell
         env:
           GH_TOKEN: ${{ github.token }}
           TAG: ${{ steps.version.outputs.tag }}
         run: |
-          cmd /c "gh release view \"$env:TAG\" >nul 2>nul"
-          if ($LASTEXITCODE -eq 0) {
-            Write-Host "Release for $env:TAG already exists - skipping"
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            echo "Release for $TAG already exists - skipping"
             exit 0
-          }
+          fi
 
-          gh release create "$env:TAG" `
-            --title "$env:TAG" `
+          gh release create "$TAG" \
+            --title "$TAG" \
             --generate-notes
-          Write-Host "Created missing release for $env:TAG"
+          echo "Created missing release for $TAG"
 
       - name: Skip summary
         if: steps.check.outputs.tag_exists == 'true' && steps.check.outputs.release_exists == 'true'
-        shell: powershell
         env:
           TAG: ${{ steps.version.outputs.tag }}
-        run: Write-Host "Tag and release already exist for $env:TAG - nothing to do"
+        run: echo "Tag and release already exist for $TAG - nothing to do"
