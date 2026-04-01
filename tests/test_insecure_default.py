@@ -325,3 +325,225 @@ class TestISDEdgeCases:
         assert len(findings) == 1
         # DEBUG = True has score 0.8, so severity should be HIGH
         assert findings[0].score == 0.8
+
+
+# ---------------------------------------------------------------------------
+# Framework-specific defaults (Django, FastAPI, Flask)
+# ---------------------------------------------------------------------------
+
+
+class TestFrameworkSpecificDefaults:
+    """Validate ISD against real-world framework patterns.
+
+    True positives: hardcoded insecure values in framework entry points.
+    True negatives: environment-driven or config-driven values.
+    """
+
+    # -- Django true positives -----------------------------------------------
+
+    def test_django_settings_debug_true(self, tmp_path: Path) -> None:
+        _write_source(
+            tmp_path, "myproject/settings.py",
+            """\
+            from pathlib import Path
+
+            BASE_DIR = Path(__file__).resolve().parent.parent
+
+            SECRET_KEY = "django-insecure-placeholder"
+
+            DEBUG = True
+
+            ALLOWED_HOSTS = []
+            """,
+        )
+        signal = InsecureDefaultSignal(repo_path=tmp_path)
+        pr = _make_pr("myproject/settings.py")
+        findings = signal.analyze([pr], {}, DriftConfig())
+        rule_ids = {f.rule_id for f in findings}
+        assert "insecure_debug_mode" in rule_ids
+        assert "insecure_allowed_hosts" in rule_ids
+
+    def test_django_allowed_hosts_wildcard(self, tmp_path: Path) -> None:
+        _write_source(
+            tmp_path, "myproject/settings.py",
+            """\
+            DEBUG = False
+
+            ALLOWED_HOSTS = ["*"]
+
+            INSTALLED_APPS = [
+                "django.contrib.admin",
+                "django.contrib.auth",
+            ]
+            """,
+        )
+        signal = InsecureDefaultSignal(repo_path=tmp_path)
+        pr = _make_pr("myproject/settings.py")
+        findings = signal.analyze([pr], {}, DriftConfig())
+        assert len(findings) == 1
+        assert findings[0].rule_id == "insecure_allowed_hosts"
+
+    # -- FastAPI true positives ----------------------------------------------
+
+    def test_fastapi_debug_true(self, tmp_path: Path) -> None:
+        _write_source(
+            tmp_path, "main.py",
+            """\
+            from fastapi import FastAPI
+
+            app = FastAPI(debug=True)
+
+            @app.get("/")
+            async def root():
+                return {"message": "hello"}
+            """,
+        )
+        signal = InsecureDefaultSignal(repo_path=tmp_path)
+        pr = _make_pr("main.py")
+        findings = signal.analyze([pr], {}, DriftConfig())
+        assert len(findings) == 1
+        assert findings[0].rule_id == "insecure_debug_mode"
+
+    # -- Flask true positives ------------------------------------------------
+
+    def test_flask_app_run_debug_true(self, tmp_path: Path) -> None:
+        _write_source(
+            tmp_path, "app.py",
+            """\
+            from flask import Flask
+
+            app = Flask(__name__)
+
+            @app.route("/")
+            def index():
+                return "Hello, World!"
+
+            if __name__ == "__main__":
+                app.run(debug=True)
+            """,
+        )
+        signal = InsecureDefaultSignal(repo_path=tmp_path)
+        pr = _make_pr("app.py")
+        findings = signal.analyze([pr], {}, DriftConfig())
+        assert len(findings) == 1
+        assert findings[0].rule_id == "insecure_debug_mode"
+
+    def test_flask_config_debug_true(self, tmp_path: Path) -> None:
+        _write_source(
+            tmp_path, "app.py",
+            """\
+            from flask import Flask
+
+            app = Flask(__name__)
+            app.config["DEBUG"] = True
+            """,
+        )
+        signal = InsecureDefaultSignal(repo_path=tmp_path)
+        pr = _make_pr("app.py")
+        findings = signal.analyze([pr], {}, DriftConfig())
+        assert len(findings) == 1
+        assert findings[0].rule_id == "insecure_debug_mode"
+
+    # -- Django true negatives (environment / config driven) -----------------
+
+    def test_django_debug_from_env(self, tmp_path: Path) -> None:
+        _write_source(
+            tmp_path, "myproject/settings.py",
+            """\
+            import os
+
+            DEBUG = os.environ.get("DEBUG", False)
+
+            ALLOWED_HOSTS = os.environ.get("ALLOWED_HOSTS", "").split(",")
+            """,
+        )
+        signal = InsecureDefaultSignal(repo_path=tmp_path)
+        pr = _make_pr("myproject/settings.py")
+        findings = signal.analyze([pr], {}, DriftConfig())
+        assert len(findings) == 0
+
+    def test_django_debug_from_env_bool(self, tmp_path: Path) -> None:
+        _write_source(
+            tmp_path, "myproject/settings.py",
+            """\
+            import os
+
+            DEBUG = os.getenv("DJANGO_DEBUG", "False").lower() == "true"
+            """,
+        )
+        signal = InsecureDefaultSignal(repo_path=tmp_path)
+        pr = _make_pr("myproject/settings.py")
+        findings = signal.analyze([pr], {}, DriftConfig())
+        assert len(findings) == 0
+
+    # -- FastAPI true negatives (config driven) ------------------------------
+
+    def test_fastapi_debug_from_settings(self, tmp_path: Path) -> None:
+        _write_source(
+            tmp_path, "main.py",
+            """\
+            from fastapi import FastAPI
+            from config import settings
+
+            app = FastAPI(debug=settings.DEBUG)
+
+            @app.get("/")
+            async def root():
+                return {"message": "hello"}
+            """,
+        )
+        signal = InsecureDefaultSignal(repo_path=tmp_path)
+        pr = _make_pr("main.py")
+        findings = signal.analyze([pr], {}, DriftConfig())
+        assert len(findings) == 0
+
+    def test_fastapi_debug_false(self, tmp_path: Path) -> None:
+        _write_source(
+            tmp_path, "main.py",
+            """\
+            from fastapi import FastAPI
+
+            app = FastAPI(debug=False)
+            """,
+        )
+        signal = InsecureDefaultSignal(repo_path=tmp_path)
+        pr = _make_pr("main.py")
+        findings = signal.analyze([pr], {}, DriftConfig())
+        assert len(findings) == 0
+
+    # -- Flask true negatives (environment driven) ---------------------------
+
+    def test_flask_debug_from_env(self, tmp_path: Path) -> None:
+        _write_source(
+            tmp_path, "app.py",
+            """\
+            import os
+            from flask import Flask
+
+            app = Flask(__name__)
+
+            if __name__ == "__main__":
+                app.run(debug=os.getenv("FLASK_DEBUG", False))
+            """,
+        )
+        signal = InsecureDefaultSignal(repo_path=tmp_path)
+        pr = _make_pr("app.py")
+        findings = signal.analyze([pr], {}, DriftConfig())
+        assert len(findings) == 0
+
+    def test_flask_debug_false(self, tmp_path: Path) -> None:
+        _write_source(
+            tmp_path, "app.py",
+            """\
+            from flask import Flask
+
+            app = Flask(__name__)
+
+            if __name__ == "__main__":
+                app.run(debug=False)
+            """,
+        )
+        signal = InsecureDefaultSignal(repo_path=tmp_path)
+        pr = _make_pr("app.py")
+        findings = signal.analyze([pr], {}, DriftConfig())
+        assert len(findings) == 0
