@@ -49,7 +49,7 @@ class TestScanSuppressions:
         files = [FileInfo(path=Path("app.py"), language="python", size_bytes=30)]
 
         result = scan_suppressions(files, tmp_path)
-        assert result[("app.py", 1)] == {"avs"}
+        assert result[("app.py", 1)] == {"architecture_violation"}
 
     def test_ignore_multiple_signals(self, tmp_path: Path) -> None:
         src = tmp_path / "app.py"
@@ -57,7 +57,10 @@ class TestScanSuppressions:
         files = [FileInfo(path=Path("app.py"), language="python", size_bytes=30)]
 
         result = scan_suppressions(files, tmp_path)
-        assert result[("app.py", 1)] == {"avs", "pfs"}
+        assert result[("app.py", 1)] == {
+            "architecture_violation",
+            "pattern_fragmentation",
+        }
 
     def test_js_comment_syntax(self, tmp_path: Path) -> None:
         src = tmp_path / "app.ts"
@@ -65,7 +68,7 @@ class TestScanSuppressions:
         files = [FileInfo(path=Path("app.ts"), language="typescript", size_bytes=30)]
 
         result = scan_suppressions(files, tmp_path)
-        assert result[("app.ts", 1)] == {"avs"}
+        assert result[("app.ts", 1)] == {"architecture_violation"}
 
     def test_unsupported_language_skipped(self, tmp_path: Path) -> None:
         src = tmp_path / "app.rb"
@@ -91,7 +94,7 @@ class TestScanSuppressions:
         result = scan_suppressions(files, tmp_path)
         assert len(result) == 2
         assert result[("app.py", 2)] is None
-        assert result[("app.py", 4)] == {"pfs"}
+        assert result[("app.py", 4)] == {"pattern_fragmentation"}
 
 
 # ---------------------------------------------------------------------------
@@ -166,5 +169,18 @@ class TestFilterFindings:
         f.end_line = 8
 
         active, suppressed = filter_findings([f], {("src/app.py", 8): None})
+        assert len(active) == 0
+        assert len(suppressed) == 1
+
+    def test_abbrev_comment_suppresses_matching_finding(self, tmp_path: Path) -> None:
+        src = tmp_path / "src" / "app.py"
+        src.parent.mkdir(parents=True, exist_ok=True)
+        src.write_text("x = 1  # drift:ignore[AVS]\n", encoding="utf-8")
+        files = [FileInfo(path=Path("src/app.py"), language="python", size_bytes=32)]
+
+        suppressions = scan_suppressions(files, tmp_path)
+        finding = _make_finding(signal=SignalType.ARCHITECTURE_VIOLATION, start_line=1)
+        active, suppressed = filter_findings([finding], suppressions)
+
         assert len(active) == 0
         assert len(suppressed) == 1

@@ -1,0 +1,4 @@
+# file: C:\Users\mickg\PWBS\drift\src\drift\signals\insecure_default.py
+# hypothesis_version: 6.151.10
+
+[0.5, 0.6, 0.7, 0.8, '*', '.', 'ALLOWED_HOSTS', 'CSRF_COOKIE_SECURE', 'CWE-1188', 'DEBUG', 'DEBUG mode enabled', 'Insecure Default', 'SECURE_SSL_REDIRECT', 'conftest.py', 'cwe', 'file_local', 'insecure_cookie', 'insecure_cors', 'insecure_debug_mode', 'insecure_ssl_verify', 'lineno', 'python', 'replace', 'rule_id', 'utf-8', 'verify']

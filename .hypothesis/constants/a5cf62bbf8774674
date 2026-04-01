@@ -1,0 +1,4 @@
+# file: C:\Users\mickg\PWBS\drift\src\drift\rules\tsjs\circular_module_detection.py
+# hypothesis_version: 6.151.10
+
+['cycle_length', 'cycle_nodes', 'rule_id']

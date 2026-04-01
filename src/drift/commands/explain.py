@@ -378,6 +378,28 @@ _SIGNAL_INFO: dict[str, dict[str, str]] = {
             "to make the dependency explicit."
         ),
     },
+    "TSA": {
+        "signal_type": "ts_architecture",
+        "name": "TypeScript Architecture",
+        "weight": "0.0 (report-only)",
+        "description": (
+            "Detects architecture violations in TypeScript/JavaScript code "
+            "(layer leaks, circular module cycles, cross-package violations, "
+            "and UI-to-infra imports)."
+        ),
+        "detects": (
+            "TS/JS-specific structural violations from the tsjs rule suite. "
+            "Only active when .ts/.tsx/.js/.jsx files are present in the repository."
+        ),
+        "example": (
+            "  # web/ui/page.ts directly imports infra adapter:\n"
+            "  import { SqlUserRepo } from '../infra/sql/user_repo'  # TSA"
+        ),
+        "fix_hint": (
+            "Keep frontend/application/infrastructure boundaries explicit. "
+            "Route cross-layer access through interfaces or service boundaries."
+        ),
+    },
     "CXS": {
         "signal_type": "cognitive_complexity",
         "name": "Cognitive Complexity",

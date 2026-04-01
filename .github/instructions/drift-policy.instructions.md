@@ -18,6 +18,7 @@ Vor jeder Umsetzung dieses Format sichtbar ausgeben:
 - Zulassungskriterium erfüllt: [JA / NEIN] → [Unsicherheit / Signal / Glaubwürdigkeit / Handlungsfähigkeit / Trend / Einführbarkeit]
 - Ausschlusskriterium ausgelöst: [JA / NEIN] → [falls JA: welches]
 - Roadmap-Phase: [1 / 2 / 3 / 4] — blockiert durch höhere Phase: [JA / NEIN]
+- Betrifft Signal/Architektur (§18): [JA / NEIN] → falls JA: Audit-Artefakte aktualisiert: [welche]
 - Entscheidung: [ZULÄSSIG / ABBRUCH]
 - Begründung: [ein Satz]
 ```
@@ -55,3 +56,17 @@ Fehlt eines dieser fünf Elemente → Änderung ist **unzulässig**.
 
 Reihenfolge ist nicht verhandelbar:
 `Glaubwürdigkeit > Signalpräzision > Verständlichkeit > FP/FN-Reduktion > Einführbarkeit > Trend > Features`
+
+## Risk-Audit-Pflicht (Policy §18)
+
+Bei Änderungen an Signalen, Input-Pfaden, Output-Kanälen oder Trust Boundaries sind Audit-Aktualisierungen **vor Merge Pflicht**:
+
+| Änderung | Pflicht-Aktualisierung |
+|----------|------------------------|
+| Neues/geändertes Signal | FMEA (FP + FN Eintrag) + FTA (FT-1/FT-2 prüfen) + Risk Register |
+| Neuer Input-/Output-Pfad | STRIDE (S/T/R/I/D/E für betroffene Trust Boundary) + Risk Register |
+| Precision/Recall Δ > 5% | FMEA (RPNs neu berechnen) + Risk Register (Messwerte) |
+
+Die vier Audit-Artefakte unter `audit_results/` dürfen **nicht gelöscht** werden.
+Ein Agent, der signalrelevante Änderungen ohne Audit-Update vornimmt, **verletzt diese Policy**.
+Pre-Push-Hook und CI erzwingen die Einhaltung automatisch.

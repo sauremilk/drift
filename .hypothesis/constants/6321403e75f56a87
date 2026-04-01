@@ -1,0 +1,4 @@
+# file: C:\Users\mickg\PWBS\drift\src\drift\recommendations.py
+# hypothesis_version: 6.151.10
+
+[0.0, 0.5, 3.0, ' → ', ', ', '.', '. ', '?', 'ai_ratio', 'canonical_variant', 'change_frequency_30d', 'circular', 'co_change_weight', 'complexity', 'confidence', 'cycle', 'file', 'file_a', 'file_b', 'function_a', 'function_b', 'function_name', 'functions', 'has_docstring', 'has_return_type', 'high', 'isolated_count', 'isolated_units', 'layer', 'low', 'medium', 'module', 'name', 'novel_dependencies', 'novel_imports', 'similarity', 'unit_count', 'upward', 'variant_count']

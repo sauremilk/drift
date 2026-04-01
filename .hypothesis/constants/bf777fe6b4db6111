@@ -1,0 +1,4 @@
+# file: C:\Users\mickg\PWBS\drift\src\drift\commands\copilot_context.py
+# hypothesis_version: 6.151.10
+
+['--config', '--no-merge', '--output', '--repo', '--since', '--write', '-c', '-o', '-r', '-s', '-w', '.', '.github', 'copilot-context']

@@ -1,0 +1,4 @@
+# file: C:\Users\mickg\PWBS\drift\src\drift\incremental.py
+# hypothesis_version: 6.151.10
+
+[0.0, 0.005, 900, '--name-only', '.', 'HEAD', 'degrading', 'diff', 'drift', 'estimated', 'exact', 'file_local', 'git', 'improving', 'list', 'replace', 'rev-parse', 'signal_type', 'stable', 'stash', 'utf-8']

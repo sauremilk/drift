@@ -1,0 +1,4 @@
+# file: C:\Users\mickg\PWBS\drift\src\drift\signals\missing_authorization.py
+# hypothesis_version: 6.151.10
+
+[0.7, '.', 'CWE-862', '_', 'accessmixin', 'auth_mechanism', 'cwe', 'django', 'endpoint_name', 'fastapi', 'file_local', 'flask', 'framework', 'has_auth', 'isauthenticated', 'loginrequiredmixin', 'missing_authz_route', 'none', 'python', 'rest_framework', 'sanic', 'staffrequiredmixin', 'starlette', 'unknown', 'useraccessmixin']

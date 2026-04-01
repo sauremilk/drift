@@ -1,0 +1,4 @@
+# file: C:\Users\mickg\PWBS\drift\src\drift\commands\trend.py
+# hypothesis_version: 6.151.10
+
+[-0.01, 0.01, 0.3, 0.6, '--config', '--last', '--repo', '-c', '-l', '-r', '.', '?', 'Findings', 'Score', 'T', 'Timestamp', '[dim]→ stable[/dim]', 'days', 'drift_score', 'green', 'history.json', 'red', 'repo', 'right', 'timestamp', 'total_findings', 'yellow', 'Δ', '—']

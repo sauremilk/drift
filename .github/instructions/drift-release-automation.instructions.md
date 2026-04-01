@@ -46,7 +46,7 @@ Wenn du Code-Änderungen an `src/drift/` durchführst, führe nach erfolgreichem
 5. **Git Tag erstellen + pushen**
    ```bash
    git tag -a vX.Y.Z -m "Release vX.Y.Z"
-   git push origin master --tags
+   git push origin main --tags
    ```
    - Dies triggert `.github/workflows/publish.yml` automatisch
    - Workflow: validiert Tag ↔ pyproject.toml → baut Dist → published zu PyPI
@@ -77,7 +77,7 @@ python scripts/release_automation.py --calc-version --update-changelog
 git add .
 git commit -m "chore: Release vX.Y.Z — update version and changelog"
 git tag -a vX.Y.Z -m "Release vX.Y.Z"
-git push origin master --tags
+git push origin main --tags
 ```
 
 ---

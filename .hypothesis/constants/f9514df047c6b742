@@ -1,0 +1,4 @@
+# file: C:\Users\mickg\PWBS\drift\src\drift\signals\explainability_deficit.py
+# hypothesis_version: 6.151.10
+
+[0.0, 0.3, 0.5, 0.7, 1.0, 1.5, 4.0, '.', '.spec.ts', '.spec.tsx', 'Docstring', 'No docstring.', 'Return-Type', 'Tests', '__init__', 'afterAll', 'afterEach', 'beforeAll', 'beforeEach', 'complexity', 'describe', 'explanation_score', 'file_local', 'fixture', 'function_name', 'has_docstring', 'has_return_type', 'has_test', 'it', 'javascript', 'jsx', 'loc', 'parametrize', 'setUp', 'setUpClass', 'tearDown', 'test', 'test_', 'thresholds', 'tsx', 'typescript']

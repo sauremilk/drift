@@ -67,9 +67,9 @@ ERROR_REGISTRY: dict[str, ErrorInfo] = {
     ),
     "DRIFT-1002": ErrorInfo(
         code="DRIFT-1002",
-        summary="Configuration file is not valid YAML",
-        why="YAML parse error: {reason}",
-        action="Check syntax near line {line} — common causes: wrong indentation, missing colon",
+        summary="Configuration file is not valid",
+        why="Parse error: {reason}",
+        action="Check syntax near line {line} in the config file",
         category="user",
     ),
     "DRIFT-1003": ErrorInfo(

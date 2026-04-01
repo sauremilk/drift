@@ -1,0 +1,4 @@
+# file: C:\Users\mickg\PWBS\drift\scripts\study_debt_correlation.py
+# hypothesis_version: 6.151.10
+
+[0.0, 2.0, 300, 10000, '*.js', '*.jsx', '*.py', '*.ts', '*.tsx', '--depth', '--evaluate', '--format', '--json', '--label', '--limit', '--output', '--repo', '--since', '--single-branch', '--state', '-o', '.git', '/', '1', '1000', '90', '?', 'S11-debt-correlation', '__main__', 'all', 'analyze', 'benchmark_results', 'cleanup', 'clone', 'code-quality', 'composite_score', 'debt', 'debt_issues', 'debt_labels', 'debt_labels_used', 'debt_per_10kloc', 'drift', 'gh', 'git', 'hypothesis', 'ignore', 'input', 'issue', 'json', 'list', 'loc', 'n_repos', 'node_modules', 'number', 'refactoring', 'repo', 'repos', 'results', 'rho > 0.4', 'score', 'spearman_rho', 'study', 'tech-debt', 'technical-debt', 'url', 'utf-8']

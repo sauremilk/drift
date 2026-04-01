@@ -1,0 +1,4 @@
+# file: C:\Users\mickg\PWBS\drift\src\drift\signals\_utils.py
+# hypothesis_version: 6.151.10
+
+['.spec.js', '.spec.jsx', '.spec.ts', '.spec.tsx', '.test.js', '.test.jsx', '.test.ts', '.test.tsx', '/', '__tests__', '_test.py', 'javascript', 'jsx', 'python', 'replace', 'test_', 'tsx', 'typescript', 'utf-8']

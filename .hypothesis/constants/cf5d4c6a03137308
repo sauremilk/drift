@@ -1,0 +1,4 @@
+# file: C:\Users\mickg\PWBS\drift\src\drift\commands\export_context.py
+# hypothesis_version: 6.151.10
+
+['--config', '--format', '--max-items', '--output', '--repo', '--scope', '--since', '--write', '-c', '-o', '-r', '-s', '-w', '.', 'Filter by scope.', 'export-context', 'file', 'fmt', 'instructions', 'module', 'prompt', 'raw', 'repo', 'utf-8']

@@ -256,12 +256,12 @@ See [CONTRIBUTING.md → Versioning](CONTRIBUTING.md#versioning) for details.
 
 | Workflow | Trigger | Purpose |
 |----------|---------|---------|
-| `ci.yml` | Push/PR to master | Lint, typecheck, tests, coverage, self-analysis, score gate |
+| `ci.yml` | Push/PR to main | Lint, typecheck, tests, coverage, self-analysis, score gate |
 | `publish.yml` | GitHub Release / manual | Build + publish to PyPI (token or trusted publishing) |
-| `auto-release-on-push.yml` | Push to master | Auto-create GitHub Release from pyproject.toml version |
+| `auto-release-on-push.yml` | Push to main | Auto-create GitHub Release from pyproject.toml version |
 | `validate-release.yml` | Tag push `v*` | Pre-publish version validation |
-| `docs.yml` | Push to master (docs changes) | Build + deploy MkDocs to GitHub Pages |
-| `repo-guard.yml` | Push/PR to master | Repository hygiene checks (blocklist, root allowlist) |
+| `docs.yml` | Push to main (docs changes) | Build + deploy MkDocs to GitHub Pages |
+| `repo-guard.yml` | Push/PR to main | Repository hygiene checks (blocklist, root allowlist) |
 | `package-kpis.yml` | Monthly cron / manual | Collect PyPI downloads + GitHub dependency usage |
 | `welcome.yml` | First issue/PR | Automated welcome message for new contributors |
 | `stale.yml` | Weekly cron | Mark and close inactive issues/PRs |
@@ -270,7 +270,7 @@ See [CONTRIBUTING.md → Versioning](CONTRIBUTING.md#versioning) for details.
 
 ## Pre-Push Gates (for contributors)
 
-The `.githooks/pre-push` hook enforces 5 gates before code reaches the remote. These run automatically after `make install`.
+The `.githooks/pre-push` hook enforces 6 gates before code reaches the remote. These run automatically after `make install`.
 
 | Gate | When triggered | What it checks |
 |------|---------------|----------------|
@@ -279,12 +279,14 @@ The `.githooks/pre-push` hook enforces 5 gates before code reaches the remote. T
 | **Version Bump** | `pyproject.toml` changed | Version must be valid SemVer and > last remote tag |
 | **Lockfile Sync** | `pyproject.toml` changed | `uv.lock` must exist and be synchronized |
 | **Public API Docstrings** | `src/drift/` changes | New public functions must have docstrings |
+| **Risk Audit (§18)** | `src/drift/signals/`, `ingestion/`, `output/` changes | At least one audit artifact under `audit_results/` must be updated |
 
 **Skip flags** (use sparingly, e.g. for docs-only changes):
 
 ```bash
 DRIFT_SKIP_CHANGELOG=1 git push      # Skip changelog gate
 DRIFT_SKIP_VERSION_BUMP=1 git push   # Skip version gate
+DRIFT_SKIP_RISK_AUDIT=1 git push     # Skip risk audit gate
 DRIFT_SKIP_HOOKS=1 git push          # Skip ALL gates (emergency only)
 ```
 

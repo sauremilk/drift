@@ -229,10 +229,41 @@
 
 17.4 Drift darf keine Produktarbeit fördern, die die Analysequalität verschlechtert.
 
-## 18. Schlussbestimmung
+## 18. Risiko-Audit-Pflicht
 
-18.1 Diese Policy ist verbindlich.
+18.1 Drift pflegt einen verbindlichen 4-Layer-Risiko-Audit-Stack bestehend aus:
+- FMEA-Matrix (`audit_results/fmea_matrix.md`) — Fehlermodi und Priorisierung
+- STRIDE Threat Model (`audit_results/stride_threat_model.md`) — Sicherheits-Bedrohungsanalyse
+- Fault Tree Analysis (`audit_results/fault_trees.md`) — Kausale Ursachenketten
+- Risk Register (`audit_results/risk_register.md`) — Operatives Risikomanagement nach AI-RMF
 
-18.2 Abweichungen von dieser Policy sind nur zulässig, wenn die Abweichung dokumentiert, begründet und als Ausnahme gekennzeichnet ist.
+18.2 **Pflichten bei Signalarbeit:** Bei Hinzufügen, Entfernen oder wesentlicher Änderung eines Signals sind folgende Aktualisierungen vor Merge Pflicht:
+- FMEA: mindestens ein FP- und ein FN-Fehlermodus-Eintrag für das betroffene Signal
+- FTA: Prüfung ob FT-1 (FP-Kette) oder FT-2 (FN-Kette) um neue Pfade erweitert werden müssen
+- Risk Register: betroffene Einträge aktualisieren oder neue anlegen
 
-18.3 Im Zweifel gilt stets die Regel mit dem geringeren Interpretationsspielraum und dem höheren Erkenntniswert.
+18.3 **Pflichten bei Architekturänderungen:** Bei Hinzufügen oder Ändern von Input-Pfaden, Output-Kanälen oder Trust Boundaries:
+- STRIDE: betroffene Trust Boundary muss S/T/R/I/D/E-Bewertung erhalten
+- Risk Register: neue Risiken erfassen
+
+18.4 **Pflichten bei Precision/Recall-Änderungen:** Bei Änderung der Precision oder Recall um mehr als 5 Prozentpunkte:
+- FMEA: betroffene RPNs neu berechnen
+- Risk Register: Messwerte und Status aktualisieren
+
+18.5 Diese Pflichten gelten gleichermaßen für menschliche Beitragende und KI-Agenten. Ein Agent, der eine signalrelevante Änderung vornimmt ohne die zugehörigen Audit-Artefakte zu aktualisieren, verletzt diese Policy.
+
+18.6 Die Einhaltung wird durch folgende Mechanismen sichergestellt:
+- Pre-Push-Hook: Prüft ob geänderte Signale zugehörige Audit-Aktualisierungen haben
+- CI-Workflow: `risk-audit-check` Job validiert Vollständigkeit der Audit-Artefakte
+- PR-Template: Audit-Checkliste muss vor Merge geprüft werden
+- Agent-Instructions: Pflicht-Gate enthält Risk-Audit-Prüfung
+
+18.7 Die vier Audit-Artefakte dürfen nicht gelöscht werden. Inhaltliche Änderungen erfordern Begründung im Commit.
+
+## 19. Schlussbestimmung
+
+19.1 Diese Policy ist verbindlich.
+
+19.2 Abweichungen von dieser Policy sind nur zulässig, wenn die Abweichung dokumentiert, begründet und als Ausnahme gekennzeichnet ist.
+
+19.3 Im Zweifel gilt stets die Regel mit dem geringeren Interpretationsspielraum und dem höheren Erkenntniswert.

@@ -1,0 +1,4 @@
+# file: C:\Users\mickg\PWBS\drift\src\drift\commands\baseline.py
+# hypothesis_version: 6.151.10
+
+['--baseline-file', '--config', '--format', '--no-embeddings', '--output', '--repo', '--since', '--workers', '-b', '-c', '-f', '-o', '-r', '-s', '-w', '.', '.drift-baseline.json', 'drift_score', 'json', 'known_findings_count', 'new_findings', 'output_format', 'rich', 'total_findings']

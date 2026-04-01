@@ -1,0 +1,4 @@
+# file: C:\Users\mickg\PWBS\drift\src\drift\scoring\engine.py
+# hypothesis_version: 6.151.10
+
+[0.0, 0.0001, 0.001, 0.02, 0.1, 0.4, 0.5, 1.0, '<root>', 'critical', 'drift_score', 'high', 'low', 'medium', 'none']

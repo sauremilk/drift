@@ -58,7 +58,13 @@ from drift.errors import EXIT_FINDINGS_ABOVE_THRESHOLD
     help="Comma-separated signal IDs to exclude (e.g. TVS,DIA).",
 )
 @click.option("--config", "-c", type=click.Path(path_type=Path), default=None)
-@click.option("--workers", "-w", default=None, type=int, help="Parallel workers for file parsing.")
+@click.option(
+    "--workers",
+    "-w",
+    default=None,
+    type=click.IntRange(min=1),
+    help="Parallel workers for file parsing.",
+)
 @click.option(
     "--no-embeddings", is_flag=True, default=False, help="Disable embedding-based analysis."
 )
@@ -168,6 +174,17 @@ def analyze(
     from drift.analyzer import _DEFAULT_WORKERS, analyze_repo
     from drift.config import DriftConfig
 
+    def _recompute_summary() -> None:
+        from drift.scoring.engine import (
+            composite_score,
+            compute_module_scores,
+            compute_signal_scores,
+        )
+
+        signal_scores = compute_signal_scores(analysis.findings)
+        analysis.drift_score = composite_score(signal_scores, cfg.weights)
+        analysis.module_scores = compute_module_scores(analysis.findings, cfg.weights)
+
     if json_shortcut:
         output_format = "json"
 
@@ -225,6 +242,7 @@ def analyze(
         fingerprints = load_baseline(baseline_file)
         new, known = baseline_diff(analysis.findings, fingerprints)
         analysis.findings = new
+        _recompute_summary()
 
     if quiet:
         sev = analysis.severity.value.upper()

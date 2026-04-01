@@ -1,0 +1,4 @@
+# file: C:\Users\mickg\PWBS\drift\src\drift\output\github_format.py
+# hypothesis_version: 6.151.10
+
+['error', 'notice', 'unknown', 'warning']

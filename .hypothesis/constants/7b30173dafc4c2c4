@@ -1,0 +1,4 @@
+# file: C:\Users\mickg\PWBS\drift\src\drift\rules\tsjs\layer_leak_detection.py
+# hypothesis_version: 6.151.10
+
+['file_to_layer', 'layer-leak-detection', 'layer_order', 'rule_id', 'source_file', 'source_layer', 'target_file', 'target_layer', 'utf-8']

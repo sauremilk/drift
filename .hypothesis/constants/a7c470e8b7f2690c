@@ -1,0 +1,4 @@
+# file: C:\Users\mickg\PWBS\drift\src\drift\commands\fix_plan.py
+# hypothesis_version: 6.151.10
+
+['--automation-fit-min', '--finding-id', '--max-tasks', '--output', '--repo', '--signal', '--target-path', '-o', '-r', '.', 'fix-plan', 'high', 'low', 'medium', 'path', 'utf-8']

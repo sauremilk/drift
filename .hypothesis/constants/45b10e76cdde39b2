@@ -1,0 +1,4 @@
+# file: C:\Users\mickg\PWBS\drift\src\drift\commands\scan.py
+# hypothesis_version: 6.151.10
+
+[',', '--max-findings', '--output', '--repo', '--response-detail', '--select', '--signals', '--since', '--strategy', '--target-path', '-o', '-r', '.', 'Days of git history.', 'concise', 'detailed', 'diverse', 'path', 'scan', 'select', 'since_days', 'top-severity', 'utf-8']

@@ -1,0 +1,4 @@
+# file: C:\Users\mickg\PWBS\drift\src\drift\analyzers\typescript\barrel_resolver.py
+# hypothesis_version: 6.151.10
+
+[' as ', ',', '../', './', '.ts', '.tsx', 'index.ts', 'index.tsx', 'replace', 'type ', 'utf-8']

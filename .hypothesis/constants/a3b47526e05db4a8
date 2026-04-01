@@ -1,0 +1,4 @@
+# file: C:\Users\mickg\PWBS\drift\src\drift\commands\config_cmd.py
+# hypothesis_version: 6.151.10
+
+[0.5, 2.0, '--config', '--repo', '.', 'Config file path.', 'Repository root.', 'config', 'config_path', 'json']

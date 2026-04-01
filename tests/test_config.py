@@ -64,3 +64,18 @@ weights:
 
     with pytest.raises(DriftConfigError, match="DRIFT-1001"):
         DriftConfig.load(tmp_path)
+
+
+def test_toml_parse_error_message_is_not_yaml_specific(tmp_path: Path):
+    (tmp_path / "drift.toml").write_text(
+        "[weights\npattern_fragmentation = 0.30\n",
+        encoding="utf-8",
+    )
+
+    with pytest.raises(DriftConfigError) as exc_info:
+        DriftConfig.load(tmp_path)
+
+    message = str(exc_info.value)
+    assert "DRIFT-1002" in message
+    assert "Parse error:" in message
+    assert "YAML" not in message

@@ -1,0 +1,31 @@
+diff --git a/src/drift/commands/trend.py b/src/drift/commands/trend.py
+index 2f0c086..df4c4d9 100644
+--- a/src/drift/commands/trend.py
++++ b/src/drift/commands/trend.py
+@@ -17,7 +17,7 @@
+     type=click.Path(exists=True, file_okay=False, path_type=Path),
+     default=".",
+ )
+-@click.option("--last", "days", default=90, type=int, help="Number of days to trend.")
++@click.option("--last", "-l", "days", default=90, type=int, help="Number of days to trend.")
+ @click.option("--config", "-c", type=click.Path(path_type=Path), default=None)
+ def trend(repo: Path, days: int, config: Path | None) -> None:
+     """Show drift score trend over time (requires git history)."""
+diff --git a/tests/test_trend_command_history.py b/tests/test_trend_command_history.py
+index b5ad35c..ac50556 100644
+--- a/tests/test_trend_command_history.py
++++ b/tests/test_trend_command_history.py
+@@ -87,3 +87,12 @@ def test_trend_command_uses_canonical_history_and_keeps_legacy_entries(tmp_path:
+     # Exactly one new snapshot should be persisted by the analyzer path.
+     assert len(updated) == len(seeded) + 1
+     assert updated[-1]["scope"] == "repo"
++
++def test_trend_command_last_short_alias(tmp_path: Path) -> None:
++    repo = tmp_path / "repo"
++    repo.mkdir(parents=True, exist_ok=True)
++    _git(repo, "init") #initialize empty git repository so the trend command can run without error
++    runner = CliRunner()
++    result = runner.invoke(main, ["trend", "--repo", str(repo), "--l", "5"])
++    assert result.exit_code == 0 #, result.output
++    assert "5 day history window" in result.output
+\ No newline at end of file

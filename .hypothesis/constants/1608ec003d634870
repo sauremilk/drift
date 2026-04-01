@@ -1,0 +1,4 @@
+# file: C:\Users\mickg\PWBS\drift\src\drift\analyzers\typescript\alias_resolver.py
+# hypothesis_version: 6.151.10
+
+['*', '.', '../', './', '.json', '.ts', '.tsx', 'baseUrl', 'compilerOptions', 'drift', 'extends', 'index.ts', 'index.tsx', 'paths', 'tsconfig.json', 'utf-8']

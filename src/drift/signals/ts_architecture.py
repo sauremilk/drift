@@ -45,7 +45,7 @@ class TypeScriptArchitectureSignal(BaseSignal):
 
     @property
     def signal_type(self) -> SignalType:
-        return SignalType.ARCHITECTURE_VIOLATION
+        return SignalType.TS_ARCHITECTURE
 
     @property
     def name(self) -> str:
@@ -104,7 +104,7 @@ class TypeScriptArchitectureSignal(BaseSignal):
 
             findings.append(
                 Finding(
-                    signal_type=SignalType.ARCHITECTURE_VIOLATION,
+                    signal_type=SignalType.TS_ARCHITECTURE,
                     severity=severity_for_score(score),
                     score=score,
                     title=f"Circular import cycle ({cycle_len} modules)",
@@ -145,7 +145,7 @@ class TypeScriptArchitectureSignal(BaseSignal):
 
             findings.append(
                 Finding(
-                    signal_type=SignalType.ARCHITECTURE_VIOLATION,
+                    signal_type=SignalType.TS_ARCHITECTURE,
                     severity=severity_for_score(score),
                     score=score,
                     title=f"Cross-package import: {source_pkg} → {target_pkg}",
@@ -186,7 +186,7 @@ class TypeScriptArchitectureSignal(BaseSignal):
 
             findings.append(
                 Finding(
-                    signal_type=SignalType.ARCHITECTURE_VIOLATION,
+                    signal_type=SignalType.TS_ARCHITECTURE,
                     severity=severity_for_score(score),
                     score=score,
                     title=f"Layer leak: {source_layer} → {target_layer}",
@@ -226,7 +226,7 @@ class TypeScriptArchitectureSignal(BaseSignal):
 
             findings.append(
                 Finding(
-                    signal_type=SignalType.ARCHITECTURE_VIOLATION,
+                    signal_type=SignalType.TS_ARCHITECTURE,
                     severity=severity_for_score(score),
                     score=score,
                     title=f"UI → Infrastructure import: {source_layer} → {target_layer}",

@@ -224,6 +224,7 @@ Use the CLI when you only need stable commands in local or CI workflows.
 - findings_compact (deduplicated compact view)
 - compact_summary (decision-first counters for agent/CI usage)
 - fix_first list (prioritized "fix first" items)
+- negative_context list (signal-derived anti-pattern guidance for coding agents)
 - remediation object per finding (when available)
 - suppressed and context-tagged counts
 
@@ -238,6 +239,62 @@ drift check --format json --compact
 
 Compact mode keeps top-level decision data (`drift_score`, `severity`, `fix_first`,
 `findings_compact`, `compact_summary`) and omits heavy sections (`modules`, full `findings`).
+
+## Negative context in JSON and agent tasks
+
+Drift emits a `negative_context` array to provide deterministic "what not to do"
+guidance derived from findings. This feed is intended for coding agents and
+automation that generate code changes.
+
+Top-level analysis JSON (`drift analyze --format json`) can include:
+
+```json
+"negative_context": [
+    {
+        "anti_pattern_id": "neg-avs-1234567890",
+        "category": "architecture",
+        "source_signal": "architecture_violation",
+        "severity": "high",
+        "scope": "module",
+        "description": "Layer boundary violation detected.",
+        "forbidden_pattern": "Importing from API layer into data layer",
+        "canonical_alternative": "Move shared contract into neutral domain module",
+        "affected_files": ["src/service/orders.py"],
+        "confidence": 0.9,
+        "rationale": "Repeated cross-layer imports increase coupling and drift risk.",
+        "metadata": {}
+    }
+]
+```
+
+Agent task output also includes `negative_context` per task item so copilots can
+avoid regenerating known anti-patterns while applying a fix.
+
+### Field contract
+
+`negative_context` items use this stable shape:
+
+- `anti_pattern_id`: deterministic identifier for deduplication
+- `category`: one of `security`, `error_handling`, `architecture`, `testing`, `naming`, `complexity`, `completeness`
+- `source_signal`: signal key that generated the item
+- `severity`: `critical`, `high`, `medium`, `low`, or `info`
+- `scope`: one of `file`, `module`, `repo`
+- `description`: short anti-pattern explanation
+- `forbidden_pattern`: concrete pattern to avoid
+- `canonical_alternative`: preferred replacement pattern
+- `affected_files`: list of relevant repository paths
+- `confidence`: numeric confidence score
+- `rationale`: technical justification
+- `metadata`: signal-specific structured details
+
+### Current signal coverage
+
+Negative context generators are currently registered for:
+
+`PFS, AVS, MDS, EDS, BEM, TPD, GCD, NBV, BAT, ECM, CCC, COD, CXS, FOE, CIR, DCA, MAZ, ISD, HSC, DIA`
+
+For contributor guidance on adding coverage for new signals, see
+[Negative Context](negative-context.md).
 
 ## Exit code contract
 

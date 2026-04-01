@@ -31,6 +31,7 @@ _SIGNAL_PREFIX = {
     SignalType.BYPASS_ACCUMULATION: "bat",
     SignalType.EXCEPTION_CONTRACT_DRIFT: "ecm",
     SignalType.CO_CHANGE_COUPLING: "ccc",
+    SignalType.TS_ARCHITECTURE: "tsa",
     SignalType.COGNITIVE_COMPLEXITY: "cxs",
     SignalType.FAN_OUT_EXPLOSION: "foe",
     SignalType.CIRCULAR_IMPORT: "cir",

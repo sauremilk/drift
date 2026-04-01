@@ -1,0 +1,4 @@
+# file: C:\Users\mickg\PWBS\drift\src\drift\signals\circular_import.py
+# hypothesis_version: 6.151.10
+
+[0.1, 0.3, 0.7, 1.0, ' → ', '.', '.py', 'Circular Import', '__init__', 'circular_import', 'cycle_length', 'cycle_modules', 'python']

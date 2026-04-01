@@ -19,8 +19,8 @@ from drift.output.rich_output import _read_code_snippet
 class TestExplainSignalData:
     """Validate the signal reference data completeness."""
 
-    def test_all_13_signals_present(self) -> None:
-        assert len(_SIGNAL_INFO) == 22
+    def test_all_23_signals_present(self) -> None:
+        assert len(_SIGNAL_INFO) == 23
 
     @pytest.mark.parametrize("abbr", list(_SIGNAL_INFO.keys()))
     def test_each_signal_has_required_keys(self, abbr: str) -> None:

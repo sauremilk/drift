@@ -1,0 +1,4 @@
+# file: C:\Users\mickg\PWBS\drift\src\drift\commands\patterns.py
+# hypothesis_version: 6.151.10
+
+['--category', '--repo', '-r', '.', 'File', 'Function', 'Lines', 'Variant', 'api_endpoint', 'authentication', 'caching', 'data_access', 'error_handling', 'logging', 'validation', '—']

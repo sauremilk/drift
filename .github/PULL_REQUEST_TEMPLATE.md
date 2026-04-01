@@ -63,6 +63,15 @@ Evidence summary (required when feature is introduced):
 - [ ] If version/changelog changed: top release entry still fits one short summary plus at most 5 curated bullets
 - [ ] No unrelated files included
 
+## Risk Audit (POLICY §18 — required for signal/architecture changes)
+
+- [ ] This PR does **not** touch `src/drift/signals/`, `src/drift/ingestion/`, or `src/drift/output/` (skip section)
+- [ ] OR: `audit_results/fmea_matrix.md` updated (FP + FN entry for affected signal)
+- [ ] OR: `audit_results/stride_threat_model.md` updated (new/changed trust boundary)
+- [ ] OR: `audit_results/fault_trees.md` reviewed (FT-1/FT-2/FT-3 paths checked)
+- [ ] OR: `audit_results/risk_register.md` updated (new risk entry or metric update)
+- [ ] All four audit artifacts still exist and are not deleted
+
 ## Notes for reviewers
 
 <!-- Anything that needs special attention during review -->

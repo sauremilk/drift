@@ -1,0 +1,4 @@
+# file: C:\Users\mickg\PWBS\drift\src\drift\signals\bypass_accumulation.py
+# hypothesis_version: 6.151.10
+
+[0.0, 1.0, '#\\s*noqa\\b', '#\\s*type:\\s*ignore', ', ', '//\\s*@ts-ignore\\b', '//\\s*@ts-nocheck\\b', '//\\s*eslint-disable', 'Bypass Accumulation', '\\bAny\\b|\\bany\\b', '\\bas\\s+any\\b', '\\bcast\\s*\\(', 'bypass_density', 'coverage', 'deferred', 'file_local', 'lint', 'markers_by_category', 'pytest\\.mark\\.skip', 'test', 'total_markers', 'type', 'type_safety', 'utf-8']

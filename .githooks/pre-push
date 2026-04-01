@@ -5,7 +5,7 @@ set -e
 
 # Escape hatches (export VAR=1 to skip a specific gate):
 # DRIFT_SKIP_CHANGELOG, DRIFT_SKIP_VERSION_BUMP,
-# DRIFT_SKIP_LOCKFILE, DRIFT_SKIP_DOCSTRING
+# DRIFT_SKIP_LOCKFILE, DRIFT_SKIP_DOCSTRING, DRIFT_SKIP_RISK_AUDIT
 # DRIFT_SKIP_HOOKS=1 skips ALL gates (emergency only)
 
 # Block private/non-tool paths from being pushed.
@@ -322,6 +322,61 @@ EOF
 	fi
 }
 
+enforce_risk_audit_gate() {
+	if [ "${DRIFT_SKIP_RISK_AUDIT:-0}" = "1" ]; then
+		echo ">>> [pre-push] WARN: Risk audit gate skipped (DRIFT_SKIP_RISK_AUDIT=1)."
+		return 0
+	fi
+
+	# Check if any signal/ingestion/output files were changed
+	has_signal_change=0
+	if echo "$push_changed_files" | grep -Eq '^src/drift/signals/'; then
+		has_signal_change=1
+	fi
+	if echo "$push_changed_files" | grep -Eq '^src/drift/ingestion/'; then
+		has_signal_change=1
+	fi
+	if echo "$push_changed_files" | grep -Eq '^src/drift/output/'; then
+		has_signal_change=1
+	fi
+
+	if [ "$has_signal_change" -ne 1 ]; then
+		return 0
+	fi
+
+	# Signal changes detected — require at least one audit artifact update
+	has_audit_update=0
+	if echo "$push_changed_files" | grep -Eq '^audit_results/(fmea_matrix|stride_threat_model|fault_trees|risk_register)\.md$'; then
+		has_audit_update=1
+	fi
+
+	if [ "$has_audit_update" -ne 1 ]; then
+		echo ">>> [pre-push] ERROR: Risk audit gate failed (POLICY §18)."
+		echo ">>> [pre-push] Signal/ingestion/output changes detected without audit artifact updates."
+		echo ">>> [pre-push]"
+		echo ">>> [pre-push] Changed signal-relevant files:"
+		echo "$push_changed_files" | grep -E '^src/drift/(signals|ingestion|output)/' | sed 's/^/>>>   - /'
+		echo ">>> [pre-push]"
+		echo ">>> [pre-push] Required: Update at least one of:"
+		echo ">>>   - audit_results/fmea_matrix.md"
+		echo ">>>   - audit_results/stride_threat_model.md"
+		echo ">>>   - audit_results/fault_trees.md"
+		echo ">>>   - audit_results/risk_register.md"
+		echo ">>> [pre-push]"
+		echo ">>> [pre-push] Skip with: DRIFT_SKIP_RISK_AUDIT=1 git push (emergency only)"
+		exit 1
+	fi
+
+	# Also verify the four audit artifacts still exist (deletion protection)
+	for artifact in audit_results/fmea_matrix.md audit_results/stride_threat_model.md audit_results/fault_trees.md audit_results/risk_register.md; do
+		if [ ! -f "$artifact" ]; then
+			echo ">>> [pre-push] ERROR: Protected audit artifact missing: $artifact"
+			echo ">>> [pre-push] POLICY §18.7 prohibits deletion of audit artifacts."
+			exit 1
+		fi
+	done
+}
+
 reject_push_for_blocked_paths() {
 	local_ref="$1"
 	local_sha="$2"
@@ -365,6 +420,7 @@ else
 	enforce_version_bump_gate
 	enforce_lockfile_sync_gate
 	enforce_public_api_docstring_gate
+	enforce_risk_audit_gate
 fi
 
 echo ">>> [pre-push] Starting local CI checks..."

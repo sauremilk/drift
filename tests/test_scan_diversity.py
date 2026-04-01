@@ -365,6 +365,8 @@ class TestTopSignalsFilter:
         top_sigs = result["top_signals"]
         signal_ids = {s["signal"] for s in top_sigs}
         assert signal_ids == {"PFS"}
+        findings_signal_ids = {f["signal"] for f in result["findings"]}
+        assert findings_signal_ids == {"PFS"}
 
 
 # --- Task 6: agent_instruction in API responses ---

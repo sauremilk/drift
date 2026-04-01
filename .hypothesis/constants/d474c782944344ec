@@ -1,0 +1,4 @@
+# file: C:\Users\mickg\PWBS\drift\src\drift\signals\hardcoded_secret.py
+# hypothesis_version: 6.151.10
+
+[0.0, 0.5, 0.6, 0.7, 0.9, '.', 'AKIA', 'CWE-798', 'Config', 'Hardcoded Secret', 'SG.', 'Secret', 'SecretStr', 'config', 'cwe', 'environ', 'file_local', 'get', 'getenv', 'gho_', 'ghp_', 'ghs_', 'ghu_', 'github_pat_', 'glpat-', 'hardcoded_api_token', 'hardcoded_secret', 'lineno', 'pk_live_', 'pk_test_', 'placeholder_secret', 'python', 'replace', 'rule_id', 'sk-', 'sk_live_', 'sk_test_', 'utf-8', 'variable', 'xoxb-', 'xoxp-']

@@ -1,0 +1,4 @@
+# file: C:\Users\mickg\PWBS\drift\src\drift\api_helpers.py
+# hypothesis_version: 6.151.10
+
+[0.0, '2.0', 'AVS', 'BAT', 'BEM', 'CCC', 'CIR', 'COD', 'CXS', 'DCA', 'DIA', 'ECM', 'EDS', 'FOE', 'GCD', 'HSC', 'ISD', 'MAZ', 'MDS', 'NBV', 'PFS', 'SMS', 'TPD', 'TVS', 'action', 'automation_fit', 'category', 'change_scope', 'complexity', 'constraints', 'delta', 'depends_on', 'description', 'direction', 'effort', 'end_line', 'error', 'error_code', 'expected_benefit', 'expected_effect', 'file', 'finding_count', 'fix', 'id', 'impact', 'input', 'invalid_fields', 'line', 'message', 'next_step', 'previous_score', 'priority', 'priority_class', 'rank', 'recoverable', 'related_files', 'remediation', 'repair_maturity', 'review_risk', 'rule_id', 'schema_version', 'score', 'score_contribution', 'severity', 'signal', 'signal_abbrev', 'signal_type', 'start_line', 'success_criteria', 'suggested_fix', 'symbol', 'title', 'type']

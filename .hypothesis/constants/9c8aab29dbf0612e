@@ -1,0 +1,4 @@
+# file: C:\Users\mickg\PWBS\drift\src\drift\signals\cognitive_complexity.py
+# hypothesis_version: 6.151.10
+
+[0.04, 0.3, 0.7, 1.0, 'Cognitive Complexity', '_', 'body', 'body_lines', 'cognitive_complexity', 'file_local', 'finalbody', 'function_name', 'handlers', 'orelse', 'python', 'threshold', 'utf-8']

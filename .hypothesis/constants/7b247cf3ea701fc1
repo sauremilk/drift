@@ -1,0 +1,4 @@
+# file: C:\Users\mickg\PWBS\drift\src\drift\cache.py
+# hypothesis_version: 6.151.10
+
+['*.json', '*.pkl', '_v', 'ast_fingerprint', 'bases', 'body_hash', 'category', 'classes', 'complexity', 'decorators', 'drift', 'end_line', 'file_path', 'findings', 'fingerprint', 'function_name', 'functions', 'has_docstring', 'imported_module', 'imported_names', 'imports', 'is_relative', 'language', 'line_count', 'line_number', 'list[Finding]', 'loc', 'methods', 'name', 'parameters', 'parse', 'parse_errors', 'patterns', 'python', 'return_type', 'signals', 'source_file', 'start_line', 'thresholds', 'unknown', 'utf-8', 'variant_id', 'weights', '|']

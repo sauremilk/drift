@@ -1,0 +1,4 @@
+# file: C:\Users\mickg\PWBS\drift\scripts\fetch_pypistats.py
+# hypothesis_version: 6.151.10
+
+['-', '--months', '--output', '--package', '--timeout', 'PyPI package name', 'Target CSV path', 'User-Agent', '__main__', 'category', 'data', 'date', 'downloads', 'drift-package-kpis/1', 'month', 'overall', 'utf-8', 'w', 'without_mirrors']

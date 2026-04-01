@@ -32,7 +32,7 @@ def run_tests() -> bool:
     try:
         subprocess.run(
             [
-                "python",
+                sys.executable,
                 "-m",
                 "pytest",
                 "tests/",
@@ -42,6 +42,7 @@ def run_tests() -> bool:
                 "--maxfail=1",
             ],
             cwd=ROOT,
+            env=_build_venv_first_env(),
             check=True,
         )
         print("✓ Tests passed")
@@ -83,6 +84,36 @@ def _get_commit_summary() -> str:
         return "Maintenance updates."
 
 
+def _upsert_release_section(changelog_content: str, version_no_v: str, new_section: str) -> str:
+    """Insert or replace a release section while preserving an Unreleased section at top."""
+    release_heading_re = re.compile(r"^## \[(\d+\.\d+\.\d+)\]\s+[–-]\s+.+$", re.MULTILINE)
+
+    # 1) Replace existing section for this version (prevents duplicates on retries).
+    matches = list(release_heading_re.finditer(changelog_content))
+    for idx, match in enumerate(matches):
+        if match.group(1) != version_no_v:
+            continue
+        start = match.start()
+        end = matches[idx + 1].start() if idx + 1 < len(matches) else len(changelog_content)
+        before = changelog_content[:start]
+        after = changelog_content[end:].lstrip("\n")
+        return before + new_section + ("\n" + after if after else "")
+
+    # 2) Insert after Unreleased block when present.
+    unreleased_re = re.compile(r"^## \[Unreleased\]\s*$", re.MULTILINE)
+    unreleased_match = unreleased_re.search(changelog_content)
+    if unreleased_match:
+        first_release = release_heading_re.search(changelog_content)
+        if first_release:
+            insert_at = first_release.start()
+            before = changelog_content[:insert_at].rstrip("\n")
+            after = changelog_content[insert_at:].lstrip("\n")
+            return before + "\n\n" + new_section + ("\n" + after if after else "")
+
+    # 3) Fallback: prepend release section.
+    return new_section + changelog_content
+
+
 def get_latest_version() -> tuple[int, int, int]:
     """Get latest version from remote tags (source of truth = what is published).
 
@@ -106,6 +137,58 @@ def get_latest_version() -> tuple[int, int, int]:
     except Exception:
         pass
     return (0, 1, 0)
+
+
+def _commit_messages_since_last_tag() -> list[str]:
+    """Return commit messages since the latest reachable tag (fallback: full history)."""
+    try:
+        last_tag = subprocess.run(
+            ["git", "describe", "--tags", "--abbrev=0"],
+            cwd=ROOT,
+            capture_output=True,
+            text=True,
+            check=True,
+        ).stdout.strip()
+        range_spec = f"{last_tag}..HEAD"
+    except subprocess.CalledProcessError:
+        range_spec = "HEAD"
+
+    result = subprocess.run(
+        ["git", "log", range_spec, "--no-merges", "--format=%B%x1e"],
+        cwd=ROOT,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    if result.returncode != 0:
+        return []
+
+    return [msg.strip() for msg in result.stdout.split("\x1e") if msg.strip()]
+
+
+def _next_version_from_commits(current: tuple[int, int, int]) -> tuple[tuple[int, int, int], str]:
+    """Calculate next version using conventional commit signals.
+
+    Priority: breaking > feat > fix > patch default.
+    """
+    major, minor, patch = current
+    messages = _commit_messages_since_last_tag()
+    if not messages:
+        return (major, minor, patch + 1), "patch (default: no commits since last tag)"
+
+    has_breaking = any(
+        re.search(r"(^|\n)BREAKING( CHANGE)?:", msg, re.IGNORECASE) for msg in messages
+    )
+    has_feat = any(re.search(r"^feat(\([^)]+\))?:", msg, re.IGNORECASE) for msg in messages)
+    has_fix = any(re.search(r"^fix(\([^)]+\))?:", msg, re.IGNORECASE) for msg in messages)
+
+    if has_breaking:
+        return (major + 1, 0, 0), "major (BREAKING change detected)"
+    if has_feat:
+        return (major, minor + 1, 0), "minor (feat commit detected)"
+    if has_fix:
+        return (major, minor, patch + 1), "patch (fix commit detected)"
+    return (major, minor, patch + 1), "patch (default)"
 
 
 def get_remote_sha(ref: str) -> str:
@@ -143,7 +226,7 @@ def _resolve_shell() -> str | None:
     )
 
 
-def run_pre_push_preflight(tag_name: str) -> bool:
+def run_pre_push_preflight() -> bool:
     """Run pre-push hook for the current branch (before tag exists) to fail early.
 
     Only validates the branch-push portion of the hook. Tag-related hook
@@ -236,6 +319,11 @@ def main() -> int:
     parser = argparse.ArgumentParser(description="Drift Release Automation")
     parser.add_argument("--full-release", action="store_true", help="Full release workflow")
     parser.add_argument("--calc-version", action="store_true", help="Calculate version only")
+    parser.add_argument(
+        "--update-changelog",
+        action="store_true",
+        help="Update pyproject version and CHANGELOG for next release (no commit/tag/push)",
+    )
     parser.add_argument("--skip-tests", action="store_true", help="Skip tests")
 
     args = parser.parse_args()
@@ -251,10 +339,38 @@ def main() -> int:
 
     # Calculate next version
     current = get_latest_version()
-    next_patch = current[2] + 1
-    next_version = f"v{current[0]}.{current[1]}.{next_patch}"
+    next_tuple, bump_reason = _next_version_from_commits(current)
+    next_version = f"v{next_tuple[0]}.{next_tuple[1]}.{next_tuple[2]}"
 
     print(f"\n▶ Next version: {next_version}")
+    print(f"  Reason: {bump_reason}")
+
+    if args.update_changelog and not args.full_release:
+        version_no_v = next_version.lstrip("v")
+        pyproject_content = PYPROJECT.read_text("utf-8")
+        pyproject_content = re.sub(
+            r'version = "[^"]+"',
+            f'version = "{version_no_v}"',
+            pyproject_content,
+            count=1,
+        )
+        PYPROJECT.write_text(pyproject_content, "utf-8")
+        print(f"✓ Updated pyproject.toml: {version_no_v}")
+
+        today = datetime.now().strftime("%Y-%m-%d")
+        commit_summary = _get_commit_summary()
+        new_section = (
+            f"## [{version_no_v}] \u2013 {today}\n\n"
+            f"Short version: {commit_summary}\n\n"
+            f"### Changed\n\n"
+            f"- {commit_summary}\n\n"
+        )
+        changelog_content = CHANGELOG.read_text("utf-8") if CHANGELOG.exists() else ""
+        updated_changelog = _upsert_release_section(changelog_content, version_no_v, new_section)
+        CHANGELOG.write_text(updated_changelog, "utf-8")
+        print(f"✓ Updated CHANGELOG.md: {version_no_v}")
+        print("(No commit/tag/push executed)")
+        return 0
 
     if not args.full_release:
         print("(Use --full-release to perform actual release)")
@@ -287,11 +403,9 @@ def main() -> int:
             f"### Changed\n\n"
             f"- {commit_summary}\n\n"
         )
-        changelog_content = ""
-        if CHANGELOG.exists():
-            changelog_content = CHANGELOG.read_text("utf-8")
-
-        CHANGELOG.write_text(new_section + changelog_content, "utf-8")
+        changelog_content = CHANGELOG.read_text("utf-8") if CHANGELOG.exists() else ""
+        updated_changelog = _upsert_release_section(changelog_content, version_no_v, new_section)
+        CHANGELOG.write_text(updated_changelog, "utf-8")
         print(f"✓ Updated CHANGELOG.md: {version_no_v}")
 
         # Sync uv.lock after version bump in pyproject.toml
@@ -313,6 +427,19 @@ def main() -> int:
             cwd=ROOT,
             check=True,
         )
+
+        existing_local_tag = subprocess.run(
+            ["git", "tag", "-l", next_version],
+            cwd=ROOT,
+            capture_output=True,
+            text=True,
+            check=True,
+        ).stdout.strip()
+        if existing_local_tag:
+            print(f"✗ Local tag already exists: {next_version}")
+            print("  Delete it manually or bump to the next patch version.")
+            return 1
+
         subprocess.run(
             ["git", "tag", "-a", next_version, "-m", f"Release {next_version}"],
             cwd=ROOT,
@@ -321,14 +448,11 @@ def main() -> int:
 
         # Preflight: run push gates AFTER commit so CHANGELOG gate sees
         # the release commit.  On failure, undo the commit+tag.
-        if not run_pre_push_preflight(next_version):
-            print("▶ Rolling back release commit and tag...")
-            subprocess.run(["git", "tag", "-d", next_version], cwd=ROOT, check=False)
-            subprocess.run(["git", "reset", "HEAD~1"], cwd=ROOT, check=False)
-            subprocess.run(
-                ["git", "checkout", "--", "pyproject.toml", "CHANGELOG.md"],
-                cwd=ROOT, check=False,
-            )
+        if not run_pre_push_preflight():
+            print("\n✗ Release preflight failed after creating commit/tag.")
+            print("  Nothing was auto-rolled back to avoid destructive side effects.")
+            print(f"  Optional cleanup: git tag -d {next_version}")
+            print("  Optional cleanup: git reset --soft HEAD~1")
             return 1
 
         current_branch = subprocess.run(
@@ -338,12 +462,8 @@ def main() -> int:
             text=True,
             check=True,
         ).stdout.strip()
-        subprocess.run(
-            ["git", "push", "origin", current_branch, next_version],
-            cwd=ROOT,
-            env=_build_venv_first_env(),
-            check=True,
-        )
+        subprocess.run(["git", "push", "origin", current_branch], cwd=ROOT, check=True)
+        subprocess.run(["git", "push", "origin", next_version], cwd=ROOT, check=True)
         release_created = create_github_release(next_version, version_no_v)
 
         print(f"✓ Committed: chore: Release {version_no_v}")

@@ -1,6 +1,50 @@
 # Signal Reference
 
-Drift measures 15 scoring signals, each targeting a different dimension of architectural erosion. All signals contribute to the composite score (auto-calibrated at runtime). Signals are grouped by origin: 6 core signals (ablation-validated since v0.5), 4 consistency proxy signals (promoted from report-only in v0.7.0 via [ADR-007](https://github.com/sauremilk/drift/blob/main/docs/adr/007-consistency-proxy-signals.md)), 3 contract signals (added in v0.7.0/v0.7.1 via [ADR-008](https://github.com/sauremilk/drift/blob/main/docs/adr/008-adr-008-signal-promotion.md)), 1 cohesion signal (COD), and 1 co-change coupling signal (CCC).
+Drift tracks 23 total signals across architectural erosion and security-by-default patterns. 15 signals are currently scoring-active and 8 are report-only until precision/recall validation is complete. Signals are grouped by origin: 6 core signals (ablation-validated since v0.5), 4 consistency proxy signals (promoted from report-only in v0.7.0 via [ADR-007](https://github.com/sauremilk/drift/blob/main/docs/adr/007-consistency-proxy-signals.md)), 3 contract signals (added in v0.7.0/v0.7.1 via [ADR-008](https://github.com/sauremilk/drift/blob/main/docs/adr/008-adr-008-signal-promotion.md)), 1 cohesion signal (COD), 1 co-change coupling signal (CCC), 1 TypeScript architecture signal (TSA), 4 structural report-only signals, and 3 security report-only signals.
+
+## Signal Table (All 23)
+
+| Abbrev | Signal | Mode | What it detects |
+|---|---|---|---|
+| PFS | Pattern Fragmentation | Scoring | Multiple incompatible implementation patterns in the same module. |
+| AVS | Architecture Violations | Scoring | Imports crossing intended layer boundaries or structural boundaries. |
+| MDS | Mutant Duplicates | Scoring | Near-duplicate functions/classes diverging in subtle ways. |
+| EDS | Explainability Deficit | Scoring | Complex code lacking tests, docs, or type/context signals. |
+| TVS | Temporal Volatility | Scoring | Files with anomalous churn and instability over git history. |
+| SMS | System Misalignment | Scoring | Imports or patterns that are foreign to the target module context. |
+| DIA | Doc-Implementation Drift | Scoring | Documented architecture that no longer matches actual code. |
+| BEM | Broad Exception Monoculture | Scoring | Overuse of broad exception handling and swallowed failures. |
+| TPD | Test Polarity Deficit | Scoring | Tests with insufficient negative/failure-path assertions. |
+| GCD | Guard Clause Deficit | Scoring | Public functions lacking early input/precondition guards. |
+| COD | Cohesion Deficit | Scoring | Modules/classes mixing unrelated responsibilities and dependencies. |
+| NBV | Naming Contract Violation | Scoring | Naming patterns that diverge from dominant project conventions. |
+| BAT | Bypass Accumulation | Scoring | Accumulation of TODO/FIXME/HACK and disabled-check bypasses. |
+| ECM | Exception Contract Drift | Scoring | Inconsistent exception taxonomies and handling contracts. |
+| CCC | Co-Change Coupling | Scoring | Files that repeatedly change together without explicit dependency. |
+| TSA | TypeScript Architecture | Report-only | TS/JS architecture violations (layer leaks, cycles, cross-package imports, UI-to-infra imports). |
+| CXS | Cognitive Complexity | Report-only | Functions with deeply nested, hard-to-follow control flow. |
+| FOE | Fan-Out Explosion | Report-only | Modules/functions with unusually high dependency fan-out. |
+| CIR | Circular Import | Report-only | Circular dependency chains in the module import graph. |
+| DCA | Dead Code Accumulation | Report-only | Unreferenced functions/classes/symbols accumulating over time. |
+| MAZ | Missing Authorization | Report-only | API endpoints lacking auth/authz checks (CWE-862). |
+| ISD | Insecure Default | Report-only | Unsafe default config patterns (CWE-1188). |
+| HSC | Hardcoded Secret | Report-only | Embedded secrets/tokens/credentials in source (CWE-798). |
+
+## Signal-derived negative context
+
+Some signals additionally emit agent-facing anti-pattern warnings via
+`negative_context` (JSON output and agent task output).
+
+Contributor rule:
+
+When introducing or promoting a signal, explicitly decide whether it should
+produce negative context. If it should, update both in
+`src/drift/negative_context.py`:
+
+1. `_SIGNAL_CATEGORY` mapping
+2. `@_register(SignalType.XXX)` generator
+
+Reference: [Negative Context](../reference/negative-context.md)
 
 ## Core Signals
 

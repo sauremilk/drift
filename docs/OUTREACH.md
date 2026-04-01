@@ -1,28 +1,30 @@
-# Outreach Texte
+# Outreach Texts
 
-Fertige Texte zum Copy-Paste für externe Plattformen.
-Reihenfolge = empfohlene Priorität.
+Copy-paste-ready texts for external platforms.
+Order = recommended priority.
 
 ## Naming + Claim Guardrails
 
 - Repo: `sauremilk/drift`
 - Package: `drift-analyzer`
 - Command: `drift`
-- Safe signal claim: 15 scoring signals, all active in the current model (6 core + 9 promoted/new, auto-calibrated at runtime).
-- Safe rollout claim: start report-only in CI, then tighten to `high` only after reviewing real findings.
+- Version: v1.3.0
+- Safe signal claim: 15 scoring signals (auto-calibrated at runtime) + 7 report-only signals (security & complexity) = 22 total detectors.
+- Safe CLI claim: 18 commands — `analyze`, `init`, `scan`, `diff`, `baseline`, `mcp`, `export-context`, `copilot-context`, `timeline`, `trend`, `patterns`, `badge`, `check`, `config`, `explain`, `fix-plan`, `self`, `validate`.
+- Safe rollout claim: `drift init --profile vibe-coding` for zero-config start, then baseline + incremental adoption.
 - Execution assets: see `docs/distribution/README.md` for awesome submissions, article draft, IDE MVP spec, and week-1 runbook.
 
 ---
 
 ## 1. Show HN (Hacker News)
 
-**Titel:**
+**Title:**
 
 ```
 Show HN: Drift – Deterministic architectural drift detection for AI-accelerated Python codebases
 ```
 
-**Text (im Kommentarfeld):**
+**Text (comment field):**
 
 ```
 I built a static analyzer for deterministic architectural drift detection in
@@ -35,37 +37,41 @@ near-identical functions accumulate with subtle differences.
 
 Drift doesn't detect bugs. It detects the loss of design intent.
 
-It runs 15 scoring signals today — 6 core signals plus 9 promoted consistency
-and contract signals, all contributing to the composite score:
-- Pattern Fragmentation: same pattern implemented N different ways in one module
-- Architecture Violations: imports crossing layer boundaries (DB → API, etc.)
-- Mutant Duplicates: near-identical functions that diverged after copy-paste
-- Explainability Deficit: complex functions without docs/types/tests
-- Temporal Volatility: files changed by too many hands too fast
-- System Misalignment: recently introduced patterns foreign to their module
+15 scoring signals cover pattern fragmentation, architecture violations,
+mutant duplicates, explainability deficit, temporal volatility, system
+misalignment, doc-impl drift, naming contracts, guard clauses, cohesion,
+coupling, and more. 7 additional report-only signals cover security
+(missing auth, hardcoded secrets, insecure defaults) and complexity.
 
 All signals are deterministic, LLM-free, fast. Uses Python's built-in `ast`
-module, so there are zero dependencies on ML infrastructure.
+module — zero dependencies on ML infrastructure.
 
-Repo: sauremilk/drift
-Package: drift-analyzer
-CLI:  drift analyze --repo .
-CI:   uses: sauremilk/drift@v1  (GitHub Action, report-only by default)
-Hook: pre-commit hook available
+New in v1.3.0:
+- `drift init --profile vibe-coding` — zero-config onboarding with profiles
+- `drift scan` / `drift diff` — agent-native JSON output for IDE integrations
+- `drift mcp` — built-in MCP server for AI coding assistants
+- `drift baseline` — incremental adoption, only flag new findings
+- `drift timeline` / `drift trend` — track drift over time
+- `drift export-context` — anti-pattern context for Copilot/Cursor rules
 
-Repo: https://github.com/sauremilk/drift
+Package: pip install drift-analyzer
+CLI:    drift analyze --repo .
+CI:     uses: sauremilk/drift@v1 (GitHub Action, report-only by default)
+Hook:   pre-commit hook available
+
+https://github.com/sauremilk/drift
 ```
 
-**Posting-Tipps:**
+**Posting tips:**
 
-- Bester Zeitpunkt: Montag–Dienstag, 9–11 Uhr US Eastern (= 15–17 Uhr DE)
+- Best timing: Monday–Tuesday, 9–11 AM US Eastern
 - URL: https://news.ycombinator.com/submitlink?u=https://github.com/sauremilk/drift
 
 ---
 
 ## 2. Reddit r/Python
 
-**Titel:**
+**Title:**
 
 ```
 I built drift – deterministic architectural drift detection for AI-accelerated Python repos
@@ -74,26 +80,38 @@ I built drift – deterministic architectural drift detection for AI-accelerated
 **Text:**
 
 ```
-TL;DR: `pip install -q drift-analyzer && drift analyze --repo .`
+TL;DR: `pip install -q drift-analyzer && drift init --profile vibe-coding && drift analyze --repo .`
 
 Copilot and Cursor write code that solves local tasks correctly but weakens
 global design. Drift detects that architectural drift with 15 scoring signals
-covering pattern, architecture, and consistency dimensions:
+covering pattern, architecture, consistency, and contract dimensions — plus
+7 report-only security signals.
 
-1. Pattern Fragmentation – same thing done N ways in one module
-2. Architecture Violations – wrong-direction imports
-3. Mutant Duplicates – near-identical functions (copy-paste-then-modify)
-4. Explainability Deficit – complex functions without docs or types
-5. Temporal Volatility – files changed by too many authors too fast
-6. System Misalignment – patterns foreign to their target module
+Core signals:
+- Pattern Fragmentation – same thing done N ways in one module
+- Architecture Violations – wrong-direction imports
+- Mutant Duplicates – near-identical functions (copy-paste-then-modify)
+- Explainability Deficit – complex functions without docs or types
+- Temporal Volatility – files changed by too many authors too fast
+- System Misalignment – patterns foreign to their target module
+
+Plus: doc-impl drift, naming contracts, guard clauses, cohesion, coupling,
+exception contracts, bypass accumulation, test polarity, co-change coupling.
 
 No LLMs in the detection pipeline. Pure AST analysis + statistics.
 Outputs: rich terminal dashboard, JSON, or SARIF for GitHub Code Scanning.
 
+Key features:
+- `drift init --profile vibe-coding` — zero-config onboarding
+- `drift baseline` — incremental adoption, only flag new findings
+- `drift scan` / `drift diff` — agent-native JSON for IDE integrations
+- `drift mcp` — built-in MCP server for AI coding assistants
+- `drift timeline` / `drift trend` — track architectural drift over time
+
 GitHub: https://github.com/sauremilk/drift
 ```
 
-**Subreddits (alle posten):**
+**Subreddits (post all):**
 
 - r/Python
 - r/programming
@@ -106,9 +124,9 @@ GitHub: https://github.com/sauremilk/drift
 
 **Repo:** https://github.com/analysis-tools-dev/static-analysis/pulls
 
-**Datei:** `data/tools/python.yml` (oder ähnlich, je nach Repo-Struktur)
+**File:** `data/tools/python.yml` (or similar, depending on repo structure)
 
-**Eintrag:**
+**Entry:**
 
 ```yaml
 - name: drift
@@ -116,13 +134,14 @@ GitHub: https://github.com/sauremilk/drift
   languages: [python]
   description: >
     Deterministic architectural drift detection for AI-accelerated Python codebases.
-    Measures pattern fragmentation, architecture violations, mutant duplicates,
-    explainability deficit, temporal volatility, and system misalignment.
+    22 detectors covering pattern fragmentation, architecture violations, mutant
+    duplicates, security signals, and more. Built-in MCP server, baseline
+    management, and profiles for incremental adoption.
   homepage: https://github.com/sauremilk/drift
   license: MIT
 ```
 
-**PR-Titel:** `Add drift – architectural drift detector for AI-accelerated Python repos`
+**PR title:** `Add drift – architectural drift detector for AI-accelerated Python repos`
 
 ---
 
@@ -130,21 +149,21 @@ GitHub: https://github.com/sauremilk/drift
 
 **Repo:** https://github.com/vinta/awesome-python/pulls
 
-**Abschnitt:** `Code Analysis`
+**Section:** `Code Analysis`
 
-**Eintrag:**
+**Entry:**
 
 ```
-* [drift](https://github.com/sauremilk/drift) - Deterministic architectural drift detection for AI-accelerated Python codebases.
+* [drift](https://github.com/sauremilk/drift) - Deterministic architectural drift detection for AI-accelerated Python codebases. 22 detectors, MCP server, agent-native workflows.
 ```
 
-**PR-Titel:** `Add drift to Code Analysis section`
+**PR title:** `Add drift to Code Analysis section`
 
 ---
 
 ## 5. Reddit r/ExperiencedDevs
 
-**Titel:**
+**Title:**
 
 ```
 How do you detect architectural drift in AI-accelerated codebases?
@@ -165,16 +184,21 @@ The patterns are subtle:
 These aren't bugs. Linters won't flag them. They compound silently until the
 codebase resists change.
 
-I built drift, a static analyzer focused specifically on this problem. It
-measures six axes of architectural coherence: pattern fragmentation, layer
-violations, near-duplicates, explainability gaps, file volatility, and system
-misalignment.
+I built drift, a static analyzer focused specifically on this problem. It runs
+15 scoring signals covering pattern fragmentation, layer violations,
+near-duplicates, explainability gaps, naming contracts, cohesion, coupling,
+exception contracts, and more — plus 7 report-only detectors for security
+(missing auth, hardcoded secrets, insecure defaults) and complexity.
 
 Key design decisions:
 - No LLMs in the pipeline. Deterministic, reproducible, fast.
 - Designed for CI integration, not as a one-shot audit tool.
 - Outputs SARIF for GitHub Code Scanning integration.
-- Focus on actionable findings, not vanity metrics.
+- `drift init --profile vibe-coding` for zero-config onboarding.
+- `drift baseline` for incremental adoption — only flag new findings.
+- Built-in MCP server (`drift mcp`) for AI assistant integration.
+- `drift scan` / `drift diff` for agent-native workflows.
+- `drift timeline` / `drift trend` to track drift over time.
 
 Not a pitch — genuinely curious how other teams track this kind of drift, and
 whether deterministic static analysis is the right abstraction.
@@ -182,7 +206,7 @@ whether deterministic static analysis is the right abstraction.
 https://github.com/sauremilk/drift
 ```
 
-**Posting-Hinweis:** Erfahrungsbasierter Diskussions-Ton. Kein "I built X"-Spam.
+**Posting note:** Experience-based discussion tone. No "I built X" spam.
 
 ---
 
@@ -196,7 +220,8 @@ AI coding tools optimize for the prompt, not the project.
 
 The result: code that works locally but fragments your architecture globally.
 
-I built an open-source tool to measure this. Here's what it found on real repos. ↓
+I built an open-source tool to detect this — deterministic, LLM-free, and now
+with built-in MCP server for AI assistant integration. ↓
 ```
 
 ```
@@ -212,7 +237,7 @@ These aren't bugs. Linters won't catch them. But they compound.
 
 ```
 3/5
-drift runs 15 deterministic scoring signals, including:
+drift runs 15 deterministic scoring signals:
 
 • Pattern Fragmentation
 • Architecture Violations
@@ -220,7 +245,9 @@ drift runs 15 deterministic scoring signals, including:
 • Explainability Deficit
 • Temporal Volatility
 • System Misalignment
-+ 9 more (consistency, contract, cohesion, coupling)
+• Doc-Impl Drift, Naming Contracts, Guard Clauses
+• Cohesion, Coupling, Exception Contracts
++ 7 report-only security & complexity detectors
 
 No LLMs. Pure AST analysis. Reproducible.
 ```
@@ -237,21 +264,24 @@ Not a quality judgment — a coherence signal.
 ```
 5/5
 pip install -q drift-analyzer
+drift init --profile vibe-coding
 drift analyze --repo .
 
-- Rich terminal dashboard
-- JSON + SARIF output
+- Rich terminal dashboard, JSON + SARIF output
+- `drift mcp` — MCP server for Copilot/Cursor/Claude
+- `drift scan` / `drift diff` — agent-native workflows
+- `drift baseline` — incremental adoption
+- `drift timeline` / `drift trend` — track drift over time
 - GitHub Action: uses: sauremilk/drift@v1
-- MIT licensed
 
 → https://github.com/sauremilk/drift
 ```
 
 ---
 
-## 7. dev.to / Hashnode Artikel
+## 7. dev.to / Hashnode Article
 
-**Titel:**
+**Title:**
 
 ```
 How Copilot silently fragments your architecture — and how to detect it with drift
@@ -259,7 +289,7 @@ How Copilot silently fragments your architecture — and how to detect it with d
 
 **Tags:** `python`, `architecture`, `static-analysis`, `ai`
 
-**Artikel:**
+**Article:**
 
 ````markdown
 ## The problem nobody talks about
@@ -292,9 +322,11 @@ On Frappe (1,179 files):
 
 This isn't "bad code." It's code that grew without coherent design pressure.
 
-## The 15 signals
+## The 22 detectors
 
-Drift measures 15 families of architectural erosion (6 core + 9 added in v0.7–v0.8). The core six:
+Drift runs 15 scoring signals plus 7 report-only detectors.
+
+### Core signals (ablation-validated)
 
 **1. Pattern Fragmentation (PFS)**
 Same concern implemented N different ways in the same module. Classic example:
@@ -321,7 +353,22 @@ ownership is unclear and merge conflicts are likely.
 Recently introduced patterns that are foreign to their target module.
 The function works, but its style doesn't match anything around it.
 
-**Plus 9 additional signals** covering documentation gaps (DIA), boundary enforcement (BEM), third-party sprawl (TPD), god-class detection (GCD), naming drift (NBV), bloated API surfaces (BAT), exception contract violations (ECM), internal cohesion deficit (COD), and co-change coupling (CCC). See the [signal reference](https://sauremilk.github.io/drift/reference/signals/) for details.
+### Consistency & contract signals
+
+**7–15:** Doc-Impl Drift (DIA), Broad Exception Monoculture (BEM), Test
+Polarity Deficit (TPD), Guard Clause Deficit (GCD), Naming Contract Violation
+(NBV), Bypass Accumulation (BAT), Exception Contract Drift (ECM), Cohesion
+Deficit (COD), Co-Change Coupling (CCC). All scoring-active with conservative
+weights, auto-calibrated at runtime.
+
+### Report-only signals (security & complexity)
+
+**16–22:** Cognitive Complexity (CXS), Fan-Out Explosion (FOE), Circular
+Import (CIR), Dead Code Accumulation (DCA), Missing Authorization (MAZ),
+Insecure Default (ISD), Hardcoded Secret (HSC). These are visible in findings
+but don't affect the composite score yet — precision validation in progress.
+
+See the [signal reference](https://sauremilk.github.io/drift/reference/signals/) for full details.
 
 ## No LLMs. Deterministic. Fast.
 
@@ -331,14 +378,57 @@ statistical comparison. No model calls, no API keys, no flaky results.
 The same input always produces the same output. That's the foundation
 for trust: reproducibility.
 
-## Try it
+## Getting started in 30 seconds
 
 ```bash
 pip install -q drift-analyzer
+drift init --profile vibe-coding
 drift analyze --repo .
 ```
 
-Or in CI:
+`drift init` creates a `.drift.yaml` config with sensible defaults. Three
+profiles are available:
+- **default** — balanced for most projects
+- **vibe-coding** — tuned for AI-heavy development workflows
+- **strict** — maximum sensitivity for critical codebases
+
+## Agent & IDE integration
+
+Drift is built for AI-assisted workflows, not just humans:
+
+```bash
+# MCP server for Copilot, Cursor, Claude, etc.
+drift mcp
+
+# Agent-native JSON output
+drift scan --repo .             # full analysis, structured JSON
+drift diff --repo .             # only findings in changed files
+
+# Export anti-pattern context for AI coding assistants
+drift export-context --repo .   # generates rules for Copilot/Cursor
+drift copilot-context --repo .  # .github/copilot-instructions.md format
+```
+
+## Incremental adoption
+
+You don't have to fix 300 findings on day one:
+
+```bash
+# Set a baseline — all current findings are "known"
+drift baseline --repo . --save
+
+# Only new findings are flagged from now on
+drift analyze --repo . --baseline
+```
+
+## Track drift over time
+
+```bash
+drift timeline --repo . --module src/api/
+drift trend --repo .
+```
+
+## CI integration
 
 ```yaml
 - uses: sauremilk/drift@v1
@@ -350,7 +440,7 @@ Or in CI:
 ## What drift is not
 
 - Not a linter (doesn't check style or formatting)
-- Not a security scanner (doesn't find vulnerabilities)
+- Not a security scanner (the security signals are a bonus, not the focus)
 - Not a test coverage tool
 
 It's a structural coherence analyzer. Think of it as a code review assistant
@@ -365,48 +455,53 @@ that reads the whole codebase instead of just the diff.
 
 ---
 
-## 8. Discord-Server
+## 8. Discord
 
-**Empfohlene Server:**
-- Python Discord (`#showcase` Channel)
+**Recommended servers:**
+- Python Discord (`#showcase` channel)
 - The Programmer's Hangout
 - AI Engineer Discord
 
-**Beispielpost:**
+**Example post:**
 
 ```
 Built an open-source static analyzer for architectural drift — the kind of
 structural erosion that happens when AI coding tools fragment your patterns,
 cross layer boundaries, and accumulate near-duplicates.
 
-15 deterministic scoring signals, no LLMs, fast. Pure AST + git history analysis.
+22 detectors (15 scoring + 7 security/complexity), no LLMs, fast.
+Pure AST + git history analysis.
 
-pip install -q drift-analyzer && drift analyze --repo .
+New: built-in MCP server for Copilot/Cursor, agent-native `scan`/`diff`
+commands, profiles for zero-config onboarding, baseline management for
+incremental adoption.
+
+pip install -q drift-analyzer && drift init --profile vibe-coding && drift analyze --repo .
 
 Feedback welcome: https://github.com/sauremilk/drift
 ```
 
 ---
 
-## 9. PyPI Publishing (einmalig)
+## 9. PyPI Publishing (one-time)
 
 ```bash
-# 1. Trusted Publisher auf PyPI konfigurieren:
+# 1. Configure Trusted Publisher on PyPI:
 #    https://pypi.org/manage/account/publishing/
 #    GitHub repo: sauremilk/drift
 #    Workflow: publish.yml
 #    Environment: pypi
 
-# 2. Dann einfach einen neuen GitHub Release erstellen:
-gh release create v1.1.0 --title "v1.1.0" --generate-notes
-# → GitHub Action publish.yml baut und pushed automatisch zu PyPI
+# 2. Then simply create a new GitHub Release:
+gh release create v1.3.0 --title "v1.3.0" --generate-notes
+# → GitHub Action publish.yml builds and pushes to PyPI automatically
 ```
 
 ---
 
-## 6. pre-commit.ci (automatische Indexierung)
+## 10. pre-commit.ci (automatic indexing)
 
-Nach dem Pushen von `.pre-commit-hooks.yaml` wird drift automatisch auf
-https://pre-commit.ci indexiert. Kein weiterer Schritt nötig.
+After pushing `.pre-commit-hooks.yaml`, drift is automatically indexed at
+https://pre-commit.ci. No further action needed.
 
-Das Icon erscheint dann auf der pre-commit.ci-Seite und in deren Suchfunktion.
+The icon then appears on the pre-commit.ci page and in their search.

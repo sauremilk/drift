@@ -1,0 +1,4 @@
+# file: C:\Users\mickg\PWBS\drift\src\drift\signals\cohesion_deficit.py
+# hypothesis_version: 6.151.10
+
+[0.0, 0.15, 0.3, 0.35, 0.65, 0.7, 0.79, 1.0, ', ', '.', '.spec.js', '.spec.jsx', '.spec.ts', '.spec.tsx', '.test.js', '.test.jsx', '.test.ts', '.test.tsx', '/__tests__/', '/tests/', 'Cohesion Deficit', '[^A-Za-z0-9]+', '__init__.py', '_test.py', 'base', 'build', 'common', 'core', 'create', 'data', 'file', 'file_local', 'get', 'handler', 'helper', 'index.js', 'index.jsx', 'index.ts', 'index.tsx', 'isolated_count', 'isolated_units', 'isolation_ratio', 'item', 'main', 'make', 'manager', 'mean_best_similarity', 'member_scale', 'module', 'object', 'process', 'repo_dampening', 'run', 'service', 'set', 'test_', 'tests/', 'unit_count', 'util', 'utils', 'value']

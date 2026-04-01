@@ -1,0 +1,4 @@
+# file: C:\Users\mickg\PWBS\drift\src\drift\signals\base.py
+# hypothesis_version: 6.151.10
+
+['cross_file', 'file_local', 'git_dependent']

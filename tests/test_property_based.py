@@ -69,7 +69,13 @@ _glob_pattern = st.one_of(
 # ---------------------------------------------------------------------------
 
 @given(content=st.text(max_size=512))
-@settings(max_examples=50, suppress_health_check=[HealthCheck.too_slow])
+@settings(
+    max_examples=50,
+    suppress_health_check=[
+        HealthCheck.too_slow,
+        HealthCheck.function_scoped_fixture,
+    ],
+)
 def test_config_load_from_yaml_never_raises_unexpected(content: str) -> None:
     """DriftConfig.load must only raise DriftConfigError on malformed YAML input.
 
@@ -120,7 +126,13 @@ def test_matches_any_empty_patterns_always_false(
     include=st.lists(_glob_pattern, min_size=1, max_size=3),
     exclude=st.lists(_glob_pattern, max_size=3),
 )
-@settings(max_examples=30, suppress_health_check=[HealthCheck.too_slow])
+@settings(
+    max_examples=30,
+    suppress_health_check=[
+        HealthCheck.too_slow,
+        HealthCheck.function_scoped_fixture,
+    ],
+)
 def test_discover_files_terminates_on_empty_repo(
     include: list[str], exclude: list[str]
 ) -> None:
@@ -140,7 +152,13 @@ def test_discover_files_terminates_on_empty_repo(
         unique=True,
     )
 )
-@settings(max_examples=30, suppress_health_check=[HealthCheck.too_slow])
+@settings(
+    max_examples=30,
+    suppress_health_check=[
+        HealthCheck.too_slow,
+        HealthCheck.function_scoped_fixture,
+    ],
+)
 def test_discover_files_finds_all_python_files(file_names: list[str]) -> None:
     """discover_files must return at least the Python files placed in the repo root."""
     with tempfile.TemporaryDirectory() as td:

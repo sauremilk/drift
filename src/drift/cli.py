@@ -176,12 +176,12 @@ def safe_main() -> None:
                 _build_error_payload(
                     "DRIFT-3002", "analysis", str(exc),
                     EXIT_ANALYSIS_ERROR,
-                    detail=f"[DRIFT-2003] {exc}",
+                    detail=f"[DRIFT-3002] {exc}",
                     hint="Run with -v for the full traceback.",
                 ),
             )
         else:
-            click.echo(f"[DRIFT-2003] {exc}", err=True)
+            click.echo(f"[DRIFT-3002] {exc}", err=True)
             if logging.getLogger().isEnabledFor(logging.DEBUG):
                 import traceback
 

@@ -57,7 +57,7 @@ def test_safe_main_generic_exception_shows_hint(
     assert exc_info.value.code == 3
     captured = capsys.readouterr()
     assert "boom" in captured.err
-    assert "DRIFT-2003" in captured.err
+    assert "DRIFT-3002" in captured.err
     assert "Hint: run with -v for the full traceback." in captured.err
 
 
@@ -72,7 +72,7 @@ def test_safe_main_generic_exception_prints_traceback_in_debug(
 
     assert exc_info.value.code == 3
     captured = capsys.readouterr()
-    assert "DRIFT-2003" in captured.err
+    assert "DRIFT-3002" in captured.err
     assert "Traceback (most recent call last):" in captured.err
     assert "Hint: run with -v for the full traceback." not in captured.err
 
@@ -152,4 +152,13 @@ def test_safe_main_generic_exception_emits_json_payload_when_enabled(
     assert payload["category"] == "analysis"
     assert payload["exit_code"] == 3
     assert payload["message"] == "boom"
+    assert payload["detail"].startswith("[DRIFT-3002]")
     assert payload["recoverable"] is False
+
+
+def test_workers_zero_is_rejected_by_cli() -> None:
+    runner = click.testing.CliRunner()
+    result = runner.invoke(cli.main, ["analyze", "--workers", "0", "-q"])
+
+    assert result.exit_code != 0
+    assert "0" in result.output

@@ -1,0 +1,4 @@
+# file: C:\Users\mickg\PWBS\drift\src\drift\rules\tsjs\cross_package_import_ban.py
+# hypothesis_version: 6.151.10
+
+['rule_id', 'source_file', 'source_package', 'target_file', 'target_package', 'utf-8']

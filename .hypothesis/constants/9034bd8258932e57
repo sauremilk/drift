@@ -1,0 +1,4 @@
+# file: C:\Users\mickg\PWBS\drift\src\drift\context_tags.py
+# hypothesis_version: 6.151.10
+
+[0.0, 0.5, 1.0, ',', 'context_tags', 'javascript', 'jsx', 'python', 'replace', 'tsx', 'typescript', 'utf-8']

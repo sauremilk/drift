@@ -1,0 +1,4 @@
+# file: C:\Users\mickg\PWBS\drift\src\drift\commands\self_analyze.py
+# hypothesis_version: 6.151.10
+
+['--format', '--since', '-f', '-s', 'Output format.', 'agent-tasks', 'json', 'output_format', 'pyproject.toml', 'rich', 'sarif', 'self']

@@ -1,0 +1,4 @@
+# file: C:\Users\mickg\PWBS\drift\src\drift\pipeline.py
+# hypothesis_version: 6.151.10
+
+[0.0, 0.5, '--git-dir', '-C', 'Parsing files', 'cause', 'complete', 'component', 'dampening_k', 'deferred_reason', 'degraded', 'details', 'drift', 'error', 'git', 'git_history', 'manual_ratio', 'message', 'min_findings', 'rev-parse', 'signal', 'signal_failure', 'signal_type']

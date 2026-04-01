@@ -1,0 +1,4 @@
+# file: C:\Users\mickg\PWBS\drift\scripts\fetch_github_usage.py
+# hypothesis_version: 6.151.10
+
+[100, 403, 404, '--default-version', '--include-archived', '--max-pages', '--output', '--package', '--per-page', '--timeout', '--token', '2022-11-28', 'Accept', 'Authorization', 'GITHUB_TOKEN', 'Output CSV path', 'Pipfile', 'User-Agent', 'X-GitHub-Api-Version', '__main__', 'archived', 'drift-package-kpis/1', 'full_name', 'items', 'poetry.lock', 'project_id', 'pushed_at', 'pyproject.toml', 'repository', 'requirements-dev.txt', 'requirements.txt', 'setup.py', 'store_true', 'timestamp', 'unknown', 'utf-8', 'version', 'w']

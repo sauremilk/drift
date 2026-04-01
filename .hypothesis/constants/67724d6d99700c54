@@ -1,0 +1,4 @@
+# file: C:\Users\mickg\PWBS\drift\src\drift\analyzers\typescript\import_graph.py
+# hypothesis_version: 6.151.10
+
+[' as ', '*.ts', '*.tsx', ',', '../', './', '.git', '.ts', '.tsx', '.venv', '__pycache__', 'build', 'dist', 'import', 'index.ts', 'index.tsx', 'node_modules', 'replace', 'type ', 'utf-8', 'venv', '{', '}']

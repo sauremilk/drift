@@ -1,0 +1,4 @@
+# file: C:\Users\mickg\PWBS\drift\src\drift\commands\init_cmd.py
+# hypothesis_version: 6.151.10
+
+['\nNext steps:', '**/*.egg-info/**', '**/*.py', '**/*.ts', '**/*.tsx', '**/.git/**', '**/.venv/**', '**/__pycache__/**', '**/build/**', '**/dist/**', '**/docs/**', '**/examples/**', '**/node_modules/**', '**/venv/**', '--ci', '--full', '--hooks', '--mcp', '--profile', '--repo', '-p', '-r', '.', '.githooks', '.github', '.vscode', 'Repository root.', 'auto_calibrate', 'default', 'drift-pre-push', 'drift.yaml', 'drift.yml', 'exclude', 'fail_on', 'high', 'include', 'init', 'mcp.json', 'medium', 'none', 'policies', 'strict', 'thresholds', 'utf-8', 'vibe-coding', 'weights', 'workflows']

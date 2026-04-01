@@ -1,0 +1,4 @@
+# file: C:\Users\mickg\PWBS\drift\src\drift\rules\tsjs\ui_to_infra_import_ban.py
+# hypothesis_version: 6.151.10
+
+['file_to_layer', 'infra', 'rule_id', 'source_file', 'source_layer', 'target_file', 'target_layer', 'ui', 'utf-8']

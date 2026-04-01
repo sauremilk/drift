@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import datetime
 import os
 import subprocess
 from pathlib import Path
@@ -10,6 +11,7 @@ import pytest
 
 from drift.analyzer import analyze_diff, analyze_repo
 from drift.config import DriftConfig
+from drift.models import RepoAnalysis
 
 
 def _config() -> DriftConfig:
@@ -146,3 +148,53 @@ def test_analyze_diff_staged_mode_only_uses_index_changes(tmp_path: Path) -> Non
         workers=1,
     )
     assert staged.total_files >= 1
+
+
+def test_analyze_repo_target_path_respects_path_boundaries(tmp_path: Path) -> None:
+    (tmp_path / "src" / "app").mkdir(parents=True)
+    (tmp_path / "src" / "app2").mkdir(parents=True)
+    (tmp_path / "src" / "app" / "in_scope.py").write_text(
+        "def a():\n    return 1\n", encoding="utf-8",
+    )
+    (tmp_path / "src" / "app2" / "out_scope.py").write_text(
+        "def b():\n    return 2\n", encoding="utf-8",
+    )
+
+    analysis = analyze_repo(tmp_path, config=_config(), target_path="src/app", workers=1)
+
+    assert analysis.total_files == 1
+
+
+def test_analyze_diff_fallback_preserves_since_days(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    repo = tmp_path / "repo"
+    repo.mkdir(parents=True, exist_ok=True)
+    (repo / "m.py").write_text("def f():\n    return 1\n", encoding="utf-8")
+
+    _git(repo, "init")
+    _git(repo, "add", ".")
+    _git(repo, "commit", "-m", "init")
+
+    captured: dict[str, int] = {}
+
+    def _fake_analyze_repo(*args: object, **kwargs: object) -> RepoAnalysis:
+        captured["since_days"] = int(kwargs.get("since_days", -1))
+        return RepoAnalysis(
+            repo_path=repo,
+            analyzed_at=datetime.datetime.now(tz=datetime.UTC),
+            drift_score=0.0,
+        )
+
+    monkeypatch.setattr("drift.analyzer.analyze_repo", _fake_analyze_repo)
+
+    analyze_diff(
+        repo,
+        config=_config(),
+        diff_ref="invalid-ref-xyz",
+        since_days=7,
+        workers=1,
+    )
+
+    assert captured["since_days"] == 7

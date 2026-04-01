@@ -217,8 +217,16 @@ def analyze_repo(
     )
 
     if target_path:
-        target = Path(target_path)
-        files = [f for f in files if str(f.path).startswith(str(target))]
+        target = Path(target_path).as_posix().strip("/")
+        if target:
+            files = [
+                f
+                for f in files
+                if (
+                    f.path.as_posix().strip("/") == target
+                    or f.path.as_posix().strip("/").startswith(target + "/")
+                )
+            ]
 
     analysis = _run_pipeline(
         repo_path,
@@ -284,7 +292,12 @@ def analyze_diff(
             diff_ref,
             exc,
         )
-        analysis = analyze_repo(repo_path, config, workers=workers)
+        analysis = analyze_repo(
+            repo_path,
+            config,
+            since_days=since_days,
+            workers=workers,
+        )
         degradation_cause = "diff_ref_invalid" if diff_mode == "ref" else "git_diff_query_failed"
         _mark_analysis_degraded(
             analysis,

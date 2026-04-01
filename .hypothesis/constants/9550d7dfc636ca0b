@@ -1,0 +1,4 @@
+# file: C:\Users\mickg\PWBS\drift\src\drift\signals\ts_architecture.py
+# hypothesis_version: 6.151.10
+
+[0.1, 0.3, 0.6, 0.7, 0.8, 1.0, '.drift', '?', 'cycle_length', 'cycle_nodes', 'drift.ts_arch', 'javascript', 'jsx', 'layer-leak-detection', 'rule_id', 'source_file', 'source_layer', 'source_package', 'target_file', 'target_layer', 'target_package', 'tsx', 'typescript']

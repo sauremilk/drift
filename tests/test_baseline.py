@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import datetime
 import json
 from pathlib import Path
 
@@ -239,3 +240,95 @@ class TestBaselineFlagOnAnalyze:
         result = runner.invoke(main, ["check", "--help"])
         assert result.exit_code == 0
         assert "--baseline" in result.output
+
+    def test_analyze_baseline_recomputes_summary(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+        tmp_path: Path,
+    ) -> None:
+        from drift.cli import main
+
+        repo = tmp_path / "repo"
+        repo.mkdir(parents=True, exist_ok=True)
+        baseline_file = tmp_path / "baseline.json"
+
+        finding = _make_finding(
+            signal=SignalType.PATTERN_FRAGMENTATION,
+            severity=Severity.HIGH,
+            title="Existing",
+        )
+        save_baseline(_make_analysis([finding]), baseline_file)
+
+        def _fake_analyze_repo(*_args, **_kwargs) -> RepoAnalysis:
+            return RepoAnalysis(
+                repo_path=repo,
+                analyzed_at=datetime.datetime.now(datetime.UTC),
+                drift_score=0.7,
+                findings=[finding],
+            )
+
+        monkeypatch.setattr("drift.analyzer.analyze_repo", _fake_analyze_repo)
+
+        runner = CliRunner()
+        result = runner.invoke(
+            main,
+            [
+                "analyze",
+                "--repo",
+                str(repo),
+                "--baseline",
+                str(baseline_file),
+                "-q",
+                "--exit-zero",
+            ],
+        )
+        assert result.exit_code == 0
+        assert "score: 0.00" in result.output
+        assert "severity: INFO" in result.output
+        assert "findings: 0" in result.output
+
+    def test_check_baseline_recomputes_summary(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+        tmp_path: Path,
+    ) -> None:
+        from drift.cli import main
+
+        repo = tmp_path / "repo"
+        repo.mkdir(parents=True, exist_ok=True)
+        baseline_file = tmp_path / "baseline.json"
+
+        finding = _make_finding(
+            signal=SignalType.PATTERN_FRAGMENTATION,
+            severity=Severity.HIGH,
+            title="Existing",
+        )
+        save_baseline(_make_analysis([finding]), baseline_file)
+
+        def _fake_analyze_diff(*_args, **_kwargs) -> RepoAnalysis:
+            return RepoAnalysis(
+                repo_path=repo,
+                analyzed_at=datetime.datetime.now(datetime.UTC),
+                drift_score=0.7,
+                findings=[finding],
+            )
+
+        monkeypatch.setattr("drift.analyzer.analyze_diff", _fake_analyze_diff)
+
+        runner = CliRunner()
+        result = runner.invoke(
+            main,
+            [
+                "check",
+                "--repo",
+                str(repo),
+                "--baseline",
+                str(baseline_file),
+                "-q",
+                "--exit-zero",
+            ],
+        )
+        assert result.exit_code == 0
+        assert "score: 0.00" in result.output
+        assert "severity: INFO" in result.output
+        assert "findings: 0" in result.output

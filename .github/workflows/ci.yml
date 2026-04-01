@@ -142,3 +142,12 @@ jobs:
               sys.exit(1)
           print(f'OK: drift self score {score:.3f} (threshold 0.47)')
           '@
+
+      - name: Risk audit compliance (POLICY §18)
+        shell: powershell
+        run: |
+          $diffBase = "HEAD~1"
+          if ($env:GITHUB_BASE_REF) {
+            $diffBase = "origin/$($env:GITHUB_BASE_REF)"
+          }
+          & $env:PYTHON_BIN scripts/check_risk_audit.py --diff-base $diffBase

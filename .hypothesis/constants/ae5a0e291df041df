@@ -1,0 +1,4 @@
+# file: C:\Users\mickg\PWBS\drift\src\drift\commands\check.py
+# hypothesis_version: 6.151.10
+
+['--baseline', '--compact', '--config', '--diff', '--embedding-model', '--exit-zero', '--fail-on', '--format', '--ignore', '--json', '--no-code', '--no-color', '--no-embeddings', '--output', '--output-format', '--quiet', '--repo', '--select', '--signals', '--since', '--workers', '-c', '-f', '-o', '-q', '-r', '-w', '.', 'HEAD~1', 'Output format.', 'agent-tasks', 'baseline_file', 'compact_json', 'critical', 'diff_ref', 'github', 'high', 'ignore_signals', 'json', 'json_shortcut', 'low', 'medium', 'no_color', 'none', 'output_file', 'output_format', 'rich', 'sarif', 'select_signals', 'since_days', 'utf-8']

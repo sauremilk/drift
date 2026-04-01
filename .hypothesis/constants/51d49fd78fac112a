@@ -1,0 +1,4 @@
+# file: C:\Users\mickg\PWBS\drift\src\drift\signals\naming_contract_violation.py
+# hypothesis_version: 6.151.10
+
+[0.6, '.', ';', '_', '_has_bool_return', '_has_create_path', '_has_raise', '_has_rejection_path', '_has_try_except', 'bool', 'boolean', 'builtins.bool', 'check_', 'checker', 'else_clause', 'ensure_', 'expected_contract', 'false', 'file_local', 'function_name', 'get_or_create_', 'has_', 'if_statement', 'is_', 'null', 'prefix_rule', 'return', 'return_statement', 'throw_statement', 'true', 'try_', 'try_statement', 'utf-8', 'validate_']

@@ -1,0 +1,4 @@
+# file: C:\Users\mickg\PWBS\drift\src\drift\suppression.py
+# hypothesis_version: 6.151.10
+
+[',', 'javascript', 'jsx', 'python', 'replace', 'tsx', 'typescript', 'utf-8']

@@ -1,0 +1,4 @@
+# file: C:\Users\mickg\PWBS\drift\src\drift\negative_context.py
+# hypothesis_version: 6.151.10
+
+[0.0, 0.5, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95, ' → ', ', ', 'CWE-1188', 'CWE-798', 'CWE-862', 'affected_files', 'anti_pattern_id', 'canonical_variant', 'category', 'circular dependency', 'complexity', 'confidence', 'configuration', 'coupled_files', 'cwe', 'cycle', 'description', 'endpoint', 'exception_types', 'file_a', 'forbidden_pattern', 'framework', 'function', 'function_a', 'function_b', 'function_name', 'handler_action', 'import_count', 'metadata', 'mismatch_type', 'mixed types', 'module', 'naming inconsistency', 'pass', 'rationale', 'related files', 'scope', 'secret', 'setting', 'severity', 'signature mismatch', 'similarity', 'source_layer', 'source_signal', 'target_layer', 'the construct', 'the dominant pattern', 'the function', 'the tested function', 'unknown', 'variable_name', 'variant_count', 'violation_type']

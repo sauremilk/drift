@@ -1,0 +1,4 @@
+# file: C:\Users\mickg\PWBS\drift\src\drift\commands\validate_cmd.py
+# hypothesis_version: 6.151.10
+
+['--baseline', '--config', '--output', '--repo', '-o', '-r', '.', 'baseline_file', 'config_file', 'path', 'utf-8', 'validate']

@@ -165,6 +165,18 @@ class TestPyprojectToml:
         cfg = DriftConfig.load(tmp_path)
         assert cfg.fail_on == "medium"  # drift.toml wins
 
+    def test_load_from_pyproject_with_utf8_bom(self, tmp_path: Path):
+        (tmp_path / "pyproject.toml").write_text(
+            textwrap.dedent("""\
+            [tool.drift]
+            fail_on = "medium"
+            """),
+            encoding="utf-8-sig",
+        )
+
+        cfg = DriftConfig.load(tmp_path)
+        assert cfg.fail_on == "medium"
+
 
 # ---------------------------------------------------------------------------
 # GitHub annotation output format

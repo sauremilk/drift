@@ -1,0 +1,4 @@
+# file: C:\Users\mickg\PWBS\drift\src\drift\errors.py
+# hypothesis_version: 6.151.10
+
+[130, 'DRIFT-1001', 'DRIFT-1002', 'DRIFT-1003', 'DRIFT-1010', 'DRIFT-1011', 'DRIFT-1020', 'DRIFT-2001', 'DRIFT-2002', 'DRIFT-2003', 'DRIFT-2010', 'DRIFT-3001', 'DRIFT-3002', 'Git operation failed', 'analysis', 'system', 'user', '{reason}', '→']

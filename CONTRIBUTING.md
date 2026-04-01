@@ -231,6 +231,11 @@ Every PR should pass these checks before merge:
 - [ ] `drift self` → score ≤ previous score + 0.010
 - [ ] No new module without an entry in README and docs/STUDY.md
 - [ ] New signal → own file in `signals/`, implements `BaseSignal`
+- [ ] Signal/ingestion/output changes → at least one audit artifact updated (POLICY §18):
+	- [ ] `audit_results/fmea_matrix.md` (FP + FN entry)
+	- [ ] `audit_results/stride_threat_model.md` (trust boundary)
+	- [ ] `audit_results/fault_trees.md` (FT-1/FT-2/FT-3 review)
+	- [ ] `audit_results/risk_register.md` (risk entry or metric)
 
 ### Code Quality
 - [ ] No new function >30 LOC without a docstring
@@ -320,7 +325,7 @@ This rule is enforced by git hook, CI, and publish validation.
 ### Branch Protection (Required)
 
 To make the release discipline non-bypassable on GitHub, the default branch
-`master` must be protected with these minimum settings:
+`main` must be protected with these minimum settings:
 
 1. Require a pull request before merging
 2. Require status checks to pass before merging
@@ -334,7 +339,7 @@ Required status checks:
 - `Blocked content check`
 
 If these settings are missing, local hooks and CI remain advisory for anyone
-who can push directly to `master`.
+who can push directly to `main`.
 
 ### GitHub Actions Major-Version-Tag
 

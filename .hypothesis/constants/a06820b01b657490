@@ -1,0 +1,4 @@
+# file: C:\Users\mickg\PWBS\drift\scripts\study_self_analysis_aggregate.py
+# hypothesis_version: 6.151.10
+
+[0.0, 100, '*.json', '--output', '-o', '?', 'No reports found', 'UNKNOWN', '__main__', '_participant', 'actionability', 'actionable', 'completed', 'discovery_rate', 'error', 'findings', 'findings_fixed', 'findings_promised', 'fix_rate_30d', 'followup_30d', 'fp_count', 'known', 'mean', 'median', 'n', 'n_findings_total', 'n_reports', 'participant_id', 'pct_gte_4', 'perceived_precision', 'prioritizable', 'real_problem', 'report_dir', 'signal', 'surprise', 'surprise_by_signal', 'tp_count', 'understandable', 'unknown', 'unsure_count', 'utf-8', 'will_fix', 'will_fix_rate']

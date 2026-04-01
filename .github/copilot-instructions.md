@@ -20,6 +20,7 @@ Die Policy ist ein Vertrag — keine Empfehlung, kein Vorschlag.
 - Zulassungskriterium erfüllt: [JA / NEIN] → [welches Kriterium: Unsicherheit / Signal / Glaubwürdigkeit / Handlungsfähigkeit / Trend / Einführbarkeit]
 - Ausschlusskriterium ausgelöst: [JA / NEIN] → [falls JA: welches]
 - Roadmap-Phase: [Phase 1 / 2 / 3 / 4] — blockiert durch höhere Phase: [JA / NEIN]
+- Betrifft Signal/Architektur (§18): [JA / NEIN] → falls JA: Audit-Artefakte aktualisiert: [welche]
 - Entscheidung: [ZULÄSSIG / ABBRUCH]
 - Begründung: [ein Satz]
 ```
@@ -27,6 +28,20 @@ Die Policy ist ein Vertrag — keine Empfehlung, kein Vorschlag.
 **Bei Entscheidung ABBRUCH:** Keine weitere Umsetzung. Stattdessen: kurze Erklärung, welches Kriterium verletzt wird und was stattdessen priorisiert werden sollte.
 
 **Das Gate darf nicht übersprungen werden.** Auch nicht bei kleinen Änderungen, Refactorings oder scheinbar offensichtlichen Aufgaben.
+
+---
+
+## Risk-Audit-Pflicht bei Signalarbeit (POLICY §18)
+
+Wenn eine Aufgabe Dateien unter `src/drift/signals/`, `src/drift/ingestion/` oder `src/drift/output/` ändert, MUSS der Agent die betroffenen Audit-Artefakte aktualisieren:
+
+| Änderung | Pflicht-Aktualisierung |
+|----------|------------------------|
+| Neues/geändertes Signal | `audit_results/fmea_matrix.md` (FP + FN) + `audit_results/fault_trees.md` (FT-Pfade) + `audit_results/risk_register.md` |
+| Neuer Input-/Output-Pfad | `audit_results/stride_threat_model.md` (Trust Boundary) + `audit_results/risk_register.md` |
+| Precision/Recall Δ > 5% | `audit_results/fmea_matrix.md` (RPNs) + `audit_results/risk_register.md` (Messwerte) |
+
+**Schutzmechanismus:** Pre-Push-Hook und CI blockieren automatisch Pushes mit Signal-Änderungen ohne zugehörige Audit-Updates. Der Agent muss kein separates Gate ausgeben — die Zeile "Betrifft Signal/Architektur" im PFLICHT-GATE genügt.
 
 ---
 

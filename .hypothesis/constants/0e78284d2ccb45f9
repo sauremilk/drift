@@ -1,0 +1,4 @@
+# file: C:\Users\mickg\PWBS\drift\src\drift\models.py
+# hypothesis_version: 6.151.10
+
+[0.0, 0.2, 0.4, 0.6, 0.8, 1.0, 'api_endpoint', 'architecture', 'authentication', 'bypass_accumulation', 'caching', 'circular_import', 'co_change_coupling', 'cognitive_complexity', 'cohesion_deficit', 'complete', 'completeness', 'complexity', 'critical', 'data_access', 'degraded', 'doc_impl_drift', 'error_handling', 'experimental', 'fan_out_explosion', 'file', 'guard_clause_deficit', 'hardcoded_secret', 'high', 'info', 'insecure_default', 'local', 'logging', 'low', 'medium', 'moderate', 'module', 'mutant_duplicate', 'naming', 'repo', 'security', 'system_misalignment', 'temporal_volatility', 'testing', 'validation']

@@ -39,6 +39,7 @@ class SignalType(StrEnum):
     BYPASS_ACCUMULATION = "bypass_accumulation"  # ADR-008
     EXCEPTION_CONTRACT_DRIFT = "exception_contract_drift"  # ADR-008
     CO_CHANGE_COUPLING = "co_change_coupling"
+    TS_ARCHITECTURE = "ts_architecture"
     COGNITIVE_COMPLEXITY = "cognitive_complexity"
     FAN_OUT_EXPLOSION = "fan_out_explosion"
     CIRCULAR_IMPORT = "circular_import"

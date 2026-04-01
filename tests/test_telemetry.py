@@ -139,6 +139,8 @@ def test_api_diff_returns_acceptance_fields(monkeypatch) -> None:
     assert "drift_score_regressed" in result["blocking_reasons"]
     assert result["decision_reason_code"] == "rejected_in_scope_blockers"
     assert "in-scope" in result["decision_reason"]
+    assert "rejected" in result["agent_instruction"].lower()
+    assert "safe to proceed" not in result["agent_instruction"].lower()
 
 
 def test_api_diff_scopes_decision_logic_to_target_path(monkeypatch) -> None:
@@ -187,6 +189,8 @@ def test_api_diff_scopes_decision_logic_to_target_path(monkeypatch) -> None:
     assert "out_of_scope_diff_noise" in result["blocking_reasons"]
     assert result["decision_reason_code"] == "rejected_out_of_scope_noise_only"
     assert "out-of-scope" in result["decision_reason"]
+    assert "in_scope_accept" in result["agent_instruction"]
+    assert "safe to proceed" not in result["agent_instruction"].lower()
 
 
 def test_api_diff_uncommitted_mode_passed_to_analyzer(monkeypatch) -> None:

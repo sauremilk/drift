@@ -1,0 +1,4 @@
+# file: C:\Users\mickg\PWBS\drift\src\drift\commands\badge.py
+# hypothesis_version: 6.151.10
+
+['--config', '--output', '--repo', '--since', '--style', '-c', '-o', '-r', '-s', '.', '[dim]Markdown:[/dim]', '[dim]URL:[/dim]', 'brightgreen', 'critical', 'drift score', 'flat', 'flat-square', 'for-the-badge', 'orange', 'plastic', 'utf-8', 'yellow']

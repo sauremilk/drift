@@ -1,0 +1,4 @@
+# file: C:\Users\mickg\PWBS\drift\scripts\study_rater_agreement.py
+# hypothesis_version: 6.151.10
+
+[0.0, 1e-10, 0.01, 0.15, 0.5, 0.67, 1.0, '--output', '--test', '-o', '?', 'FP', 'TP', 'Unclear', '__main__', 'agreement_rate', 'categories', 'cohen', 'disagreements', 'distribution', 'finding_id', 'finding_index', 'fleiss', 'input', 'kappa', 'kappa_type', 'majority_label', 'mean_agreement', 'n_categories', 'n_disagreements', 'n_findings', 'n_raters', 'per_finding', 'raters', 'ratings', 'store_true', 'utf-8']

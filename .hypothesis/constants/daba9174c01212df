@@ -1,0 +1,4 @@
+# file: C:\Users\mickg\PWBS\drift\src\drift\signals\broad_exception_monoculture.py
+# hypothesis_version: 6.151.10
+
+[0.6, 0.7, 0.8, 1.0, 'BaseException', 'Error', 'Exception', 'actions', 'any', 'app.errorhandler', 'app_errorhandler', 'bare', 'broad_count', 'broadness_ratio', 'celery_error', 'error_boundary', 'error_handler', 'error_middleware', 'errorhandler', 'exception_handler', 'exception_type', 'fallback', 'file_local', 'handlers', 'log', 'middleware', 'pass', 'print', 'receiver', 'recovery', 'shared_task', 'signal_handler', 'swallowing_count', 'swallowing_ratio', 'task', 'task_error', 'total_handlers', 'unknown']

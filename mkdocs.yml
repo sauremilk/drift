@@ -81,6 +81,7 @@ nav:
       - FAQ: faq.md
       - Glossary: glossary.md
       - API and Outputs: reference/api-outputs.md
+      - Negative Context: reference/negative-context.md
       - Performance: reference/performance.md
   - Product:
       - Product Strategy: product-strategy.md

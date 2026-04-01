@@ -1,0 +1,4 @@
+# file: C:\Users\mickg\PWBS\drift\src\drift\signals\co_change_coupling.py
+# hypothesis_version: 6.151.10
+
+[0.0, 0.2, 0.35, 0.45, 0.5, 0.55, 0.79, 1.0, 2.5, 4.0, 8.0, '.', './', '.py', '/', '/__init__', 'Co-Change Coupling', '__init__.py', 'automation', 'bot', 'co_change_commits', 'co_change_weight', 'commit_samples', 'confidence', 'dependabot', 'explicit_dependency', 'file_a', 'file_b', 'git_dependent', 'github-actions', 'merge ', 'merge pull request', 'release-please', 'renovate', 'total_weight_file_a', 'total_weight_file_b']

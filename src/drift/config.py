@@ -118,6 +118,7 @@ class SignalWeights(BaseModel):
     co_change_coupling: float = 0.005
 
     # New signals — report-only until precision/recall validated
+    ts_architecture: float = 0.0
     cognitive_complexity: float = 0.0
     fan_out_explosion: float = 0.0
     circular_import: float = 0.0
@@ -234,7 +235,8 @@ class DriftConfig(BaseModel):
 
         raw = config_path.read_bytes()
         try:
-            data = tomllib.loads(raw.decode("utf-8"))
+            # Accept UTF-8 BOM to avoid first-run failures on editor-generated TOML files.
+            data = tomllib.loads(raw.decode("utf-8-sig"))
         except Exception as exc:
             from drift.errors import DriftConfigError
 
@@ -349,6 +351,7 @@ SIGNAL_ABBREV: dict[str, str] = {
     "BAT": "bypass_accumulation",
     "ECM": "exception_contract_drift",
     "CCC": "co_change_coupling",
+    "TSA": "ts_architecture",
     "CXS": "cognitive_complexity",
     "FOE": "fan_out_explosion",
     "CIR": "circular_import",

@@ -1,0 +1,4 @@
+# file: C:\Users\mickg\PWBS\drift\src\drift\commands\diff_cmd.py
+# hypothesis_version: 6.151.10
+
+['--baseline', '--diff-ref', '--max-findings', '--output', '--repo', '--response-detail', '--staged-only', '--target-path', '--uncommitted', '-o', '-r', '.', 'HEAD~1', 'baseline_file', 'concise', 'detailed', 'diff', 'path', 'utf-8']

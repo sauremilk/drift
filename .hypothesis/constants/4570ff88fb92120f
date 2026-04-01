@@ -1,0 +1,4 @@
+# file: C:\Users\mickg\PWBS\drift\src\drift\commands\analyze.py
+# hypothesis_version: 6.151.10
+
+['--baseline', '--compact', '--config', '--embedding-model', '--exit-zero', '--fail-on', '--format', '--ignore', '--json', '--max-findings', '--no-code', '--no-color', '--no-embeddings', '--output', '--output-format', '--path', '--quiet', '--repo', '--save-baseline', '--select', '--show-suppressed', '--signals', '--since', '--sort-by', '--workers', '-c', '-f', '-o', '-p', '-q', '-r', '-s', '-w', '.', 'Output format.', 'agent-tasks', 'baseline_file', 'compact_json', 'critical', 'github', 'high', 'ignore_signals', 'impact', 'json', 'json_shortcut', 'low', 'medium', 'no_color', 'none', 'output_file', 'output_format', 'rich', 'sarif', 'save_baseline_path', 'score', 'select_signals', 'utf-8']

@@ -1,0 +1,4 @@
+# file: C:\Users\mickg\PWBS\drift\src\drift\analyzers\typescript\workspace_boundaries.py
+# hypothesis_version: 6.151.10
+
+['*.ts', '*.tsx', '.git', '.venv', '__pycache__', 'build', 'dist', 'node_modules', 'package.json', 'packages', 'root', 'utf-8', 'venv', 'workspaces']

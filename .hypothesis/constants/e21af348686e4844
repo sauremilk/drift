@@ -1,0 +1,4 @@
+# file: C:\Users\mickg\PWBS\drift\scripts\evaluate_benchmark.py
+# hypothesis_version: 6.151.10
+
+[0.0, '*_full.json', '-', '--results-dir', '?', 'DISPUTED', 'FP', 'TP', 'UNLABELED', '__main__', '_full', 'benchmark_results', 'disputed', 'file', 'file_path', 'findings', 'fp', 'key', 'label', 'labeled', 'legacy_key', 'line', 'path', 'precision_by_signal', 'precision_lenient', 'precision_strict', 'sample', 'signal', 'title', 'total', 'total_findings', 'tp', 'unknown', 'unlabeled', 'utf-8']

@@ -1,0 +1,4 @@
+# file: C:\Users\mickg\PWBS\drift\src\drift\baseline.py
+# hypothesis_version: 6.151.10
+
+['\x00', 'baseline_version', 'created_at', 'drift_score', 'drift_version', 'file', 'finding_count', 'findings', 'fingerprint', 'severity', 'signal', 'start_line', 'title', 'utf-8']

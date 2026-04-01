@@ -1,0 +1,4 @@
+# file: C:\Users\mickg\PWBS\drift\src\drift\signals\exception_contract_drift.py
+# hypothesis_version: 6.151.10
+
+[b'\n', b'missing', 0.6, 1.0, '--batch', ': ', ';', '_', 'arrow_function', 'cat-file', 'catch_clause', 'comparison_ref', 'constructor', 'diverged_functions', 'divergence_count', 'drift', 'function_declaration', 'git', 'git_dependent', 'handler_types', 'has_bare_except', 'has_bare_raise', 'identifier', 'lexical_declaration', 'method_definition', 'name', 'new_expression', 'optional_parameter', 'param_count', 'parameter', 'parameters', 'profile', 'raise_types', 'replace', 'required_parameter', 'rest_parameter', 'show', 'throw', 'throw_statement', 'type_annotation', 'utf-8', 'value', 'variable_declaration', 'variable_declarator']

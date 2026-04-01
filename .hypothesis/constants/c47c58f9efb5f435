@@ -1,0 +1,4 @@
+# file: C:\Users\mickg\PWBS\drift\src\drift\ingestion\git_history.py
+# hypothesis_version: 6.151.10
+
+[0.0, 0.1, 0.15, 0.2, 0.3, 0.4, 0.5, 0.95, '-', '--numstat', '.aider.conf.yml', '.aider/', '.amazon-q/', '.claude/', '.claudeignore', '.cline/', '.codeium/', '.continue/', '.copilotignore', '.cursor/', '.cursorignore', '.cursorrules', '.windsurf/', '/', 'CLAUDE.md', '^aider: ', 'ai assistant', 'aider', 'amazon-q', 'anthropic', 'claude', 'cline', 'cline_docs/', 'codeium', 'continue', 'copilot', 'copilot-workspace', 'cursor', 'devin', 'drift', 'gemini', 'ghostwriter', 'git', 'github-actions', 'log', 'noreply@codeium.com', 'noreply@cursor.sh', 'openai', 'replace', 'sourcegraph', 'tabnine', 'unknown', 'utf-8', 'windsurf']

@@ -1,0 +1,4 @@
+# file: C:\Users\mickg\PWBS\drift\src\drift\telemetry.py
+# hypothesis_version: 6.151.10
+
+[237, 240, 1000, '***REDACTED***', '+00:00', '...', '.drift', '1', '1.0', 'DRIFT_TELEMETRY_FILE', 'Z', 'a', 'agent_usage.jsonl', 'api_key', 'apikey', 'auth', 'drift_tool_call', 'duration_ms', 'error', 'event_id', 'event_type', 'has_error', 'input_tokens_est', 'keys', 'on', 'output_tokens_est', 'params', 'password', 'result_summary', 'run_id', 'schema_version', 'secret', 'status', 'timestamp', 'token', 'tool_name', 'true', 'type', 'utf-8', 'yes']

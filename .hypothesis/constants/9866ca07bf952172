@@ -1,0 +1,4 @@
+# file: C:\Users\mickg\PWBS\drift\src\drift\signals\fan_out_explosion.py
+# hypothesis_version: 6.151.10
+
+[0.035, 0.3, 0.7, 1.0, '.', '/', 'Fan-Out Explosion', '__init__.py', 'fan_out_explosion', 'file_local', 'index.js', 'index.jsx', 'index.ts', 'index.tsx', 'threshold', 'top_imports', 'unique_import_count']

@@ -26,7 +26,7 @@ Runs tests → Calculates version → Updates files → Creates release → Publ
 - Bug fixed (`fix: ...` commit)
 - Breaking change (`BREAKING: ...` commit)
 - All tests pass
-- Code committed + pushed to master
+- Code committed + pushed to main
 
 ❌ **DO NOT use if:**
 - Tests still failing
@@ -65,8 +65,8 @@ Creating release commit...
 ✓ Committed: chore: Release 0.11.0 — update version and changelog
 ▶ Creating git tag v0.11.0...
 ✓ Tagged: v0.11.0
-Pushing to origin/master and tags...
-✓ Pushed master and v0.11.0
+Pushing to origin/main and tags...
+✓ Pushed main and v0.11.0
 
 ✅ Release v0.11.0 complete!
    → GitHub release will be created automatically
@@ -115,7 +115,7 @@ BREAKING: remove sig   →  MAJOR (X.0.0)  →  v1.0.0
    - Code changes (if any)
    - Release commit (version + changelog)
 6. **Git tag created** — e.g., v0.11.0
-7. **Push to GitHub** — master + tag
+7. **Push to GitHub** — main + tag
 8. **GitHub Actions triggered** (`.github/workflows/publish.yml`)
    - Builds dist package
    - Validates version consistency

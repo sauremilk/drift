@@ -1,0 +1,4 @@
+# file: C:\Users\mickg\PWBS\drift\src\drift\signals\pattern_fragmentation.py
+# hypothesis_version: 6.151.10
+
+[0.04, 0.3, 0.5, 0.7, 1.0, 1.5, '.', 'async', 'async ', 'await ', 'body', 'canonical_count', 'canonical_variant', 'category', 'file_local', 'is_async', 'module', 'num_variants', 'total_instances', 'variant_count']

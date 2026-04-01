@@ -15,6 +15,45 @@ Goal for this quarter: validate demand, reach ≥10 external users.
 
 Exceptions: bugfixes that block installation or first-run experience.
 
+## Go support MVP (post-moratorium track)
+
+Go support is a plausible future direction, but it is not scheduled during the
+current distribution moratorium. The milestones below are intentionally phrased
+as date-free MVP steps so contributors can prepare bounded work once this track
+is opened.
+
+### Phase 1 — Parser baseline
+
+- **Measurable outcome:** Drift can discover `.go` files, parse package/import/
+  function structure for a minimal fixture corpus, and complete analysis on
+  those fixtures without parser crashes.
+- **Owner-neutral entry point:** Add or extend isolated fixtures for
+  single-package and multi-package Go repos, then harden ingestion until the
+  fixtures parse deterministically.
+
+### Phase 2 — Signal coverage subset
+
+- **Measurable outcome:** A first subset of structurally compatible signals runs
+  on Go fixtures with deterministic tests and documented scope limitations.
+  Initial candidates: Pattern Fragmentation, Mutant Duplicates,
+  Explainability Deficit, and Guard Clause Deficit.
+- **Owner-neutral entry point:** Port one signal at a time behind fixture-based
+  tests, starting with file-local heuristics before attempting cross-package or
+  git-dependent behavior.
+
+### Phase 3 — Validation matrix
+
+- **Measurable outcome:** Enabled Go signals have a small validation matrix with
+  labeled examples from fixtures plus at least one real-world Go repository,
+  including explicit TP/FP/FN notes.
+- **Owner-neutral entry point:** Contribute labeled findings, false-positive
+  reports, and repo-level validation notes even if you are not changing parser
+  or signal code.
+
+No dates are committed for this track. It should only move forward once the
+current demand-validation goals are satisfied or maintainers explicitly lift the
+moratorium for language expansion.
+
 ---
 
 ## Completed since v0.7.1

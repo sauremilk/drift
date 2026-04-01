@@ -1,0 +1,4 @@
+# file: C:\Users\mickg\PWBS\drift\scripts\package_kpis.py
+# hypothesis_version: 6.151.10
+
+[100.0, 86400.0, '%Y-%m', '+00:00', ',', '-', '--currency-versions', '--defects-csv', '--downloads-csv', '--months', '--output', '--package', '--thresholds-json', '--usage-csv', '0', '1', 'Output JSON path', 'Z', '__main__', 'confirmed_at', 'critical', 'currency_rate', 'currency_versions', 'defect_count', 'direction', 'downloads', 'fixed_at', 'generated_at', 'green', 'higher_is_better', 'kpis', 'lower_is_better', 'maup', 'month', 'no-data', 'on', 'package', 'package_related', 'project_id', 'pypi_downloads', 'r', 'red', 'retention_90d', 'severity', 'status', 'thresholds_enabled', 'timestamp', 'true', 'unknown', 'utf-8', 'version', 'y', 'yellow', 'yes']

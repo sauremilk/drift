@@ -1,0 +1,4 @@
+# file: C:\Users\mickg\PWBS\drift\src\drift\profiles.py
+# hypothesis_version: 6.151.10
+
+[0.005, 0.01, 0.02, 0.03, 0.04, 0.06, 0.08, 0.09, 0.1, 0.13, 0.14, 0.16, 0.18, 0.2, 0.75, 0.8, 1.5, 10000, ', ', 'api.*', 'api/**', 'api_endpoint', 'bypass_accumulation', 'co_change_coupling', 'cohesion_deficit', 'data_access', 'db.*', 'db/**', 'default', 'deny_import', 'doc_impl_drift', 'error_handling', 'from', 'guard_clause_deficit', 'layer_boundaries', 'max_discovery_files', 'max_pattern_variants', 'medium', 'min_complexity', 'min_function_loc', 'models.*', 'mutant_duplicate', 'name', 'none', 'recency_days', 'repositories.*', 'routes.*', 'similarity_threshold', 'strict', 'system_misalignment', 'temporal_volatility', 'vibe-coding', 'views.*']

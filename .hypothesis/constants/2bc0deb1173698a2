@@ -1,0 +1,4 @@
+# file: C:\Users\mickg\PWBS\drift\src\drift\signals\dead_code_accumulation.py
+# hypothesis_version: 6.151.10
+
+[0.02, 0.7, 0.8, 1.0, '.', 'BaseModel', 'DTO', 'Model', 'Request', 'Response', 'SQLModel', 'Schema', '_', '__init__.py', '__main__.py', 'api_view', 'app', 'asgi.py', 'class', 'cli', 'configure', 'conftest.py', 'create_app', 'dead_count', 'dead_ratio', 'dead_symbols', 'delete', 'downgrade', 'function', 'get', 'head', 'index.js', 'index.jsx', 'index.ts', 'index.tsx', 'kind', 'line', 'main', 'manage.py', 'migrate', 'name', 'options', 'patch', 'post', 'put', 'register', 'route', 'setup', 'setup.py', 'teardown', 'total_exports', 'upgrade', 'websocket', 'wsgi.py']

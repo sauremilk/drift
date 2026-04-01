@@ -1,0 +1,4 @@
+# file: C:\Users\mickg\PWBS\drift\src\drift\cli.py
+# hypothesis_version: 6.151.10
+
+[0.5, '\nInterrupted.', '-', '--verbose', '-v', '.', '2.0', 'DRIFT-0000', 'DRIFT-2001', 'DRIFT-3002', 'DRIFT_ERROR_FORMAT', 'Interrupted.', 'No such option:', '__main__', 'analysis', 'category', 'detail', 'drift', 'error', 'error_code', 'exit_code', 'hint', 'json', 'message', 'no such option:', 'recoverable', 'schema_version', 'suggested_action', 'system', 'type', 'user']

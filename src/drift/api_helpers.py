@@ -34,6 +34,7 @@ _ABBREV_TO_SIGNAL: dict[str, SignalType] = {
     "ECM": SignalType.EXCEPTION_CONTRACT_DRIFT,
     "COD": SignalType.COHESION_DEFICIT,
     "CCC": SignalType.CO_CHANGE_COUPLING,
+    "TSA": SignalType.TS_ARCHITECTURE,
     "CXS": SignalType.COGNITIVE_COMPLEXITY,
     "FOE": SignalType.FAN_OUT_EXPLOSION,
     "CIR": SignalType.CIRCULAR_IMPORT,

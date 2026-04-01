@@ -1,0 +1,4 @@
+# file: C:\Users\mickg\PWBS\drift\src\drift\signals\guard_clause_deficit.py
+# hypothesis_version: 6.151.10
+
+[0.15, 0.3, 0.6, 0.7, 1.0, 100, 'Guard Clause Deficit', '_', '__init__.py', 'arrow_function', 'beartype', 'body', 'check_params', 'condition', 'consequence', 'deep_nesting', 'else_clause', 'enforce_types', 'file_local', 'finalbody', 'function_declaration', 'function_name', 'guarded_count', 'guarded_ratio', 'handlers', 'identifier', 'if_statement', 'index.js', 'index.jsx', 'index.ts', 'index.tsx', 'isinstance', 'method_definition', 'nesting_depth', 'orelse', 'python', 'return_statement', 'statement_block', 'threshold', 'throw_statement', 'total_qualifying', 'typechecked', 'utf-8', 'validate', 'validate_arguments', 'validate_call', 'validates', 'validator', '{', '}']

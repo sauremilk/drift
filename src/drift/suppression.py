@@ -31,6 +31,9 @@ def scan_suppressions(
     Returns a mapping of ``(posix_path, line_number)`` to the set of signal
     type *values* that should be suppressed.  ``None`` means *all* signals.
     """
+    # Accept both full signal names and abbreviations (e.g. AVS, PFS).
+    from drift.config import SIGNAL_ABBREV
+
     suppressions: dict[tuple[str, int], set[str] | None] = {}
 
     for finfo in files:
@@ -49,7 +52,16 @@ def scan_suppressions(
                 continue
             raw = m.group(1)
             if raw:
-                signals = {s.strip().lower() for s in raw.split(",") if s.strip()}
+                signals: set[str] = set()
+                for token in raw.split(","):
+                    signal = token.strip()
+                    if not signal:
+                        continue
+                    abbrev = signal.upper()
+                    if abbrev in SIGNAL_ABBREV:
+                        signals.add(SIGNAL_ABBREV[abbrev])
+                    else:
+                        signals.add(signal.lower())
                 suppressions[(finfo.path.as_posix(), line_no)] = signals
             else:
                 suppressions[(finfo.path.as_posix(), line_no)] = None
