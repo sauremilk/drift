@@ -21,11 +21,11 @@
 
 ## [1.3.3] – 2026-04-01
 
-Short version: Reduce hardcoded-secret false positives for enum/schema symbols (closes #46). (+11 more commits)
+Short version: Maintenance and dependency updates.
 
 ### Changed
 
-- Reduce hardcoded-secret false positives for enum/schema symbols (closes #46). (+11 more commits)
+- Maintenance and dependency updates.
 
 
 ## [1.3.2] – 2026-04-01
