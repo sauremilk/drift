@@ -1,0 +1,16 @@
+{
+  "globs": ["docs-site/**/*.md", "README.md", "CONTRIBUTING.md", "DEVELOPER.md", "SECURITY.md", "SUPPORT.md", "CHANGELOG.md"],
+  "ignores": ["**/node_modules/**", "site/**", "docs-site/.overrides/**"],
+  "config": {
+    "default": true,
+    "MD013": false,
+    "MD024": { "siblings_only": true },
+    "MD025": false,
+    "MD033": {
+      "allowed_elements": ["details", "summary", "br", "img", "a", "p", "strong", "sup", "sub"]
+    },
+    "MD036": false,
+    "MD041": false,
+    "MD046": false
+  }
+}

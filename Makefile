@@ -14,7 +14,7 @@ MYPY     ?= $(PYTHON) -m mypy
 SRC      := src/
 TESTS    := tests/
 
-.PHONY: help install lint typecheck test test-fast test-all coverage check self ci package-kpis-github-usage package-kpis-downloads package-kpis-real-public package-kpis-example clean
+.PHONY: help install lint lint-fix typecheck test test-fast test-contract test-all coverage check self ci markdown-lint package-kpis-github-usage package-kpis-downloads package-kpis-real-public package-kpis-example clean
 
 help:  ## Show all available commands
 	@grep -E '^[a-zA-Z_-]+:.*##' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*##"}; {printf "  \033[36m%-15s\033[0m %s\n", $$1, $$2}'
@@ -22,7 +22,7 @@ help:  ## Show all available commands
 install:  ## Dev install (editable + all dev extras) and activate git hooks
 	pip install -e ".[dev]"
 	git config core.hooksPath .githooks
-@command -v pre-commit >/dev/null 2>&1 && pre-commit install --install-hooks || echo "  (pre-commit not found  skipping hook install)"
+	@command -v pre-commit >/dev/null 2>&1 && pre-commit install --install-hooks || echo "  (pre-commit not found — skipping hook install)"
 
 lint:  ## Run ruff linter
 	$(RUFF) check $(SRC) $(TESTS)
@@ -38,6 +38,9 @@ test:  ## Run tests (skip slow smoke tests)
 
 test-fast:  ## Fast unit tests — stop on first failure
 	$(PYTEST) -v --tb=short -m "not slow" -x --ignore=tests/test_smoke_real_repos.py
+
+test-contract:  ## SARIF/JSON contract tests only
+	$(PYTEST) -v --tb=short -m contract
 
 test-all:  ## All tests including slow smoke tests
 	$(PYTEST) -v --tb=short
@@ -55,6 +58,9 @@ check:  ## Run all checks: lint + typecheck + tests + self-analysis
 	@echo ">>> [4/4] Self-analysis..."
 	@$(MAKE) --no-print-directory self
 	@echo ">>> All checks passed."
+
+markdown-lint:  ## Lint Markdown docs
+	npx markdownlint-cli2
 
 self:  ## Drift self-analysis
 	drift analyze --repo . --format json > /dev/null
