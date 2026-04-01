@@ -6,6 +6,7 @@
 .githooks
 .github
 .gitignore
+.pre-commit-config.yaml
 .pre-commit-hooks.yaml
 .shellcheckrc
 .vscode
