@@ -10,6 +10,7 @@
 - Install Python in Workflow Sanity explicitly on self-hosted runners to avoid missing interpreter failures.
 - Make auto-release release-existence checks PowerShell-safe by handling `gh release view` misses without hard failure.
 - Restrict CodeQL execution to manual dispatch so push/PR runs are no longer hard-failed by billing-locked code scanning.
+- Reset PowerShell native exit code after release checks so non-existent releases no longer fail the auto-release check step.
 
 ## [1.3.1] – 2026-04-01
 

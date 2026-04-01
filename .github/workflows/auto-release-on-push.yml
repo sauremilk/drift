@@ -85,6 +85,7 @@ jobs:
           } else {
             "release_exists=false" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
           }
+          $global:LASTEXITCODE = 0
 
       - name: Create and push missing version tag
         if: steps.check.outputs.tag_exists != 'true'
