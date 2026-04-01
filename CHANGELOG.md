@@ -21,11 +21,11 @@
 
 ## [1.3.4] – 2026-04-01
 
-Short version: Release 1.3.4. (+4 more commits)
+Short version: Maintenance and dependency updates.
 
 ### Changed
 
-- Release 1.3.4. (+4 more commits)
+- Maintenance and dependency updates.
 
 
 ## [1.3.3] – 2026-04-01
