@@ -31,7 +31,11 @@ def self_analyze(since: int, output_format: str) -> None:
     if not (drift_root / "pyproject.toml").exists():
         raise DriftSystemError(
             "DRIFT-2001",
-            message="Could not locate drift repository root.",
+            message=(
+                "drift self only works inside the drift source code repository "
+                "(github.com/sauremilk/drift). "
+                "For your project, use 'drift scan' instead."
+            ),
             path=str(drift_root),
         )
 
