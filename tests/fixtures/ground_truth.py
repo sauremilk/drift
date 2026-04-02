@@ -870,7 +870,10 @@ PFS_DECORATOR_TN = GroundTruthFixture(
             signal_type=SignalType.PATTERN_FRAGMENTATION,
             file_path="routes/",
             should_detect=False,
-            description="Consistent decorator pattern (framework routes) must not produce a PFS finding",
+            description=(
+                "Consistent decorator pattern (framework routes) "
+                "must not produce a PFS finding"
+            ),
         ),
     ],
 )
