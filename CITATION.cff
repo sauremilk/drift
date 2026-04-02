@@ -1,0 +1,22 @@
+cff-version: 1.2.0
+message: "If you use drift in your research, please cite it as below."
+title: "drift-analyzer"
+type: software
+authors:
+  - family-names: Gottsch
+    given-names: Mick
+    email: mick.gottsch@gmail.com
+repository-code: "https://github.com/sauremilk/drift"
+url: "https://sauremilk.github.io/drift/"
+license: MIT
+version: "2.0.0"
+date-released: "2026-04-02"
+keywords:
+  - static-analysis
+  - architectural-drift
+  - code-coherence
+  - technical-debt
+  - python
+abstract: >-
+  Deterministic architectural drift detection for AI-accelerated
+  Python repositories through cross-file coherence analysis.

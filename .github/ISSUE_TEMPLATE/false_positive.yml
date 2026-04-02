@@ -1,0 +1,75 @@
+name: False Positive / False Negative
+description: Drift is flagging something incorrectly, or missing a real issue
+title: "[FP/FN] "
+labels: ["signal-quality"]
+body:
+  - type: dropdown
+    id: signal
+    attributes:
+      label: Signal affected
+      description: Which signal produced the false result?
+      options:
+        - Pattern Fragmentation (PFS)
+        - Architecture Violation (AVS)
+        - Mutant Duplicates (MDS)
+        - Explainability Deficit (EDS)
+        - Temporal Volatility (TVS)
+        - System Misalignment (SMS)
+        - Doc-Implementation Drift (DIA)
+        - Broad Exception Monoculture (BEM)
+        - Test Polarity Deficit (TPD)
+        - Guard Clause Deficit (GCD)
+        - Naming Contract Violation (NBV)
+        - Bypass Accumulation (BAT)
+        - Exception Contract Drift (ECM)
+        - Cohesion Deficit (COD)
+        - Co-Change Coupling (CCC)
+        - Missing Authorization (MAZ)
+        - Insecure Default (ISD)
+        - Hardcoded Secret (HSC)
+    validations:
+      required: true
+
+  - type: dropdown
+    id: type
+    attributes:
+      label: False positive or false negative?
+      options:
+        - "False positive — drift flagged something that isn't a real issue"
+        - "False negative — drift missed something that is a real issue"
+    validations:
+      required: true
+
+  - type: textarea
+    id: code
+    attributes:
+      label: Code example
+      description: Paste the relevant code snippet.
+      render: python
+    validations:
+      required: true
+
+  - type: textarea
+    id: explanation
+    attributes:
+      label: Why this is incorrect
+      description: Explain why drift's assessment is wrong in this case.
+    validations:
+      required: true
+
+  - type: textarea
+    id: config
+    attributes:
+      label: drift.yaml config (if any)
+      render: yaml
+    validations:
+      required: false
+
+  - type: input
+    id: drift-version
+    attributes:
+      label: drift-analyzer version
+      description: Output of `drift --version`
+      placeholder: "2.0.0"
+    validations:
+      required: true

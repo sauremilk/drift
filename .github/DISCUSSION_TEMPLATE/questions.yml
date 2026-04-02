@@ -1,0 +1,25 @@
+title: "[Q] "
+labels: []
+body:
+  - type: markdown
+    attributes:
+      value: |
+        **Before posting**, please check:
+        - [Documentation](https://sauremilk.github.io/drift/)
+        - [Existing discussions](https://github.com/sauremilk/drift/discussions)
+
+  - type: textarea
+    id: question
+    attributes:
+      label: Your question
+      description: What do you want to know?
+    validations:
+      required: true
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Context
+      description: Any relevant context (drift version, config, error output).
+    validations:
+      required: false

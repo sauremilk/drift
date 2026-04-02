@@ -1,0 +1,24 @@
+title: "[Idea] "
+labels: []
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Share an idea or brainstorm about drift's future direction.
+        For concrete feature requests, please use the [issue template](https://github.com/sauremilk/drift/issues/new/choose) instead.
+
+  - type: textarea
+    id: idea
+    attributes:
+      label: Describe your idea
+      description: What are you thinking about?
+    validations:
+      required: true
+
+  - type: textarea
+    id: motivation
+    attributes:
+      label: Motivation
+      description: Why would this be useful?
+    validations:
+      required: false

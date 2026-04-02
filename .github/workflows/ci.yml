@@ -124,7 +124,7 @@ jobs:
       - name: Run tests with coverage
         shell: powershell
         run: |
-          & $env:PYTHON_BIN -m pytest -v --tb=short --cov=drift --cov-report=term-missing --cov-report=xml -m "not slow"
+          & $env:PYTHON_BIN -m pytest -v --tb=short --cov=drift --cov-report=term-missing --cov-report=xml --cov-fail-under=80 -m "not slow"
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v5
