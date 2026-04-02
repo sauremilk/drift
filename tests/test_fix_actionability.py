@@ -126,8 +126,8 @@ def self_analysis_findings() -> list[Finding]:
 
 
 @pytest.fixture(scope="module")
-def fixture_findings(tmp_path_factory: pytest.TempPathFactory) -> list[Finding]:
-    """Generate findings from a synthetic codebase with known issues."""
+def deterministic_fixture_findings(tmp_path_factory: pytest.TempPathFactory) -> list[Finding]:
+    """Generate deterministic findings from a synthetic codebase with known issues."""
     tmp = tmp_path_factory.mktemp("actionability")
 
     # Create files that should trigger multiple signals with fix texts
@@ -246,14 +246,16 @@ def fixture_findings(tmp_path_factory: pytest.TempPathFactory) -> list[Finding]:
 class TestFixTextPresence:
     """Every MEDIUM+ finding must have a non-empty fix text."""
 
-    def test_medium_plus_findings_have_fix(self, fixture_findings: list[Finding]) -> None:
-        """All MEDIUM+ findings from synthetic fixtures must have fix text."""
+    def test_medium_plus_findings_have_fix(
+        self, deterministic_fixture_findings: list[Finding]
+    ) -> None:
+        """All MEDIUM+ findings from deterministic fixtures must have fix text."""
         medium_plus = [
-            f for f in fixture_findings
+            f for f in deterministic_fixture_findings
             if f.severity in (Severity.CRITICAL, Severity.HIGH, Severity.MEDIUM)
         ]
-        if not medium_plus:
-            pytest.skip("No MEDIUM+ findings generated from fixture")
+        # Deterministic fixture: no findings means a regression in signal setup.
+        assert medium_plus, "Deterministic fixture produced no MEDIUM+ findings"
 
         missing_fix = [f for f in medium_plus if not f.fix]
         assert not missing_fix, (
@@ -262,7 +264,7 @@ class TestFixTextPresence:
         )
 
     def test_self_analysis_fix_coverage(self, self_analysis_findings: list[Finding]) -> None:
-        """On drift's own codebase: >=80% of findings should have fix text."""
+        """Optional self-analysis health-check: >=80% of findings should have fix text."""
         if not self_analysis_findings:
             pytest.skip("No self-analysis findings")
 
@@ -277,11 +279,13 @@ class TestFixTextPresence:
 class TestFixTextActionability:
     """Fix texts must be specific and actionable, not generic advice."""
 
-    def test_fixture_fixes_are_actionable(self, fixture_findings: list[Finding]) -> None:
-        """Every fix text from synthetic fixtures must pass actionability check."""
-        findings_with_fix = [f for f in fixture_findings if f.fix]
-        if not findings_with_fix:
-            pytest.skip("No findings with fix text")
+    def test_fixture_fixes_are_actionable(
+        self, deterministic_fixture_findings: list[Finding]
+    ) -> None:
+        """Every fix text from deterministic fixtures must pass actionability check."""
+        findings_with_fix = [f for f in deterministic_fixture_findings if f.fix]
+        # Deterministic fixture: missing fix texts indicates a regression.
+        assert findings_with_fix, "Deterministic fixture produced no findings with fix text"
 
         failures = []
         for f in findings_with_fix:
@@ -301,7 +305,7 @@ class TestFixTextActionability:
     def test_self_analysis_actionability_rate(
         self, self_analysis_findings: list[Finding]
     ) -> None:
-        """On drift's own codebase: >=90% of fix texts should be actionable.
+        """Optional self-analysis health-check: >=90% of fix texts should be actionable.
 
         Baseline (2026-03): 76%. Achieved (2026-03): 100%.
         Track this metric over time — improving fix-text quality directly
@@ -317,10 +321,12 @@ class TestFixTextActionability:
             f"Actionability rate {rate:.0%} < 90% ({actionable_count}/{len(with_fix)})"
         )
 
-    def test_no_fix_is_purely_vague(self, fixture_findings: list[Finding]) -> None:
+    def test_no_fix_is_purely_vague(
+        self, deterministic_fixture_findings: list[Finding]
+    ) -> None:
         """No fix text should consist entirely of vague advice."""
         vague_fixes = []
-        for f in fixture_findings:
+        for f in deterministic_fixture_findings:
             if not f.fix:
                 continue
             sentences = [s.strip() for s in f.fix.split(".") if s.strip()]
@@ -336,11 +342,13 @@ class TestFixTextActionability:
 class TestFixTextSpecificity:
     """Fix texts must contain concrete references, not just templates."""
 
-    def test_fixes_contain_identifiers(self, fixture_findings: list[Finding]) -> None:
+    def test_fixes_contain_identifiers(
+        self, deterministic_fixture_findings: list[Finding]
+    ) -> None:
         """Fix texts should reference specific files, functions, or counts."""
-        with_fix = [f for f in fixture_findings if f.fix]
-        if not with_fix:
-            pytest.skip("No findings with fix text")
+        with_fix = [f for f in deterministic_fixture_findings if f.fix]
+        # Deterministic fixture: no findings with fix text is a hard failure.
+        assert with_fix, "Deterministic fixture produced no findings with fix text"
 
         generic = []
         for f in with_fix:

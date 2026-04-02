@@ -24,7 +24,7 @@ from drift.api import (
     nudge,
 )
 from drift.incremental import BaselineManager, BaselineSnapshot
-from drift.models import Finding, Severity, SignalType
+from drift.models import FileInfo, Finding, ParseResult, Severity, SignalType
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -122,10 +122,25 @@ class TestNudgeAPI:
             "baseline_refresh_reason",
             "file_local_signals_run",
             "cross_file_signals_estimated",
+            "parse_failure_count",
+            "parse_failed_files",
+            "parse_failure_treatment",
             "changed_files",
             "agent_instruction",
         }
         assert expected_fields.issubset(set(result.keys()))
+
+    def test_nudge_parse_failure_fields_default_empty(
+        self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+    ) -> None:
+        """No parse failures still returns stable diagnostic fields."""
+        self._mock_nudge_deps(monkeypatch, tmp_path)
+        result = nudge(tmp_path, changed_files=[])
+        assert result["parse_failure_count"] == 0
+        assert result["parse_failed_files"] == []
+        treatment = result["parse_failure_treatment"]
+        assert treatment["affects_safe_to_commit"] is True
+        assert treatment["policy"] == "blocking"
 
     def test_nudge_expected_transient_always_false(
         self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
@@ -320,6 +335,58 @@ class TestSafeToCommitHardrule:
         result = nudge(tmp_path, changed_files=[])
         # After refresh, baseline should be valid again
         assert isinstance(result["baseline_valid"], bool)
+
+    def test_blocks_on_parse_failures_with_diagnostics(
+        self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+    ) -> None:
+        """Parse failures are exposed and force safe_to_commit=False."""
+        TestNudgeAPI._mock_nudge_deps(monkeypatch, tmp_path)
+
+        from drift.config import DriftConfig
+
+        changed_rel = Path("src") / "broken.py"
+        (tmp_path / changed_rel).parent.mkdir(parents=True, exist_ok=True)
+        (tmp_path / changed_rel).write_text("def broken(:\n", encoding="utf-8")
+
+        monkeypatch.setattr(
+            DriftConfig,
+            "load",
+            staticmethod(lambda *a, **kw: DriftConfig()),
+        )
+        monkeypatch.setattr(
+            "drift.ingestion.file_discovery.discover_files",
+            lambda *a, **kw: [
+                FileInfo(
+                    path=changed_rel,
+                    language="python",
+                    size_bytes=20,
+                    line_count=1,
+                )
+            ],
+        )
+
+        def _parse_with_error(file_path: Path, repo_path: Path, language: str) -> ParseResult:
+            return ParseResult(
+                file_path=file_path,
+                language=language,
+                parse_errors=["invalid syntax"],
+            )
+
+        monkeypatch.setattr(
+            "drift.ingestion.ast_parser.parse_file",
+            _parse_with_error,
+        )
+
+        result = nudge(tmp_path, changed_files=[changed_rel.as_posix()])
+
+        assert result["safe_to_commit"] is False
+        assert result["parse_failure_count"] >= 1
+        assert result["parse_failed_files"]
+        assert any(
+            entry["file"] == changed_rel.as_posix() and entry["stage"] == "changed"
+            for entry in result["parse_failed_files"]
+        )
+        assert any("Parse failures in" in msg for msg in result["blocking_reasons"])
 
 
 # ---------------------------------------------------------------------------

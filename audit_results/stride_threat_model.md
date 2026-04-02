@@ -140,6 +140,7 @@
 | I-TB5-02 | **Info Disclosure** | Telemetrie-JSONL loggt CLI-Params (Repo-Pfade, Signal-Auswahl) | Niedrig | Niedrig | Opt-in (DRIFT_TELEMETRY_ENABLED); `_REDACT_KEYS` für Secrets | **Niedrig** | — |
 | I-TB5-03 | **Info Disclosure** | Negative-Context-Export (`.drift-negative-context.md`) leakt Anti-Patterns | Niedrig | Niedrig | User löst Export explizit aus; keine Code-Bodies | **Akzeptabel** | — |
 | I-TB5-04 | **Info Disclosure** | SARIF-Upload zu GitHub Code Scanning macht Findings öffentlich (public repos) | Niedrig | Mittel | Repo-Visibility-Policy ist GitHub-seitig; Drift hat keinen Einfluss | **Akzeptabel** — User-Entscheidung | Sicherheitshinweis in CI-Setup-Docs |
+| T-TB5-02 | **Tampering** | Nudge-Consumer ignoriert Parse-Fehler und behandelt unvollständige Analyse als „safe" | Mittel | Mittel | Nudge liefert `parse_failure_count`, `parse_failed_files`, `parse_failure_treatment`; `safe_to_commit=false` bei Parse-Fehlern | **Mitigiert** ✅ | Contract-Stabilität in Regressionstests beibehalten |
 | T-TB5-01 | **Tampering** | Baseline-Datei (`.drift/baseline.json`) kann manipuliert werden → falscher Trend | Mittel | Niedrig | Baseline ist lokale Datei; Integrität nicht kryptographisch gesichert | **Niedrig** | Optional: Baseline-Checksum; oder Warnung bei unplausiblem Delta |
 | D-TB5-01 | **DoS** | JSON-Output bei 10.000+ Findings → Multi-MB-Output → Consumer-Overflow | Niedrig | Niedrig | Compact-Mode; Top-N-Filtering; Deduplication | **Niedrig** | — |
 

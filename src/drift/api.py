@@ -1316,6 +1316,23 @@ def nudge(
         "changed_files": changed_files,
         "uncommitted": uncommitted,
     }
+    parse_failed_files: list[dict[str, Any]] = []
+
+    def record_parse_failure(
+        *,
+        file_path: str,
+        stage: str,
+        reason: str,
+        errors: list[str] | None = None,
+    ) -> None:
+        entry: dict[str, Any] = {
+            "file": file_path,
+            "stage": stage,
+            "reason": reason,
+        }
+        if errors:
+            entry["errors"] = list(errors)
+        parse_failed_files.append(entry)
 
     def elapsed_ms() -> int:
         return int((_time.monotonic() - start_ms) * 1_000)
@@ -1370,7 +1387,20 @@ def nudge(
                 try:
                     pr = parse_file(finfo.path, repo_path, finfo.language)
                     parse_map[finfo.path.as_posix()] = pr
-                except Exception:
+                    if pr.parse_errors:
+                        record_parse_failure(
+                            file_path=finfo.path.as_posix(),
+                            stage="baseline",
+                            reason="parse_errors",
+                            errors=pr.parse_errors,
+                        )
+                except Exception as exc:
+                    record_parse_failure(
+                        file_path=finfo.path.as_posix(),
+                        stage="baseline",
+                        reason="parse_exception",
+                        errors=[str(exc)],
+                    )
                     continue
 
             baseline = BaselineSnapshot(
@@ -1396,12 +1426,46 @@ def nudge(
         for fp in changed_set:
             fi = file_info_map.get(fp)
             if fi is None:
+                record_parse_failure(
+                    file_path=fp,
+                    stage="changed",
+                    reason="file_not_discovered",
+                    errors=["changed file is not part of discoverable source set"],
+                )
                 continue
             try:
                 pr = parse_file(fi.path, repo_path, fi.language)
                 current_parse[fp] = pr
-            except Exception:
+                if pr.parse_errors:
+                    record_parse_failure(
+                        file_path=fp,
+                        stage="changed",
+                        reason="parse_errors",
+                        errors=pr.parse_errors,
+                    )
+            except Exception as exc:
+                record_parse_failure(
+                    file_path=fp,
+                    stage="changed",
+                    reason="parse_exception",
+                    errors=[str(exc)],
+                )
                 continue
+
+        # De-duplicate for deterministic response contracts.
+        parse_failed_files = sorted(
+            {
+                (
+                    e["file"],
+                    e["stage"],
+                    e["reason"],
+                    tuple(e.get("errors", [])),
+                ): e
+                for e in parse_failed_files
+            }.values(),
+            key=lambda e: (e["stage"], e["file"], e["reason"]),
+        )
+        parse_failure_count = len(parse_failed_files)
 
         # -- Run incremental analysis ---------------------------------------
         runner = IncrementalSignalRunner(
@@ -1432,6 +1496,12 @@ def nudge(
         # Rule (c): expired baseline
         if not inc_result.baseline_valid:
             blocking_reasons.append("Baseline expired — full rescan recommended")
+
+        # Rule (d): parse failures hide analyzable surface and therefore block commit safety.
+        if parse_failure_count > 0:
+            blocking_reasons.append(
+                f"Parse failures in {parse_failure_count} file(s): affected files were skipped or only partially analyzable"
+            )
 
         safe_to_commit = len(blocking_reasons) == 0
 
@@ -1482,6 +1552,17 @@ def nudge(
             baseline_refresh_reason=baseline_refresh_reason,
             file_local_signals_run=inc_result.file_local_signals_run,
             cross_file_signals_estimated=inc_result.cross_file_signals_estimated,
+            parse_failure_count=parse_failure_count,
+            parse_failed_files=parse_failed_files,
+            parse_failure_treatment={
+                "affects_safe_to_commit": True,
+                "policy": "blocking",
+                "condition": "parse_failure_count > 0",
+                "explanation": (
+                    "Nudge marks safe_to_commit as false when parse failures are present "
+                    "because impacted files were not fully analyzable."
+                ),
+            },
             changed_files=sorted(changed_set),
             agent_instruction=(
                 "After each file change, call drift_nudge to check impact "
