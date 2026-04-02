@@ -220,6 +220,7 @@ def _task_to_api_dict(t: Any) -> dict[str, Any]:
         "action": t.action,
         "file": t.file_path,
         "start_line": t.start_line,
+        "symbol": t.symbol,
         "related_files": t.related_files,
         "complexity": t.complexity,
         "automation_fit": t.automation_fit,

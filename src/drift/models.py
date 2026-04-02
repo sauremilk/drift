@@ -314,6 +314,7 @@ class AgentTask:
     file_path: str | None = None
     start_line: int | None = None
     end_line: int | None = None
+    symbol: str | None = None
     related_files: list[str] = field(default_factory=list)
     complexity: str = "medium"
     expected_effect: str = ""
