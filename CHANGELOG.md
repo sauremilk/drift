@@ -37,7 +37,7 @@
 - Isolate publish workflow concurrency by tag/manual target so stale queued runs no longer block newer release publications.
 - Make CI self-analysis report-only by passing `--fail-on none`, so informational findings no longer fail the `Test (Python 3.12)` job.
 
-## [2.0.0] – 2026-04-02
+## [2.0.0] â€“ 2026-04-02
 
 Short version: Migrate release automation to python-semantic-release in CI.
 
@@ -50,7 +50,7 @@ Short version: Migrate release automation to python-semantic-release in CI.
 
 - Align README trust signals by reconciling development-status wording, removing hardcoded coverage percentage, softening single-rater badge framing, and updating stale pre-commit revision example.
 
-## [1.4.2] – 2026-04-02
+## [1.4.2] â€“ 2026-04-02
 
 Short version: Harden release automation tag fallback logic.
 
@@ -60,7 +60,7 @@ Short version: Harden release automation tag fallback logic.
 - Fall back from missing base-tag commit range to `HEAD` when collecting release commit messages.
 - Keep the Unreleased section on top when appending the first concrete release section.
 
-## [1.4.1] – 2026-04-02
+## [1.4.1] â€“ 2026-04-02
 
 Short version: Add explicit docstring for patterns target_path. (+1 more commits)
 
@@ -69,7 +69,7 @@ Short version: Add explicit docstring for patterns target_path. (+1 more commits
 - Add explicit docstring for patterns target_path. (+1 more commits)
 
 
-## [1.5.0] – 2026-04-02
+## [1.5.0] â€“ 2026-04-02
 
 Short version: Add tests for issues #69-73 agent-ux improvements. (+7 more commits)
 
@@ -77,7 +77,7 @@ Short version: Add tests for issues #69-73 agent-ux improvements. (+7 more commi
 
 - Add tests for issues #69-73 agent-ux improvements. (+7 more commits)
 
-## [1.4.0] – 2026-04-02
+## [1.4.0] â€“ 2026-04-02
 
 Short version: Add deterministic baseline refresh reason in nudge.
 
@@ -86,7 +86,7 @@ Short version: Add deterministic baseline refresh reason in nudge.
 - Add deterministic baseline refresh reason in nudge.
 
 
-## [1.3.6] – 2026-04-01
+## [1.3.6] â€“ 2026-04-01
 
 Short version: Fix JSON error consistency across CLI commands.
 
@@ -94,7 +94,7 @@ Short version: Fix JSON error consistency across CLI commands.
 
 - Ensure consistent machine-readable CLI error envelopes for Issue #66 by honoring `--format json` / `--json` and `DRIFT_ERROR_FORMAT=json`, and by returning structured `DRIFT-2001` / `DRIFT-2010` errors for `drift self` and `drift mcp --serve` failure paths.
 
-## [1.3.5] – 2026-04-01
+## [1.3.5] â€“ 2026-04-01
 
 Short version: Maintenance and dependency updates.
 
@@ -103,7 +103,7 @@ Short version: Maintenance and dependency updates.
 - Maintenance and dependency updates.
 
 
-## [1.3.4] – 2026-04-01
+## [1.3.4] â€“ 2026-04-01
 
 Short version: Maintenance and dependency updates.
 
@@ -112,7 +112,7 @@ Short version: Maintenance and dependency updates.
 - Maintenance and dependency updates.
 
 
-## [1.3.3] – 2026-04-01
+## [1.3.3] â€“ 2026-04-01
 
 Short version: Maintenance and dependency updates.
 
@@ -121,7 +121,7 @@ Short version: Maintenance and dependency updates.
 - Maintenance and dependency updates.
 
 
-## [1.3.2] – 2026-04-01
+## [1.3.2] â€“ 2026-04-01
 
 Short version: Release 1.3.2. (+8 more commits)
 
@@ -130,7 +130,7 @@ Short version: Release 1.3.2. (+8 more commits)
 - Release 1.3.2. (+8 more commits)
 
 
-## [1.3.1] – 2026-04-01
+## [1.3.1] â€“ 2026-04-01
 
 Short version: Mark Pages + Discussions active, trigger docs deployment. (+4 more commits)
 
@@ -139,7 +139,7 @@ Short version: Mark Pages + Discussions active, trigger docs deployment. (+4 mor
 - Mark Pages + Discussions active, trigger docs deployment. (+4 more commits)
 
 
-## [1.3.0] – 2026-04-01
+## [1.3.0] â€“ 2026-04-01
 
 Short version: Fix SECURITY.md to include 1.3.x as supported. (+2 more commits)
 
@@ -148,7 +148,7 @@ Short version: Fix SECURITY.md to include 1.3.x as supported. (+2 more commits)
 - Fix SECURITY.md to include 1.3.x as supported. (+2 more commits)
 
 
-## [1.2.0] – 2026-04-01
+## [1.2.0] â€“ 2026-04-01
 
 Short version: Phase 3  project-specific constraint extraction for AVS/CCC/ECM/HSC generators. (+5 more commits)
 
@@ -157,7 +157,7 @@ Short version: Phase 3  project-specific constraint extraction for AVS/CCC/ECM/H
 - Phase 3  project-specific constraint extraction for AVS/CCC/ECM/HSC generators. (+5 more commits)
 
 
-## [1.1.17] – 2026-03-31
+## [1.1.17] â€“ 2026-03-31
 
 Short version: Refine v1.1.16 release notes. (+2 more commits)
 
@@ -166,7 +166,7 @@ Short version: Refine v1.1.16 release notes. (+2 more commits)
 - Refine v1.1.16 release notes. (+2 more commits)
 
 
-## [1.1.16] – 2026-03-31
+## [1.1.16] â€“ 2026-03-31
 
 Short version: Experimental release for agent navigation improvements across Phases 4-6.
 
@@ -177,7 +177,7 @@ Short version: Experimental release for agent navigation improvements across Pha
 - Documented the incremental temporal model in `DEVELOPER.md` and the diagnosis-vs-navigation product dimension in `ROADMAP.md`.
 - Fixed a mypy type-assignment issue in `nudge()` caused by a `FileInfo` variable name collision.
 
-## [1.1.15] – 2026-03-31
+## [1.1.15] â€“ 2026-03-31
 
 Short version: Add IncrementalSignalRunner with signal scope registry (Phase 3). (+1 more commits)
 
@@ -185,7 +185,7 @@ Short version: Add IncrementalSignalRunner with signal scope registry (Phase 3).
 
 - Add IncrementalSignalRunner with signal scope registry (Phase 3). (+1 more commits)
 
-## [1.1.14] – 2026-03-31
+## [1.1.14] â€“ 2026-03-31
 
 Short version: Add BaselineSnapshot and per-file SignalCache key (Phase 2 foundation). (+1 more commits)
 
@@ -193,7 +193,7 @@ Short version: Add BaselineSnapshot and per-file SignalCache key (Phase 2 founda
 
 - Add BaselineSnapshot and per-file SignalCache key (Phase 2 foundation). (+1 more commits)
 
-## [1.1.13] – 2026-03-31
+## [1.1.13] â€“ 2026-03-31
 
 Short version: Release automation runs pre-push preflight after commit. (+24 more commits)
 
@@ -201,7 +201,7 @@ Short version: Release automation runs pre-push preflight after commit. (+24 mor
 
 - Release automation runs pre-push preflight after commit. (+24 more commits)
 
-## [1.1.12] – 2026-03-30
+## [1.1.12] â€“ 2026-03-30
 
 Short version: Add drift init command with built-in profiles (default, vibe-coding, strict).
 
@@ -209,7 +209,7 @@ Short version: Add drift init command with built-in profiles (default, vibe-codi
 
 - Add drift init command with built-in profiles (default, vibe-coding, strict).
 
-## [1.1.12] – 2026-03-30
+## [1.1.12] â€“ 2026-03-30
 
 Short version: Add `drift init` command with built-in profiles (default, vibe-coding, strict).
 
@@ -222,7 +222,7 @@ Short version: Add `drift init` command with built-in profiles (default, vibe-co
 - Flags: `--ci`, `--hooks`, `--mcp`, `--full` for selective or all-in-one scaffolding.
 - 24 new tests in `tests/test_init_cmd.py`.
 
-## [1.1.11] – 2026-03-30
+## [1.1.11] â€“ 2026-03-30
 
 Short version: Security-by-Default signals (MAZ, ISD, HSC) for vibe-coding detection.
 
@@ -234,7 +234,7 @@ Short version: Security-by-Default signals (MAZ, ISD, HSC) for vibe-coding detec
 - Extended `ast_parser` auth detection (18 decorators, body-level checks, `auth_mechanism` fingerprint field); SARIF output with CWE helpUri; 67 new tests.
 - Signal model expanded from 19 to 22 configured signals (3 new report-only, weight=0.0).
 
-## [1.1.10] – 2026-03-30
+## [1.1.10] â€“ 2026-03-30
 
 Short version: Improve MDS/PFS/AVS signal precision from MiroFish validation.
 
@@ -242,7 +242,7 @@ Short version: Improve MDS/PFS/AVS signal precision from MiroFish validation.
 
 - Improve MDS/PFS/AVS signal precision from MiroFish validation.
 
-## [1.1.9] – 2026-03-30
+## [1.1.9] â€“ 2026-03-30
 
 Short version: Add --signals alias to analyze and check commands for consistency with scan. (+1 more commits)
 
@@ -250,7 +250,7 @@ Short version: Add --signals alias to analyze and check commands for consistency
 
 - Add --signals alias to analyze and check commands for consistency with scan. (+1 more commits)
 
-## [1.1.8] – 2026-03-30
+## [1.1.8] â€“ 2026-03-30
 
 Short version: Extract api helpers and improve mcp docs.
 
@@ -258,7 +258,7 @@ Short version: Extract api helpers and improve mcp docs.
 
 - Extract api helpers and improve mcp docs.
 
-## [1.1.8] – 2026-03-30
+## [1.1.8] â€“ 2026-03-30
 
 Short version: Maintenance and dependency updates.
 
@@ -266,7 +266,7 @@ Short version: Maintenance and dependency updates.
 
 - Maintenance and dependency updates.
 
-## [1.1.8] – 2026-03-30
+## [1.1.8] â€“ 2026-03-30
 
 Short version: Maintenance and dependency updates.
 
@@ -274,7 +274,7 @@ Short version: Maintenance and dependency updates.
 
 - Maintenance and dependency updates.
 
-## [1.1.7] – 2026-03-30
+## [1.1.7] â€“ 2026-03-30
 
 Short version: Relocate docs artifacts under approved directories. (+3 more commits)
 
@@ -282,7 +282,7 @@ Short version: Relocate docs artifacts under approved directories. (+3 more comm
 
 - Relocate docs artifacts under approved directories. (+3 more commits)
 
-## [1.1.7] – 2026-03-30
+## [1.1.7] â€“ 2026-03-30
 
 Short version: Sync changelog and lockfile for 1.1.7 release. (+2 more commits)
 
@@ -290,7 +290,7 @@ Short version: Sync changelog and lockfile for 1.1.7 release. (+2 more commits)
 
 - Sync changelog and lockfile for 1.1.7 release. (+2 more commits)
 
-## [1.1.7] – 2026-03-30
+## [1.1.7] â€“ 2026-03-30
 
 Short version: Add no-color CLI evidence for release. (+1 more commits)
 
@@ -298,7 +298,7 @@ Short version: Add no-color CLI evidence for release. (+1 more commits)
 
 - Add no-color CLI evidence for release. (+1 more commits)
 
-## [1.1.7] – 2026-03-30
+## [1.1.7] â€“ 2026-03-30
 
 Short version: Refresh branding and add no-color CLI output.
 
@@ -306,7 +306,7 @@ Short version: Refresh branding and add no-color CLI output.
 
 - Refresh branding and add no-color CLI output.
 
-## [1.1.6] – 2026-03-30
+## [1.1.6] â€“ 2026-03-30
 
 Short version: Maintenance and dependency updates.
 
@@ -314,7 +314,7 @@ Short version: Maintenance and dependency updates.
 
 - Maintenance and dependency updates.
 
-## [1.1.5] – 2026-03-30
+## [1.1.5] â€“ 2026-03-30
 
 Short version: AVS dedup + MDS remediation placeholders + cache version bump. (+3 more commits)
 
@@ -322,7 +322,7 @@ Short version: AVS dedup + MDS remediation placeholders + cache version bump. (+
 
 - AVS dedup + MDS remediation placeholders + cache version bump. (+3 more commits)
 
-## [1.1.4] – 2026-03-30
+## [1.1.4] â€“ 2026-03-30
 
 Short version: Add explicit diff decision reason fields.
 
@@ -336,7 +336,7 @@ Short version: Add explicit diff decision reason fields.
 
 - `drift diff` now returns `decision_reason_code` and `decision_reason` as explicit machine-readable acceptance context.
 
-## [1.1.4] – 2026-03-30
+## [1.1.4] â€“ 2026-03-30
 
 Short version: Version-bump gate uses remote tags instead of local git describe.
 
@@ -344,7 +344,7 @@ Short version: Version-bump gate uses remote tags instead of local git describe.
 
 - Version-bump gate uses remote tags instead of local git describe.
 
-## [1.1.3] – 2026-03-30
+## [1.1.3] â€“ 2026-03-30
 
 Short version: Update _top_signals mock to accept keyword arguments. (+18 more commits)
 
@@ -352,7 +352,7 @@ Short version: Update _top_signals mock to accept keyword arguments. (+18 more c
 
 - Update _top_signals mock to accept keyword arguments. (+18 more commits)
 
-## [1.1.3] – 2026-03-30
+## [1.1.3] â€“ 2026-03-30
 
 Short version: Use remote tags for version tracking and clean up release state. (+17 more commits)
 
@@ -362,10 +362,10 @@ Short version: Use remote tags for version tracking and clean up release state. 
 
 ## [1.1.2] - 2026-03-30
 
-Short version: drift reduziert DCA-Fehlalarme für Framework-Entry-Points in API-Routern, damit Agenten keine aktiven Endpunkte als Dead-Code-Löschkandidaten priorisieren.
+Short version: drift reduziert DCA-Fehlalarme fÃ¼r Framework-Entry-Points in API-Routern, damit Agenten keine aktiven Endpunkte als Dead-Code-LÃ¶schkandidaten priorisieren.
 
 ### Fixed
-- DCA reduziert False Positives für Framework-Entry-Points: Route-dekorierte Handler und schema-nahe Klassen in Router-Dateien werden nicht mehr als potenziell ungenutzte Exports priorisiert.
+- DCA reduziert False Positives fÃ¼r Framework-Entry-Points: Route-dekorierte Handler und schema-nahe Klassen in Router-Dateien werden nicht mehr als potenziell ungenutzte Exports priorisiert.
 
 ## [1.1.1] - 2026-03-30
 
@@ -374,13 +374,13 @@ Short version: drift reduziert DCA-Fehlalarme für Framework-Entry-Points in API
 
 ## [0.10.10] - 2026-03-30
 
-Short version: drift closes agent-facing workflow gaps identified through real-world agent behavior analysis — scoped fix-plan filtering, explicit in_scope_accept hints for noise isolation, and baseline workflow recommendations for legacy codebases.
+Short version: drift closes agent-facing workflow gaps identified through real-world agent behavior analysis â€” scoped fix-plan filtering, explicit in_scope_accept hints for noise isolation, and baseline workflow recommendations for legacy codebases.
 
 ### Added
 
 - **`fix-plan --target-path` for agent-scoped repair**: Agents can now restrict fix-plan output to findings in a specific subdirectory (e.g., `drift fix-plan --target-path src/api`), preventing information overload when working on localized changes.
 - **Explicit `in_scope_accept` hints in `drift diff` recommendations**: When `out_of_scope_diff_noise` is the only blocker and the scoped target is clean, `recommended_next_actions` now explicitly says "use in_scope_accept (true) as the scoped gate decision" so agents recognize the viable decision path.
-- **Baseline workflow recommendation in `drift scan`**: When >20 high/critical findings exist, `recommended_next_actions` suggests `drift baseline save` → `drift diff --baseline` workflow so agents avoid the `accept_change=false` gate loop on legacy repos.
+- **Baseline workflow recommendation in `drift scan`**: When >20 high/critical findings exist, `recommended_next_actions` suggests `drift baseline save` â†’ `drift diff --baseline` workflow so agents avoid the `accept_change=false` gate loop on legacy repos.
 
 ### Changed
 
@@ -388,14 +388,14 @@ Short version: drift closes agent-facing workflow gaps identified through real-w
 
 ## [0.10.9] - 2026-03-29
 
-Short version: drift closes agent-facing gaps identified through real-world agent workflow analysis — consistent signal abbreviations, full explain coverage, and a scoped acceptance field that unblocks agents from pre-existing diff noise.
+Short version: drift closes agent-facing gaps identified through real-world agent workflow analysis â€” consistent signal abbreviations, full explain coverage, and a scoped acceptance field that unblocks agents from pre-existing diff noise.
 
 ### Added
 
-- **Full signal coverage in `drift explain`**: Added the 6 previously missing signals — COD, CCC, CXS, FOE, CIR, DCA — so all 19 signals are now reachable via `drift explain <ABBREV>`.
+- **Full signal coverage in `drift explain`**: Added the 6 previously missing signals â€” COD, CCC, CXS, FOE, CIR, DCA â€” so all 19 signals are now reachable via `drift explain <ABBREV>`.
 - **Consistent task ID prefixes for all 19 signals**: Extended `_SIGNAL_PREFIX` from 6 to all 19 signals, eliminating wrong fallback prefixes (`byp-`, `cog-`, `dea-`). Added explicit `signal_abbrev` field to fix-plan task dicts so agents can call `drift explain <signal_abbrev>` directly.
 - **Complete `_ABBREV_TO_SIGNAL` mapping**: Extended from 15 to 19 entries (CXS, FOE, CIR, DCA) so `drift fix-plan --signal CXS` and `resolve_signal()` work for all signals.
-- **`in_scope_accept` field in `drift diff`**: New boolean field that signals whether the scoped target path is clean, independent of pre-existing out-of-scope diff noise — prevents agents from blocking on noise they cannot resolve.
+- **`in_scope_accept` field in `drift diff`**: New boolean field that signals whether the scoped target path is clean, independent of pre-existing out-of-scope diff noise â€” prevents agents from blocking on noise they cannot resolve.
 - **Actionable `out_of_scope_diff_noise` guidance**: `recommended_next_actions` in diff responses explains what out-of-scope noise means and provides a concrete resolution path (`commit changes ; drift diff --diff-ref HEAD~1`).
 
 ## [0.10.8] - 2026-03-29
@@ -611,14 +611,14 @@ Short version: deterministic auto-calibration output, dedicated ECM signal cover
 
 - **Regression stability**: Added regression tests for deterministic auto-calibration output and for scoped diff-history persistence semantics.
 
-## [0.7.0] – 2026-03-27
+## [0.7.0] â€“ 2026-03-27
 
 Short version: all 13 signals are now scoring-active with automatic weight calibration and small-repo noise suppression.
 
 ### Added
 
 - **All signals scoring-active**: Promoted all 7 previously report-only signals (DIA, BEM, TPD, GCD, NBV, BAT, ECM) to scoring; no signals remain report-only. New ECM signal detects exception-profile drift via git-history comparison (MVP).
-- **Auto-calibration**: Runtime weight rebalancing (`auto_calibrate: true`, default) — dampens dominant signals within a ±50 % band; deterministic and reproducible.
+- **Auto-calibration**: Runtime weight rebalancing (`auto_calibrate: true`, default) â€” dampens dominant signals within a Â±50 % band; deterministic and reproducible.
 - **Small-repo noise suppression**: Adaptive dampening (K=20) and per-signal minimum-finding thresholds for repositories with fewer than 15 modules.
 
 ### Changed
@@ -629,7 +629,7 @@ Short version: all 13 signals are now scoring-active with automatic weight calib
 
 - **BEM docstring + ground-truth**: Fixed escaped triple-quote syntax error in `broad_exception_monoculture.py`; added 12 new NBV/BAT ground-truth fixtures and full 13-signal ablation coverage.
 
-## [0.6.0] – 2026-03-26
+## [0.6.0] â€“ 2026-03-26
 
 Short version: stronger TypeScript analysis, delta- and context-aware rollout signals, and new report-only consistency proxies backed by tighter release and evidence guardrails.
 
@@ -646,20 +646,20 @@ Short version: stronger TypeScript analysis, delta- and context-aware rollout si
 
 - **Core hardening**: Improved pipeline, config, suppression, cache, observational analysis behavior, and delta-gate correctness while keeping existing `fail_on` behavior backward compatible.
 
-## [0.5.0] – 2026-03-23
+## [0.5.0] â€“ 2026-03-23
 
 ### Added
 
 - **CLI `--sort-by` + `--max-findings`**: `analyze` command now accepts `--sort-by impact|score` (default: impact) and `--max-findings N` (default: 20) for prioritised output.
-- **AVS Mutation Tests** (`tests/test_avs_mutations.py`): 41 new tests across 8 classes covering DB→API violations, omnilayer directions, circular-dependency detection, hub-dampening calibration, and policy-boundary enforcement.
-- **Benchmark corpus ×15**: Extended from 5 to 15 real-world repositories (+Flask, Starlette, Django, Celery, Poetry, Requests, SQLModel, Uvicorn, Sanic, Rich). 2 642 total findings. Precision strict 97.3%.
+- **AVS Mutation Tests** (`tests/test_avs_mutations.py`): 41 new tests across 8 classes covering DBâ†’API violations, omnilayer directions, circular-dependency detection, hub-dampening calibration, and policy-boundary enforcement.
+- **Benchmark corpus Ã—15**: Extended from 5 to 15 real-world repositories (+Flask, Starlette, Django, Celery, Poetry, Requests, SQLModel, Uvicorn, Sanic, Rich). 2 642 total findings. Precision strict 97.3%.
 - **CLI refactored into `src/drift/commands/` package**: `analyze`, `check`, `self`, `trend`, `timeline`, `patterns`, `badge` each in their own module.
 - **MkDocs documentation site** (`docs-site/`): algorithms deep-dive, signal reference, case studies (Django, FastAPI, Pydantic), getting-started guides.
-- `scripts/evaluate_benchmark.py` — precision reports against ground-truth labels.
-- `scripts/migrate_ground_truth.py` — migration helper for key-based label format.
-- `scripts/sensitivity_analysis.py` — threshold sensitivity analysis.
-- `scripts/ablation_mds_threshold.py` — MDS similarity threshold ablation.
-- Ground-truth labels migrated to key-based format (269 → key-based).
+- `scripts/evaluate_benchmark.py` â€” precision reports against ground-truth labels.
+- `scripts/migrate_ground_truth.py` â€” migration helper for key-based label format.
+- `scripts/sensitivity_analysis.py` â€” threshold sensitivity analysis.
+- `scripts/ablation_mds_threshold.py` â€” MDS similarity threshold ablation.
+- Ground-truth labels migrated to key-based format (269 â†’ key-based).
 
 ### Changed
 
@@ -675,14 +675,14 @@ Short version: stronger TypeScript analysis, delta- and context-aware rollout si
 - Coverage on critical paths: file-discovery, scoring engine, JSON output golden tests.
 - `tagesplanung/` and other workspace artifacts blocked from git push via pre-commit/pre-push hooks.
 
-## [0.3.0] – 2026-03-20
+## [0.3.0] â€“ 2026-03-20
 
 ### Added
 
 - **Evaluation Framework**: Comprehensive precision/recall scoring system with 15-fold LOOCV validation (F1=1.000). TVS (Type Variation Signal) fixtures added.
 - **Temporal Drift Analysis**: New script for analyzing drift patterns over time with score interpretation ranges and bandbreite documentation.
 - **Real Repository Smoke Tests**: Expanded from single repo to 7 real-world repositories for comprehensive false-positive regression detection.
-- **Major-Version Correlation Study**: Django correlation analysis across 10 years and 17 releases (1.8–6.0), demonstrating drift's effectiveness on long-term architectural evolution.
+- **Major-Version Correlation Study**: Django correlation analysis across 10 years and 17 releases (1.8â€“6.0), demonstrating drift's effectiveness on long-term architectural evolution.
 - **Score Bandbreite Documentation**: Added to smoke test findings for better signal interpretation.
 
 ### Fixed
@@ -695,26 +695,26 @@ Short version: stronger TypeScript analysis, delta- and context-aware rollout si
 
 - **Test Suite**: Reorganized and expanded to validate against 7 repositories with documented score ranges.
 
-## [0.2.0] – 2026-03-19
+## [0.2.0] â€“ 2026-03-19
 
 ### Changed
 
-- **DIA signal**: Replaced regex-based Markdown parsing with mistune AST parser. Link URLs are now skipped entirely, eliminating false positives from GitHub badges, CI links, and package registry URLs. Added URL-segment blacklist (~80 entries). Strict precision improved from 48% → 59% (+12pp), false positives reduced from 31 → 6 (−81%).
-- **AVS signal**: Added Omnilayer recognition for cross-cutting directories (config/, utils/, types/, common/, shared/, etc.) — these no longer generate layer-violation findings. Hub-module dampening via NetworkX in-degree centrality (90th percentile cutoff, ×0.3 score dampening). Optional embedding-based layer inference for ambiguous modules.
-- **MDS signal**: Hybrid similarity scoring (0.6 × AST Jaccard + 0.4 × cosine embedding similarity). Phase 3 semantic duplicate search via FAISS index catches renamed-variable duplicates that structural comparison alone misses.
-- **Overall precision**: 80% → 85% strict (+5pp) across 269 classified findings on 5 repositories.
+- **DIA signal**: Replaced regex-based Markdown parsing with mistune AST parser. Link URLs are now skipped entirely, eliminating false positives from GitHub badges, CI links, and package registry URLs. Added URL-segment blacklist (~80 entries). Strict precision improved from 48% â†’ 59% (+12pp), false positives reduced from 31 â†’ 6 (âˆ’81%).
+- **AVS signal**: Added Omnilayer recognition for cross-cutting directories (config/, utils/, types/, common/, shared/, etc.) â€” these no longer generate layer-violation findings. Hub-module dampening via NetworkX in-degree centrality (90th percentile cutoff, Ã—0.3 score dampening). Optional embedding-based layer inference for ambiguous modules.
+- **MDS signal**: Hybrid similarity scoring (0.6 Ã— AST Jaccard + 0.4 Ã— cosine embedding similarity). Phase 3 semantic duplicate search via FAISS index catches renamed-variable duplicates that structural comparison alone misses.
+- **Overall precision**: 80% â†’ 85% strict (+5pp) across 269 classified findings on 5 repositories.
 
 ### Added
 
-- `drift.embeddings` module: Central embedding service with lazy model loading (all-MiniLM-L6-v2), cosine similarity, FAISS index builder, disk-backed `EmbeddingCache`. Fully optional — all signals degrade gracefully without embedding dependencies.
+- `drift.embeddings` module: Central embedding service with lazy model loading (all-MiniLM-L6-v2), cosine similarity, FAISS index builder, disk-backed `EmbeddingCache`. Fully optional â€” all signals degrade gracefully without embedding dependencies.
 - CLI flags: `--no-embeddings` (disable embedding features), `--embedding-model` (override model name). Available on both `analyze` and `check` commands.
 - Config fields: `embeddings_enabled`, `embedding_model`, `embedding_batch_size`, `allowed_cross_layer` (policy patterns for AVS).
 - Optional dependency group `[markdown]` for `mistune>=3.0`. DIA signal falls back to regex extraction when mistune is not installed.
 
 ### Notes
 
-- **Knowledge‑Graph (KG) heuristics included:** v0.2.0 integrates import/relationship graph analysis and layer‑inference heuristics (e.g., import graph construction, hub‑dampening, inferred layer checks) to improve architecture‑aware detection.
-- **Optional RAG-style retrieval (Embeddings + FAISS):** The new `drift.embeddings` module provides vector embeddings and optional FAISS indexing to enable semantic retrieval workflows. This supplies the retrieval component required for RAG-like setups; however, Drift remains deterministic by default and does not bundle an LLM — connecting an LLM for generation is an opt-in integration for downstream tooling.
+- **Knowledgeâ€‘Graph (KG) heuristics included:** v0.2.0 integrates import/relationship graph analysis and layerâ€‘inference heuristics (e.g., import graph construction, hubâ€‘dampening, inferred layer checks) to improve architectureâ€‘aware detection.
+- **Optional RAG-style retrieval (Embeddings + FAISS):** The new `drift.embeddings` module provides vector embeddings and optional FAISS indexing to enable semantic retrieval workflows. This supplies the retrieval component required for RAG-like setups; however, Drift remains deterministic by default and does not bundle an LLM â€” connecting an LLM for generation is an opt-in integration for downstream tooling.
 - 36 new unit tests: `test_embeddings.py` (10), `test_avs_enhanced.py` (13), `test_dia_enhanced.py` (13).
 
 ### Fixed
@@ -723,7 +723,7 @@ Short version: stronger TypeScript analysis, delta- and context-aware rollout si
 - AVS: Findings below score 0.15 filtered out (reduces noise from ambiguous cross-layer references).
 - Embedding cosine similarity: Normalized with L2 norm (was using raw dot product).
 
-## [0.1.0] – 2026-02-15
+## [0.1.0] â€“ 2026-02-15
 
 Initial release with 7 detection signals: PFS, AVS, MDS, EDS, TVS, SMS, DIA.
 
