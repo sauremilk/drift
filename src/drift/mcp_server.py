@@ -15,6 +15,7 @@ Tool surface (v2):
 
 from __future__ import annotations
 
+import inspect
 import json
 from pathlib import Path
 from typing import Any
@@ -356,6 +357,66 @@ def drift_negative_context(
         max_items=max_items,
     )
     return json.dumps(result, default=str)
+
+
+_EXPORTED_MCP_TOOLS = (
+    drift_scan,
+    drift_diff,
+    drift_explain,
+    drift_fix_plan,
+    drift_validate,
+    drift_nudge,
+    drift_negative_context,
+)
+
+
+def _annotation_to_string(annotation: Any) -> str:
+    if annotation is inspect.Signature.empty:
+        return "Any"
+    if isinstance(annotation, str):
+        return annotation
+    name = getattr(annotation, "__name__", None)
+    if name is not None:
+        return name
+    return str(annotation).replace("typing.", "")
+
+
+def get_tool_catalog() -> list[dict[str, Any]]:
+    """Return MCP tool metadata for local inspection via CLI."""
+    catalog: list[dict[str, Any]] = []
+
+    for tool in _EXPORTED_MCP_TOOLS:
+        signature = inspect.signature(tool)
+        doc = inspect.getdoc(tool) or ""
+        summary = doc.splitlines()[0] if doc else ""
+
+        parameters: list[dict[str, Any]] = []
+        for parameter in signature.parameters.values():
+            if parameter.kind in (
+                inspect.Parameter.VAR_POSITIONAL,
+                inspect.Parameter.VAR_KEYWORD,
+            ):
+                continue
+
+            required = parameter.default is inspect.Signature.empty
+            parameter_info: dict[str, Any] = {
+                "name": parameter.name,
+                "type": _annotation_to_string(parameter.annotation),
+                "required": required,
+            }
+            if not required:
+                parameter_info["default"] = parameter.default
+            parameters.append(parameter_info)
+
+        catalog.append(
+            {
+                "name": tool.__name__,
+                "description": summary,
+                "parameters": parameters,
+            }
+        )
+
+    return catalog
 
 
 # ---------------------------------------------------------------------------

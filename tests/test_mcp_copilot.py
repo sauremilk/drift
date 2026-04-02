@@ -342,6 +342,45 @@ class TestCLICommands:
         runner = CliRunner()
         result = runner.invoke(main, ["mcp"])
         assert "drift mcp --serve" in result.output
+        assert "drift mcp --list" in result.output
+        assert "drift-analyzer[mcp]" in result.output
+
+    def test_mcp_list_shows_tools_without_starting_server(self) -> None:
+        from click.testing import CliRunner
+
+        from drift.cli import main
+
+        runner = CliRunner()
+        result = runner.invoke(main, ["mcp", "--list"])
+
+        assert result.exit_code == 0
+        assert "drift_scan" in result.output
+        assert "drift_diff" in result.output
+        assert "drift_validate" in result.output
+
+    def test_mcp_schema_outputs_tool_parameters(self) -> None:
+        from click.testing import CliRunner
+
+        from drift.cli import main
+
+        runner = CliRunner()
+        result = runner.invoke(main, ["mcp", "--schema"])
+
+        assert result.exit_code == 0
+        assert '"tools"' in result.output
+        assert '"name": "drift_scan"' in result.output
+        assert '"parameters"' in result.output
+
+    def test_mcp_modes_are_mutually_exclusive(self) -> None:
+        from click.testing import CliRunner
+
+        from drift.cli import main
+
+        runner = CliRunner()
+        result = runner.invoke(main, ["mcp", "--serve", "--list"])
+
+        assert result.exit_code != 0
+        assert "Use only one mode" in result.output
 
     def test_mcp_missing_extra_raises_structured_error(self, monkeypatch) -> None:
         from click.testing import CliRunner

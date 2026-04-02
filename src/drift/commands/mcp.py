@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import json
+
 import click
 
 from drift.commands import console
@@ -15,7 +17,21 @@ from drift.errors import DriftSystemError
     default=False,
     help="Start the MCP server on stdio transport.",
 )
-def mcp(serve: bool) -> None:
+@click.option(
+    "--list",
+    "list_tools",
+    is_flag=True,
+    default=False,
+    help="List available MCP tools without starting the server.",
+)
+@click.option(
+    "--schema",
+    "show_schema",
+    is_flag=True,
+    default=False,
+    help="Print MCP tool parameter schema as JSON and exit.",
+)
+def mcp(serve: bool, list_tools: bool, show_schema: bool) -> None:
     """Start drift as an MCP server for VS Code / Copilot Chat.
 
     Requires the optional ``mcp`` extra::
@@ -26,12 +42,38 @@ def mcp(serve: bool) -> None:
 
         {"servers": {"drift": {"type": "stdio", "command": "drift", "args": ["mcp", "--serve"]}}}
     """
+    selected_modes = int(serve) + int(list_tools) + int(show_schema)
+    if selected_modes > 1:
+        raise click.UsageError("Use only one mode: --serve, --list, or --schema.")
+
+    if list_tools or show_schema:
+        from drift.mcp_server import get_tool_catalog
+
+        catalog = get_tool_catalog()
+
+        if show_schema:
+            console.print(json.dumps({"tools": catalog}, indent=2))
+            raise SystemExit(0)
+
+        console.print("[yellow]Available MCP tools:[/]")
+        for tool in catalog:
+            params = ", ".join(param["name"] for param in tool["parameters"])
+            console.print(f"- {tool['name']}: {tool['description']}")
+            console.print(f"  params: {params if params else '(none)'}")
+        raise SystemExit(0)
+
     if not serve:
+        console.print("Usage:", style="yellow")
         console.print(
-            "[yellow]Usage:[/] drift mcp --serve\n\n"
+            "  drift mcp --serve\n"
+            "  drift mcp --list\n"
+            "  drift mcp --schema\n\n"
             "Starts drift as an MCP (Model Context Protocol) server on stdio.\n"
             "VS Code / Copilot Chat can then call drift analysis tools directly.\n\n"
-            "[dim]Requires: pip install drift-analyzer[mcp][/]"
+            "Inspect tools without MCP extra via --list / --schema.\n"
+            "Requires for --serve: pip install drift-analyzer[mcp]",
+            style="dim",
+            markup=False,
         )
         raise SystemExit(0)
 
