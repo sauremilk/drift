@@ -19,6 +19,16 @@
 - Run `pip-audit` with `--skip-editable` in Security Hygiene to avoid false failures on local editable package metadata not present on PyPI.
 - Downgrade `pip-audit` in Security Hygiene to a non-blocking signal (`continue-on-error`) to avoid recurring CI hard-failures from local package resolution edge cases.
 
+## [1.4.2] – 2026-04-02
+
+Short version: Harden release automation tag fallback logic.
+
+### Fixed
+
+- Fall back from remote tag lookup to local semantic tags when origin is unreachable.
+- Fall back from missing base-tag commit range to `HEAD` when collecting release commit messages.
+- Keep the Unreleased section on top when appending the first concrete release section.
+
 ## [1.4.1] – 2026-04-02
 
 Short version: Add explicit docstring for patterns target_path. (+1 more commits)
