@@ -19,6 +19,15 @@
 - Run `pip-audit` with `--skip-editable` in Security Hygiene to avoid false failures on local editable package metadata not present on PyPI.
 - Downgrade `pip-audit` in Security Hygiene to a non-blocking signal (`continue-on-error`) to avoid recurring CI hard-failures from local package resolution edge cases.
 
+## [1.4.1] – 2026-04-02
+
+Short version: Add explicit docstring for patterns target_path. (+1 more commits)
+
+### Changed
+
+- Add explicit docstring for patterns target_path. (+1 more commits)
+
+
 ## [1.5.0] – 2026-04-02
 
 Short version: Add tests for issues #69-73 agent-ux improvements. (+7 more commits)
@@ -26,16 +35,6 @@ Short version: Add tests for issues #69-73 agent-ux improvements. (+7 more commi
 ### Changed
 
 - Add tests for issues #69-73 agent-ux improvements. (+7 more commits)
-
-
-## [1.4.1] – 2026-04-02
-
-Short version: Maintenance and dependency updates.
-
-### Changed
-
-- Maintenance and dependency updates.
-
 
 ## [1.4.0] – 2026-04-02
 
