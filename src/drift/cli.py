@@ -12,6 +12,7 @@ import json
 import logging
 import os
 import sys
+import warnings
 
 import click
 
@@ -24,6 +25,10 @@ from drift.errors import (
     EXIT_SYSTEM_ERROR,
     DriftError,
 )
+
+# Suppress SyntaxWarnings from third-party libraries (e.g. passlib) that
+# pollute stderr and confuse agents parsing CLI output.  (#72)
+warnings.filterwarnings("ignore", category=SyntaxWarning, module=r"passlib\..*")
 
 
 def _machine_error_enabled(argv: list[str] | None = None) -> bool:
