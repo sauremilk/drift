@@ -32,7 +32,8 @@ from drift.errors import DriftSystemError
     help="Print MCP tool parameter schema as JSON and exit.",
 )
 def mcp(serve: bool, list_tools: bool, show_schema: bool) -> None:
-    """Start drift as an MCP server for VS Code / Copilot Chat.
+    """
+    Start drift as an MCP server for VS Code / Copilot Chat.
 
     Requires the optional ``mcp`` extra::
 
