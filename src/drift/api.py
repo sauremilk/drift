@@ -1335,8 +1335,12 @@ def nudge(
 
         mgr = BaselineManager.instance()
         stored = mgr.get(repo_path)
+        baseline_refresh_reason: str | None = None
 
         if stored is None:
+            baseline_refresh_reason = (
+                mgr.consume_refresh_reason(repo_path) or "baseline_missing"
+            )
             # Run full scan to create baseline
             from drift.analyzer import analyze_repo
 
@@ -1475,6 +1479,7 @@ def nudge(
                 _time.time() - baseline.created_at, 1
             ),
             baseline_valid=inc_result.baseline_valid,
+            baseline_refresh_reason=baseline_refresh_reason,
             file_local_signals_run=inc_result.file_local_signals_run,
             cross_file_signals_estimated=inc_result.cross_file_signals_estimated,
             changed_files=sorted(changed_set),

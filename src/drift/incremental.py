@@ -235,6 +235,7 @@ class BaselineManager:
             tuple[BaselineSnapshot, list[Finding], dict[str, ParseResult]],
         ] = {}
         self._git_state: dict[str, _GitState] = {}
+        self._last_refresh_reason: dict[str, str] = {}
 
     @classmethod
     def instance(cls) -> BaselineManager:
@@ -263,20 +264,25 @@ class BaselineManager:
         repo_key = repo_path.resolve().as_posix()
         stored = self._store.get(repo_key)
         if stored is None:
+            self._last_refresh_reason[repo_key] = "baseline_missing"
             return None
 
         # TTL expiry
         if not stored[0].is_valid():
             logger.debug("Baseline expired for %s (TTL).", repo_key)
+            self._last_refresh_reason[repo_key] = "ttl_expired"
             self.invalidate(repo_path)
             return None
 
         # Git-event invalidation (Step 19)
-        if self._git_state_changed(repo_path):
+        invalidation_reason = self._git_state_changed(repo_path)
+        if invalidation_reason is not None:
             logger.info(
-                "Git state changed for %s — invalidating baseline.",
+                "Git state changed for %s (%s) — invalidating baseline.",
                 repo_key,
+                invalidation_reason,
             )
+            self._last_refresh_reason[repo_key] = invalidation_reason
             self.invalidate(repo_path)
             return None
 
@@ -292,6 +298,7 @@ class BaselineManager:
         """Cache a baseline and snapshot the current git state."""
         repo_key = repo_path.resolve().as_posix()
         self._store[repo_key] = (baseline, findings, parse_map)
+        self._last_refresh_reason.pop(repo_key, None)
 
         git_state = _capture_git_state(repo_path)
         if git_state is not None:
@@ -303,6 +310,11 @@ class BaselineManager:
         self._store.pop(repo_key, None)
         self._git_state.pop(repo_key, None)
 
+    def consume_refresh_reason(self, repo_path: Path) -> str | None:
+        """Return and clear the last refresh reason for *repo_path*."""
+        repo_key = repo_path.resolve().as_posix()
+        return self._last_refresh_reason.pop(repo_key, None)
+
     def has_baseline(self, repo_path: Path) -> bool:
         """Return ``True`` if a valid baseline is cached (no git check)."""
         repo_key = repo_path.resolve().as_posix()
@@ -311,28 +323,31 @@ class BaselineManager:
 
     # -- internal ------------------------------------------------------------
 
-    def _git_state_changed(self, repo_path: Path) -> bool:
-        """Compare current git state against the snapshot taken at store time."""
+    def _git_state_changed(self, repo_path: Path) -> str | None:
+        """Return invalidation reason when git state changed, else ``None``."""
         repo_key = repo_path.resolve().as_posix()
         previous = self._git_state.get(repo_key)
         if previous is None:
             # No git state recorded — cannot detect changes
-            return False
+            return None
 
         current = _capture_git_state(repo_path)
         if current is None:
-            return False
+            return None
 
         # (a) Branch switch or new commit
         if current.head_commit != previous.head_commit:
-            return True
+            return "git_head_changed"
 
         # (b) Stash changed
         if current.stash_hash != previous.stash_hash:
-            return True
+            return "stash_changed"
 
         # (c) Many files changed since baseline was stored
-        return current.changed_file_count > _MAX_CHANGED_FILES_BEFORE_INVALIDATION
+        if current.changed_file_count > _MAX_CHANGED_FILES_BEFORE_INVALIDATION:
+            return "changed_file_threshold"
+
+        return None
 
 
 # ---------------------------------------------------------------------------

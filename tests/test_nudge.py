@@ -119,6 +119,7 @@ class TestNudgeAPI:
             "expected_transient",
             "baseline_age_seconds",
             "baseline_valid",
+            "baseline_refresh_reason",
             "file_local_signals_run",
             "cross_file_signals_estimated",
             "changed_files",
@@ -162,8 +163,9 @@ class TestNudgeAPI:
         )
 
         # Second call — should NOT trigger analyze_repo
-        nudge(tmp_path, changed_files=[])
+        result = nudge(tmp_path, changed_files=[])
         assert call_count["n"] == 0
+        assert result["baseline_refresh_reason"] is None
 
     def test_nudge_error_returns_error_response(self, tmp_path: Path) -> None:
         """nudge() returns error_response on exception (not raised)."""
@@ -729,5 +731,96 @@ class TestNudgeUsesBaselineManager:
         first_analyze = call_count["analyze_count"]
 
         # Second call → git state changed → rescan (another analyze call)
-        nudge(tmp_path, changed_files=[])
+        result = nudge(tmp_path, changed_files=[])
         assert call_count["analyze_count"] > first_analyze
+        assert result["baseline_refresh_reason"] == "git_head_changed"
+
+    def test_nudge_refresh_reason_ttl_expired(
+        self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+    ) -> None:
+        """Expired baseline emits deterministic reason code."""
+        TestNudgeAPI._mock_nudge_deps(monkeypatch, tmp_path)
+
+        mgr = BaselineManager.instance()
+        expired = BaselineSnapshot(
+            file_hashes={},
+            score=0.0,
+            created_at=time.time() - 9999,
+            ttl_seconds=60,
+        )
+        mgr.store(tmp_path.resolve(), expired, [], {})
+
+        monkeypatch.setattr(
+            "drift.incremental._capture_git_state",
+            lambda *a, **kw: None,
+        )
+
+        result = nudge(tmp_path, changed_files=[])
+        assert result["baseline_refresh_reason"] == "ttl_expired"
+
+    def test_nudge_refresh_reason_stash_changed(
+        self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+    ) -> None:
+        """Stash mutation emits deterministic reason code."""
+        from drift.incremental import _GitState
+
+        TestNudgeAPI._mock_nudge_deps(monkeypatch, tmp_path)
+
+        call_count = {"n": 0}
+
+        def _fake_capture(repo_path: Path) -> _GitState:
+            call_count["n"] += 1
+            if call_count["n"] <= 1:
+                return _GitState(
+                    head_commit="commit_1",
+                    stash_hash="stash_1",
+                    changed_file_count=0,
+                )
+            return _GitState(
+                head_commit="commit_1",
+                stash_hash="stash_2",
+                changed_file_count=0,
+            )
+
+        monkeypatch.setattr(
+            "drift.incremental._capture_git_state", _fake_capture
+        )
+
+        nudge(tmp_path, changed_files=[])
+        result = nudge(tmp_path, changed_files=[])
+        assert result["baseline_refresh_reason"] == "stash_changed"
+
+    def test_nudge_refresh_reason_changed_file_threshold(
+        self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+    ) -> None:
+        """Large working-tree delta emits threshold reason code."""
+        from drift.incremental import (
+            _MAX_CHANGED_FILES_BEFORE_INVALIDATION,
+            _GitState,
+        )
+
+        TestNudgeAPI._mock_nudge_deps(monkeypatch, tmp_path)
+
+        call_count = {"n": 0}
+
+        def _fake_capture(repo_path: Path) -> _GitState:
+            call_count["n"] += 1
+            if call_count["n"] <= 1:
+                return _GitState(
+                    head_commit="commit_1",
+                    stash_hash="stash_1",
+                    changed_file_count=1,
+                )
+            return _GitState(
+                head_commit="commit_1",
+                stash_hash="stash_1",
+                changed_file_count=_MAX_CHANGED_FILES_BEFORE_INVALIDATION + 1,
+            )
+
+        monkeypatch.setattr(
+            "drift.incremental._capture_git_state", _fake_capture
+        )
+
+        nudge(tmp_path, changed_files=[])
+        result = nudge(tmp_path, changed_files=[])
+        assert result["baseline_refresh_reason"] == "changed_file_threshold"
