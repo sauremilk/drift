@@ -16,6 +16,7 @@ import pytest
 
 from drift.ingestion.file_discovery import (
     _matches_any,
+    _prepare_patterns,
     detect_language,
     discover_files,
 )
@@ -24,6 +25,12 @@ from drift.ingestion.file_discovery import (
 
 
 class TestMatchesAny:
+    def test_prepare_patterns_is_cached(self):
+        key = ("**/venv/**", "**/build/**")
+        first = _prepare_patterns(key)
+        second = _prepare_patterns(key)
+        assert first is second
+
     def test_exact_match(self):
         assert _matches_any("__pycache__/foo.pyc", ["__pycache__/*"]) is True
 
@@ -117,6 +124,18 @@ class TestDiscoverFiles:
 
         assert "app.py" in paths
         assert all(not p.startswith(f"{env_dir}/") for p in paths)
+
+    def test_exclude_tmp_launch_virtualenv_directories(self, tmp_path):
+        (tmp_path / "app.py").write_text("x = 1")
+        tmp_venv_lib = tmp_path / ".tmp_launch_venv_local" / "Lib" / "site-packages" / "pkg"
+        tmp_venv_lib.mkdir(parents=True)
+        (tmp_venv_lib / "vendored.py").write_text("hidden = True")
+
+        files = discover_files(tmp_path)
+        paths = {f.path.as_posix() for f in files}
+
+        assert "app.py" in paths
+        assert all(not p.startswith(".tmp_launch_venv_local/") for p in paths)
 
     def test_exclude_site_packages(self, tmp_path):
         (tmp_path / "app.py").write_text("x = 1")

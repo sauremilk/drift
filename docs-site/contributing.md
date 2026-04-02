@@ -13,6 +13,10 @@ This page is for contributors and maintainers rather than first-time evaluators.
 
 The project keeps strict contribution standards because they protect reproducibility, signal quality, and trust in findings.
 
+Maintainers and repeat reviewers can use the repository operations docs on GitHub:
+[Maintainer Runbook](https://github.com/sauremilk/drift/blob/main/docs/MAINTAINER_RUNBOOK.md) and
+[Repository Governance](https://github.com/sauremilk/drift/blob/main/docs/REPOSITORY_GOVERNANCE.md).
+
 ## Quick Start
 
 ```bash

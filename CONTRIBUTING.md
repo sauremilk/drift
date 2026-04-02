@@ -24,6 +24,11 @@ make check            # lint + typecheck + test + self-analysis
 
 See [DEVELOPER.md](DEVELOPER.md) for the full developer guide (architecture, commands, conventions).
 
+Maintainers and repeat reviewers should also use:
+
+- [docs/MAINTAINER_RUNBOOK.md](docs/MAINTAINER_RUNBOOK.md)
+- [docs/REPOSITORY_GOVERNANCE.md](docs/REPOSITORY_GOVERNANCE.md)
+
 ## Your first contribution
 
 First contribution? Welcome. Here's the fastest path:
@@ -214,6 +219,8 @@ Recommended branch protection setup:
 
 - Require status check: `Repo Guard / Blocked content check`
 - Require pull request before merge
+- Require at least one approving review for `main`
+- Require CODEOWNERS review for signal, scoring, ingestion, and test changes
 - Disallow force pushes on protected branches
 
 ## Pre-Merge Checklist

@@ -1,4 +1,4 @@
-﻿"""Main analysis orchestrator - coordinates high-level pipeline entry points."""
+"""Main analysis orchestrator - coordinates high-level pipeline entry points."""
 
 from __future__ import annotations
 
@@ -116,6 +116,7 @@ def _run_pipeline(
     since_days: int = 90,
     on_progress: ProgressCallback | None = None,
     workers: int = _DEFAULT_WORKERS,
+    active_signals: set[str] | None = None,
 ) -> RepoAnalysis:
     """Shared analysis pipeline delegated to composable phase components."""
     pipeline = AnalysisPipeline(signal_phase=SignalPhase(signal_factory=create_signals))
@@ -126,6 +127,7 @@ def _run_pipeline(
         since_days=since_days,
         on_progress=on_progress,
         workers=workers,
+        active_signals=active_signals,
     )
 
 
@@ -197,6 +199,7 @@ def analyze_repo(
     target_path: str | None = None,
     on_progress: ProgressCallback | None = None,
     workers: int = _DEFAULT_WORKERS,
+    active_signals: set[str] | None = None,
 ) -> RepoAnalysis:
     """Run full drift analysis on a repository."""
     repo_path = repo_path.resolve()
@@ -235,6 +238,7 @@ def analyze_repo(
         since_days=since_days,
         on_progress=on_progress,
         workers=workers,
+        active_signals=active_signals,
     )
     analysis.analysis_duration_seconds = round(time.monotonic() - start, 2)
     analysis.skipped_files = sum(skipped_langs.values())

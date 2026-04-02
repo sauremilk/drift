@@ -3,11 +3,21 @@
 from __future__ import annotations
 
 import json
+from typing import NoReturn
 
 import click
 
 from drift.commands import console
 from drift.errors import DriftSystemError
+
+
+def _raise_missing_mcp_extra(exc: Exception) -> NoReturn:
+    raise DriftSystemError(
+        "DRIFT-2010",
+        message="MCP server requires the 'mcp' extra.",
+        package="mcp",
+        extra="mcp",
+    ) from exc
 
 
 @click.command("mcp")
@@ -81,21 +91,11 @@ def mcp(serve: bool, list_tools: bool, show_schema: bool) -> None:
     try:
         from drift.mcp_server import main as mcp_main
     except ImportError as exc:
-        raise DriftSystemError(
-            "DRIFT-2010",
-            message="MCP server requires the 'mcp' extra.",
-            package="mcp",
-            extra="mcp",
-        ) from exc
+        _raise_missing_mcp_extra(exc)
 
     try:
         mcp_main()
     except RuntimeError as exc:
         if "requires optional dependency 'mcp'" not in str(exc):
             raise
-        raise DriftSystemError(
-            "DRIFT-2010",
-            message="MCP server requires the 'mcp' extra.",
-            package="mcp",
-            extra="mcp",
-        ) from exc
+        _raise_missing_mcp_extra(exc)

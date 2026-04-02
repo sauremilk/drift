@@ -118,6 +118,8 @@
 | I-TB3-01 | **Info Disclosure** | Quelldateien werden gelesen → Code-Inhalt in Findings sichtbar | Mittel | Mittel | Findings zeigen Datei:Zeile, aber keinen Code-Body (nur Titles/Descriptions) | **Niedrig** — Symbolnamen und Pfade im Output sind beabsichtigt | Sensitivitäts-Warnung in Docs |
 | D-TB3-01 | **DoS** | Repo mit 100.000+ Dateien → OOM/Laufzeit-Explosion | Mittel | Niedrig | `max_discovery_files=10.000`; 5 MB File-Size-Limit | **Mitigiert** ✅ | — |
 | D-TB3-02 | **DoS** | Datei mit 5 MB Python → langsames AST-Parsing pro Thread | Niedrig | Niedrig | 5 MB Limit; 8 Worker-Threads | **Niedrig** | — |
+| D-TB3-03 | **DoS** | Temporäre lokale Launch-Venvs (`.tmp_*venv*`) werden als Repo-Input erfasst und erzeugen Finding-/Laufzeit-Spitzen | Mittel | Mittel | Default-Exclude erweitert um `**/.tmp_*venv*/**` in `discover_files()` | **Mitigiert** ✅ | Regressionstest für Discovery-Exclude beibehalten |
+| T-TB3-04 | **Tampering** | Nicht-produktive Repo-Bereiche (`tests`/`scripts`) beeinflussen Score-Interpretation und können produktive Drift-Lage überdecken | Mittel | Mittel | Default-Excludes erweitert um `**/tests/**` und `**/scripts/**` (weiterhin per Config übersteuerbar) | **Mitigiert** ✅ | Bei Bedarf projektweit über `include`/`exclude` explizit scope-n |
 
 ### TB-4: Git Subprocess
 

@@ -143,6 +143,8 @@ def _function_signature_text(fn: FunctionInfo) -> str:
 class MutantDuplicateSignal(BaseSignal):
     """Detect near-duplicate functions that diverge in subtle ways."""
 
+    uses_embeddings = True
+
     @property
     def signal_type(self) -> SignalType:
         return SignalType.MUTANT_DUPLICATE

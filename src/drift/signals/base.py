@@ -60,6 +60,7 @@ class BaseSignal(ABC):
     incremental_scope: ClassVar[
         Literal["file_local", "cross_file", "git_dependent"]
     ] = "cross_file"
+    uses_embeddings: ClassVar[bool] = False
 
     _repo_path: Path | None
     _embedding_service: EmbeddingService | None

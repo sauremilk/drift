@@ -1,4 +1,4 @@
-﻿"""Composable analysis pipeline phases for repository and diff analysis."""
+"""Composable analysis pipeline phases for repository and diff analysis."""
 
 from __future__ import annotations
 
@@ -40,7 +40,12 @@ from drift.scoring.engine import (
     compute_module_scores,
     compute_signal_scores,
 )
-from drift.signals.base import AnalysisContext, BaseSignal, create_signals
+from drift.signals.base import (
+    AnalysisContext,
+    BaseSignal,
+    SignalCapabilities,
+    create_signals,
+)
 from drift.suppression import filter_findings, scan_suppressions
 
 if TYPE_CHECKING:
@@ -368,25 +373,45 @@ class SignalPhase:
         degradation: DegradationInfo,
         progress: ProgressCallback | None = None,
         workers: int = DEFAULT_WORKERS,
+        active_signals: set[str] | None = None,
     ) -> SignalOutput:
-        emb_svc = None
-        if config.embeddings_enabled:
-            emb_svc = self._embedding_factory(
-                cache_dir=repo_path / config.cache_dir,
-                model_name=config.embedding_model,
-                batch_size=config.embedding_batch_size,
-            )
-
         ctx = AnalysisContext(
             repo_path=repo_path,
             config=config,
             parse_results=parsed.parse_results,
             file_histories=parsed.file_histories,
-            embedding_service=emb_svc,
+            embedding_service=None,
             commits=parsed.commits,
         )
         signals = self._signal_factory(ctx)
+        if active_signals is not None:
+            filtered_signals: list[BaseSignal] = []
+            for signal in signals:
+                sig_type = getattr(signal, "signal_type", None)
+                if sig_type is not None and sig_type.value in active_signals:
+                    filtered_signals.append(signal)
+            signals = filtered_signals
         total_signals = len(signals)
+
+        if total_signals == 0:
+            return SignalOutput(findings=[])
+
+        emb_svc = None
+        if config.embeddings_enabled:
+            needs_embeddings = any(
+                getattr(signal, "uses_embeddings", False)
+                for signal in signals
+            )
+            if needs_embeddings:
+                emb_svc = self._embedding_factory(
+                    cache_dir=repo_path / config.cache_dir,
+                    model_name=config.embedding_model,
+                    batch_size=config.embedding_batch_size,
+                )
+                ctx.embedding_service = emb_svc
+                capabilities = SignalCapabilities.from_analysis_context(ctx)
+                for signal in signals:
+                    signal.bind_context(capabilities)
 
         # --- signal-level result cache ---
         sig_cache = SignalCache(repo_path / config.cache_dir)
@@ -636,6 +661,7 @@ class AnalysisPipeline:
         since_days: int = 90,
         on_progress: ProgressCallback | None = None,
         workers: int = DEFAULT_WORKERS,
+        active_signals: set[str] | None = None,
     ) -> RepoAnalysis:
         started_at = time.monotonic()
         degradation = DegradationInfo(causes=set(), components=set(), events=[])
@@ -656,6 +682,7 @@ class AnalysisPipeline:
             degradation=degradation,
             progress=on_progress,
             workers=workers,
+            active_signals=active_signals,
         )
         scored = self._scoring.run(repo_path, files, config, signaled.findings)
 

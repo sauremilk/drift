@@ -213,6 +213,13 @@ More setup paths:
 - [Configuration](docs-site/getting-started/configuration.md)
 - [Team Rollout](docs-site/getting-started/team-rollout.md)
 
+Project operations:
+
+- [Contributor Guide](CONTRIBUTING.md)
+- [Developer Guide](DEVELOPER.md)
+- [Maintainer Runbook](docs/MAINTAINER_RUNBOOK.md)
+- [Repository Governance](docs/REPOSITORY_GOVERNANCE.md)
+
 If you want example findings before integrating, start with [docs-site/product/example-findings.md](docs-site/product/example-findings.md).
 
 ## All 22 signals

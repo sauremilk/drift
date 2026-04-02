@@ -63,7 +63,14 @@ jobs:
     # Migration to ubuntu-latest tracked in: https://github.com/sauremilk/drift/issues/90
     runs-on: self-hosted
     needs: version-check
+    env:
+      AGENT_TOOLSDIRECTORY: ${{ github.workspace }}\\.python-toolcache
+      RUNNER_TOOL_CACHE: ${{ github.workspace }}\\.python-toolcache
+    permissions:
+      contents: read
+      id-token: write
     strategy:
+      fail-fast: false
       matrix:
         python-version: ["3.11", "3.12", "3.13"]
     name: Test (Python ${{ matrix.python-version }})
@@ -71,6 +78,12 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+
+      - name: Prepare isolated Python tool cache
+        shell: powershell
+        run: |
+          New-Item -ItemType Directory -Force -Path $env:AGENT_TOOLSDIRECTORY | Out-Null
+          Write-Host "Using isolated tool cache: $env:AGENT_TOOLSDIRECTORY"
 
       - uses: actions/setup-python@v5
         with:
@@ -132,6 +145,8 @@ jobs:
           files: ./coverage.xml
           flags: py${{ matrix.python-version }}
           fail_ci_if_error: false
+          use_oidc: true
+          verbose: true
 
       - name: Self-analysis
         shell: powershell

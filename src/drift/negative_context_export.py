@@ -1,4 +1,4 @@
-﻿"""Render negative context items for agent consumption.
+"""Render negative context items for agent consumption.
 
 Supports three output formats:
 - ``instructions``: compatible with ``.instructions.md`` / copilot-instructions
@@ -9,6 +9,7 @@ Supports three output formats:
 from __future__ import annotations
 
 import json
+from dataclasses import replace
 from datetime import UTC, datetime
 
 from drift.models import (
@@ -47,19 +48,57 @@ MARKER_BEGIN = (
 MARKER_END = "<!-- drift:negative-context:end -->"
 
 
+def _dedup_key(nc: NegativeContext) -> tuple[str, str, str, str, str]:
+    """Return grouping key for semantically identical anti-pattern rules."""
+    return (
+        nc.category.value,
+        nc.source_signal.value,
+        nc.severity.value,
+        nc.forbidden_pattern or "",
+        nc.canonical_alternative or "",
+    )
+
+
+def _deduplicate_items(items: list[NegativeContext]) -> list[tuple[NegativeContext, int]]:
+    """Merge duplicate rule entries while preserving first-seen order.
+
+    Rules are considered duplicates when category, signal, severity, and
+    DO NOT/INSTEAD patterns are identical. Affected file lists are merged.
+    """
+    grouped: dict[tuple[str, str, str, str, str], tuple[NegativeContext, int]] = {}
+    order: list[tuple[str, str, str, str, str]] = []
+
+    for item in items:
+        key = _dedup_key(item)
+        if key not in grouped:
+            grouped[key] = (
+                replace(item, affected_files=list(item.affected_files)),
+                1,
+            )
+            order.append(key)
+            continue
+
+        base, count = grouped[key]
+        merged_files = list(dict.fromkeys([*base.affected_files, *item.affected_files]))
+        grouped[key] = (replace(base, affected_files=merged_files), count + 1)
+
+    return [grouped[key] for key in order]
+
+
 # ---------------------------------------------------------------------------
 # Rendering helpers
 # ---------------------------------------------------------------------------
 
 
-def _render_item(nc: NegativeContext) -> str:
+def _render_item(nc: NegativeContext, occurrences: int = 1) -> str:
     """Render a single NegativeContext as a Markdown list entry."""
     icon = _SEVERITY_ICON.get(nc.severity, "")
     lines: list[str] = []
+    occurrence_note = f" ({occurrences} occurrences)" if occurrences > 1 else ""
 
     lines.append(
         f"- {icon} **{nc.description}** "
-        f"({nc.source_signal.value}, {nc.severity.value})"
+        f"({nc.source_signal.value}, {nc.severity.value}){occurrence_note}"
     )
 
     if nc.forbidden_pattern:
@@ -91,15 +130,16 @@ def _group_by_category(
     return groups
 
 
-def _render_prompt_rule(nc: NegativeContext) -> str:
+def _render_prompt_rule(nc: NegativeContext, occurrences: int = 1) -> str:
     """Render one compact prompt rule in single-line form."""
     do_not = nc.forbidden_pattern or nc.description
     instead = nc.canonical_alternative or "Follow established project patterns"
     sev = nc.severity.value.upper()
-    return f"- [{sev}|{nc.source_signal.value}] {do_not} -> {instead}"
+    suffix = f" (x{occurrences})" if occurrences > 1 else ""
+    return f"- [{sev}|{nc.source_signal.value}] {do_not} -> {instead}{suffix}"
 
 
-def _item_to_raw_payload(nc: NegativeContext) -> dict[str, object]:
+def _item_to_raw_payload(nc: NegativeContext, occurrences: int = 1) -> dict[str, object]:
     """Serialize a NegativeContext item for machine-readable export."""
     return {
         "anti_pattern_id": nc.anti_pattern_id,
@@ -111,6 +151,7 @@ def _item_to_raw_payload(nc: NegativeContext) -> dict[str, object]:
         "forbidden_pattern": nc.forbidden_pattern,
         "canonical_alternative": nc.canonical_alternative,
         "affected_files": nc.affected_files,
+        "occurrences": occurrences,
         "confidence": nc.confidence,
         "rationale": nc.rationale,
     }
@@ -186,13 +227,14 @@ def _render_prompt(
     )
     lines.append("")
 
-    for item in items:
-        lines.append(_render_prompt_rule(item))
+    deduped = _deduplicate_items(items)
+    for item, occurrences in deduped:
+        lines.append(_render_prompt_rule(item, occurrences))
 
     lines.append("")
     lines.append(
         f"Drift snapshot: score={drift_score:.2f}, severity={severity.value},"
-        f" rules={len(items)}, generated={now}."
+        f" rules={len(deduped)}, generated={now}."
     )
     lines.append("")
 
@@ -208,13 +250,17 @@ def _render_raw(
 ) -> str:
     """Render as machine-readable JSON for orchestration workflows."""
     now = datetime.now(tz=UTC).strftime("%Y-%m-%d")
+    deduped = _deduplicate_items(items)
     payload = {
         "format": "drift-negative-context-v1",
         "generated_on": now,
         "drift_score": drift_score,
         "severity": severity.value,
-        "total_items": len(items),
-        "items": [_item_to_raw_payload(item) for item in items],
+        "total_items": len(deduped),
+        "items": [
+            _item_to_raw_payload(item, occurrences)
+            for item, occurrences in deduped
+        ],
     }
     return json.dumps(payload, indent=2)
 
@@ -228,7 +274,15 @@ def _render_body(
     """Render the common body: grouped items + status footer."""
     lines: list[str] = []
 
-    groups = _group_by_category(items)
+    deduped = _deduplicate_items(items)
+    grouped_pairs: dict[NegativeContextCategory, list[tuple[NegativeContext, int]]] = {}
+    for item, occurrences in deduped:
+        grouped_pairs.setdefault(item.category, []).append((item, occurrences))
+
+    groups: dict[NegativeContextCategory, list[NegativeContext]] = {
+        category: [item for item, _ in pairs]
+        for category, pairs in grouped_pairs.items()
+    }
     category_order = sorted(
         groups,
         key=lambda c: (
@@ -241,8 +295,8 @@ def _render_body(
         heading = _CATEGORY_HEADING.get(cat, cat.value.title())
         lines.append(f"## {heading}")
         lines.append("")
-        for item in groups[cat]:
-            lines.append(_render_item(item))
+        for item, occurrences in grouped_pairs[cat]:
+            lines.append(_render_item(item, occurrences))
         lines.append("")
 
     lines.append("---")
@@ -250,7 +304,7 @@ def _render_body(
     lines.append(
         f"*Generated by drift on {date}."
         f" Drift score: {drift_score:.2f} ({severity.value})."
-        f" {len(items)} anti-patterns detected.*"
+        f" {len(deduped)} anti-patterns detected.*"
     )
     lines.append("")
     return "\n".join(lines)

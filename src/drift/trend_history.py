@@ -1,4 +1,4 @@
-﻿"""Trend-context and history snapshot utilities (ADR-005)."""
+"""Trend-context and history snapshot utilities (ADR-005)."""
 
 from __future__ import annotations
 

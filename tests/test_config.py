@@ -19,6 +19,11 @@ def test_default_config():
     assert "**/.conda/**" in config.exclude
     assert "**/.env/**" in config.exclude
     assert "**/.nox/**" in config.exclude
+    assert "**/.tmp_*venv*/**" in config.exclude
+    assert "**/site-packages/**" in config.exclude
+    assert "**/.pixi/**" in config.exclude
+    assert "**/tests/**" in config.exclude
+    assert "**/scripts/**" in config.exclude
 
 
 def test_load_missing_file(tmp_path: Path):

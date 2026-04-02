@@ -23,9 +23,9 @@ def _file_info(path: str, size: int = 10) -> FileInfo:
     return FileInfo(path=Path(path), language="python", size_bytes=size, line_count=1)
 
 
-def _finding() -> Finding:
+def _finding(signal_type: SignalType = SignalType.PATTERN_FRAGMENTATION) -> Finding:
     return Finding(
-        signal_type=SignalType.PATTERN_FRAGMENTATION,
+        signal_type=signal_type,
         severity=Severity.LOW,
         score=0.2,
         title="sample",
@@ -101,6 +101,142 @@ def test_signal_phase_records_degradation_on_signal_failure(tmp_path: Path) -> N
     assert "signal_failure" in degradation.causes
     assert "signal:failing" in degradation.components
     assert len(degradation.events) == 1
+
+
+def test_signal_phase_filters_active_signals(tmp_path: Path) -> None:
+    class _PfsSignal:
+        name = "pfs"
+        signal_type = SignalType.PATTERN_FRAGMENTATION
+
+        def analyze(self, *_args: object, **_kwargs: object) -> list[Finding]:
+            return [_finding(SignalType.PATTERN_FRAGMENTATION)]
+
+    class _AvsSignal:
+        name = "avs"
+        signal_type = SignalType.ARCHITECTURE_VIOLATION
+
+        def analyze(self, *_args: object, **_kwargs: object) -> list[Finding]:
+            return [_finding(SignalType.ARCHITECTURE_VIOLATION)]
+
+    cfg = _config()
+    parsed = IngestionPhase(is_git_repo_fn=lambda _p: False).run(
+        tmp_path,
+        [],
+        cfg,
+        since_days=30,
+        workers=1,
+        degradation=DegradationInfo(causes=set(), components=set(), events=[]),
+    )
+
+    phase = SignalPhase(
+        embedding_factory=lambda **_kwargs: None,
+        signal_factory=lambda _ctx: [_PfsSignal(), _AvsSignal()],
+    )
+    out = phase.run(
+        tmp_path,
+        cfg,
+        parsed,
+        degradation=DegradationInfo(causes=set(), components=set(), events=[]),
+        active_signals={"pattern_fragmentation"},
+    )
+
+    assert len(out.findings) == 1
+    assert out.findings[0].signal_type is SignalType.PATTERN_FRAGMENTATION
+
+
+def test_signal_phase_skips_embedding_init_when_not_needed(tmp_path: Path) -> None:
+    class _NoEmbeddingSignal:
+        name = "no-embedding"
+        signal_type = SignalType.PATTERN_FRAGMENTATION
+        uses_embeddings = False
+
+        def analyze(self, *_args: object, **_kwargs: object) -> list[Finding]:
+            return [_finding(SignalType.PATTERN_FRAGMENTATION)]
+
+    cfg = DriftConfig(
+        include=["**/*.py"],
+        exclude=["**/.git/**", "**/.drift-cache/**", "**/__pycache__/**"],
+        embeddings_enabled=True,
+    )
+    parsed = IngestionPhase(is_git_repo_fn=lambda _p: False).run(
+        tmp_path,
+        [],
+        cfg,
+        since_days=30,
+        workers=1,
+        degradation=DegradationInfo(causes=set(), components=set(), events=[]),
+    )
+
+    calls = {"count": 0}
+
+    def _embedding_factory(**_kwargs: object) -> object:
+        calls["count"] += 1
+        return object()
+
+    phase = SignalPhase(
+        embedding_factory=_embedding_factory,
+        signal_factory=lambda _ctx: [_NoEmbeddingSignal()],
+    )
+    phase.run(
+        tmp_path,
+        cfg,
+        parsed,
+        degradation=DegradationInfo(causes=set(), components=set(), events=[]),
+    )
+
+    assert calls["count"] == 0
+
+
+def test_signal_phase_initializes_embeddings_when_needed(tmp_path: Path) -> None:
+    class _NeedsEmbeddingSignal:
+        name = "needs-embedding"
+        signal_type = SignalType.PATTERN_FRAGMENTATION
+        uses_embeddings = True
+
+        def __init__(self) -> None:
+            self.received_embedding = None
+
+        def bind_context(self, capabilities) -> None:
+            self.received_embedding = capabilities.embedding_service
+
+        def analyze(self, *_args: object, **_kwargs: object) -> list[Finding]:
+            return [_finding(SignalType.PATTERN_FRAGMENTATION)]
+
+    cfg = DriftConfig(
+        include=["**/*.py"],
+        exclude=["**/.git/**", "**/.drift-cache/**", "**/__pycache__/**"],
+        embeddings_enabled=True,
+    )
+    parsed = IngestionPhase(is_git_repo_fn=lambda _p: False).run(
+        tmp_path,
+        [],
+        cfg,
+        since_days=30,
+        workers=1,
+        degradation=DegradationInfo(causes=set(), components=set(), events=[]),
+    )
+
+    calls = {"count": 0}
+    marker = object()
+
+    def _embedding_factory(**_kwargs: object) -> object:
+        calls["count"] += 1
+        return marker
+
+    signal = _NeedsEmbeddingSignal()
+    phase = SignalPhase(
+        embedding_factory=_embedding_factory,
+        signal_factory=lambda _ctx: [signal],
+    )
+    phase.run(
+        tmp_path,
+        cfg,
+        parsed,
+        degradation=DegradationInfo(causes=set(), components=set(), events=[]),
+    )
+
+    assert calls["count"] == 1
+    assert signal.received_embedding is marker
 
 
 def test_scoring_phase_applies_small_repo_kwargs_and_post_processing() -> None:

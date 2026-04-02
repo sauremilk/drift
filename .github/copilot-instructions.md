@@ -228,6 +228,33 @@ ingestion/ → signals/ → scoring/ → output/
 | Release: lokaler Fallback | `python scripts/release_automation.py --full-release` |
 | Release: Version prüfen | `semantic-release version --print` |
 
+### Pre-Push-Gates — PFLICHT vor jedem `git push`
+
+Der Hook `.githooks/pre-push` (aktiv via `core.hooksPath = .githooks`) blockiert jeden Push, der eine Gate-Bedingung verletzt. **Agenten müssen VOR `git push` sicherstellen, dass alle zutreffenden Gates erfüllt sind.**
+
+Vollständige Gate-Dokumentation: **`.github/instructions/drift-push-gates.instructions.md`**
+
+**Kurz-Übersicht: Was löst welches Gate aus?**
+
+| Geänderte Dateien | Erforderlich |
+|---|---|
+| `tagesplanung/**` | ❌ Immer blockiert |
+| `feat:`-Commit | Tests + `benchmark_results/vX.Y.Z_feature_evidence.json` + `docs/STUDY.md` update |
+| `feat:` oder `fix:`-Commit | `CHANGELOG.md` aktualisieren |
+| `pyproject.toml` geändert | Version größer als letzter Tag + `uv.lock` aktualisieren (`uv lock`) |
+| `src/drift/**` neu public `def` | Docstring hinzufügen |
+| `src/drift/signals/`, `ingestion/` oder `output/` | Mind. eine Audit-Datei in `audit_results/` aktualisieren (`fmea_matrix.md`, `stride_threat_model.md`, `fault_trees.md` oder `risk_register.md`) |
+| Immer | `make check` lokal bestanden (ruff + mypy + pytest + self-analysis) |
+
+**Notfall-Bypässe** (nur wenn begründet):
+```bash
+DRIFT_SKIP_RISK_AUDIT=1 git push     # Audit-Gate überspringen
+DRIFT_SKIP_CHANGELOG=1 git push      # Changelog-Gate überspringen
+DRIFT_SKIP_DOCSTRING=1 git push      # Docstring-Gate überspringen
+DRIFT_SKIP_HOOKS=1 git push          # ALLE Gates (äußerster Notfall)
+```
+> CI-Checks (ruff/mypy/pytest) können nicht per Env-Variable umgangen werden.
+
 ### Konventionen
 
 - Bei ADR-Umsetzung: `Decision: ADR-NNN` Trailer im Commit-Body

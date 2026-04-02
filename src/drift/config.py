@@ -190,6 +190,7 @@ class DriftConfig(BaseModel):
             "**/__pycache__/**",
             "**/venv/**",
             "**/.venv/**",
+            "**/.tmp_*venv*/**",
             "**/.env/**",
             "**/.conda/**",
             "**/.git/**",
@@ -197,10 +198,14 @@ class DriftConfig(BaseModel):
             "**/build/**",
             "**/.tox/**",
             "**/.nox/**",
+            "**/site-packages/**",
+            "**/.pixi/**",
             "**/*.egg-info/**",
             "**/docs/**",
             "**/docs_src/**",
             "**/examples/**",
+            "**/tests/**",
+            "**/scripts/**",
             "**/site/**",
         ]
     )

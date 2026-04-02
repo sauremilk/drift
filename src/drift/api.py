@@ -93,7 +93,7 @@ def scan(
         ``"diverse"`` (default) or ``"top-severity"`` (pure score sort).
     """
     from drift.analyzer import analyze_repo
-    from drift.config import DriftConfig, apply_signal_filter
+    from drift.config import DriftConfig, apply_signal_filter, resolve_signal_names
     from drift.telemetry import timed_call
 
     repo_path = Path(path).resolve()
@@ -118,15 +118,18 @@ def scan(
                 f"target_path '{target_path}' does not exist in repository"
             )
 
+        active_signals: set[str] | None = None
         if signals:
             select_csv = ",".join(signals)
             apply_signal_filter(cfg, select_csv, None)
+            active_signals = set(resolve_signal_names(select_csv))
 
         analysis = analyze_repo(
             repo_path,
             config=cfg,
             since_days=since_days,
             target_path=target_path,
+            active_signals=active_signals,
         )
         result = _format_scan_response(
             analysis,

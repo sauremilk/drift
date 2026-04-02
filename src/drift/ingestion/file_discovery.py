@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import fnmatch
 import logging
+from functools import lru_cache
 from pathlib import Path
 
 from drift.models import FileInfo
@@ -38,6 +39,45 @@ def detect_language(path: Path) -> str | None:
     return LANGUAGE_MAP.get(path.suffix.lower())
 
 
+PreparedPattern = tuple[str, str | None, bool]
+
+
+@lru_cache(maxsize=128)
+def _prepare_patterns(patterns_key: tuple[str, ...]) -> tuple[PreparedPattern, ...]:
+    """Normalize and precompute pattern metadata for repeated matching."""
+    prepared: list[PreparedPattern] = []
+    for pattern in patterns_key:
+        norm_pattern = pattern.replace("\\", "/")
+        top_level_only = "/" not in norm_pattern
+        dir_pattern: str | None = None
+        if norm_pattern.startswith("**/") and norm_pattern.endswith("/**"):
+            dir_pattern = norm_pattern[3:-3]
+        prepared.append((norm_pattern, dir_pattern, top_level_only))
+    return tuple(prepared)
+
+
+def _matches_any_prepared(path_str: str, prepared: tuple[PreparedPattern, ...]) -> bool:
+    """Fast-path matcher using precomputed pattern metadata."""
+    parts = path_str.split("/")
+    for norm_pattern, dir_pattern, top_level_only in prepared:
+        # Patterns without directory separators are filename globs.
+        # They only apply to top-level paths; nested paths never match.
+        if top_level_only:
+            if "/" not in path_str and fnmatch.fnmatch(path_str, norm_pattern):
+                return True
+            continue
+
+        if fnmatch.fnmatch(path_str, norm_pattern):
+            return True
+
+        # Recursive directory patterns: **/name/** or **/pattern/**
+        if dir_pattern is not None:
+            for part in parts:
+                if fnmatch.fnmatch(part, dir_pattern):
+                    return True
+    return False
+
+
 def _matches_any(path_str: str, patterns: list[str]) -> bool:
     """Check if *path_str* matches any exclude pattern.
 
@@ -48,26 +88,8 @@ def _matches_any(path_str: str, patterns: list[str]) -> bool:
     ``**/X/**`` patterns and testing it against each path component with
     ``fnmatch`` (so ``**/*.egg-info/**`` still works).
     """
-    parts = path_str.split("/")
-    for pattern in patterns:
-        norm_pattern = pattern.replace("\\", "/")
-
-        # Patterns without directory separators are filename globs.
-        # They only apply to top-level paths; nested paths never match.
-        if "/" not in norm_pattern:
-            if "/" not in path_str and fnmatch.fnmatch(path_str, norm_pattern):
-                return True
-            continue
-
-        if fnmatch.fnmatch(path_str, norm_pattern):
-            return True
-        # Recursive directory patterns: **/name/** or **/pattern/**
-        if norm_pattern.startswith("**/") and norm_pattern.endswith("/**"):
-            dir_pattern = norm_pattern[3:-3]  # strip **/ and /**
-            for part in parts:
-                if fnmatch.fnmatch(part, dir_pattern):
-                    return True
-    return False
+    prepared = _prepare_patterns(tuple(patterns))
+    return _matches_any_prepared(path_str, prepared)
 
 
 def discover_files(
@@ -98,6 +120,7 @@ def discover_files(
             "**/__pycache__/**",
             "**/venv/**",
             "**/.venv/**",
+            "**/.tmp_*venv*/**",
             "**/.env/**",
             "**/.conda/**",
             "**/.git/**",
@@ -107,7 +130,10 @@ def discover_files(
             "**/build/**",
             "**/site-packages/**",
             "**/.pixi/**",
+            "**/tests/**",
+            "**/scripts/**",
         ]
+    prepared_exclude = _prepare_patterns(tuple(exclude))
 
     files: list[FileInfo] = []
     repo_path = repo_path.resolve()
@@ -135,7 +161,7 @@ def discover_files(
                 continue
             seen.add(rel)
 
-            if _matches_any(rel, exclude):
+            if _matches_any_prepared(rel, prepared_exclude):
                 continue
 
             lang = detect_language(match)

@@ -231,6 +231,8 @@ def _compute_hub_nodes(graph: nx.DiGraph, percentile: float = 0.90) -> set[str]:
 class ArchitectureViolationSignal(BaseSignal):
     """Detect imports that violate architectural layer boundaries."""
 
+    uses_embeddings = True
+
     @property
     def signal_type(self) -> SignalType:
         return SignalType.ARCHITECTURE_VIOLATION
