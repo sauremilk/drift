@@ -5,8 +5,8 @@
 **Deterministic architecture erosion detection for AI-accelerated codebases**
 
 [![CI](https://github.com/sauremilk/drift/actions/workflows/ci.yml/badge.svg)](https://github.com/sauremilk/drift/actions/workflows/ci.yml)
-[![Precision 97.3% (single-rater)](https://img.shields.io/badge/precision-97.3%25%20(single--rater)-brightgreen)](docs/STUDY.md)
-[![Coverage](https://img.shields.io/badge/coverage-78%25-brightgreen)](https://github.com/sauremilk/drift/actions/workflows/ci.yml)
+[![Precision 97.3% (single-rater)](https://img.shields.io/badge/precision-97.3%25%20(single--rater)-yellow)](docs/STUDY.md)
+[![codecov](https://codecov.io/gh/sauremilk/drift/branch/main/graph/badge.svg)](https://codecov.io/gh/sauremilk/drift)
 [![SARIF](https://img.shields.io/badge/output-SARIF-blueviolet)](https://docs.github.com/en/code-security/code-scanning)
 <br>
 [![PyPI](https://img.shields.io/pypi/v/drift-analyzer?cacheSeconds=300)](https://pypi.org/project/drift-analyzer/)
@@ -186,7 +186,7 @@ The fastest way to add drift to your workflow:
 # .pre-commit-config.yaml
 repos:
   - repo: https://github.com/sauremilk/drift
-    rev: v0.10.2
+    rev: v1.4.2
     hooks:
       - id: drift-check          # blocks on high-severity findings
       # - id: drift-report        # report-only alternative (start here)
@@ -310,9 +310,9 @@ Further reading:
 
 ## Release status
 
-The PyPI classifier remains `Development Status :: 3 - Alpha` intentionally.
+The PyPI classifier is `Development Status :: 4 - Beta`.
 
-That is a conservative release signal, not a claim that the core workflow is unusable. The strongest path today is the deterministic Python analysis and report-only CI rollout; some adjacent surfaces remain intentionally marked as experimental.
+Core analysis and CI workflow are stable; some adjacent surfaces remain intentionally marked as experimental.
 
 Current release posture:
 
