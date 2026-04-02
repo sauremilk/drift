@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+import pytest
 from click.testing import CliRunner
 
 from drift.cli import main
@@ -92,6 +93,17 @@ def test_scan_accepts_signals_alias(monkeypatch, tmp_path: Path) -> None:
     )
     assert result.exit_code == 0
     assert captured.get("signals") == ["PFS", "AVS"]
+
+
+@pytest.mark.parametrize("invalid_value", ["-1", "0", "201"])
+def test_scan_rejects_out_of_range_max_findings(invalid_value: str, tmp_path: Path) -> None:
+    runner = CliRunner()
+    result = runner.invoke(
+        main,
+        ["scan", "--repo", str(tmp_path), "--max-findings", invalid_value],
+    )
+    assert result.exit_code == 2
+    assert "Invalid value for '--max-findings'" in result.output
 
 
 # ---------------------------------------------------------------------------

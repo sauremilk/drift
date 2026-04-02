@@ -119,7 +119,7 @@ ERROR_REGISTRY: dict[str, ErrorInfo] = {
         code="DRIFT-2003",
         summary="File I/O error: {path}",
         why="{reason}",
-        action="Check file permissions and disk space",
+        action="Check that the --output path is writable and its parent directory exists",
         category="system",
     ),
     "DRIFT-2010": ErrorInfo(

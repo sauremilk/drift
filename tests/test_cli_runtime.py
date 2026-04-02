@@ -226,3 +226,44 @@ def test_workers_zero_is_rejected_by_cli() -> None:
 
     assert result.exit_code != 0
     assert "0" in result.output
+
+
+def test_safe_main_scan_output_path_error_is_config_error_json(
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+    tmp_path,
+) -> None:
+    import drift.commands.scan as scan_command
+
+    monkeypatch.setenv("DRIFT_ERROR_FORMAT", "json")
+    monkeypatch.setattr(
+        scan_command,
+        "api_scan",
+        lambda *args, **kwargs: {
+            "schema_version": "2.0",
+            "accept_change": True,
+            "blocking_reasons": [],
+        },
+    )
+    bad_output = tmp_path / "missing" / "result.json"
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "drift",
+            "scan",
+            "--repo",
+            str(tmp_path),
+            "--output",
+            str(bad_output),
+        ],
+    )
+
+    with pytest.raises(SystemExit) as exc_info:
+        cli.safe_main()
+
+    assert exc_info.value.code == 2
+    payload = json.loads(capsys.readouterr().err.strip())
+    assert payload["error"] is True
+    assert payload["error_code"] == "DRIFT-2003"
+    assert payload["exit_code"] == 2

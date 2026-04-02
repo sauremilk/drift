@@ -10,7 +10,7 @@ import click
 from rich.console import Console
 
 from drift.commands import console
-from drift.errors import EXIT_FINDINGS_ABOVE_THRESHOLD
+from drift.errors import EXIT_FINDINGS_ABOVE_THRESHOLD, DriftConfigError
 
 
 @click.command()
@@ -153,6 +153,16 @@ def check(
     from drift.config import DriftConfig
     from drift.scoring.engine import severity_gate_pass
 
+    def _write_output_file(content: str, destination: Path) -> None:
+        try:
+            destination.write_text(content + "\n", encoding="utf-8")
+        except OSError as exc:
+            raise DriftConfigError(
+                "DRIFT-2003",
+                path=str(destination),
+                reason=str(exc),
+            ) from exc
+
     def _recompute_summary() -> None:
         from drift.scoring.engine import (
             composite_score,
@@ -235,7 +245,7 @@ def check(
 
         json_text = analysis_to_json(analysis, compact=compact_json)
         if output_file:
-            output_file.write_text(json_text + "\n", encoding="utf-8")
+            _write_output_file(json_text, output_file)
             click.echo(f"Output written to {output_file}", err=True)
         else:
             click.echo(json_text)
@@ -244,7 +254,7 @@ def check(
 
         sarif_text = findings_to_sarif(analysis)
         if output_file:
-            output_file.write_text(sarif_text + "\n", encoding="utf-8")
+            _write_output_file(sarif_text, output_file)
             click.echo(f"Output written to {output_file}", err=True)
         else:
             click.echo(sarif_text)
@@ -253,7 +263,7 @@ def check(
 
         tasks_text = analysis_to_agent_tasks_json(analysis)
         if output_file:
-            output_file.write_text(tasks_text + "\n", encoding="utf-8")
+            _write_output_file(tasks_text, output_file)
             click.echo(f"Output written to {output_file}", err=True)
         else:
             click.echo(tasks_text)
@@ -262,7 +272,7 @@ def check(
 
         gh_text = findings_to_github_annotations(analysis)
         if output_file:
-            output_file.write_text(gh_text + "\n", encoding="utf-8")
+            _write_output_file(gh_text, output_file)
             click.echo(f"Output written to {output_file}", err=True)
         else:
             click.echo(gh_text)

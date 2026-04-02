@@ -8,6 +8,7 @@ import click
 
 from drift.api import scan as api_scan
 from drift.api import to_json
+from drift.errors import DriftConfigError
 
 
 @click.command("scan")
@@ -28,7 +29,12 @@ from drift.api import to_json
     default=None,
     help="Comma-separated signal IDs to include (e.g. PFS,AVS).",
 )
-@click.option("--max-findings", type=int, default=10, help="Maximum findings to return.")
+@click.option(
+    "--max-findings",
+    type=click.IntRange(min=1, max=200),
+    default=10,
+    help="Maximum findings to return (1-200).",
+)
 @click.option(
     "--strategy",
     type=click.Choice(["diverse", "top-severity"]),
@@ -59,6 +65,17 @@ def scan(
     output: Path | None,
 ) -> None:
     """Run the agent-native scan workflow and emit structured JSON."""
+
+    def _write_output_file(content: str, destination: Path) -> None:
+        try:
+            destination.write_text(content + "\n", encoding="utf-8")
+        except OSError as exc:
+            raise DriftConfigError(
+                "DRIFT-2003",
+                path=str(destination),
+                reason=str(exc),
+            ) from exc
+
     signals = [item.strip() for item in select.split(",") if item.strip()] if select else None
     result = api_scan(
         path,
@@ -71,7 +88,7 @@ def scan(
     )
     text = to_json(result)
     if output is not None:
-        output.write_text(text + "\n", encoding="utf-8")
+        _write_output_file(text, output)
         click.echo(f"Output written to {output}", err=True)
     else:
         click.echo(text)
