@@ -4,10 +4,14 @@
 
 - Replace manual release-trigger convention with `python-semantic-release` in CI via `.github/workflows/release.yml`, including semantic-release config in `pyproject.toml` and updated release instructions/skills.
 - Add enterprise governance scaffolding baselines (issue/discussion templates, devcontainer, pre-commit policy integration, CITATION metadata) and capture push-gate evidence under benchmark and audit artifacts.
+- Improve `drift copilot-context` output by including stable signal IDs in heading labels for faster correlation with docs and suppression rules.
 
 ### Fixed
 
 - Resolve README trust inconsistencies by aligning development-status wording with package metadata, replacing the hardcoded coverage percentage badge, reducing single-rater precision badge framing strength, and updating the pre-commit revision example to `v1.4.2`.
+- Keep machine-readable CLI output deterministic by preventing extra text after JSON validate responses and aligning warning-suppression checks with the global `SyntaxWarning` filter.
+- Exclude temporary local launch virtualenv directories from self-analysis defaults so performance-budget checks are not distorted by ephemeral tooling artifacts.
+- Keep internal ADR drafts out of tracked repository root entries by ignoring `.internal/` workspace artifacts.
 
 ### Fixed
 
