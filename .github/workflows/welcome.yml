@@ -16,7 +16,7 @@ concurrency:
 
 jobs:
   welcome:
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/first-interaction@v1
         with:
