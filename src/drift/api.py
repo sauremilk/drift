@@ -223,6 +223,17 @@ def _format_scan_response(
     else:
         findings_list = [_finding_detailed(f, rank=i + 1) for i, f in enumerate(limited)]
 
+    top_sigs = _top_signals(analysis, signal_filter=signal_filter)
+
+    # Deterministic tie-breaker: highest finding_count among max-score
+    # signals, then alphabetical by signal abbreviation.
+    primary_signal: str | None = None
+    if top_sigs:
+        max_score = top_sigs[0]["score"]
+        tied = [s for s in top_sigs if s["score"] == max_score]
+        tied.sort(key=lambda s: (-s["finding_count"], s["signal"]))
+        primary_signal = tied[0]["signal"]
+
     result = _base_response(
         drift_score=round(analysis.drift_score, 4),
         severity=analysis.severity.value,
@@ -230,7 +241,8 @@ def _format_scan_response(
         total_functions=analysis.total_functions,
         ai_ratio=round(analysis.ai_attributed_ratio, 3),
         trend=_trend_dict(analysis),
-        top_signals=_top_signals(analysis, signal_filter=signal_filter),
+        primary_signal_for_next_step=primary_signal,
+        top_signals=top_sigs,
         fix_first=_fix_first_concise(
             cast("RepoAnalysis", SimpleNamespace(findings=selected_findings)),
             max_items=min(max_findings, 5),
@@ -665,7 +677,42 @@ def _diff_next_actions(
     return actions or ["No immediate action required"]
 
 
-def explain(topic: str) -> dict[str, Any]:
+def _repo_examples_for_signal(
+    signal_abbr: str,
+    repo_root: Path,
+    *,
+    max_examples: int = 5,
+) -> list[dict[str, Any]]:
+    """Return top findings for *signal_abbr* from this repo (best-effort).
+
+    Runs a lightweight analysis.  If the analysis fails (e.g. no git repo),
+    returns an empty list instead of raising.
+    """
+    try:
+        from drift.analyzer import analyze_repo
+        from drift.config import DriftConfig
+
+        cfg = DriftConfig.load(repo_root)
+        analysis = analyze_repo(repo_root, config=cfg)
+        sig_type = resolve_signal(signal_abbr)
+        if sig_type is None:
+            return []
+        matches = [f for f in analysis.findings if f.signal_type == sig_type]
+        matches.sort(key=lambda f: f.impact, reverse=True)
+        examples: list[dict[str, Any]] = []
+        for f in matches[:max_examples]:
+            examples.append({
+                "file": f.file_path.as_posix() if f.file_path else None,
+                "line": f.start_line,
+                "finding": f.title,
+                "next_action": f.fix or f.description,
+            })
+        return examples
+    except Exception:
+        return []
+
+
+def explain(topic: str, *, repo_path: str | Path | None = None) -> dict[str, Any]:
     """Explain a signal, rule, or error code.
 
     Parameters
@@ -673,12 +720,16 @@ def explain(topic: str) -> dict[str, Any]:
     topic:
         A signal abbreviation (``"PFS"``), signal type name
         (``"pattern_fragmentation"``), or error code (``"DRIFT-1001"``).
+    repo_path:
+        Optional repository root.  When provided, a lightweight scan is
+        performed and the top findings for the signal are included as
+        ``repo_examples`` in the response.
     """
     from drift.commands.explain import _SIGNAL_INFO
     from drift.telemetry import timed_call
 
     elapsed_ms = timed_call()
-    params = {"topic": topic}
+    params = {"topic": topic, "repo_path": str(repo_path) if repo_path else None}
 
     try:
         # Try as signal abbreviation first
@@ -696,6 +747,10 @@ def explain(topic: str) -> dict[str, Any]:
                 remediation_approach=info.get("fix_hint", ""),
                 related_signals=_related_signals(upper),
             )
+            if repo_path:
+                result["repo_examples"] = _repo_examples_for_signal(
+                    upper, Path(repo_path).resolve(),
+                )
             _emit_api_telemetry(
                 tool_name="api.explain",
                 params=params,
@@ -703,7 +758,7 @@ def explain(topic: str) -> dict[str, Any]:
                 elapsed_ms=elapsed_ms(),
                 result=result,
                 error=None,
-                repo_root=Path.cwd(),
+                repo_root=Path(repo_path).resolve() if repo_path else Path.cwd(),
             )
             return result
 
@@ -712,7 +767,7 @@ def explain(topic: str) -> dict[str, Any]:
         if resolved:
             abbr = signal_abbrev(resolved)
             if abbr in _SIGNAL_INFO:
-                result = explain(abbr)
+                result = explain(abbr, repo_path=repo_path)
                 _emit_api_telemetry(
                     tool_name="api.explain",
                     params=params,
@@ -720,7 +775,7 @@ def explain(topic: str) -> dict[str, Any]:
                     elapsed_ms=elapsed_ms(),
                     result=result,
                     error=None,
-                    repo_root=Path.cwd(),
+                    repo_root=Path(repo_path).resolve() if repo_path else Path.cwd(),
                 )
                 return result
             result = _base_response(

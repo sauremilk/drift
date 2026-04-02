@@ -163,6 +163,22 @@ def _write_if_absent(path: Path, content: str, label: str, *, root: Path | None 
     return True
 
 
+def _plan_file(
+    plan: list[dict[str, object]],
+    target: Path,
+    content: str,
+    repo_root: Path,
+) -> None:
+    """Append a file-creation plan entry (no I/O)."""
+    rel = str(target.relative_to(repo_root)).replace("\\", "/")
+    plan.append({
+        "path": rel,
+        "size_bytes": len(content.encode("utf-8")),
+        "exists": target.exists(),
+        "content": content,
+    })
+
+
 # ---------------------------------------------------------------------------
 # CLI command
 # ---------------------------------------------------------------------------
@@ -202,6 +218,19 @@ def _write_if_absent(path: Path, content: str, label: str, *, root: Path | None 
     help="Generate all files: config + CI + hooks + MCP.",
 )
 @click.option(
+    "--dry-run",
+    is_flag=True,
+    default=False,
+    help="Preview which files would be created without writing anything.",
+)
+@click.option(
+    "--json",
+    "json_output",
+    is_flag=True,
+    default=False,
+    help="Output dry-run preview as JSON (implies --dry-run).",
+)
+@click.option(
     "--repo",
     "-r",
     type=click.Path(exists=True, file_okay=False, path_type=Path),
@@ -214,6 +243,8 @@ def init(
     hooks: bool,
     mcp: bool,
     full: bool,
+    dry_run: bool,
+    json_output: bool,
     repo: Path,
 ) -> None:
     """Scaffold drift configuration and CI integration.
@@ -227,52 +258,97 @@ def init(
       drift init --profile vibe-coding    # AI-optimised weights
       drift init --full                   # config + CI + hooks + MCP
       drift init -p vibe-coding --ci      # vibe-coding config + CI workflow
+      drift init --full --dry-run         # preview without writing
+      drift init --full --json            # JSON preview for agents
     """
+    import json as json_mod
+
     repo = repo.resolve()
-    created = 0
+
+    if json_output:
+        dry_run = True
 
     if full:
         ci = hooks = mcp = True
 
     prof = get_profile(profile)
-    console.print(
-        f"[bold]Initialising drift[/bold] with profile "
-        f"[cyan]{prof.name}[/cyan]: {prof.description}\n"
-    )
+
+    # Collect file plan
+    plan: list[dict[str, object]] = []
 
     # 1. drift.yaml
     config_dict = _build_config_dict(profile)
     config_yaml = _yaml_header(profile) + yaml.dump(
         config_dict, default_flow_style=False, sort_keys=False, allow_unicode=True,
     )
-    if _write_if_absent(repo / "drift.yaml", config_yaml, "drift.yaml", root=repo):
-        created += 1
+    _plan_file(plan, repo / "drift.yaml", config_yaml, repo)
 
     # 2. GitHub Actions workflow
     if ci:
         fail_on = "none" if profile != "strict" else "medium"
         workflow_content = _GITHUB_WORKFLOW.format(fail_on=fail_on)
         workflow_path = repo / ".github" / "workflows" / "drift.yml"
-        if _write_if_absent(workflow_path, workflow_content, "drift.yml", root=repo):
-            created += 1
+        _plan_file(plan, workflow_path, workflow_content, repo)
 
     # 3. Git pre-push hook
     if hooks:
         hook_fail = "high" if profile != "strict" else "medium"
         hook_content = _PRE_PUSH_HOOK.format(fail_on=hook_fail)
         hook_path = repo / ".githooks" / "drift-pre-push"
-        if _write_if_absent(hook_path, hook_content, "drift-pre-push", root=repo):
-            created += 1
-            console.print(
-                "  [dim]Activate with: "
-                "git config core.hooksPath .githooks[/dim]"
-            )
+        _plan_file(plan, hook_path, hook_content, repo)
 
     # 4. VS Code MCP config
     if mcp:
         mcp_path = repo / ".vscode" / "mcp.json"
-        if _write_if_absent(mcp_path, _MCP_JSON, "mcp.json", root=repo):
+        _plan_file(plan, mcp_path, _MCP_JSON, repo)
+
+    # --dry-run / --json: preview only, no file writes
+    if dry_run:
+        overwrite_count = sum(1 for p in plan if p["exists"])
+        new_count = sum(1 for p in plan if not p["exists"])
+        if json_output:
+            click.echo(json_mod.dumps({
+                "would_create": [
+                    {
+                        "path": p["path"],
+                        "size_bytes": p["size_bytes"],
+                        "exists": p["exists"],
+                        "would_overwrite": p["exists"],
+                    }
+                    for p in plan
+                ],
+                "overwrite_count": overwrite_count,
+                "new_count": new_count,
+            }, indent=2))
+        else:
+            console.print(
+                f"[bold]Dry run[/bold] — profile "
+                f"[cyan]{prof.name}[/cyan]: {prof.description}\n"
+            )
+            for p in plan:
+                status = "[yellow]overwrite[/yellow]" if p["exists"] else "[green]create[/green]"
+                console.print(f"  {status}  {p['path']}  ({p['size_bytes']} bytes)")
+            console.print(
+                f"\n[dim]{new_count} new, {overwrite_count} would overwrite[/dim]"
+            )
+        return
+
+    # Normal mode: write files
+    console.print(
+        f"[bold]Initialising drift[/bold] with profile "
+        f"[cyan]{prof.name}[/cyan]: {prof.description}\n"
+    )
+
+    created = 0
+    for p in plan:
+        target = repo / p["path"]
+        if _write_if_absent(target, p["content"], p["path"], root=repo):
             created += 1
+            if "drift-pre-push" in str(p["path"]):
+                console.print(
+                    "  [dim]Activate with: "
+                    "git config core.hooksPath .githooks[/dim]"
+                )
 
     # Summary
     console.print()

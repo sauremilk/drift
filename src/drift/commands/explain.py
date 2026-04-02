@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from pathlib import Path
+
 import click
 
 from drift.commands import console
@@ -588,7 +590,20 @@ def _all_abbreviations() -> list[str]:
 @click.command()
 @click.argument("signal", required=False, default=None)
 @click.option("--list", "-l", "list_all", is_flag=True, help="List all signals.")
-def explain(signal: str | None, list_all: bool) -> None:
+@click.option(
+    "--repo-context",
+    is_flag=True,
+    default=False,
+    help="Include repository-specific examples from a live scan.",
+)
+@click.option(
+    "--repo",
+    "-r",
+    type=click.Path(exists=True, file_okay=False, path_type=Path),
+    default=None,
+    help="Repository root for --repo-context (default: current directory).",
+)
+def explain(signal: str | None, list_all: bool, repo_context: bool, repo: Path | None) -> None:
     """Explain a drift signal: drift explain PFS"""
     if list_all or signal is None:
         _print_signal_list()
@@ -613,6 +628,10 @@ def explain(signal: str | None, list_all: bool) -> None:
         raise SystemExit(1)
 
     _print_signal_detail(info)
+
+    if repo_context:
+        repo_root = (repo or Path(".")).resolve()
+        _print_repo_examples(info, repo_root)
 
 
 def _print_signal_list() -> None:
@@ -702,3 +721,31 @@ def _print_error_code_detail(code: str) -> None:
     body.append(f"  {info.action}\n", style="green")
 
     console.print(Panel(body, border_style="yellow", title=f"[bold]Error: {code}[/bold]"))
+
+
+def _print_repo_examples(info: dict[str, str], repo_root: Path) -> None:
+    """Print local findings for a signal from the current repo."""
+    from drift.api import _repo_examples_for_signal
+
+    abbr = next(
+        (a for a, i in _SIGNAL_INFO.items() if i is info),
+        None,
+    )
+    if abbr is None:
+        return
+
+    examples = _repo_examples_for_signal(abbr, repo_root, max_examples=5)
+    if not examples:
+        console.print("\n[dim]No findings for this signal in the current repository.[/dim]")
+        return
+
+    console.print(f"\n[bold]Repository examples[/bold] ({len(examples)}):")
+    for ex in examples:
+        loc = ex.get("file") or "?"
+        line = ex.get("line")
+        if line:
+            loc += f":{line}"
+        console.print(f"  • [cyan]{loc}[/cyan]  {ex.get('finding', '')}")
+        action = ex.get("next_action")
+        if action:
+            console.print(f"    [dim]{action}[/dim]")
