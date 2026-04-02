@@ -651,7 +651,7 @@ def explain(
             if info_err is None:
                 click.echo(f"Unknown error code: {key}", err=True)
                 raise SystemExit(1)
-            data = {
+            err_data = {
                 "code": info_err.code,
                 "summary": info_err.summary,
                 "why": info_err.why,
@@ -659,7 +659,7 @@ def explain(
                 "category": info_err.category,
             }
             output.write_text(
-                json_mod.dumps(data, indent=2) + "\n", encoding="utf-8",
+                json_mod.dumps(err_data, indent=2) + "\n", encoding="utf-8",
             )
             click.echo(f"Output written to {output}", err=True)
         else:
@@ -679,7 +679,7 @@ def explain(
 
     if output is not None:
         abbr = next((a for a, i in _SIGNAL_INFO.items() if i is info), "?")
-        data = {
+        sig_data = {
             "abbreviation": abbr,
             "name": info["name"],
             "signal_type": info["signal_type"],
@@ -690,7 +690,7 @@ def explain(
             "fix_hint": info["fix_hint"],
         }
         output.write_text(
-            json_mod.dumps(data, indent=2) + "\n", encoding="utf-8",
+            json_mod.dumps(sig_data, indent=2) + "\n", encoding="utf-8",
         )
         click.echo(f"Output written to {output}", err=True)
     else:
