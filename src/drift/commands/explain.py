@@ -603,17 +603,67 @@ def _all_abbreviations() -> list[str]:
     default=None,
     help="Repository root for --repo-context (default: current directory).",
 )
-def explain(signal: str | None, list_all: bool, repo_context: bool, repo: Path | None) -> None:
+@click.option(
+    "--output",
+    "-o",
+    type=click.Path(path_type=Path),
+    default=None,
+    help="Write JSON output to a file instead of stdout.",
+)
+def explain(
+    signal: str | None,
+    list_all: bool,
+    repo_context: bool,
+    repo: Path | None,
+    output: Path | None,
+) -> None:
     """Explain a drift signal: drift explain PFS"""
+    import json as json_mod
+
     if list_all or signal is None:
-        _print_signal_list()
+        if output is not None:
+            data = [
+                {
+                    "abbreviation": abbr,
+                    "name": _SIGNAL_INFO[abbr]["name"],
+                    "signal_type": _SIGNAL_INFO[abbr]["signal_type"],
+                    "weight": _SIGNAL_INFO[abbr]["weight"],
+                    "description": _SIGNAL_INFO[abbr]["description"],
+                }
+                for abbr in _all_abbreviations()
+            ]
+            output.write_text(
+                json_mod.dumps(data, indent=2) + "\n", encoding="utf-8",
+            )
+            click.echo(f"Output written to {output}", err=True)
+        else:
+            _print_signal_list()
         return
 
     key = signal.strip()
 
     # Check for error code first (DRIFT-XXXX pattern)
     if key.upper().startswith("DRIFT-"):
-        _print_error_code_detail(key.upper())
+        if output is not None:
+            from drift.errors import ERROR_REGISTRY
+
+            info_err = ERROR_REGISTRY.get(key.upper())
+            if info_err is None:
+                click.echo(f"Unknown error code: {key}", err=True)
+                raise SystemExit(1)
+            data = {
+                "code": info_err.code,
+                "summary": info_err.summary,
+                "why": info_err.why,
+                "action": info_err.action,
+                "category": info_err.category,
+            }
+            output.write_text(
+                json_mod.dumps(data, indent=2) + "\n", encoding="utf-8",
+            )
+            click.echo(f"Output written to {output}", err=True)
+        else:
+            _print_error_code_detail(key.upper())
         return
 
     key_lower = key.lower()
@@ -627,7 +677,24 @@ def explain(signal: str | None, list_all: bool, repo_context: bool, repo: Path |
         )
         raise SystemExit(1)
 
-    _print_signal_detail(info)
+    if output is not None:
+        abbr = next((a for a, i in _SIGNAL_INFO.items() if i is info), "?")
+        data = {
+            "abbreviation": abbr,
+            "name": info["name"],
+            "signal_type": info["signal_type"],
+            "weight": info["weight"],
+            "description": info["description"],
+            "detects": info["detects"],
+            "example": info["example"],
+            "fix_hint": info["fix_hint"],
+        }
+        output.write_text(
+            json_mod.dumps(data, indent=2) + "\n", encoding="utf-8",
+        )
+        click.echo(f"Output written to {output}", err=True)
+    else:
+        _print_signal_detail(info)
 
     if repo_context:
         repo_root = (repo or Path(".")).resolve()

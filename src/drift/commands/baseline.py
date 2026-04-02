@@ -91,6 +91,13 @@ def save(
     type=click.Choice(["rich", "json"]),
     default="rich",
 )
+@click.option(
+    "--output",
+    "-o",
+    type=click.Path(path_type=Path),
+    default=None,
+    help="Write output to a file instead of stdout.",
+)
 def diff(
     repo: Path,
     since: int,
@@ -99,6 +106,7 @@ def diff(
     no_embeddings: bool,
     baseline_file: Path | None,
     output_format: str,
+    output: Path | None,
 ) -> None:
     """Show only new findings compared to a saved baseline."""
     import json as json_mod
@@ -137,7 +145,12 @@ def diff(
             "baseline_findings_count": len(fingerprints),
             "drift_score": analysis.drift_score,
         }
-        click.echo(json_mod.dumps(data, indent=2))
+        text = json_mod.dumps(data, indent=2)
+        if output is not None:
+            output.write_text(text + "\n", encoding="utf-8")
+            click.echo(f"Output written to {output}", err=True)
+        else:
+            click.echo(text)
     else:
         console.print(
             f"\n[bold]Baseline comparison[/bold] ({bl_path.name})"
