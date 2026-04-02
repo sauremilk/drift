@@ -1,0 +1,24 @@
+{
+  "version": "v1.4.0",
+  "date": "2026-04-02",
+  "issue": 49,
+  "feature": "nudge_baseline_refresh_reason",
+  "summary": "Nudge now exposes deterministic baseline_refresh_reason values for baseline refresh paths.",
+  "reason_codes": [
+    "baseline_missing",
+    "ttl_expired",
+    "git_head_changed",
+    "stash_changed",
+    "changed_file_threshold"
+  ],
+  "tests": {
+    "targeted": {
+      "command": ".venv\\Scripts\\python.exe -m pytest tests/test_nudge.py -q --maxfail=1",
+      "result": "34 passed"
+    },
+    "quick": {
+      "command": ".venv\\Scripts\\python.exe -m pytest tests/ --tb=short --ignore=tests/test_smoke.py -q --maxfail=1",
+      "result": "1407 passed, 2 skipped, 42 deselected"
+    }
+  }
+}
