@@ -193,6 +193,58 @@ def test_api_diff_scopes_decision_logic_to_target_path(monkeypatch) -> None:
     assert "safe to proceed" not in result["agent_instruction"].lower()
 
 
+def test_api_diff_recommends_baseline_for_large_working_tree(monkeypatch) -> None:
+    import drift.analyzer as analyzer_module
+    import drift.api as api_module
+    from drift.config import DriftConfig
+
+    analysis = SimpleNamespace(
+        findings=[],
+        drift_score=0.45,
+        severity=Severity.LOW,
+        trend=SimpleNamespace(previous_score=0.45),
+        is_degraded=False,
+        total_files=120,
+    )
+
+    monkeypatch.setattr(DriftConfig, "load", staticmethod(lambda *args, **kwargs: DriftConfig()))
+    monkeypatch.setattr(analyzer_module, "analyze_diff", lambda *args, **kwargs: analysis)
+    monkeypatch.setattr(api_module, "_emit_api_telemetry", lambda **kwargs: None)
+
+    result = diff(Path("."))
+
+    assert result["baseline_recommended"] is True
+    assert result["baseline_reason"] == "large_working_tree"
+    assert any("drift baseline save" in action for action in result["recommended_next_actions"])
+
+
+def test_api_diff_does_not_recommend_baseline_when_baseline_is_provided(monkeypatch) -> None:
+    import drift.analyzer as analyzer_module
+    import drift.api as api_module
+    import drift.baseline as baseline_module
+    from drift.config import DriftConfig
+
+    analysis = SimpleNamespace(
+        findings=[],
+        drift_score=0.45,
+        severity=Severity.LOW,
+        trend=SimpleNamespace(previous_score=0.45),
+        is_degraded=False,
+        total_files=120,
+    )
+
+    monkeypatch.setattr(DriftConfig, "load", staticmethod(lambda *args, **kwargs: DriftConfig()))
+    monkeypatch.setattr(analyzer_module, "analyze_diff", lambda *args, **kwargs: analysis)
+    monkeypatch.setattr(baseline_module, "load_baseline", lambda *_args, **_kwargs: [])
+    monkeypatch.setattr(baseline_module, "baseline_diff", lambda findings, _fps: (findings, []))
+    monkeypatch.setattr(api_module, "_emit_api_telemetry", lambda **kwargs: None)
+
+    result = diff(Path("."), baseline_file=".drift-baseline.json")
+
+    assert result["baseline_recommended"] is False
+    assert result["baseline_reason"] == "none"
+
+
 def test_api_diff_uncommitted_mode_passed_to_analyzer(monkeypatch) -> None:
     import drift.analyzer as analyzer_module
     import drift.api as api_module

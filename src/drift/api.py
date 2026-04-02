@@ -504,6 +504,39 @@ def diff(
             "explanation": noise_explanation,
         }
 
+        thresholds = getattr(cfg, "thresholds", None)
+        max_changed_files = getattr(
+            thresholds,
+            "diff_baseline_recommend_max_changed_files",
+            50,
+        )
+        max_new_findings = getattr(
+            thresholds,
+            "diff_baseline_recommend_max_new_findings",
+            100,
+        )
+        max_out_of_scope_findings = getattr(
+            thresholds,
+            "diff_baseline_recommend_max_out_of_scope_findings",
+            50,
+        )
+
+        baseline_reasons: list[str] = []
+        if not baseline_file:
+            if diff_analysis.total_files >= max_changed_files:
+                baseline_reasons.append("large_working_tree")
+            if n_new >= max_new_findings:
+                baseline_reasons.append("high_new_finding_volume")
+            if (
+                target_path
+                and len(out_of_scope_new)
+                >= max_out_of_scope_findings
+            ):
+                baseline_reasons.append("out_of_scope_noise")
+
+        baseline_recommended = bool(baseline_reasons)
+        baseline_reason = baseline_reasons[0] if baseline_reasons else "none"
+
         accept_change = not blocking_reasons
         in_scope_accept = not in_scope_blocking
         decision_reason_code, decision_reason = _diff_decision_reason(
@@ -547,6 +580,8 @@ def diff(
             resolved_count=len(scoped_resolved),
             out_of_scope_new_count=len(out_of_scope_new),
             noise_context=noise_context,
+            baseline_recommended=baseline_recommended,
+            baseline_reason=baseline_reason,
             drift_categories=drift_categories,
             affected_components=affected,
             summary=", ".join(summary_parts),
@@ -559,6 +594,8 @@ def diff(
                 scoped_new, status, blocking_reasons,
                 in_scope_accept=in_scope_accept,
                 has_baseline=baseline_file is not None,
+                baseline_recommended=baseline_recommended,
+                baseline_reason=baseline_reason,
             ),
             response_truncated=len(scoped_new) > max_findings,
             agent_instruction=_agent_hint,
@@ -593,6 +630,8 @@ def _diff_next_actions(
     *,
     in_scope_accept: bool = False,
     has_baseline: bool = False,
+    baseline_recommended: bool = False,
+    baseline_reason: str = "none",
 ) -> list[str]:
     """Derive next actions from diff results."""
     actions: list[str] = []
@@ -600,6 +639,11 @@ def _diff_next_actions(
         actions.append("drift_fix_plan for new findings")
     if any(f.severity.value in ("critical", "high") for f in new_findings):
         actions.append("drift_explain for high-severity signals")
+    if baseline_recommended and not has_baseline:
+        actions.append(
+            "Run 'drift baseline save' before retrying diff "
+            f"(baseline_reason={baseline_reason})"
+        )
     if "out_of_scope_diff_noise" in blocking_reasons and not has_baseline:
         actions.append(
             "Use 'drift baseline save' then 'drift diff --baseline "

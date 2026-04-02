@@ -1,0 +1,28 @@
+{
+  "version": "v1.5.0",
+  "date": "2026-04-02",
+  "issue": 59,
+  "feature": "diff_baseline_recommendation_fields",
+  "summary": "drift diff now emits baseline_recommended plus baseline_reason when worktree scope is too noisy for reliable causal attribution.",
+  "reason_codes": [
+    "large_working_tree",
+    "high_new_finding_volume",
+    "out_of_scope_noise",
+    "none"
+  ],
+  "configuration": {
+    "thresholds.diff_baseline_recommend_max_changed_files": 50,
+    "thresholds.diff_baseline_recommend_max_new_findings": 100,
+    "thresholds.diff_baseline_recommend_max_out_of_scope_findings": 50
+  },
+  "tests": {
+    "targeted": {
+      "command": ".venv\\Scripts\\python.exe -m pytest tests/test_telemetry.py -q --maxfail=1",
+      "result": "passed"
+    },
+    "quick": {
+      "command": ".venv\\Scripts\\python.exe -m pytest tests/ --tb=short --ignore=tests/test_smoke.py -q --maxfail=1",
+      "result": "1413 passed, 2 skipped, 42 deselected"
+    }
+  }
+}

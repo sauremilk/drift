@@ -60,6 +60,9 @@ class ThresholdsConfig(BaseModel):
     max_discovery_files: int = 10000  # safety guardrail for huge repos
     small_repo_module_threshold: int = 15  # adaptive dampening below this
     small_repo_min_findings: int = 2  # per-signal minimum to score
+    diff_baseline_recommend_max_changed_files: int = 50
+    diff_baseline_recommend_max_new_findings: int = 100
+    diff_baseline_recommend_max_out_of_scope_findings: int = 50
 
     # Security-by-default thresholds
     hsc_min_entropy: float = 3.5  # Shannon entropy per char for secret detection

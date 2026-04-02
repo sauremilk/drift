@@ -102,6 +102,9 @@ thresholds:
   recency_days: 14             # TVS: recency window
   volatility_z_threshold: 1.5  # TVS: z-score outlier threshold
   max_discovery_files: 10000   # Safety: hard cap for discovered source files
+  diff_baseline_recommend_max_changed_files: 50          # diff: recommend baseline on broad working tree
+  diff_baseline_recommend_max_new_findings: 100          # diff: recommend baseline on high finding volume
+  diff_baseline_recommend_max_out_of_scope_findings: 50  # diff: recommend baseline when target scope is very noisy
 
 # Per-path overrides: adjust weights or suppress signals for specific paths.
 # Patterns use glob syntax; the most specific (longest) match wins.
