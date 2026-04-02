@@ -21,11 +21,11 @@
 
 ## [1.5.0] – 2026-04-02
 
-Short version: Release 1.5.0. (+1 more commits)
+Short version: Release 1.5.0. (+8 more commits)
 
 ### Changed
 
-- Release 1.5.0. (+1 more commits)
+- Release 1.5.0. (+8 more commits)
 
 
 ## [1.4.0] – 2026-04-02
