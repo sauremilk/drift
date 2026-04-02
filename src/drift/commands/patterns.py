@@ -38,7 +38,10 @@ from drift.commands import console
     help="Restrict pattern discovery to a subdirectory.",
 )
 def patterns(repo: Path, category: str | None, target_path: str | None) -> None:
-    """Show discovered code patterns in the repository."""
+    """Show discovered code patterns in the repository.
+
+    Use ``target_path`` to scope discovery to a specific subdirectory.
+    """
     from rich.table import Table
 
     from drift.analyzer import analyze_repo
