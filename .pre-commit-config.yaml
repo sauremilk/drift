@@ -12,7 +12,8 @@ repos:
         args: [--maxkb=1024]
       - id: check-merge-conflict
       - id: detect-private-key
-        exclude: "(^|/)(\\.secrets\\.baseline|\\.detect-secrets\\.cfg)$"
+        # Multiline-secret tests intentionally include key-like fixtures.
+        exclude: "(^|/)(\\.secrets\\.baseline|\\.detect-secrets\\.cfg|tests/test_hardcoded_secret\\.py)$"
 
   - repo: https://github.com/Yelp/detect-secrets
     rev: v1.5.0

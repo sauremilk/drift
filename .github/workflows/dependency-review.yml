@@ -16,7 +16,9 @@ jobs:
   dependency-review:
     name: Review dependency changes
     if: ${{ github.actor != 'dependabot[bot]' }}
-    runs-on: ubuntu-latest
+    # NOTE: Uses self-hosted Windows runner until the GitHub-hosted billing lock is resolved.
+    # Migration back to GitHub-hosted runners remains tracked in issue #90.
+    runs-on: self-hosted
     steps:
       - name: Checkout
         uses: actions/checkout@v4
