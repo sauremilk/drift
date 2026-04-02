@@ -406,7 +406,7 @@ class TestAgentInstruction:
             lambda analysis, max_items=5: [],
         )
 
-        result = scan(Path("."))
+        result = scan(Path("."), response_detail="detailed")
         assert "agent_instruction" in result
         assert isinstance(result["agent_instruction"], str)
         assert "drift_diff" in result["agent_instruction"]

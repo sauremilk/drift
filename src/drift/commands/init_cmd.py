@@ -341,8 +341,8 @@ def init(
 
     created = 0
     for p in plan:
-        target = repo / p["path"]
-        if _write_if_absent(target, p["content"], p["path"], root=repo):
+        target = repo / str(p["path"])
+        if _write_if_absent(target, str(p["content"]), str(p["path"]), root=repo):
             created += 1
             if "drift-pre-push" in str(p["path"]):
                 console.print(

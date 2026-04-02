@@ -180,3 +180,86 @@ def test_fix_plan_target_path_filters(monkeypatch) -> None:
     )
     assert result.exit_code == 0
     assert captured.get("target_path") == "src/drift"
+
+
+# ---------------------------------------------------------------------------
+# #71 concise vs detailed scan response differentiation
+# ---------------------------------------------------------------------------
+
+
+def test_scan_concise_omits_fix_first() -> None:
+    """concise scan response should not include fix_first or recommended_next_actions."""
+    from unittest.mock import MagicMock
+
+    from drift.api import _format_scan_response
+
+    analysis = MagicMock()
+    analysis.findings = []
+    analysis.drift_score = 0.1
+    analysis.severity.value = "low"
+    analysis.total_files = 5
+    analysis.total_functions = 10
+    analysis.ai_attributed_ratio = 0.0
+    analysis.trend = None
+    analysis.skipped_files = 0
+
+    result = _format_scan_response(analysis, detail="concise")
+    assert "fix_first" not in result
+    assert "recommended_next_actions" not in result
+    assert "agent_instruction" not in result
+    assert "top_signals" in result
+
+
+def test_scan_detailed_includes_fix_first() -> None:
+    """detailed scan response should include fix_first and recommended_next_actions."""
+    from unittest.mock import MagicMock
+
+    from drift.api import _format_scan_response
+
+    analysis = MagicMock()
+    analysis.findings = []
+    analysis.drift_score = 0.1
+    analysis.severity.value = "low"
+    analysis.total_files = 5
+    analysis.total_functions = 10
+    analysis.ai_attributed_ratio = 0.0
+    analysis.trend = None
+    analysis.skipped_files = 0
+
+    result = _format_scan_response(analysis, detail="detailed")
+    assert "fix_first" in result
+    assert "recommended_next_actions" in result
+    assert "agent_instruction" in result
+
+
+# ---------------------------------------------------------------------------
+# #70 signal-specific success_criteria
+# ---------------------------------------------------------------------------
+
+
+def test_success_criteria_signal_specific() -> None:
+    """Every signal type should produce criteria beyond the generic fallback."""
+    from unittest.mock import MagicMock
+
+    from drift.models import SignalType
+    from drift.output.agent_tasks import _success_criteria_for
+
+    generic_only = "All existing tests pass after the change"
+
+    for st in SignalType:
+        finding = MagicMock()
+        finding.signal_type = st
+        finding.metadata = {}
+        finding.file_path = MagicMock()
+        finding.file_path.as_posix.return_value = "src/example.py"
+        finding.title = "test finding"
+        finding.symbol = "test_func"
+
+        criteria = _success_criteria_for(finding)
+        assert isinstance(criteria, list)
+        assert len(criteria) > 0
+        # At least one criterion beyond the generic base
+        non_generic = [c for c in criteria if c != generic_only]
+        assert len(non_generic) > 0, (
+            f"Signal {st.value} only returns generic criteria"
+        )

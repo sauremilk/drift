@@ -334,3 +334,74 @@ def cli_runner():
     from click.testing import CliRunner
 
     return CliRunner()
+
+
+# ---------------------------------------------------------------------------
+# #69 explain --output writes JSON file
+# ---------------------------------------------------------------------------
+
+
+class TestExplainOutput:
+    """Test -o / --output option on explain command."""
+
+    def test_explain_signal_output_file(self, cli_runner, tmp_path) -> None:
+        import json
+
+        out = tmp_path / "explain.json"
+        result = cli_runner.invoke(explain, ["PFS", "-o", str(out)])
+        assert result.exit_code == 0
+        data = json.loads(out.read_text(encoding="utf-8"))
+        assert data["abbreviation"] == "PFS"
+        assert "description" in data
+        assert "fix_hint" in data
+
+    def test_explain_list_output_file(self, cli_runner, tmp_path) -> None:
+        import json
+
+        out = tmp_path / "signals.json"
+        result = cli_runner.invoke(explain, ["--list", "-o", str(out)])
+        assert result.exit_code == 0
+        data = json.loads(out.read_text(encoding="utf-8"))
+        assert isinstance(data, list)
+        assert len(data) == 23
+
+    def test_explain_error_code_output_file(self, cli_runner, tmp_path) -> None:
+        import json
+
+        out = tmp_path / "error.json"
+        result = cli_runner.invoke(explain, ["DRIFT-1001", "-o", str(out)])
+        assert result.exit_code == 0
+        data = json.loads(out.read_text(encoding="utf-8"))
+        assert data["code"] == "DRIFT-1001"
+
+
+# ---------------------------------------------------------------------------
+# #72 passlib warning suppression
+# ---------------------------------------------------------------------------
+
+
+class TestWarningsSuppression:
+    """Verify third-party warnings are suppressed at import time."""
+
+    def test_passlib_warnings_filtered(self) -> None:
+        """cli.py has warnings.filterwarnings for passlib SyntaxWarning."""
+        import ast
+        from pathlib import Path
+
+        cli_path = Path(cli.__file__)
+        tree = ast.parse(cli_path.read_text(encoding="utf-8"))
+
+        # Find a call to warnings.filterwarnings with "passlib" in the args
+        found = False
+        for node in ast.walk(tree):
+            if (
+                isinstance(node, ast.Call)
+                and isinstance(node.func, ast.Attribute)
+                and node.func.attr == "filterwarnings"
+            ):
+                for arg in node.args + [kw.value for kw in node.keywords]:
+                    is_str = isinstance(arg, ast.Constant) and isinstance(arg.value, str)
+                    if is_str and "passlib" in arg.value:
+                        found = True
+                        break
+        assert found, "cli.py must contain warnings.filterwarnings with passlib pattern"
