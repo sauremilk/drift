@@ -8,6 +8,7 @@ import sys
 
 import click
 import pytest
+from click.testing import CliRunner
 
 from drift import cli
 
@@ -100,6 +101,31 @@ def test_handle_click_error_adds_did_you_mean_hint() -> None:
     cli._handle_click_error(exc)
 
     assert "did you mean '--max-findings'" in exc.message
+
+
+def test_handle_click_error_adds_subcommand_did_you_mean_hint() -> None:
+    command = click.Group(
+        "drift",
+        commands={
+            "analyze": click.Command("analyze"),
+            "check": click.Command("check"),
+        },
+    )
+    ctx = click.Context(command)
+    exc = click.UsageError("No such command 'analze'.", ctx=ctx)
+
+    cli._handle_click_error(exc)
+
+    assert "did you mean 'analyze'" in exc.message
+
+
+def test_runtime_unknown_subcommand_adds_did_you_mean_hint() -> None:
+    runner = CliRunner()
+    result = runner.invoke(cli.main, ["analze"])
+
+    assert result.exit_code != 0
+    assert "No such command 'analze'" in result.output
+    assert "did you mean 'analyze'" in result.output
 
 
 def test_safe_main_drift_error_emits_json_payload_when_enabled(
@@ -195,7 +221,7 @@ def test_safe_main_enables_json_errors_for_json_shortcut_flag(
 
 
 def test_workers_zero_is_rejected_by_cli() -> None:
-    runner = click.testing.CliRunner()
+    runner = CliRunner()
     result = runner.invoke(cli.main, ["analyze", "--workers", "0", "-q"])
 
     assert result.exit_code != 0

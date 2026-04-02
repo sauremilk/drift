@@ -109,7 +109,24 @@ def _configure_logging(verbose: bool = False) -> None:
     )
 
 
-@click.group()
+class SuggestingGroup(click.Group):
+    """Click Group that adds did-you-mean hints for unknown subcommands."""
+
+    def get_command(self, ctx: click.Context, cmd_name: str) -> click.Command | None:
+        command = super().get_command(ctx, cmd_name)
+        if command is not None:
+            return command
+
+        matches = difflib.get_close_matches(cmd_name, self.list_commands(ctx), n=1, cutoff=0.5)
+        if matches:
+            raise click.UsageError(
+                f"No such command '{cmd_name}'.\n  Hint: did you mean '{matches[0]}'?",
+                ctx=ctx,
+            )
+        return None
+
+
+@click.group(cls=SuggestingGroup)
 @click.version_option(version=__version__, prog_name="drift")
 @click.option("-v", "--verbose", is_flag=True, default=False, help="Enable debug logging.")
 def main(verbose: bool = False) -> None:
@@ -229,35 +246,62 @@ def safe_main() -> None:
 
 
 def _handle_click_error(exc: click.ClickException) -> None:
-    """Add did-you-mean suggestions for unknown options."""
+    """Add did-you-mean suggestions for unknown options and commands."""
     if not isinstance(exc, click.UsageError):
         return
     msg = str(exc.format_message())
-    if "No such option:" not in msg and "no such option:" not in msg:
-        return
-    # Extract the bad option from the message
-    for part in msg.split():
-        if part.startswith("-"):
-            bad_option = part.rstrip(".")
-            break
-    else:
-        return
-
-    # Collect known options from the failed command's context
     ctx = exc.ctx
-    if ctx is None or ctx.command is None:
-        return
-    known = []
-    for param in ctx.command.params:
-        known.extend(param.opts)
-        known.extend(param.secondary_opts)
+    command = ctx.command if ctx is not None else None
 
-    matches = difflib.get_close_matches(bad_option, known, n=1, cutoff=0.5)
-    if matches:
-        exc.message = (
-            f"{exc.format_message().rstrip()}\n"
-            f"  Hint: did you mean '{matches[0]}'?"
-        )
+    if "No such option:" in msg or "no such option:" in msg:
+        if command is None:
+            return
+        # Extract the bad option from the message.
+        for part in msg.split():
+            if part.startswith("-"):
+                bad_option = part.rstrip(".")
+                break
+        else:
+            return
+
+        known: list[str] = []
+        for param in command.params:
+            known.extend(param.opts)
+            known.extend(param.secondary_opts)
+
+        matches = difflib.get_close_matches(bad_option, known, n=1, cutoff=0.5)
+        if matches:
+            exc.message = (
+                f"{exc.format_message().rstrip()}\n"
+                f"  Hint: did you mean '{matches[0]}'?"
+            )
+        return
+
+    if "No such command" in msg or "no such command" in msg:
+        # Click stores subcommands on Group.commands.
+        known_commands = list(getattr(command, "commands", {}).keys())
+        if not known_commands:
+            known_commands = list(getattr(main, "commands", {}).keys())
+        if not known_commands:
+            return
+
+        bad_command = ""
+        marker = "No such command "
+        lower_msg = msg.lower()
+        idx = lower_msg.find(marker.lower())
+        if idx != -1:
+            tail = msg[idx + len(marker):].strip()
+            bad_command = tail.strip("'\".")
+
+        if not bad_command:
+            return
+
+        matches = difflib.get_close_matches(bad_command, known_commands, n=1, cutoff=0.5)
+        if matches:
+            exc.message = (
+                f"{exc.format_message().rstrip()}\n"
+                f"  Hint: did you mean '{matches[0]}'?"
+            )
 
 
 if __name__ == "__main__":
