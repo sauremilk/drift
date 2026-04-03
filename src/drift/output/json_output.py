@@ -6,6 +6,8 @@ import json
 from typing import Any
 
 from drift import __version__
+from drift.config import DriftConfig
+from drift.finding_context import classify_finding_context, split_findings_by_context
 from drift.models import Finding, ModuleScore, RepoAnalysis, Severity, SignalType
 from drift.negative_context import findings_to_negative_context, negative_context_to_dict
 from drift.recommendations import generate_recommendation
@@ -128,6 +130,7 @@ def _fix_first_list(ranked_findings: list[Finding], max_items: int = 10) -> list
                 "signal": f.signal_type.value,
                 "rule_id": f.rule_id,
                 "severity": f.severity.value,
+                "finding_context": classify_finding_context(f, DriftConfig()),
                 "impact": f.impact,
                 "score_contribution": f.score_contribution,
                 "title": f.title,
@@ -168,6 +171,7 @@ def _finding_to_dict(f: Finding, *, impact_rank: int | None = None) -> dict[str,
         "file": f.file_path.as_posix() if f.file_path else None,
         "start_line": f.start_line,
         "end_line": f.end_line,
+        "finding_context": classify_finding_context(f, DriftConfig()),
         "symbol": f.symbol,
         "related_files": [rf.as_posix() for rf in f.related_files],
         "ai_attributed": f.ai_attributed,
@@ -206,6 +210,7 @@ def _finding_compact_dict(
         "signal": finding.signal_type.value,
         "rule_id": finding.rule_id,
         "severity": finding.severity.value,
+        "finding_context": classify_finding_context(finding, DriftConfig()),
         "impact": finding.impact,
         "score_contribution": finding.score_contribution,
         "title": finding.title,
@@ -234,6 +239,12 @@ def analysis_to_json(analysis: RepoAnalysis, indent: int = 2, compact: bool = Fa
     impact_ranks: dict[int, int] = {id(f): rank for rank, f in enumerate(ranked, 1)}
 
     deduped_findings, duplicate_counts = _dedupe_findings(ranked)
+    cfg = DriftConfig()
+    prioritized_fix_first, excluded_fix_first, context_counts = split_findings_by_context(
+        deduped_findings,
+        cfg,
+        include_non_operational=False,
+    )
     compact_findings = [
         _finding_compact_dict(
             finding,
@@ -243,7 +254,7 @@ def analysis_to_json(analysis: RepoAnalysis, indent: int = 2, compact: bool = Fa
         for index, finding in enumerate(deduped_findings, start=1)
     ]
 
-    fix_first = _fix_first_list(deduped_findings)
+    fix_first = _fix_first_list(prioritized_fix_first)
 
     data: dict[str, Any] = {
         "schema_version": SCHEMA_VERSION,
@@ -278,6 +289,14 @@ def analysis_to_json(analysis: RepoAnalysis, indent: int = 2, compact: bool = Fa
             "fix_first_count": len(fix_first),
         },
         "fix_first": fix_first,
+        "finding_context_policy": {
+            "counts": context_counts,
+            "non_operational_contexts": sorted(
+                set(cfg.finding_context.non_operational_contexts)
+            ),
+            "include_non_operational_in_fix_first": False,
+            "excluded_from_fix_first": len(excluded_fix_first),
+        },
         "suppressed_count": analysis.suppressed_count,
         "context_tagged_count": analysis.context_tagged_count,
         "negative_context": [

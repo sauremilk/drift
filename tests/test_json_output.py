@@ -64,6 +64,7 @@ def test_analysis_to_json_contains_expected_structure() -> None:
     assert payload["summary"]["total_functions"] == 48
     assert payload["modules"][0]["path"] == "src/app"
     assert payload["findings"][0]["signal"] == "system_misalignment"
+    assert payload["findings"][0]["finding_context"] == "production"
     assert payload["findings"][0]["file"] == "src/app/service.py"
     assert payload["findings"][0]["remediation"] is not None
     assert payload["findings"][0]["remediation"]["effort"] in {"low", "medium", "high"}
@@ -76,6 +77,8 @@ def test_analysis_to_json_contains_expected_structure() -> None:
     assert isinstance(payload["fix_first"], list)
     assert payload["fix_first"]
     assert payload["fix_first"][0]["rank"] == 1
+    assert payload["fix_first"][0]["finding_context"] == "production"
+    assert "finding_context_policy" in payload
 
 
 def test_findings_to_sarif_deduplicates_rules_and_sets_levels() -> None:

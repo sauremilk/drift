@@ -48,6 +48,12 @@ from drift.commands._io import _write_output_file
     help="Response detail level.",
 )
 @click.option(
+    "--include-non-operational",
+    is_flag=True,
+    default=False,
+    help="Include fixture/generated/migration/docs findings in prioritization queues.",
+)
+@click.option(
     "--output",
     "-o",
     type=click.Path(path_type=Path),
@@ -62,6 +68,7 @@ def scan(
     max_findings: int,
     strategy: str,
     response_detail: str,
+    include_non_operational: bool,
     output: Path | None,
 ) -> None:
     """Run the agent-native scan workflow and emit structured JSON."""
@@ -75,6 +82,7 @@ def scan(
         max_findings=max_findings,
         response_detail=response_detail,
         strategy=strategy,
+        include_non_operational=include_non_operational,
     )
     text = to_json(result)
     if output is not None:

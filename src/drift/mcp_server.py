@@ -158,6 +158,7 @@ def drift_scan(
     signals: str | None = None,
     max_findings: int = 10,
     response_detail: str = "concise",
+    include_non_operational: bool = False,
 ) -> str:
     """Analyze a repository for architectural drift.
 
@@ -171,6 +172,7 @@ def drift_scan(
         signals: Comma-separated signal IDs to include (e.g. "PFS,AVS").
         max_findings: Maximum findings to return (default: 10).
         response_detail: "concise" (token-sparing) or "detailed" (full fields).
+        include_non_operational: Include non-operational contexts in fix_first ordering.
     """
     from drift.api import scan
 
@@ -187,6 +189,7 @@ def drift_scan(
             signals=signal_list,
             max_findings=max_findings,
             response_detail=response_detail,
+            include_non_operational=include_non_operational,
         )
         return json.dumps(result, default=str)
     except Exception as exc:
@@ -258,6 +261,7 @@ def drift_fix_plan(
     max_tasks: int = 5,
     automation_fit_min: str | None = None,
     target_path: str | None = None,
+    include_non_operational: bool = False,
 ) -> str:
     """Generate prioritised repair tasks with constraints and success criteria.
 
@@ -271,6 +275,7 @@ def drift_fix_plan(
         max_tasks: Maximum tasks to return (default: 5).
         automation_fit_min: Minimum automation fitness: "low", "medium", or "high".
         target_path: Restrict tasks to findings inside this subpath.
+        include_non_operational: Include non-operational contexts in prioritized tasks.
     """
     from drift.api import fix_plan
 
@@ -280,6 +285,7 @@ def drift_fix_plan(
         max_tasks=max_tasks,
         automation_fit_min=automation_fit_min,
         target_path=target_path,
+        include_non_operational=include_non_operational,
     )
     return json.dumps(result, default=str)
 

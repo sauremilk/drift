@@ -204,6 +204,7 @@ def test_scan_concise_omits_fix_first() -> None:
     from unittest.mock import MagicMock
 
     from drift.api import _format_scan_response
+    from drift.config import DriftConfig
 
     analysis = MagicMock()
     analysis.findings = []
@@ -215,7 +216,7 @@ def test_scan_concise_omits_fix_first() -> None:
     analysis.trend = None
     analysis.skipped_files = 0
 
-    result = _format_scan_response(analysis, detail="concise")
+    result = _format_scan_response(analysis, config=DriftConfig(), detail="concise")
     assert "fix_first" not in result
     assert "recommended_next_actions" not in result
     assert "agent_instruction" not in result
@@ -227,6 +228,7 @@ def test_scan_detailed_includes_fix_first() -> None:
     from unittest.mock import MagicMock
 
     from drift.api import _format_scan_response
+    from drift.config import DriftConfig
 
     analysis = MagicMock()
     analysis.findings = []
@@ -238,7 +240,7 @@ def test_scan_detailed_includes_fix_first() -> None:
     analysis.trend = None
     analysis.skipped_files = 0
 
-    result = _format_scan_response(analysis, detail="detailed")
+    result = _format_scan_response(analysis, config=DriftConfig(), detail="detailed")
     assert "fix_first" in result
     assert "recommended_next_actions" in result
     assert "agent_instruction" in result

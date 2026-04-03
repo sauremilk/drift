@@ -26,6 +26,7 @@ from drift.api_helpers import (
     resolve_signal,
     signal_abbrev,
 )
+from drift.finding_context import is_non_operational_context, split_findings_by_context
 
 if TYPE_CHECKING:
     from drift.incremental import BaselineSnapshot
@@ -72,6 +73,7 @@ def scan(
     max_findings: int = 10,
     response_detail: str = "concise",
     strategy: str = "diverse",
+    include_non_operational: bool = False,
 ) -> dict[str, Any]:
     """Run full drift analysis and return a structured result dict.
 
@@ -91,6 +93,9 @@ def scan(
         ``"concise"`` (token-sparing) or ``"detailed"`` (full fields).
     strategy:
         ``"diverse"`` (default) or ``"top-severity"`` (pure score sort).
+    include_non_operational:
+        Include non-operational contexts (fixture/generated/migration/docs)
+        in prioritization queues when ``True``.
     """
     from drift.analyzer import analyze_repo
     from drift.config import DriftConfig, apply_signal_filter, resolve_signal_names
@@ -106,6 +111,7 @@ def scan(
         "max_findings": max_findings,
         "response_detail": response_detail,
         "strategy": strategy,
+        "include_non_operational": include_non_operational,
     }
 
     try:
@@ -133,10 +139,12 @@ def scan(
         )
         result = _format_scan_response(
             analysis,
+            config=cfg,
             max_findings=max_findings,
             detail=response_detail,
             strategy=strategy,
             signal_filter=set(s.upper() for s in signals) if signals else None,
+            include_non_operational=include_non_operational,
         )
         if warnings:
             result["warnings"] = warnings
@@ -193,12 +201,19 @@ def _diverse_findings(findings: list, max_findings: int) -> list:
 def _format_scan_response(
     analysis: RepoAnalysis,
     *,
+    config: Any,
     max_findings: int = 10,
     detail: str = "concise",
     strategy: str = "diverse",
     signal_filter: set[str] | None = None,
+    include_non_operational: bool = False,
 ) -> dict[str, Any]:
     """Format a RepoAnalysis into the scan response schema."""
+    if not hasattr(config, "finding_context"):
+        from drift.config import DriftConfig
+
+        config = DriftConfig()
+
     selected_findings = analysis.findings
     if signal_filter:
         selected_findings = [
@@ -213,6 +228,12 @@ def _format_scan_response(
             selected_findings, key=lambda f: f.impact, reverse=True,
         )
         limited = ranked[:max_findings]
+
+    prioritized_for_fix_first, excluded_for_fix_first, context_counts = split_findings_by_context(
+        selected_findings,
+        config,
+        include_non_operational=include_non_operational,
+    )
     critical_count = sum(1 for f in selected_findings if f.severity.value == "critical")
     high_count = sum(1 for f in selected_findings if f.severity.value == "high")
     blocking_reasons: list[str] = []
@@ -255,12 +276,20 @@ def _format_scan_response(
         accept_change=not blocking_reasons,
         blocking_reasons=blocking_reasons,
         response_truncated=len(selected_findings) > max_findings,
+        finding_context={
+            "counts": context_counts,
+            "non_operational_contexts": sorted(
+                set(config.finding_context.non_operational_contexts)
+            ),
+            "include_non_operational": include_non_operational,
+            "excluded_from_fix_first": len(excluded_for_fix_first),
+        },
     )
 
     # detailed mode adds fix_first, recommended_next_actions, agent_instruction
     if detail == "detailed":
         result["fix_first"] = _fix_first_concise(
-            cast("RepoAnalysis", SimpleNamespace(findings=selected_findings)),
+            cast("RepoAnalysis", SimpleNamespace(findings=prioritized_for_fix_first)),
             max_items=min(max_findings, 5),
         )
         result["recommended_next_actions"] = _scan_next_actions(
@@ -916,6 +945,7 @@ def fix_plan(
     max_tasks: int = 5,
     automation_fit_min: str | None = None,
     target_path: str | None = None,
+    include_non_operational: bool = False,
 ) -> dict[str, Any]:
     """Generate a prioritized fix plan with constraints and success criteria.
 
@@ -933,6 +963,9 @@ def fix_plan(
         Minimum automation fitness level: ``"low"``, ``"medium"``, or ``"high"``.
     target_path:
         Restrict tasks to findings inside this subpath.
+    include_non_operational:
+        Include non-operational contexts (fixture/generated/migration/docs)
+        in prioritization when ``True``.
     """
     from drift.analyzer import analyze_repo
     from drift.config import DriftConfig
@@ -948,6 +981,7 @@ def fix_plan(
         "max_tasks": max_tasks,
         "automation_fit_min": automation_fit_min,
         "target_path": target_path,
+        "include_non_operational": include_non_operational,
     }
 
     _valid_automation_fit = {"low", "medium", "high"}
@@ -983,6 +1017,8 @@ def fix_plan(
             return result
 
         cfg = DriftConfig.load(repo_path)
+        if not hasattr(cfg, "finding_context"):
+            cfg = DriftConfig()
 
         # Validate target_path existence
         warnings: list[str] = []
@@ -1112,6 +1148,23 @@ def fix_plan(
                     skipped_low += 1
             tasks = filtered
 
+        context_counts: dict[str, int] = {}
+        excluded_non_operational = 0
+        if not include_non_operational:
+            filtered_tasks = []
+            for t in tasks:
+                context = str(t.metadata.get("finding_context", "production"))
+                context_counts[context] = context_counts.get(context, 0) + 1
+                if is_non_operational_context(context, cfg):
+                    excluded_non_operational += 1
+                    continue
+                filtered_tasks.append(t)
+            tasks = filtered_tasks
+        else:
+            for t in tasks:
+                context = str(t.metadata.get("finding_context", "production"))
+                context_counts[context] = context_counts.get(context, 0) + 1
+
         limited = tasks[:max_tasks]
 
         # Path diagnostic: explain empty results when target_path was used
@@ -1146,6 +1199,14 @@ def fix_plan(
             task_count=len(limited),
             total_available=len(tasks),
             skipped_low_automation=skipped_low,
+            finding_context={
+                "counts": dict(sorted(context_counts.items())),
+                "non_operational_contexts": sorted(
+                    set(cfg.finding_context.non_operational_contexts)
+                ),
+                "include_non_operational": include_non_operational,
+                "excluded_from_fix_plan": excluded_non_operational,
+            },
             path_diagnostic=path_diagnostic,
             finding_id_diagnostic=finding_id_diagnostic,
             message=finding_id_message,

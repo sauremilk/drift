@@ -165,6 +165,42 @@ class DeferredArea(BaseModel):
     review_by: str | None = None  # ISO date or sprint identifier
 
 
+class FindingContextRule(BaseModel):
+    """Classify findings by file path using glob patterns."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    pattern: str
+    context: str
+    precedence: int = 0
+
+
+class FindingContextPolicy(BaseModel):
+    """Policy for finding-context classification and triage behavior."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    rules: list[FindingContextRule] = Field(
+        default_factory=lambda: [
+            FindingContextRule(pattern="**/benchmarks/**", context="fixture", precedence=40),
+            FindingContextRule(pattern="**/benchmark_results/**", context="fixture", precedence=40),
+            FindingContextRule(pattern="**/corpus/**", context="fixture", precedence=40),
+            FindingContextRule(pattern="**/fixtures/**", context="fixture", precedence=35),
+            FindingContextRule(pattern="**/testdata/**", context="fixture", precedence=35),
+            FindingContextRule(pattern="**/generated/**", context="generated", precedence=35),
+            FindingContextRule(pattern="**/gen/**", context="generated", precedence=30),
+            FindingContextRule(pattern="**/migrations/**", context="migration", precedence=30),
+            FindingContextRule(pattern="**/docs/**", context="docs", precedence=20),
+            FindingContextRule(pattern="**/docs_src/**", context="docs", precedence=20),
+            FindingContextRule(pattern="**/site/**", context="docs", precedence=20),
+        ]
+    )
+    non_operational_contexts: list[str] = Field(
+        default_factory=lambda: ["fixture", "generated", "migration", "docs"]
+    )
+    default_context: str = "production"
+
+
 def _default_includes() -> list[str]:
     """Return default include patterns, auto-extending for TypeScript when available."""
     patterns = ["**/*.py"]
@@ -223,6 +259,7 @@ class DriftConfig(BaseModel):
     embedding_batch_size: int = 64
     path_overrides: dict[str, PathOverride] = Field(default_factory=dict)
     deferred: list[DeferredArea] = Field(default_factory=list)
+    finding_context: FindingContextPolicy = Field(default_factory=FindingContextPolicy)
 
     @staticmethod
     def _find_config_file(repo_path: Path) -> Path | None:

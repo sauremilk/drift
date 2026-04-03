@@ -6,6 +6,7 @@ from pathlib import Path
 from types import SimpleNamespace
 
 from drift.api import _diverse_findings, _format_scan_response, scan
+from drift.config import DriftConfig
 from drift.models import AgentTask, Severity, SignalType
 
 
@@ -93,7 +94,7 @@ class TestDiverseFindings:
             lambda analysis, max_items=5: [],
         )
         result = _format_scan_response(
-            analysis, max_findings=5, strategy="top-severity",
+            analysis, config=DriftConfig(), max_findings=5, strategy="top-severity",
         )
         assert result["findings_returned"] == 5
 
@@ -177,6 +178,129 @@ class TestFixFirstDedup:
             if it["file"] == same_file and it["signal"] == "PFS"
         ]
         assert len(pfs_same) == 1
+
+
+class TestNonOperationalContextFiltering:
+    def test_scan_detailed_excludes_fixture_from_fix_first_by_default(self, monkeypatch):
+        import drift.analyzer as analyzer_module
+        import drift.api as api_module
+
+        findings = [
+            _make_finding(PFS, 0.9, 0.9, file="benchmarks/corpus/src/app.py", line=10),
+            _make_finding(AVS, 0.8, 0.8, file="src/core/service.py", line=20),
+        ]
+        analysis = SimpleNamespace(
+            findings=findings,
+            drift_score=0.6,
+            severity=Severity.HIGH,
+            total_files=20,
+            total_functions=100,
+            ai_attributed_ratio=0.1,
+            trend=None,
+            skipped_files=0,
+            skipped_languages={},
+        )
+
+        monkeypatch.setattr(
+            DriftConfig, "load",
+            staticmethod(lambda *a, **kw: DriftConfig()),
+        )
+        monkeypatch.setattr(analyzer_module, "analyze_repo", lambda *a, **kw: analysis)
+        monkeypatch.setattr(api_module, "_emit_api_telemetry", lambda **kw: None)
+
+        result = scan(Path("."), response_detail="detailed", max_findings=10)
+
+        assert result["finding_context"]["excluded_from_fix_first"] >= 1
+        assert all(item["file"] != "benchmarks/corpus/src/app.py" for item in result["fix_first"])
+
+    def test_scan_detailed_includes_fixture_with_opt_in(self, monkeypatch):
+        import drift.analyzer as analyzer_module
+        import drift.api as api_module
+
+        findings = [
+            _make_finding(PFS, 0.9, 0.9, file="benchmarks/corpus/src/app.py", line=10),
+            _make_finding(AVS, 0.8, 0.8, file="src/core/service.py", line=20),
+        ]
+        analysis = SimpleNamespace(
+            findings=findings,
+            drift_score=0.6,
+            severity=Severity.HIGH,
+            total_files=20,
+            total_functions=100,
+            ai_attributed_ratio=0.1,
+            trend=None,
+            skipped_files=0,
+            skipped_languages={},
+        )
+
+        monkeypatch.setattr(
+            DriftConfig, "load",
+            staticmethod(lambda *a, **kw: DriftConfig()),
+        )
+        monkeypatch.setattr(analyzer_module, "analyze_repo", lambda *a, **kw: analysis)
+        monkeypatch.setattr(api_module, "_emit_api_telemetry", lambda **kw: None)
+
+        result = scan(
+            Path("."),
+            response_detail="detailed",
+            include_non_operational=True,
+            max_findings=10,
+        )
+
+        files = {item["file"] for item in result["fix_first"]}
+        assert "benchmarks/corpus/src/app.py" in files
+
+    def test_fix_plan_excludes_non_operational_by_default(self, monkeypatch):
+        import drift.analyzer as analyzer_module
+        import drift.api as api_module
+        from drift.api import fix_plan
+
+        analysis = SimpleNamespace(
+            findings=[],
+            drift_score=0.41,
+            severity=Severity.MEDIUM,
+            total_files=5,
+            total_functions=10,
+            ai_attributed_ratio=0.0,
+            trend=None,
+        )
+        tasks = [
+            AgentTask(
+                id="pfs-fixture",
+                signal_type=SignalType.PATTERN_FRAGMENTATION,
+                severity=Severity.HIGH,
+                priority=1,
+                title="Fixture duplicate",
+                description="desc",
+                action="action",
+                file_path="benchmarks/corpus/src/a.py",
+                metadata={"finding_context": "fixture"},
+            ),
+            AgentTask(
+                id="avs-prod",
+                signal_type=SignalType.ARCHITECTURE_VIOLATION,
+                severity=Severity.HIGH,
+                priority=2,
+                title="Prod boundary",
+                description="desc",
+                action="action",
+                file_path="src/core/b.py",
+                metadata={"finding_context": "production"},
+            ),
+        ]
+
+        monkeypatch.setattr(DriftConfig, "load", staticmethod(lambda *a, **kw: DriftConfig()))
+        monkeypatch.setattr(analyzer_module, "analyze_repo", lambda *a, **kw: analysis)
+        monkeypatch.setattr(
+            "drift.output.agent_tasks.analysis_to_agent_tasks",
+            lambda *a, **kw: tasks,
+        )
+        monkeypatch.setattr(api_module, "_emit_api_telemetry", lambda **kw: None)
+
+        result = fix_plan(Path("."), max_tasks=5)
+        assert result["task_count"] == 1
+        assert result["tasks"][0]["id"] == "avs-prod"
+        assert result["finding_context"]["excluded_from_fix_plan"] == 1
 
 
 # --- Task 3: diff --uncommitted scope ---

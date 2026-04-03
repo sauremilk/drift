@@ -9,6 +9,8 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
 
+from drift.config import DriftConfig
+from drift.finding_context import classify_finding_context
 from drift.models import SignalType
 
 if TYPE_CHECKING:
@@ -80,6 +82,7 @@ def _finding_concise(f: Any) -> dict[str, Any]:
         "title": f.title,
         "file": f.file_path.as_posix() if f.file_path else None,
         "line": f.start_line,
+        "finding_context": classify_finding_context(f, DriftConfig()),
         "next_step": _next_step_for_finding(f),
     }
 
@@ -109,6 +112,7 @@ def _finding_detailed(f: Any, *, rank: int | None = None) -> dict[str, Any]:
         "file": f.file_path.as_posix() if f.file_path else None,
         "start_line": f.start_line,
         "end_line": f.end_line,
+        "finding_context": classify_finding_context(f, DriftConfig()),
         "symbol": f.symbol,
         "related_files": [rf.as_posix() for rf in f.related_files],
         "next_step": _next_step_for_finding(f),
@@ -201,6 +205,7 @@ def _fix_first_concise(analysis: RepoAnalysis, max_items: int = 5) -> list[dict[
                 "title": f.title,
                 "file": f.file_path.as_posix() if f.file_path else None,
                 "line": f.start_line,
+                "finding_context": classify_finding_context(f, DriftConfig()),
                 "next_step": _next_step_for_finding(f),
                 "expected_benefit": _expected_benefit_for_finding(f),
             }
@@ -218,6 +223,7 @@ def _task_to_api_dict(t: Any) -> dict[str, Any]:
         "severity": t.severity.value,
         "title": t.title,
         "action": t.action,
+        "finding_context": t.metadata.get("finding_context", "production"),
         "file": t.file_path,
         "start_line": t.start_line,
         "symbol": t.symbol,

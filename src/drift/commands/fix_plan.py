@@ -41,6 +41,12 @@ from drift.api import to_json
     help="Minimum automation fitness to include.",
 )
 @click.option(
+    "--include-non-operational",
+    is_flag=True,
+    default=False,
+    help="Include fixture/generated/migration/docs findings in prioritized tasks.",
+)
+@click.option(
     "--output",
     "-o",
     type=click.Path(path_type=Path),
@@ -54,6 +60,7 @@ def fix_plan(
     max_tasks: int,
     target_path: str | None,
     automation_fit_min: str | None,
+    include_non_operational: bool,
     output: Path | None,
 ) -> None:
     """Generate a prioritized, agent-friendly repair plan as JSON."""
@@ -64,6 +71,7 @@ def fix_plan(
         max_tasks=max_tasks,
         automation_fit_min=automation_fit_min,
         target_path=target_path,
+        include_non_operational=include_non_operational,
     )
     text = to_json(result)
     if output is not None:

@@ -34,6 +34,9 @@ do not need to re-implement gating heuristics outside drift.
     `existing_high_or_critical_findings` or `drift_trend_degrading`
 - `critical_count`: total critical findings in the analyzed scope
 - `high_count`: total high findings in the analyzed scope
+- `finding_context`: machine-readable context counts and prioritization filters
+    (`counts`, `non_operational_contexts`, `include_non_operational`,
+    `excluded_from_fix_first`)
 
 ### `diff` response additions
 
@@ -122,6 +125,8 @@ For finding-level prioritization in JSON output:
     Formula: `(signal_weight * score) / total_weight`.
 - `priority_class`: decision bucket used in `fix_first` ordering.
     Values: `architecture_boundary`, `structural_risk`, `style_or_hygiene`.
+- `finding_context`: contextual classification used for policy-aware triage.
+    Values typically include `production`, `fixture`, `generated`, `migration`, `docs`.
 
 ### `RepoAnalysis` fields
 

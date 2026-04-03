@@ -138,3 +138,25 @@ thresholds:
 #     review_by: "2026-09-01"
 #   - pattern: "vendor/**"
 #     reason: "Vendored dependency — do not modify"
+
+# Finding context policy: classify findings by path to separate operational
+# production findings from non-operational contexts (fixtures/generated/docs/etc.).
+# Non-operational contexts are excluded from fix-first/fix-plan prioritization
+# by default, but can be included via API/CLI opt-in flags.
+# finding_context:
+#   default_context: production
+#   non_operational_contexts:
+#     - fixture
+#     - generated
+#     - migration
+#     - docs
+#   rules:
+#     - pattern: "**/benchmarks/**"
+#       context: fixture
+#       precedence: 40
+#     - pattern: "**/generated/**"
+#       context: generated
+#       precedence: 35
+#     - pattern: "src/generated/safe/**"
+#       context: production
+#       precedence: 50

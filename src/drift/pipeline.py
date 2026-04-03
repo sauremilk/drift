@@ -15,6 +15,7 @@ from typing import TYPE_CHECKING, Any
 from drift.cache import ParseCache, SignalCache
 from drift.context_tags import apply_context_tags, scan_context_tags
 from drift.embeddings import get_embedding_service
+from drift.finding_context import annotate_finding_contexts
 from drift.ingestion.ast_parser import parse_file
 from drift.ingestion.git_history import (
     build_file_histories,
@@ -560,6 +561,9 @@ class ScoringPhase:
                         if area.reason:
                             f.metadata.setdefault("deferred_reason", area.reason)
                         break
+
+        # Classify every finding into an operational context for policy-aware triage.
+        annotate_finding_contexts(all_findings, config)
 
         n_modules = len({f.path.parent.as_posix() for f in files})
         is_small_repo = n_modules < config.thresholds.small_repo_module_threshold
