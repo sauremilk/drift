@@ -3,30 +3,12 @@
 ### Added
 
 - Introduce configurable finding-context triage policy with precedence-based glob rules to keep non-operational findings out of default remediation queues unless explicitly requested.
-- Add `--progress json` option to `scan` and `analyze` commands for structured JSON-lines progress feedback on stderr, enabling agents to distinguish running from hung processes (#104).
-
 ### Changed
 
 - Align agent prompt artifacts and prompt partials to enforce policy-gate consistency and shared taxonomy fragments across workflow prompts.
-
 ### Fixed
 
 - Surface file I/O errors in `analyze`, `check`, and `scan` commands as structured `DRIFT-2003` errors with exit code 2 instead of unhandled `OSError` tracebacks.
-- Validate `--max-findings` range (1–200) in `drift scan` via `click.IntRange` and reject out-of-range values with exit code 2.
-- Improve `DRIFT-2003` action message to explicitly suggest checking output path writability and parent directory existence.
-- Stabilize self-hosted CI Python setup by moving the test matrix to `actions/setup-python@v6` and keep Security Hygiene green by refreshing the detect-secrets baseline plus excluding known false-positive test/documentation files at the pre-commit hook level.
-- Prevent CI/release false failures on self-hosted Windows by pinning test jobs back to `actions/setup-python@v5`, making no-tag release detection PowerShell-safe, and allowlisting the signal map `hardcoded_secret` label for detect-secrets.
-- Document and enforce the Windows runner workaround for `actions/setup-python` registry-permission failures so CI uses `@v5` until runner permissions are fixed.
-- Improve AVS mutation detection and recommendation edge-case handling to reduce unstable or misleading remediation output.
-- Add missing conda/pip-env exclude patterns (`.conda/`, `.env/`, `.tox/`, `.nox/`, `site-packages/`, `.pixi/`) to `drift init` generated config so scanning never picks up virtualenv stdlib as project findings (#105).
-- Standardize path-scoping flags: all commands now accept both `--path` and `--target-path` as aliases to avoid agent round-trip failures (#107).
-- `primary_signal_for_next_step` in `drift scan` now skips weight-0 (report-only) signals so agents are not directed toward zero-impact remediation (#108).
-- All JSON outputs now include both `signal_abbrev` (e.g. `PFS`) and full signal name for cross-command finding correlation (#106).
-- Normalize `MISSING_AUTHORIZATION` and `HARDCODED_SECRET` negative-context templates to use fixed variable names so identical signals deduplicate correctly in `export-context`, reducing token waste by up to 60% (#109).
-- Add `description` fields to all MCP tool parameters via `Annotated[type, Field(description=...)]` and include descriptions in `drift mcp --schema` catalog output so agents can infer valid parameter ranges and formats (#110).
-- Replace all non-ASCII characters (emoji severity icons, arrows, ellipsis) in Markdown export output with ASCII equivalents to eliminate mojibake on Windows (#111).
-- Add cross-reference notes between `copilot-context` and `export-context` outputs so agents using either surface are made aware of the complementary context (#112).
-
 ## [2.2.0] - 2026-04-03
 
 Short version: Align release metadata with current project version.
@@ -34,16 +16,12 @@ Short version: Align release metadata with current project version.
 ### Changed
 
 - Sync top changelog release marker to 2.2.0 so release-discipline checks match [project] version in pyproject.toml.
-
 ## [2.1.3] - 2026-04-02
 
 Short version: Keep release metadata aligned after CI runner hardening updates.
-
 ### Fixed
 
 - Align release bookkeeping so `pyproject.toml` and top changelog release stay in sync for pre-push release-discipline checks.
-
-## [2.1.2] - 2026-04-02
 
 Short version: Add workspace-value benchmark suite and validation coverage.
 
