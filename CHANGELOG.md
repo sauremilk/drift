@@ -2,7 +2,7 @@
 
 ### Added
 
-- Add mutation testing infrastructure with cross-platform runner (`scripts/signal_mutation_test.py`) and 18 threshold sensitivity tests; baseline kill rate 87% (20/23) with PFS, MDS, EDS, GCD at 100%; 3 AVS survivors documented as `KNOWN_SURVIVOR_EMBEDDING`.
+- Add mutation testing infrastructure with cross-platform runner (`scripts/signal_mutation_test.py`) and 20 threshold sensitivity tests; baseline kill rate **100%** (23/23) — all 5 core signals (PFS, AVS, MDS, EDS, GCD) at 100%.
 - Introduce configurable finding-context triage policy with precedence-based glob rules to keep non-operational findings out of default remediation queues unless explicitly requested.
 - Add `--progress json` option to `scan` and `analyze` commands for structured JSON-lines progress feedback on stderr, enabling agents to distinguish running from hung processes (#104).
 - `drift check` now supports `--save-baseline` and `--max-findings` options for CI parity with `drift analyze` (#116).

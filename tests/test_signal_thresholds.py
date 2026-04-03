@@ -11,6 +11,10 @@ from __future__ import annotations
 import datetime
 import textwrap
 from pathlib import Path
+from unittest.mock import MagicMock
+
+import networkx as nx
+import numpy as np
 
 from drift.config import DriftConfig, LayerBoundary, PolicyConfig
 from drift.ingestion.ast_parser import parse_file
@@ -18,8 +22,14 @@ from drift.ingestion.file_discovery import discover_files
 from drift.models import (
     FileHistory,
     Finding,
+    ImportInfo,
+    ParseResult,
     Severity,
     SignalType,
+)
+from drift.signals.architecture_violation import (
+    _compute_hub_nodes,
+    _infer_layer_with_embeddings,
 )
 from drift.signals.base import AnalysisContext, create_signals
 
@@ -903,4 +913,64 @@ class TestAVSThresholds:
         # The upward import from utils→core should be detected
         assert len(findings) >= 1, (
             "Explicit layer boundary violation should trigger AVS"
+        )
+
+    def test_hub_nodes_strict_percentile(self) -> None:
+        """_compute_hub_nodes at 90th percentile identifies only extreme hubs.
+
+        Kills avs_002: mutation 0.90 → 0.50 would include mid-tier nodes.
+        Kills avs_004: AND → OR would include all non-zero centrality nodes.
+        """
+        g = nx.DiGraph()
+        # 10 nodes: 7 sources, 1 hub (8 incoming), 1 mid (4 incoming), 1 low (2 incoming)
+        sources = [f"src_{i}" for i in range(7)]
+        for s in sources:
+            g.add_edge(s, "hub_A")
+        g.add_edge("mid_B", "hub_A")       # hub_A total: 8 incoming
+        for s in sources[:4]:
+            g.add_edge(s, "mid_B")          # mid_B total: 4 incoming
+        for s in sources[:2]:
+            g.add_edge(s, "low_C")          # low_C total: 2 incoming
+
+        # With default percentile (0.90), only hub_A should be a hub
+        hubs = _compute_hub_nodes(g)
+        assert "hub_A" in hubs, "Extreme hub must be detected"
+        assert "mid_B" not in hubs, (
+            "Mid-tier node should NOT be a hub at 90th percentile"
+        )
+        assert "low_C" not in hubs, (
+            "Low-tier node should NOT be a hub at 90th percentile"
+        )
+
+    def test_embedding_layer_inference_threshold(self) -> None:
+        """Embedding similarity at 0.7 must infer a layer (threshold is 0.5).
+
+        Kills avs_001: mutation 0.5 → 0.99 would reject sim=0.7 and
+        return None, leaving files without recognizable directory names
+        unclassified — hiding real upward violations.
+        """
+        emb = MagicMock()
+        emb.embed_text.return_value = np.array([1.0, 0.0, 0.0])
+        emb.cosine_similarity.return_value = 0.7
+
+        # File in non-standard directory (no layer inference from name)
+        pr = ParseResult(
+            file_path=Path("mypackage/handler.py"),
+            language="python",
+            imports=[
+                ImportInfo(
+                    source_file=Path("mypackage/handler.py"),
+                    imported_module="flask",
+                    imported_names=[],
+                    line_number=1,
+                ),
+            ],
+        )
+        proto = {0: np.array([0.9, 0.1, 0.0])}
+
+        layer = _infer_layer_with_embeddings(
+            Path("mypackage/handler.py"), pr, emb, proto,
+        )
+        assert layer == 0, (
+            "Embedding with sim=0.7 (above 0.5 threshold) should infer layer 0"
         )

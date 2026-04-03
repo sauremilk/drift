@@ -1,5 +1,5 @@
 {
-  "timestamp": "2026-04-03T13:53:36Z",
+  "timestamp": "2026-04-03T14:16:15Z",
   "signals": [
     "PFS",
     "AVS",
@@ -8,24 +8,10 @@
     "GCD"
   ],
   "total_mutations": 23,
-  "killed": 20,
-  "survived": 3,
+  "killed": 23,
+  "survived": 0,
   "errors": 0,
-  "mutation_score_pct": 87.0,
-  "known_survivors": {
-    "avs_001": {
-      "status": "KNOWN_SURVIVOR_EMBEDDING",
-      "reason": "Embedding similarity threshold mutation requires EmbeddingService with real vector fixtures to detect"
-    },
-    "avs_002": {
-      "status": "KNOWN_SURVIVOR_EMBEDDING",
-      "reason": "Hub percentile mutation requires populated dependency graph with centrality distribution"
-    },
-    "avs_004": {
-      "status": "KNOWN_SURVIVOR_EMBEDDING",
-      "reason": "AND/OR flip in hub condition requires graph fixtures with both centrality and degree data"
-    }
-  },
+  "mutation_score_pct": 100.0,
   "per_signal": {
     "PFS": {
       "killed": 5,
@@ -34,14 +20,10 @@
       "survivors": []
     },
     "AVS": {
-      "killed": 1,
-      "survived": 3,
-      "score_pct": 25.0,
-      "survivors": [
-        "avs_001",
-        "avs_002",
-        "avs_004"
-      ]
+      "killed": 4,
+      "survived": 0,
+      "score_pct": 100.0,
+      "survivors": []
     },
     "MDS": {
       "killed": 4,
@@ -68,16 +50,16 @@
       "signal": "PFS",
       "description": "Severity HIGH threshold 0.7 -> 0.9 (fewer HIGH findings)",
       "outcome": "killed",
-      "duration_s": 7.6,
-      "detail": "1 failed, 136 passed, 3 warnings in 6.07s"
+      "duration_s": 7.7,
+      "detail": "1 failed, 149 passed, 3 warnings in 6.24s"
     },
     {
       "id": "pfs_002",
       "signal": "PFS",
       "description": "Severity MEDIUM threshold 0.5 -> 0.7 (fewer MEDIUM)",
       "outcome": "killed",
-      "duration_s": 7.5,
-      "detail": "1 failed, 137 passed, 3 warnings in 5.99s"
+      "duration_s": 7.8,
+      "detail": "1 failed, 150 passed, 3 warnings in 6.29s"
     },
     {
       "id": "pfs_003",
@@ -85,15 +67,15 @@
       "description": "Min variants <= 1 -> <= 0 (skip fewer patterns)",
       "outcome": "killed",
       "duration_s": 6.3,
-      "detail": "1 failed, 1 passed, 3 warnings in 4.89s"
+      "detail": "1 failed, 1 passed, 3 warnings in 4.80s"
     },
     {
       "id": "pfs_005",
       "signal": "PFS",
       "description": "Spread factor boost threshold > 2 -> > 20 (effectively disable)",
       "outcome": "killed",
-      "duration_s": 7.9,
-      "detail": "1 failed, 138 passed, 3 warnings in 6.02s"
+      "duration_s": 7.5,
+      "detail": "1 failed, 151 passed, 3 warnings in 6.05s"
     },
     {
       "id": "pfs_006",
@@ -101,90 +83,87 @@
       "description": "Spread factor multiplier 0.04 -> 0.4 (10x boost)",
       "outcome": "killed",
       "duration_s": 7.7,
-      "detail": "1 failed, 139 passed, 3 warnings in 6.02s"
+      "detail": "1 failed, 152 passed, 3 warnings in 6.30s"
     },
     {
       "id": "avs_001",
       "signal": "AVS",
       "description": "Embedding similarity threshold 0.5 -> 0.99 (disable embedding match)",
-      "outcome": "survived",
+      "outcome": "killed",
       "duration_s": 7.5,
-      "detail": "All tests passed \u2014 mutation NOT caught",
-      "survivor_reason": "KNOWN_SURVIVOR_EMBEDDING"
+      "detail": "1 failed, 155 passed, 3 warnings in 6.21s"
     },
     {
       "id": "avs_002",
       "signal": "AVS",
       "description": "Hub percentile 0.90 -> 0.50 (too many hubs dampened)",
-      "outcome": "survived",
-      "duration_s": 7.5,
-      "detail": "All tests passed \u2014 mutation NOT caught",
-      "survivor_reason": "KNOWN_SURVIVOR_EMBEDDING"
+      "outcome": "killed",
+      "duration_s": 8.2,
+      "detail": "1 failed, 154 passed, 3 warnings in 6.33s"
     },
     {
       "id": "avs_003",
       "signal": "AVS",
       "description": "Hub centrality > 0 -> > 100 (disable hub detection)",
       "outcome": "killed",
-      "duration_s": 7.6,
-      "detail": "1 failed, 116 passed, 3 warnings in 5.93s"
+      "duration_s": 7.8,
+      "detail": "1 failed, 129 passed, 3 warnings in 6.14s"
     },
     {
       "id": "avs_004",
       "signal": "AVS",
       "description": "Flip AND to OR in hub condition",
-      "outcome": "survived",
-      "duration_s": 7.5,
-      "detail": "All tests passed \u2014 mutation NOT caught",
-      "survivor_reason": "KNOWN_SURVIVOR_EMBEDDING"
+      "outcome": "killed",
+      "duration_s": 7.8,
+      "detail": "1 failed, 154 passed, 3 warnings in 6.30s"
     },
     {
       "id": "mds_004",
       "signal": "MDS",
       "description": "LOC ratio 0.5 -> 0.01 (accept unequal function sizes)",
       "outcome": "killed",
-      "duration_s": 7.6,
-      "detail": "1 failed, 131 passed, 3 warnings in 5.99s"
+      "duration_s": 7.8,
+      "detail": "1 failed, 144 passed, 3 warnings in 6.27s"
     },
     {
       "id": "mds_005",
       "signal": "MDS",
       "description": "Severity gate 0.9 -> 0.5 (more HIGH severity)",
       "outcome": "killed",
-      "duration_s": 7.5,
-      "detail": "1 failed, 134 passed, 3 warnings in 6.03s"
+      "duration_s": 7.8,
+      "detail": "1 failed, 147 passed, 3 warnings in 6.24s"
     },
     {
       "id": "mds_006",
       "signal": "MDS",
       "description": "Max findings 200 -> 1 (truncate most findings)",
       "outcome": "killed",
-      "duration_s": 7.7,
-      "detail": "1 failed, 133 passed, 3 warnings in 6.14s"
+      "duration_s": 7.8,
+      "detail": "1 failed, 146 passed, 3 warnings in 6.22s"
     },
     {
       "id": "mds_007",
       "signal": "MDS",
       "description": "Flip comparison: sim >= threshold -> sim < threshold",
       "outcome": "killed",
-      "duration_s": 6.6,
-      "detail": "1 failed, 13 passed, 3 warnings in 5.06s"
+      "duration_s": 6.7,
+      "detail": "1 failed, 13 passed, 3 warnings in 5.17s"
     },
     {
       "id": "eds_001",
       "signal": "EDS",
       "description": "Weighted score gate 0.3 -> 0.9 (suppress most findings)",
       "outcome": "killed",
-      "duration_s": 6.6,
-      "detail": "1 failed, 17 passed, 3 warnings in 5.17s"
+      "duration_s": 6.7,
+      "detail": "1 failed, 17 passed, 3 warnings in 5.23s"
     },
     {
       "id": "eds_002",
       "signal": "EDS",
       "description": "HIGH threshold 0.7 -> 0.3 (demote more to HIGH)",
       "outcome": "killed",
-      "duration_s": 7.6,
-      "detail": "1 failed, 124 passed, 3 warnings in 5.98s"
+      "duration_s": 7.7,
+      "detail": "1 failed, 137 passed, 3 warnings in 6.15s"
     },
     {
       "id": "eds_003",
@@ -192,63 +171,63 @@
       "description": "Complexity normalization /20 -> /2 (inflate scores)",
       "outcome": "killed",
       "duration_s": 7.3,
-      "detail": "1 failed, 124 passed, 3 warnings in 6.00s"
+      "detail": "1 failed, 137 passed, 3 warnings in 5.93s"
     },
     {
       "id": "eds_006",
       "signal": "EDS",
       "description": "Flip complexity check: < min -> >= min (invert filter)",
       "outcome": "killed",
-      "duration_s": 6.5,
-      "detail": "1 failed, 17 passed, 3 warnings in 4.99s"
+      "duration_s": 6.3,
+      "detail": "1 failed, 17 passed, 3 warnings in 5.00s"
     },
     {
       "id": "gcd_001",
       "signal": "GCD",
       "description": "Min parameters < 2 -> < 0 (accept all functions)",
       "outcome": "killed",
-      "duration_s": 7.5,
-      "detail": "1 failed, 126 passed, 3 warnings in 5.94s"
+      "duration_s": 7.8,
+      "detail": "1 failed, 139 passed, 3 warnings in 6.02s"
     },
     {
       "id": "gcd_002",
       "signal": "GCD",
       "description": "Min complexity < 5 -> < 50 (require extreme complexity)",
       "outcome": "killed",
-      "duration_s": 6.8,
-      "detail": "1 failed, 41 passed, 3 warnings in 5.25s"
+      "duration_s": 6.6,
+      "detail": "1 failed, 41 passed, 3 warnings in 5.16s"
     },
     {
       "id": "gcd_003",
       "signal": "GCD",
       "description": "Guarded ratio 0.15 -> 0.99 (skip almost all modules)",
       "outcome": "killed",
-      "duration_s": 7.4,
-      "detail": "1 failed, 127 passed, 3 warnings in 5.89s"
+      "duration_s": 7.7,
+      "detail": "1 failed, 140 passed, 3 warnings in 6.29s"
     },
     {
       "id": "gcd_004",
       "signal": "GCD",
       "description": "Module score severity 0.7 -> 0.1 (almost all HIGH)",
       "outcome": "killed",
-      "duration_s": 7.3,
-      "detail": "1 failed, 128 passed, 3 warnings in 5.89s"
+      "duration_s": 7.7,
+      "detail": "1 failed, 141 passed, 3 warnings in 6.13s"
     },
     {
       "id": "gcd_005",
       "signal": "GCD",
       "description": "Nesting score formula 0.3 -> 0.9 (inflate nesting scores)",
       "outcome": "killed",
-      "duration_s": 7.4,
-      "detail": "1 failed, 129 passed, 3 warnings in 5.93s"
+      "duration_s": 7.6,
+      "detail": "1 failed, 142 passed, 3 warnings in 6.20s"
     },
     {
       "id": "gcd_006",
       "signal": "GCD",
       "description": "Complexity normalization /20 -> /200 (deflate module scores)",
       "outcome": "killed",
-      "duration_s": 7.5,
-      "detail": "1 failed, 128 passed, 3 warnings in 6.02s"
+      "duration_s": 7.7,
+      "detail": "1 failed, 141 passed, 3 warnings in 6.17s"
     }
   ]
 }

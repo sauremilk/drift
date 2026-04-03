@@ -319,10 +319,9 @@ Further reading:
 
 ## Test quality
 
-- **1 645 tests**, 0 regressions
-- **Mutation kill rate: 87 %** (20/23 mutants killed)
-  - PFS, MDS, EDS, GCD: 100 % kill rate
-  - AVS: 25 % (3 embedding/graph-dependent survivors — known limitation)
+- **1 645+ tests**, 0 regressions
+- **Mutation kill rate: 100 %** (23/23 mutants killed)
+  - All 5 core signals (PFS, AVS, MDS, EDS, GCD) at 100 %
 - Baseline: [`benchmark_results/mutation_baseline.json`](benchmark_results/mutation_baseline.json)
 
 ## Release status
