@@ -1,0 +1,53 @@
+{
+  "description": "Curated high-quality repos for FP rate measurement. All repos are professionally maintained with high test coverage and active communities. Findings on these repos are FP candidates by default.",
+  "version": "1.0.0",
+  "repos": [
+    {
+      "url": "https://github.com/psf/requests",
+      "ref": "main",
+      "name": "requests",
+      "description": "HTTP library — clean, stable, idiomatic Python"
+    },
+    {
+      "url": "https://github.com/encode/httpx",
+      "ref": "main",
+      "name": "httpx",
+      "description": "Modern async HTTP client — well-structured, typed"
+    },
+    {
+      "url": "https://github.com/pallets/click",
+      "ref": "main",
+      "name": "click",
+      "description": "CLI framework — minimal, well-maintained"
+    },
+    {
+      "url": "https://github.com/tiangolo/fastapi",
+      "ref": "master",
+      "name": "fastapi",
+      "description": "Web framework — modern, well-documented"
+    },
+    {
+      "url": "https://github.com/pytest-dev/pytest",
+      "ref": "main",
+      "name": "pytest",
+      "description": "Testing framework — mature, high quality"
+    }
+  ],
+  "fp_budget": {
+    "_comment": "Maximum acceptable FP rate per signal on oracle repos. Values are initial estimates — calibrate after first run.",
+    "architecture_violation": 0.10,
+    "broad_exception_monoculture": 0.08,
+    "bypass_accumulation": 0.08,
+    "cohesion_deficit": 0.10,
+    "dead_code_accumulation": 0.10,
+    "doc_impl_drift": 0.15,
+    "explainability_deficit": 0.05,
+    "guard_clause_deficit": 0.06,
+    "mutant_duplicate": 0.05,
+    "naming_contract_violation": 0.10,
+    "pattern_fragmentation": 0.08,
+    "system_misalignment": 0.10,
+    "temporal_volatility": 0.08,
+    "test_polarity_deficit": 0.10
+  }
+}

@@ -3159,6 +3159,561 @@ NBV_CONFOUNDER_TN = GroundTruthFixture(
 )
 
 
+# -- BEM confounders --
+
+BEM_CONFOUNDER_FLASK_TN = GroundTruthFixture(
+    name="bem_confounder_flask_tn",
+    description="Flask-style error handlers with broad except — framework-idiomatic",
+    kind=FixtureKind.CONFOUNDER,
+    files={
+        "app/__init__.py": "",
+        "app/errors.py": """\
+            import logging
+            logger = logging.getLogger(__name__)
+
+            def errorhandler(code):
+                def decorator(func):
+                    return func
+                return decorator
+
+            @errorhandler(404)
+            def not_found(error):
+                try:
+                    return {"error": "not found", "code": 404}
+                except Exception:
+                    logger.error("404 handler failed")
+                    return {"error": "internal"}, 500
+
+            @errorhandler(500)
+            def internal_error(error):
+                try:
+                    return {"error": "server error", "code": 500}
+                except Exception:
+                    logger.error("500 handler failed")
+                    return {"error": "internal"}, 500
+
+            @errorhandler(403)
+            def forbidden(error):
+                try:
+                    return {"error": "forbidden", "code": 403}
+                except Exception:
+                    logger.error("403 handler failed")
+                    return {"error": "internal"}, 500
+        """,
+    },
+    expected=[
+        ExpectedFinding(
+            signal_type=SignalType.BROAD_EXCEPTION_MONOCULTURE,
+            file_path="app/",
+            should_detect=False,
+            description="Flask @errorhandler decorated → boundary by design",
+        ),
+    ],
+)
+
+BEM_CONFOUNDER_CELERY_TN = GroundTruthFixture(
+    name="bem_confounder_celery_tn",
+    description="Celery tasks with self.retry() inside broad except — idiomatic retry pattern",
+    kind=FixtureKind.CONFOUNDER,
+    files={
+        "tasks/__init__.py": "",
+        "tasks/worker.py": """\
+            import logging
+            logger = logging.getLogger(__name__)
+
+            class TaskBase:
+                def retry(self, exc=None, countdown=10):
+                    raise exc
+
+            def shared_task(bind=False):
+                def decorator(func):
+                    return func
+                return decorator
+
+            @shared_task(bind=True)
+            def fetch_data(self, url):
+                try:
+                    return {"data": "ok"}
+                except Exception as exc:
+                    logger.warning("fetch failed, retrying")
+                    self.retry(exc=exc, countdown=30)
+
+            @shared_task(bind=True)
+            def send_notification(self, user_id, msg):
+                try:
+                    return True
+                except Exception as exc:
+                    logger.warning("notification failed, retrying")
+                    self.retry(exc=exc, countdown=60)
+
+            @shared_task(bind=True)
+            def sync_records(self, batch_id):
+                try:
+                    return {"synced": batch_id}
+                except Exception as exc:
+                    logger.warning("sync failed, retrying")
+                    self.retry(exc=exc, countdown=120)
+        """,
+    },
+    expected=[
+        ExpectedFinding(
+            signal_type=SignalType.BROAD_EXCEPTION_MONOCULTURE,
+            file_path="tasks/",
+            should_detect=False,
+            description="Celery @shared_task with retry — boundary by design",
+        ),
+    ],
+)
+
+BEM_CONFOUNDER_LOGGING_TN = GroundTruthFixture(
+    name="bem_confounder_logging_tn",
+    description="Stdlib logging.exception() in except BaseException — accepted pattern",
+    kind=FixtureKind.CONFOUNDER,
+    files={
+        "reporting/__init__.py": "",
+        "reporting/error_handler.py": """\
+            import logging
+            logger = logging.getLogger(__name__)
+
+            def report_api_error(endpoint, params):
+                try:
+                    return call_api(endpoint, params)
+                except BaseException:
+                    logging.exception("API call to %s failed", endpoint)
+                    return None
+
+            def report_db_error(query, args):
+                try:
+                    return execute(query, args)
+                except BaseException:
+                    logging.exception("DB query failed: %s", query)
+                    return None
+
+            def report_cache_error(key):
+                try:
+                    return cache_get(key)
+                except BaseException:
+                    logging.exception("Cache lookup failed for %s", key)
+                    return None
+        """,
+    },
+    expected=[
+        ExpectedFinding(
+            signal_type=SignalType.BROAD_EXCEPTION_MONOCULTURE,
+            file_path="reporting/",
+            should_detect=False,
+            description="Error-handler module with logging.exception — boundary by name",
+        ),
+    ],
+)
+
+BEM_CONFOUNDER_STRING_TN = GroundTruthFixture(
+    name="bem_confounder_string_tn",
+    description="Module with 'except Exception' only in docstrings/comments — should NOT fire BEM",
+    kind=FixtureKind.CONFOUNDER,
+    files={
+        "docs_helpers/__init__.py": "",
+        "docs_helpers/examples.py": """\
+            \"\"\"Example module demonstrating exception handling.
+
+            Bad pattern:
+                try:
+                    result = do_something()
+                except Exception:
+                    pass  # swallowed!
+
+            Good pattern:
+                try:
+                    result = do_something()
+                except ValueError as e:
+                    logger.error("Specific: %s", e)
+                    raise
+            \"\"\"
+
+            def safe_parse(text: str) -> dict:
+                # This does NOT use broad except — only references it in comments
+                # See: "except Exception:" is an anti-pattern
+                try:
+                    import json
+                    return json.loads(text)
+                except (ValueError, TypeError) as exc:
+                    raise RuntimeError("parse failed") from exc
+
+            def safe_convert(value: str) -> int:
+                # "except BaseException" should never be used here
+                try:
+                    return int(value)
+                except (ValueError, OverflowError):
+                    raise
+
+            def safe_lookup(mapping: dict, key: str) -> str:
+                # These comments mention "except Exception" but code doesn't use it
+                try:
+                    return mapping[key]
+                except KeyError:
+                    raise
+        """,
+    },
+    expected=[
+        ExpectedFinding(
+            signal_type=SignalType.BROAD_EXCEPTION_MONOCULTURE,
+            file_path="docs_helpers/",
+            should_detect=False,
+            description="'except Exception' only in strings/comments, not real handlers",
+        ),
+    ],
+)
+
+
+# -- DIA confounders --
+
+DIA_CONFOUNDER_BADGE_TN = GroundTruthFixture(
+    name="dia_confounder_badge_tn",
+    description="README with badge URLs containing path-like segments → should NOT fire DIA",
+    kind=FixtureKind.CONFOUNDER,
+    files={
+        "README.md": """\
+            # MyProject
+
+            [![Build](https://github.com/org/repo/actions/workflows/ci.yml/badge.svg)](https://github.com/org/repo/actions)
+            [![Coverage](https://codecov.io/gh/org/repo/branch/main/graph/badge.svg)](https://codecov.io/gh/org/repo)
+            [![PyPI](https://img.shields.io/pypi/v/myproject.svg)](https://pypi.org/project/myproject/)
+
+            ## Installation
+
+            ```bash
+            pip install myproject
+            ```
+        """,
+        "src/__init__.py": "",
+        "src/main.py": """\
+            def main():
+                pass
+        """,
+    },
+    expected=[
+        ExpectedFinding(
+            signal_type=SignalType.DOC_IMPL_DRIFT,
+            file_path="README.md",
+            should_detect=False,
+            description="Badge/shield URLs are not project directory references",
+        ),
+    ],
+)
+
+DIA_CONFOUNDER_HEADING_TN = GroundTruthFixture(
+    name="dia_confounder_heading_tn",
+    description="README with directory-like headings (TypeScript/, Frontend/) → not DIA",
+    kind=FixtureKind.CONFOUNDER,
+    files={
+        "README.md": """\
+            # Multi-Language Guide
+
+            This project supports multiple ecosystems:
+
+            ## TypeScript/
+
+            TypeScript support is planned but not yet implemented.
+
+            ## Frontend/
+
+            The frontend code will live in a separate repository.
+
+            ## Getting Started
+
+            Run `pip install mypackage` to get started.
+        """,
+        "src/__init__.py": "",
+        "src/core.py": """\
+            def process():
+                return True
+        """,
+    },
+    expected=[
+        ExpectedFinding(
+            signal_type=SignalType.DOC_IMPL_DRIFT,
+            file_path="README.md",
+            should_detect=False,
+            description="TypeScript/ and Frontend/ are section headings, not dir refs",
+        ),
+    ],
+)
+
+DIA_CONFOUNDER_API_PATH_TN = GroundTruthFixture(
+    name="dia_confounder_api_path_tn",
+    description="README with API endpoint paths in code blocks → should NOT fire DIA",
+    kind=FixtureKind.CONFOUNDER,
+    files={
+        "README.md": """\
+            # API Documentation
+
+            ## Endpoints
+
+            All endpoints are prefixed with `/api/v1/`:
+
+            ```
+            GET  /api/v1/users/
+            POST /api/v1/auth/login
+            DELETE /api/v1/sessions/
+            ```
+
+            ## Configuration
+
+            Set `DATABASE_URL` in your environment.
+        """,
+        "src/__init__.py": "",
+        "src/app.py": """\
+            def create_app():
+                return {"name": "api"}
+        """,
+    },
+    expected=[
+        ExpectedFinding(
+            signal_type=SignalType.DOC_IMPL_DRIFT,
+            file_path="README.md",
+            should_detect=False,
+            description="API endpoint paths in code blocks are not project directory references",
+        ),
+    ],
+)
+
+
+# -- GCD confounders --
+
+GCD_CONFOUNDER_DISPATCH_TN = GroundTruthFixture(
+    name="gcd_confounder_dispatch_tn",
+    description="Module with @validate + isinstance guards — guard clauses handled externally",
+    kind=FixtureKind.CONFOUNDER,
+    files={
+        "views/__init__.py": "",
+        "views/handlers.py": """\
+            def validate(func):
+                return func
+
+            @validate
+            def dispatch_request(request, action, context):
+                assert isinstance(request, dict)
+                if action == "create":
+                    name = context.get("name", "")
+                    category = context.get("category", "default")
+                    tags = context.get("tags", [])
+                    return {"status": "created", "name": name,
+                            "category": category, "tags": tags}
+                elif action == "update":
+                    item_id = context.get("id")
+                    fields = context.get("fields", {})
+                    merged = {**fields, "updated": True}
+                    return {"status": "updated", "id": item_id, "data": merged}
+                elif action == "delete":
+                    item_id = context.get("id")
+                    return {"status": "deleted", "id": item_id}
+                return {"status": "unknown"}
+
+            @validate
+            def dispatch_event(event, payload, options):
+                assert isinstance(event, str)
+                if event == "user.created":
+                    email = payload.get("email", "")
+                    name = payload.get("name", "")
+                    if options.get("notify"):
+                        return {"sent_to": email, "name": name}
+                    return {"queued": email}
+                elif event == "user.deleted":
+                    user_id = payload.get("id")
+                    reason = payload.get("reason", "none")
+                    return {"removed": user_id, "reason": reason}
+                return {"ignored": event}
+
+            @validate
+            def dispatch_notification(channel, recipient, message):
+                assert isinstance(channel, str)
+                if channel == "email":
+                    subject = message.get("subject", "")
+                    body = message.get("body", "")
+                    return {"type": "email", "to": recipient, "subject": subject}
+                elif channel == "sms":
+                    text = message.get("text", "")[:160]
+                    return {"type": "sms", "to": recipient, "text": text}
+                elif channel == "push":
+                    title = message.get("title", "")
+                    return {"type": "push", "to": recipient, "title": title}
+                return {"type": "unknown", "channel": channel}
+        """,
+    },
+    expected=[
+        ExpectedFinding(
+            signal_type=SignalType.GUARD_CLAUSE_DEFICIT,
+            file_path="views/",
+            should_detect=False,
+            description="@validate decorator + assert guards — external + inline guarding",
+        ),
+    ],
+)
+
+GCD_CONFOUNDER_FUNCTIONAL_TN = GroundTruthFixture(
+    name="gcd_confounder_functional_tn",
+    description="Module using comprehensions/map instead of guard clauses — functional style",
+    kind=FixtureKind.CONFOUNDER,
+    files={
+        "transforms/__init__.py": "",
+        "transforms/pipeline.py": """\
+            def transform_records(records, columns, filters):
+                filtered = [r for r in records if all(
+                    r.get(k) == v for k, v in filters.items()
+                )]
+                projected = [
+                    {c: r.get(c) for c in columns}
+                    for r in filtered
+                ]
+                return projected
+
+            def aggregate_data(rows, group_key, value_key):
+                groups = {}
+                for row in rows:
+                    key = row.get(group_key, "unknown")
+                    val = row.get(value_key, 0)
+                    if key not in groups:
+                        groups[key] = []
+                    groups[key].append(val)
+                return {k: sum(v) / len(v) for k, v in groups.items() if v}
+
+            def enrich_entries(entries, lookup, join_field):
+                result = []
+                for entry in entries:
+                    join_val = entry.get(join_field)
+                    extra = lookup.get(join_val, {})
+                    merged = {**entry, **extra}
+                    if merged.get("active"):
+                        result.append(merged)
+                return result
+        """,
+    },
+    expected=[
+        ExpectedFinding(
+            signal_type=SignalType.GUARD_CLAUSE_DEFICIT,
+            file_path="transforms/",
+            should_detect=False,
+            description="Functional-style code — comprehensions/map replace guard clauses",
+        ),
+    ],
+)
+
+GCD_CONFOUNDER_SHORT_TN = GroundTruthFixture(
+    name="gcd_confounder_short_tn",
+    description="Module with short functions (< 5 LOC) — guard clauses unnecessary",
+    kind=FixtureKind.CONFOUNDER,
+    files={
+        "helpers/__init__.py": "",
+        "helpers/converters.py": """\
+            def to_upper(text, encoding, locale):
+                return text.upper()
+
+            def to_lower(text, encoding, locale):
+                return text.lower()
+
+            def to_title(text, encoding, locale):
+                return text.title()
+
+            def strip_ws(text, encoding, locale):
+                return text.strip()
+        """,
+    },
+    expected=[
+        ExpectedFinding(
+            signal_type=SignalType.GUARD_CLAUSE_DEFICIT,
+            file_path="helpers/",
+            should_detect=False,
+            description="Functions too short/simple — complexity below threshold",
+        ),
+    ],
+)
+
+
+# -- BAT confounders --
+
+BAT_CONFOUNDER_FEATURE_TOGGLE_TN = GroundTruthFixture(
+    name="bat_confounder_feature_toggle_tn",
+    description="Production file with feature toggles and inline comments — not BAT",
+    kind=FixtureKind.CONFOUNDER,
+    files={
+        "config/__init__.py": "",
+        "config/features.py": (
+            "# Feature toggle configuration\n"
+            "# This module manages runtime feature flags\n"
+            "\n"
+            "FEATURE_NEW_UI = True  # Enable new UI components\n"
+            "FEATURE_DARK_MODE = False  # Dark mode is experimental\n"
+            "FEATURE_BETA_API = True  # Beta API for early adopters\n"
+            "\n"
+            + "\n".join([
+                f"SETTING_{i} = {i}  # Configuration value {i}"
+                for i in range(45)
+            ])
+            + "\n"
+        ),
+    },
+    expected=[
+        ExpectedFinding(
+            signal_type=SignalType.BYPASS_ACCUMULATION,
+            file_path="config/features.py",
+            should_detect=False,
+            description="Regular comments (# Enable...) are not bypass markers",
+        ),
+    ],
+)
+
+BAT_CONFOUNDER_TYPE_STUB_TN = GroundTruthFixture(
+    name="bat_confounder_type_stub_tn",
+    description="Type stub file (.pyi) with type: ignore — acceptable in stub files",
+    kind=FixtureKind.CONFOUNDER,
+    files={
+        "stubs/__init__.py": "",
+        "stubs/config.py": (
+            "# Configuration module\n"
+            + "\n".join([
+                f"def get_setting_{i}(key: str) -> str:\n"
+                f"    return str(key) + '_{i}'"
+                for i in range(30)
+            ])
+            + "\n"
+        ),
+    },
+    expected=[
+        ExpectedFinding(
+            signal_type=SignalType.BYPASS_ACCUMULATION,
+            file_path="stubs/config.py",
+            should_detect=False,
+            description="Clean module with no bypass markers — below density threshold",
+        ),
+    ],
+)
+
+BAT_CONFOUNDER_NOQA_CONFIG_TN = GroundTruthFixture(
+    name="bat_confounder_noqa_config_tn",
+    description="Build/config file with noqa comments below threshold — NOT bypass accumulation",
+    kind=FixtureKind.CONFOUNDER,
+    files={
+        "project/__init__.py": "",
+        "project/setup_config.py": (
+            "# Project setup configuration\n"
+            + "\n".join([
+                f"OPTION_{i} = {i}"
+                for i in range(50)
+            ])
+            + "\nLONG_LINE = 'this is a very long configuration string'  # noqa: E501\n"
+        ),
+    },
+    expected=[
+        ExpectedFinding(
+            signal_type=SignalType.BYPASS_ACCUMULATION,
+            file_path="project/setup_config.py",
+            should_detect=False,
+            description="Single noqa in 50+ LOC file — density well below 5% threshold",
+        ),
+    ],
+)
+
+
 # -- BAT boundary (bat_density_threshold = 0.05, bat_min_loc = 50) --
 
 BAT_BOUNDARY_TP = GroundTruthFixture(
@@ -3220,6 +3775,20 @@ ALL_FIXTURES.extend([
     NBV_BOUNDARY_TP,
     NBV_CONFOUNDER_TN,
     BAT_BOUNDARY_TP,
+    # ── New CONFOUNDER fixtures (FP-Strategie) ──
+    BEM_CONFOUNDER_FLASK_TN,
+    BEM_CONFOUNDER_CELERY_TN,
+    BEM_CONFOUNDER_LOGGING_TN,
+    BEM_CONFOUNDER_STRING_TN,
+    DIA_CONFOUNDER_BADGE_TN,
+    DIA_CONFOUNDER_HEADING_TN,
+    DIA_CONFOUNDER_API_PATH_TN,
+    GCD_CONFOUNDER_DISPATCH_TN,
+    GCD_CONFOUNDER_FUNCTIONAL_TN,
+    GCD_CONFOUNDER_SHORT_TN,
+    BAT_CONFOUNDER_FEATURE_TOGGLE_TN,
+    BAT_CONFOUNDER_TYPE_STUB_TN,
+    BAT_CONFOUNDER_NOQA_CONFIG_TN,
 ])
 
 

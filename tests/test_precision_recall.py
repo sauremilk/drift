@@ -292,7 +292,7 @@ def test_precision_recall_report(tmp_path: Path) -> None:
     # ── Per-signal precision gates ────────────────────────────────────
     # Signals with high expected precision get a stricter gate;
     # signals with known FP issues get a lower but non-zero bar.
-    _PER_SIGNAL_PRECISION: dict[SignalType, float] = {
+    per_signal_precision: dict[SignalType, float] = {
         SignalType.PATTERN_FRAGMENTATION: 0.70,
         SignalType.EXPLAINABILITY_DEFICIT: 0.70,
         SignalType.SYSTEM_MISALIGNMENT: 0.70,
@@ -307,7 +307,7 @@ def test_precision_recall_report(tmp_path: Path) -> None:
         SignalType.TEMPORAL_VOLATILITY: 0.50,
         SignalType.COHESION_DEFICIT: 0.50,
     }
-    for sig, min_prec in _PER_SIGNAL_PRECISION.items():
+    for sig, min_prec in per_signal_precision.items():
         # Only enforce if the signal has any TP+FP observations
         if report.tp[sig] + report.fp[sig] > 0:
             actual = report.precision(sig)

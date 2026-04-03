@@ -398,6 +398,127 @@ class TestMcpServerHelpers:
         assert result["status"] == "error"
         assert result["error_code"] == "DRIFT-2031"
 
+    def test_drift_brief_importable(self) -> None:
+        """drift_brief can be imported from MCP server."""
+        from drift.mcp_server import drift_brief
+
+        assert callable(drift_brief)
+
+    def test_drift_brief_returns_json(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        """drift_brief returns valid JSON with brief type."""
+        import json as _json
+
+        from drift import mcp_server
+
+        fake_result = {
+            "schema_version": "2.0",
+            "type": "brief",
+            "task": "add payment",
+            "scope": {
+                "resolved_paths": ["src/checkout"],
+                "expanded_dependency_paths": [],
+                "resolution_method": "keyword_match",
+                "confidence": 0.7,
+            },
+            "risk": {"level": "LOW", "score": 0.1, "reason": ""},
+            "landscape": {"drift_score": 0.2, "top_signals": []},
+            "guardrails": [],
+            "guardrails_prompt_block": "",
+        }
+
+        monkeypatch.setattr("drift.api.brief", lambda *a, **kw: fake_result)
+
+        result = _json.loads(
+            mcp_server.drift_brief(path=".", task="add payment")
+        )
+        assert result["type"] == "brief"
+        assert result["task"] == "add payment"
+
+    def test_drift_brief_concise_strips_landscape(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        """Concise response_detail strips landscape and meta fields."""
+        import json as _json
+
+        from drift import mcp_server
+
+        fake_result = {
+            "type": "brief",
+            "task": "test",
+            "scope": {"resolved_paths": []},
+            "risk": {"level": "LOW"},
+            "landscape": {"drift_score": 0.5, "top_signals": []},
+            "guardrails": [],
+            "guardrails_prompt_block": "",
+            "meta": {"analysis_duration_ms": 100},
+        }
+
+        monkeypatch.setattr("drift.api.brief", lambda *a, **kw: fake_result)
+
+        result = _json.loads(
+            mcp_server.drift_brief(path=".", task="test", response_detail="concise")
+        )
+        assert "landscape" not in result
+        assert "meta" not in result
+
+    def test_drift_brief_detailed_keeps_all_fields(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        """Detailed response_detail keeps all fields."""
+        import json as _json
+
+        from drift import mcp_server
+
+        fake_result = {
+            "type": "brief",
+            "task": "test",
+            "scope": {"resolved_paths": []},
+            "risk": {"level": "LOW"},
+            "landscape": {"drift_score": 0.5},
+            "guardrails": [],
+            "guardrails_prompt_block": "",
+            "meta": {"analysis_duration_ms": 100},
+        }
+
+        monkeypatch.setattr("drift.api.brief", lambda *a, **kw: fake_result)
+
+        result = _json.loads(
+            mcp_server.drift_brief(path=".", task="test", response_detail="detailed")
+        )
+        assert "landscape" in result
+        assert "meta" in result
+
+    def test_drift_brief_error_handling(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        """drift_brief returns structured error on API failure."""
+        import json as _json
+
+        from drift import mcp_server
+
+        def _raise(*a: object, **kw: object) -> None:
+            msg = "Config load failed"
+            raise ValueError(msg)
+
+        monkeypatch.setattr("drift.api.brief", _raise)
+
+        result = _json.loads(mcp_server.drift_brief(path=".", task="test"))
+        assert result["type"] == "error"
+        assert result["error_code"] == "DRIFT-5010"
+        assert result["tool"] == "drift_brief"
+
+    def test_drift_brief_in_exported_tools(self) -> None:
+        """drift_brief is included in the exported MCP tools list."""
+        from drift.mcp_server import _EXPORTED_MCP_TOOLS, drift_brief
+
+        assert drift_brief in _EXPORTED_MCP_TOOLS
+
 
 # ---------------------------------------------------------------------------
 # CLI command — smoke tests

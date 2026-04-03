@@ -23,6 +23,15 @@ LABELS_PATH = REPO_ROOT / "benchmark_results" / "ground_truth_labels.json"
 
 VALID_LABELS = {"TP", "FP", "Disputed", "skip"}
 
+# FP taxonomy types (Schicht 3 — FP root-cause classification)
+VALID_FP_TYPES = {
+    "structural": "Signal fires on framework/library code pattern",
+    "threshold": "Score/threshold too sensitive for this repo size",
+    "scope": "Finding in tests/docs/migrations/generated code",
+    "semantic": "Signal misunderstands context (decorator, type hint, etc.)",
+    "co_occurrence": "Two harmless patterns together trigger signal",
+}
+
 
 def _load_labels() -> list[dict[str, str]]:
     if LABELS_PATH.exists():
@@ -48,6 +57,27 @@ def _load_findings(path: Path) -> tuple[str, list[dict]]:
     data = json.loads(path.read_text(encoding="utf-8"))
     repo = data.get("repo", path.stem.removesuffix("_full"))
     return repo, data.get("findings", [])
+
+
+def _ask_fp_type() -> str:
+    """Prompt for FP root-cause type. Returns type string or empty."""
+    print("  FP Type: [S]tructural  [T]hreshold  [C]ope  s[E]mantic  c[O]-occurrence  s[K]ip")
+    while True:
+        try:
+            choice = input("  FP Type> ").strip().upper()
+        except (EOFError, KeyboardInterrupt):
+            return ""
+        mapping = {
+            "S": "structural",
+            "T": "threshold",
+            "C": "scope",
+            "E": "semantic",
+            "O": "co_occurrence",
+            "K": "",
+        }
+        if choice in mapping:
+            return mapping[choice]
+        print("  Invalid. Use S/T/C/E/O/K")
 
 
 def triage(
@@ -136,6 +166,14 @@ def triage(
 
             # Apply label
             entry = {"key": key, "label": label, "signal": f.get("signal", "")}
+            # Ask for FP type taxonomy when labeling as FP
+            if label == "FP" and not batch_mode:
+                fp_type = _ask_fp_type()
+                if fp_type:
+                    entry["fp_type"] = fp_type
+                    fp_cat = input("  FP category (free text, optional): ").strip()
+                    if fp_cat:
+                        entry["fp_category"] = fp_cat
             if already:
                 # Update existing
                 for e in labels:

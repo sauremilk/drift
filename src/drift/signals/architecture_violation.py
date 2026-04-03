@@ -32,6 +32,7 @@ from drift.models import (
     Severity,
     SignalType,
 )
+from drift.signals._utils import is_test_file
 from drift.signals.base import BaseSignal, register_signal
 
 if TYPE_CHECKING:
@@ -247,11 +248,12 @@ class ArchitectureViolationSignal(BaseSignal):
         file_histories: dict[str, FileHistory],
         config: DriftConfig,
     ) -> list[Finding]:
-        graph, all_imports = build_import_graph(parse_results)
+        filtered_prs = [pr for pr in parse_results if not is_test_file(pr.file_path)]
+        graph, all_imports = build_import_graph(filtered_prs)
         findings: list[Finding] = []
 
         # Pre-compute per-file lookup for embedding inference
-        pr_by_path: dict[str, ParseResult] = {pr.file_path.as_posix(): pr for pr in parse_results}
+        pr_by_path: dict[str, ParseResult] = {pr.file_path.as_posix(): pr for pr in filtered_prs}
 
         # Pre-compute embedding prototypes once
         proto_embeddings: dict[int, Any] = {}

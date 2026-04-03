@@ -212,6 +212,46 @@ def classify_finding(f: dict) -> str:
     return "Disputed"
 
 
+def classify_fp_type(f: dict, label: str) -> str | None:
+    """Auto-classify FP root-cause type based on structural heuristics.
+
+    Returns None for non-FP findings.  Valid types:
+    structural, threshold, scope, semantic, co_occurrence.
+    """
+    if label != "FP":
+        return None
+
+    file_path = str(
+        f.get("file") or f.get("affected_file") or f.get("path") or ""
+    ).lower()
+    score = f.get("score", 0)
+
+    # Scope FP: finding in tests, docs, migrations, generated code
+    scope_markers = [
+        "test_", "/tests/", "conftest", "/docs/", "/doc/",
+        "migration", "/generated/", "__pycache__", "changelog",
+        "readme", "/examples/",
+    ]
+    if any(m in file_path for m in scope_markers):
+        return "scope"
+
+    # Structural FP: framework/library patterns
+    structural_markers = [
+        "middleware", "error_handler", "exception_handler",
+        "error_boundary", "celery", "signal_handler",
+        "fallback", "recovery", "__init__",
+    ]
+    if any(m in file_path for m in structural_markers):
+        return "structural"
+
+    # Threshold FP: score below 30% of signal range
+    if score < 0.3:
+        return "threshold"
+
+    # Default: semantic (signal misunderstands context)
+    return "semantic"
+
+
 def main():
     results_dir = Path("benchmark_results")
     repos = ["drift_self", "fastapi", "pydantic", "pwbs_backend", "httpx"]
@@ -222,7 +262,8 @@ def main():
         if not full_path.exists():
             continue
         try:
-            data = json.load(open(full_path, encoding="utf-8"))
+            with open(full_path, encoding="utf-8") as fh:
+                data = json.load(fh)
         except (json.JSONDecodeError, FileNotFoundError):
             continue
         findings = data.get("findings", [])
@@ -239,7 +280,7 @@ def main():
         key = (f["_repo"], f.get("signal", ""))
         by_signal_repo[key].append(f)
 
-    for key, items in by_signal_repo.items():
+    for _key, items in by_signal_repo.items():
         items_sorted = sorted(items, key=lambda x: -x.get("score", 0))
         sample.extend(items_sorted[:15])
 
@@ -247,18 +288,22 @@ def main():
 
     # Classify
     classifications = []
+    fp_type_counts: dict[str, int] = defaultdict(int)
     for f in sample:
         label = classify_finding(f)
-        classifications.append(
-            {
-                "repo": f["_repo"],
-                "signal": f.get("signal", ""),
-                "title": f.get("title", ""),
-                "score": f.get("score", 0),
-                "severity": f.get("severity", ""),
-                "label": label,
-            }
-        )
+        fp_type = classify_fp_type(f, label)
+        entry: dict = {
+            "repo": f["_repo"],
+            "signal": f.get("signal", ""),
+            "title": f.get("title", ""),
+            "score": f.get("score", 0),
+            "severity": f.get("severity", ""),
+            "label": label,
+        }
+        if fp_type:
+            entry["fp_type"] = fp_type
+            fp_type_counts[fp_type] += 1
+        classifications.append(entry)
 
     # Compute precision per signal
     by_signal = defaultdict(lambda: {"TP": 0, "FP": 0, "Disputed": 0, "total": 0})
@@ -334,7 +379,16 @@ def main():
             print(f"\n  {sig}:")
             for fp in fps[:5]:
                 title = fp["title"][:70].encode("ascii", "replace").decode()
-                print(f"    - [{fp['repo']}] {title}")
+                fp_t = fp.get("fp_type", "?")
+                print(f"    - [{fp['repo']}] [{fp_t}] {title}")
+
+    # FP-type taxonomy breakdown (Schicht 3)
+    if fp_type_counts:
+        print("\n\nFP-TYPE TAXONOMY:")
+        print("-" * 40)
+        for fpt in sorted(fp_type_counts):
+            print(f"  {fpt:<20s} {fp_type_counts[fpt]:>4d}")
+        print(f"  {'TOTAL':<20s} {sum(fp_type_counts.values()):>4d}")
 
     # Save results — with reproducibility metadata
     try:

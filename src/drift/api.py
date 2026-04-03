@@ -9,6 +9,7 @@ contract.
 from __future__ import annotations
 
 import json
+import logging as _logging
 from collections import Counter
 from collections.abc import Callable
 from pathlib import Path
@@ -59,6 +60,38 @@ def _emit_api_telemetry(
     )
 
 
+
+
+# ---------------------------------------------------------------------------
+# Config sanity check (called after every DriftConfig.load)
+# ---------------------------------------------------------------------------
+
+_log = _logging.getLogger("drift")
+
+
+def _warn_config_issues(cfg: Any) -> list[str]:
+    """Return human-readable warnings for dangerous config values.
+
+    Designed to be cheap enough to call on every API entry-point so that
+    mis-configurations surface early instead of producing silently wrong
+    results.
+    """
+    warnings: list[str] = []
+    weights = getattr(cfg, "weights", None)
+    if weights is not None and hasattr(weights, "as_dict"):
+        for key, val in weights.as_dict().items():
+            if val < 0:
+                warnings.append(
+                    f"Negative signal weight '{key}' = {val} — findings will be inverted"
+                )
+    thresholds = getattr(cfg, "thresholds", None)
+    if thresholds is not None:
+        thresh = getattr(thresholds, "similarity_threshold", None)
+        if thresh is not None and (thresh < 0 or thresh > 1):
+            warnings.append(f"similarity_threshold={thresh} outside valid range [0, 1]")
+    if warnings:
+        _log.warning("Config issues detected: %s", "; ".join(warnings))
+    return warnings
 
 
 # ---------------------------------------------------------------------------
@@ -121,9 +154,10 @@ def scan(
 
     try:
         cfg = DriftConfig.load(repo_path)
+        cfg_warnings = _warn_config_issues(cfg)
 
         # Validate target_path existence
-        warnings: list[str] = []
+        warnings: list[str] = cfg_warnings
         if target_path and not (repo_path / target_path).exists():
             warnings.append(
                 f"target_path '{target_path}' does not exist in repository"
@@ -472,6 +506,7 @@ def diff(
 
     try:
         cfg = DriftConfig.load(repo_path)
+        _warn_config_issues(cfg)
 
         if uncommitted and staged_only:
             raise ValueError("Options 'uncommitted' and 'staged_only' are mutually exclusive.")
@@ -522,10 +557,32 @@ def diff(
 
         # Baseline comparison
         if baseline_file:
+            bl_path = Path(baseline_file).resolve()
+            if not bl_path.is_relative_to(repo_path):
+                result = _error_response(
+                    "DRIFT-1003",
+                    "baseline_file must reside inside the repository root.",
+                    invalid_fields=[{
+                        "field": "baseline_file",
+                        "value": baseline_file,
+                        "reason": "Path traversal outside repository root",
+                    }],
+                )
+                _emit_api_telemetry(
+                    tool_name="api.diff",
+                    params=params,
+                    status="ok",
+                    elapsed_ms=elapsed_ms(),
+                    result=result,
+                    error=None,
+                    repo_root=repo_path,
+                )
+                return result
+
             from drift.baseline import baseline_diff as _bl_diff
             from drift.baseline import load_baseline
 
-            fps = load_baseline(Path(baseline_file))
+            fps = load_baseline(bl_path)
             new, _known = _bl_diff(diff_analysis.findings, fps)
             resolved = [f for f in _known]
         else:
@@ -1084,9 +1141,10 @@ def fix_plan(
         cfg = DriftConfig.load(repo_path)
         if not hasattr(cfg, "finding_context"):
             cfg = DriftConfig()
+        cfg_warnings = _warn_config_issues(cfg)
 
         # Validate target_path existence
-        warnings: list[str] = []
+        warnings: list[str] = cfg_warnings
         if target_path and not (repo_path / target_path).exists():
             warnings.append(
                 f"target_path '{target_path}' does not exist in repository"
@@ -1345,6 +1403,29 @@ def validate(
     params = {"path": str(path), "config_file": config_file, "baseline_file": baseline_file}
 
     try:
+        # Path sandbox: config_file / baseline_file must be inside repo root
+        for _field, _val in [("config_file", config_file), ("baseline_file", baseline_file)]:
+            if _val is not None and not Path(_val).resolve().is_relative_to(repo_path):
+                result = _error_response(
+                    "DRIFT-1003",
+                    f"{_field} must reside inside the repository root.",
+                    invalid_fields=[{
+                        "field": _field,
+                        "value": _val,
+                        "reason": "Path traversal outside repository root",
+                    }],
+                )
+                _emit_api_telemetry(
+                    tool_name="api.validate",
+                    params=params,
+                    status="ok",
+                    elapsed_ms=elapsed_ms(),
+                    result=result,
+                    error=None,
+                    repo_root=repo_path,
+                )
+                return result
+
         # Check git availability
         git_available = False
         try:
@@ -1538,8 +1619,12 @@ def _get_changed_files_from_git(
     repo_path: Path,
     *,
     uncommitted: bool = True,
-) -> list[str]:
-    """Return posix-relative paths of files changed in the working tree."""
+) -> list[str] | None:
+    """Return posix-relative paths of files changed in the working tree.
+
+    Returns ``None`` when git is unavailable or fails, so callers can
+    distinguish *no changes* (empty list) from *detection failed*.
+    """
     import subprocess
 
     args = ["git", "diff", "--name-only"]
@@ -1560,7 +1645,12 @@ def _get_changed_files_from_git(
         )
         return [line for line in proc.stdout.strip().splitlines() if line]
     except Exception:
-        return []
+        _log.warning(
+            "Could not detect changed files via git in %s; "
+            "nudge will analyse all discovered files.",
+            repo_path,
+        )
+        return None
 
 
 def nudge(
@@ -1634,12 +1724,19 @@ def nudge(
 
     try:
         cfg = DriftConfig.load(repo_path)
+        _warn_config_issues(cfg)
 
         # -- Auto-detect changed files if not provided ----------------------
+        git_detection_failed = False
         if changed_files is None:
-            changed_files = _get_changed_files_from_git(
+            detected = _get_changed_files_from_git(
                 repo_path, uncommitted=uncommitted
             )
+            if detected is None:
+                git_detection_failed = True
+                changed_files = []
+            else:
+                changed_files = detected
         changed_set = set(changed_files)
 
         # -- Ensure baseline exists via BaselineManager (Phase 5) -----------
@@ -1773,6 +1870,13 @@ def nudge(
 
         # -- safe_to_commit hardrule (Step 13) ------------------------------
         blocking_reasons: list[str] = []
+
+        # Rule (e): git detection failed — empty file-set is unreliable
+        if git_detection_failed and not changed_set:
+            blocking_reasons.append(
+                "Git change detection failed; "
+                "pass changed_files explicitly or check git availability"
+            )
 
         # Rule (a): new findings with critical/high severity
         for f in inc_result.new_findings:
@@ -1963,6 +2067,7 @@ def negative_context(
 
     try:
         cfg = DriftConfig.load(repo_path)
+        _warn_config_issues(cfg)
         if disable_embeddings:
             cfg.embeddings_enabled = False
         analysis = analyze_repo(
@@ -2014,3 +2119,309 @@ def negative_context(
             repo_root=repo_path,
         )
         return _error_response("DRIFT-6001", str(exc), recoverable=True)
+
+
+# ---------------------------------------------------------------------------
+# brief — pre-task structural briefing
+# ---------------------------------------------------------------------------
+
+# Pre-task relevance factors (from guardrails module)
+_BRIEF_RELEVANCE: dict[str, float] = {
+    "AVS": 1.0, "PFS": 1.0, "MDS": 1.0,
+    "CCC": 0.7, "CIR": 0.7, "FOE": 0.7,
+    "BEM": 0.4, "ECM": 0.4, "EDS": 0.4, "COD": 0.4,
+    "TPD": 0.1, "GCD": 0.1, "NBV": 0.1, "DIA": 0.1,
+}
+
+
+def _compute_scope_risk(
+    findings: list[Finding],
+    config: Any,
+) -> float:
+    """Compute a weighted scope risk score from scoped findings.
+
+    Formula (spec §3.3):
+        scope_risk = Σ(weight × score × relevance) / Σ(weight × relevance)
+    """
+    numerator = 0.0
+    denominator = 0.0
+
+    for f in findings:
+        abbrev = signal_abbrev(f.signal_type)
+        has_weights = hasattr(config, "weights")
+        weight = float(getattr(config.weights, f.signal_type.value, 1.0)) if has_weights else 1.0
+        relevance = _BRIEF_RELEVANCE.get(abbrev, 0.0)
+        if relevance == 0.0:
+            continue
+        numerator += weight * f.score * relevance
+        denominator += weight * relevance
+
+    if denominator == 0.0:
+        return 0.0
+    return min(numerator / denominator, 1.0)
+
+
+def _risk_level(score: float, findings: list[Finding]) -> str:
+    """Map scope risk score to risk level string.
+
+    BLOCK is also triggered by any CRITICAL AVS finding in scope.
+    """
+    from drift.models import Severity as _Sev
+    from drift.models import SignalType as _SigT  # noqa: N814
+
+    # Check for CRITICAL AVS
+    for f in findings:
+        if (
+            f.signal_type == _SigT.ARCHITECTURE_VIOLATION
+            and f.severity == _Sev.CRITICAL
+        ):
+            return "BLOCK"
+
+    if score >= 0.75:
+        return "BLOCK"
+    if score >= 0.50:
+        return "HIGH"
+    if score >= 0.25:
+        return "MEDIUM"
+    return "LOW"
+
+
+def _risk_reason(findings: list[Finding], level: str) -> str:
+    """Generate a human-readable reason for the risk level."""
+    if not findings:
+        return "No structural findings in scope"
+
+    from collections import Counter
+
+    signal_counts: Counter[str] = Counter(
+        signal_abbrev(f.signal_type) for f in findings
+    )
+    top_signal, top_count = signal_counts.most_common(1)[0]
+    plural = "s" if top_count != 1 else ""
+    return f"{top_count} {top_signal} finding{plural} in scope (risk: {level})"
+
+
+# Pre-task-relevant signals: only run signals that are actionable before
+# writing code.  brief() uses this set by default to skip irrelevant
+# signals and speed up analysis.
+_PRE_TASK_SIGNALS: set[str] = {
+    "architecture_violation",       # AVS — critical
+    "pattern_fragmentation",        # PFS — critical
+    "mutant_duplicate",             # MDS — critical
+    "co_change_coupling",           # CCC — high
+    "circular_import",              # CIR — high
+    "fan_out_explosion",            # FOE — high
+    "broad_exception_monoculture",  # BEM — medium
+    "exception_contract_drift",     # ECM — medium
+    "explainability_deficit",       # EDS — medium
+    "cohesion_deficit",             # COD — medium
+}
+
+
+def brief(
+    path: str | Path = ".",
+    *,
+    task: str,
+    scope_override: str | None = None,
+    signals: list[str] | None = None,
+    max_guardrails: int = 10,
+    include_non_operational: bool = False,
+) -> dict[str, Any]:
+    """Generate a pre-task structural briefing for agent delegation.
+
+    Analyses the scope affected by a natural-language task description and
+    produces guardrails (prompt constraints) that reduce architectural
+    erosion risk during AI-assisted code generation.
+
+    Parameters
+    ----------
+    path:
+        Repository root directory.
+    task:
+        Natural-language task description
+        (e.g. ``"add payment integration to checkout module"``).
+    scope_override:
+        Manual scope override (path or glob).  Skips heuristic resolution.
+    signals:
+        Optional list of signal abbreviations to evaluate.
+    max_guardrails:
+        Maximum number of guardrails in the response.
+    include_non_operational:
+        Include fixture/generated/migration/docs findings.
+    """
+    from drift.analyzer import analyze_repo
+    from drift.config import DriftConfig, apply_signal_filter, resolve_signal_names
+    from drift.guardrails import generate_guardrails, guardrails_to_prompt_block
+    from drift.models import Severity
+    from drift.scope_resolver import expand_scope_imports, resolve_scope
+    from drift.telemetry import timed_call
+
+    repo_path = Path(path).resolve()
+    elapsed_ms = timed_call()
+    params = {
+        "path": str(path),
+        "task": task,
+        "scope_override": scope_override,
+        "signals": signals,
+        "max_guardrails": max_guardrails,
+        "include_non_operational": include_non_operational,
+    }
+
+    try:
+        cfg = DriftConfig.load(repo_path)
+        _warn_config_issues(cfg)
+
+        # --- Scope resolution ------------------------------------------------
+        layer_names = None
+        if hasattr(cfg, "policy") and hasattr(cfg.policy, "layer_boundaries"):
+            layer_names = [lb.name for lb in cfg.policy.layer_boundaries]
+
+        # Keyword aliases from drift.yaml brief.scope_aliases
+        scope_aliases: dict[str, str] | None = None
+        if hasattr(cfg, "brief") and cfg.brief.scope_aliases:
+            scope_aliases = cfg.brief.scope_aliases
+
+        scope = resolve_scope(
+            task,
+            repo_path,
+            scope_override=scope_override,
+            layer_names=layer_names,
+            scope_aliases=scope_aliases,
+        )
+
+        # Determine target_path for analyzer (first resolved path or None)
+        target_path: str | None = scope.paths[0] if scope.paths else None
+
+        # 1-hop import expansion — include direct dependencies
+        expanded_paths = expand_scope_imports(scope, repo_path)
+
+        # --- Signal filter ---------------------------------------------------
+        active_signals: set[str] | None = None
+        if signals:
+            select_csv = ",".join(signals)
+            apply_signal_filter(cfg, select_csv, None)
+            active_signals = set(resolve_signal_names(select_csv))
+        else:
+            # Apply pre-task signal filter for performance
+            pre_csv = ",".join(_PRE_TASK_SIGNALS)
+            apply_signal_filter(cfg, pre_csv, None)
+            active_signals = _PRE_TASK_SIGNALS
+
+        # --- Run analysis (scoped) -------------------------------------------
+        analysis = analyze_repo(
+            repo_path,
+            config=cfg,
+            since_days=90,
+            target_path=target_path,
+            active_signals=active_signals,
+        )
+
+        # Multi-path scope filtering: if multiple paths resolved, filter findings
+        # Include expanded dependency paths in filter scope
+        all_scope_paths = scope.paths + expanded_paths
+        scoped_findings = analysis.findings
+        if len(all_scope_paths) > 1:
+            def _in_scope(f: Finding) -> bool:
+                if not f.file_path:
+                    return True
+                fp = f.file_path.as_posix().strip("/")
+                return any(
+                    fp == p or fp.startswith(p + "/")
+                    for p in all_scope_paths
+                )
+            scoped_findings = [f for f in analysis.findings if _in_scope(f)]
+
+        # Filter non-operational if needed
+        if not include_non_operational:
+            op, _non_op, _ctx_counts = split_findings_by_context(
+                scoped_findings, cfg, include_non_operational=False,
+            )
+            scoped_findings = op
+
+        # Populate scope stats
+        scope.file_count = analysis.total_files
+        scope.function_count = analysis.total_functions
+
+        # --- Risk calculation ------------------------------------------------
+        scope_risk = _compute_scope_risk(scoped_findings, cfg)
+        level = _risk_level(scope_risk, scoped_findings)
+        reason = _risk_reason(scoped_findings, level)
+
+        # Find blocking signals
+        blocking_signals = sorted({
+            signal_abbrev(f.signal_type)
+            for f in scoped_findings
+            if f.severity in (Severity.CRITICAL, Severity.HIGH)
+        })
+
+        # --- Guardrails ------------------------------------------------------
+        guardrails = generate_guardrails(
+            scoped_findings,
+            max_guardrails=max_guardrails,
+        )
+        prompt_block = guardrails_to_prompt_block(guardrails)
+
+        # --- Top signals (scoped) --------------------------------------------
+        top_sigs = _top_signals(
+            analysis,
+            signal_filter=set(s.upper() for s in signals) if signals else None,
+            config=cfg,
+        )
+
+        # --- Build response --------------------------------------------------
+        result = _base_response(
+            type="brief",
+            task=task,
+            scope={
+                "resolved_paths": scope.paths,
+                "expanded_dependency_paths": expanded_paths,
+                "resolution_method": scope.method,
+                "file_count": scope.file_count,
+                "function_count": scope.function_count,
+                "confidence": round(scope.confidence, 2),
+                "matched_tokens": scope.matched_tokens,
+            },
+            risk={
+                "level": level,
+                "score": round(scope_risk, 3),
+                "reason": reason,
+                "blocking_signals": blocking_signals,
+            },
+            landscape={
+                "drift_score": round(analysis.drift_score, 3),
+                "severity": analysis.severity.value,
+                "top_signals": top_sigs,
+                "finding_count": len(scoped_findings),
+            },
+            guardrails=[g.to_dict() for g in guardrails],
+            guardrails_prompt_block=prompt_block,
+            recommended_next=["drift diff --uncommitted", "drift nudge"],
+            meta={
+                "analysis_duration_ms": round(elapsed_ms() * 1.0, 0),
+                "signals_evaluated": len(top_sigs),
+                "repo_path": str(repo_path),
+            },
+        )
+
+        _emit_api_telemetry(
+            tool_name="api.brief",
+            params=params,
+            status="ok",
+            elapsed_ms=elapsed_ms(),
+            result=result,
+            error=None,
+            repo_root=repo_path,
+        )
+        return result
+
+    except Exception as exc:
+        _emit_api_telemetry(
+            tool_name="api.brief",
+            params=params,
+            status="error",
+            elapsed_ms=elapsed_ms(),
+            result=None,
+            error=exc,
+            repo_root=repo_path,
+        )
+        raise

@@ -29,6 +29,7 @@ from drift.models import (
     Severity,
     SignalType,
 )
+from drift.signals._utils import is_test_file
 from drift.signals.base import BaseSignal, register_signal
 
 if TYPE_CHECKING:
@@ -175,6 +176,8 @@ class MutantDuplicateSignal(BaseSignal):
 
         functions: list[FunctionInfo] = []
         for pr in parse_results:
+            if is_test_file(pr.file_path):
+                continue
             for fn in pr.functions:
                 # Strip class qualifier to get bare method name for dunder check
                 bare_name = fn.name.rsplit(".", 1)[-1]

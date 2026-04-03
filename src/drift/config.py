@@ -201,6 +201,20 @@ class FindingContextPolicy(BaseModel):
     default_context: str = "production"
 
 
+class BriefConfig(BaseModel):
+    """Configuration for ``drift brief`` pre-task briefings."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    scope_aliases: dict[str, str] = Field(
+        default_factory=dict,
+        description=(
+            "Keyword → path mapping for scope resolution. "
+            "Example: {payment: src/billing/, auth: src/auth/}"
+        ),
+    )
+
+
 def _default_includes() -> list[str]:
     """Return default include patterns, auto-extending for TypeScript when available."""
     patterns = ["**/*.py"]
@@ -260,6 +274,7 @@ class DriftConfig(BaseModel):
     path_overrides: dict[str, PathOverride] = Field(default_factory=dict)
     deferred: list[DeferredArea] = Field(default_factory=list)
     finding_context: FindingContextPolicy = Field(default_factory=FindingContextPolicy)
+    brief: BriefConfig = Field(default_factory=BriefConfig)
 
     @staticmethod
     def _find_config_file(repo_path: Path) -> Path | None:

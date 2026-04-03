@@ -765,7 +765,7 @@ class TestPFSThresholds:
         3 variants → base 0.667.  4 non-canonical → boost 1.08 → 0.72 HIGH.
         Without boost (mutation): 0.667 → MEDIUM.
         """
-        _A = textwrap.dedent("""\
+        a_template = textwrap.dedent("""\
             import logging
             logger = logging.getLogger(__name__)
             def {name}():
@@ -775,14 +775,14 @@ class TestPFSThresholds:
                     logger.error("{name}: %s", e)
                     raise
         """)
-        _B = textwrap.dedent("""\
+        b_template = textwrap.dedent("""\
             def {name}():
                 try:
                     run()
                 except Exception:
                     return None
         """)
-        _C = textwrap.dedent("""\
+        c_template = textwrap.dedent("""\
             def {name}():
                 try:
                     run()
@@ -792,10 +792,10 @@ class TestPFSThresholds:
         # 3A (canonical) + 2B + 2C = 7 instances, non_canonical=4
         files = {
             "workers/__init__.py": "",
-            "workers/w1.py": _A.format(name="a1") + "\n" + _A.format(name="a2"),
-            "workers/w2.py": _A.format(name="a3") + "\n" + _B.format(name="b1"),
-            "workers/w3.py": _B.format(name="b2") + "\n" + _C.format(name="c1"),
-            "workers/w4.py": _C.format(name="c2"),
+            "workers/w1.py": a_template.format(name="a1") + "\n" + a_template.format(name="a2"),
+            "workers/w2.py": a_template.format(name="a3") + "\n" + b_template.format(name="b1"),
+            "workers/w3.py": b_template.format(name="b2") + "\n" + c_template.format(name="c1"),
+            "workers/w4.py": c_template.format(name="c2"),
         }
         findings = _run_signal(
             tmp_path, files, SignalType.PATTERN_FRAGMENTATION,
@@ -816,7 +816,7 @@ class TestPFSThresholds:
         3 variants, canonical=5, non_canonical=3 → boost 1.04 → 0.694 MEDIUM.
         Mutation: boost 1.4 → 0.934 HIGH.
         """
-        _A = textwrap.dedent("""\
+        a_template = textwrap.dedent("""\
             import logging
             logger = logging.getLogger(__name__)
             def {name}():
@@ -826,14 +826,14 @@ class TestPFSThresholds:
                     logger.error("{name}: %s", e)
                     raise
         """)
-        _B = textwrap.dedent("""\
+        b_template = textwrap.dedent("""\
             def {name}():
                 try:
                     run()
                 except Exception:
                     return None
         """)
-        _C = textwrap.dedent("""\
+        c_template = textwrap.dedent("""\
             def {name}():
                 try:
                     run()
@@ -843,10 +843,10 @@ class TestPFSThresholds:
         # 5A (canonical) + 2B + 1C = 8 instances, non_canonical=3
         files = {
             "svc/__init__.py": "",
-            "svc/s1.py": _A.format(name="a1") + "\n" + _A.format(name="a2"),
-            "svc/s2.py": _A.format(name="a3") + "\n" + _A.format(name="a4"),
-            "svc/s3.py": _A.format(name="a5") + "\n" + _B.format(name="b1"),
-            "svc/s4.py": _B.format(name="b2") + "\n" + _C.format(name="c1"),
+            "svc/s1.py": a_template.format(name="a1") + "\n" + a_template.format(name="a2"),
+            "svc/s2.py": a_template.format(name="a3") + "\n" + a_template.format(name="a4"),
+            "svc/s3.py": a_template.format(name="a5") + "\n" + b_template.format(name="b1"),
+            "svc/s4.py": b_template.format(name="b2") + "\n" + c_template.format(name="c1"),
         }
         findings = _run_signal(
             tmp_path, files, SignalType.PATTERN_FRAGMENTATION,

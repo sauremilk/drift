@@ -146,12 +146,20 @@ def discover_files(
     skipped_langs: dict[str, int] = {}
 
     for pattern in include:
-        for match in repo_path.glob(pattern):
-            if not match.is_file():
-                continue
+        try:
+            matches = list(repo_path.glob(pattern))
+        except OSError as exc:
+            logger.warning("glob(%s) failed: %s", pattern, exc)
+            continue
+        for match in matches:
+            try:
+                if not match.is_file():
+                    continue
 
-            # Skip symlinks to avoid loops and double-counting
-            if match.is_symlink():
+                # Skip symlinks to avoid loops and double-counting
+                if match.is_symlink():
+                    continue
+            except OSError:
                 continue
 
             rel = match.relative_to(repo_path).as_posix()
@@ -171,7 +179,11 @@ def discover_files(
                 skipped_langs[lang] = skipped_langs.get(lang, 0) + 1
                 continue
 
-            stat = match.stat()
+            try:
+                stat = match.stat()
+            except OSError:
+                logger.debug("stat() failed, skipping: %s", rel)
+                continue
             if stat.st_size > max_bytes:
                 logger.debug("Skipping oversized file (%d bytes): %s", stat.st_size, rel)
                 continue

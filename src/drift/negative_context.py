@@ -28,6 +28,20 @@ from drift.models import (
 )
 
 # ---------------------------------------------------------------------------
+# Metadata sanitisation — strip control chars to prevent injection in
+# code-block output that agents may execute.
+# ---------------------------------------------------------------------------
+
+
+def _sanitize(value: str, max_len: int = 200) -> str:
+    """Remove newlines and control characters from metadata strings."""
+    cleaned = value.replace("\n", " ").replace("\r", "")
+    # Strip non-printable control characters (keep space)
+    cleaned = "".join(ch for ch in cleaned if ch == " " or ch.isprintable())
+    return cleaned[:max_len]
+
+
+# ---------------------------------------------------------------------------
 # Signal → Category mapping
 # ---------------------------------------------------------------------------
 
@@ -434,10 +448,10 @@ def _gen_avs(finding: Finding) -> list[NegativeContext]:
     """FM-14 (RPN 240): Architecture layer violation — project-specific."""
     meta = finding.metadata
     # Phase 3: extract concrete layer identities from actual metadata
-    src_layer = meta.get("src_layer") or meta.get("source_layer", "unknown")
-    dst_layer = meta.get("dst_layer") or meta.get("target_layer", "unknown")
-    rule = meta.get("rule", "")
-    import_path = meta.get("import", "")
+    src_layer = _sanitize(str(meta.get("src_layer") or meta.get("source_layer", "unknown")))
+    dst_layer = _sanitize(str(meta.get("dst_layer") or meta.get("target_layer", "unknown")))
+    rule = _sanitize(str(meta.get("rule", "")))
+    import_path = _sanitize(str(meta.get("import", "")))
     blast_radius = meta.get("blast_radius")
     instability = meta.get("instability")
 
@@ -591,9 +605,9 @@ def _gen_ccc(finding: Finding) -> list[NegativeContext]:
 def _gen_hsc(finding: Finding) -> list[NegativeContext]:
     """FM-04 (RPN 200): Hardcoded secrets — project-specific."""
     meta = finding.metadata
-    var_name = meta.get("variable") or meta.get(
+    var_name = _sanitize(str(meta.get("variable") or meta.get(
         "variable_name", finding.symbol or "secret",
-    )
+    )))
     # Phase 3: use concrete detection rule for specific guidance
     rule_id = meta.get("rule_id", "hardcoded_secret")
     cwe = meta.get("cwe", "CWE-798")

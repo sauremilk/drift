@@ -54,6 +54,21 @@ inputs:
     required: false
     default: "false"
 
+  brief:
+    description: >
+      Run drift brief and post a pre-task structural briefing as a PR
+      comment.  Extracts scope from the PR title or the brief-task input.
+      Only works in pull_request events.
+      Requires the 'pull-requests: write' permission.
+    required: false
+    default: "false"
+
+  brief-task:
+    description: >
+      Task description for drift brief.  If omitted, the PR title is used.
+    required: false
+    default: ""
+
 outputs:
   sarif-file:
     description: "Absolute path to the generated SARIF file (only set when upload-sarif is 'true')."
@@ -226,6 +241,67 @@ runs:
         script: |
           const body = `${{ steps.drift-json.outputs.comment-body }}`;
           const marker = '## 🏗️ Drift Report';
+          const { data: comments } = await github.rest.issues.listComments({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            issue_number: context.issue.number,
+          });
+          const existing = comments.find(c => c.body?.startsWith(marker));
+          if (existing) {
+            await github.rest.issues.updateComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              comment_id: existing.id,
+              body,
+            });
+          } else {
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body,
+            });
+          }
+
+    # Run drift brief and post as PR comment when requested.
+    - name: Run drift brief
+      id: drift-brief
+      if: always() && inputs.brief == 'true' && github.event_name == 'pull_request'
+      shell: bash
+      env:
+        DRIFT_REPO: ${{ inputs.repo }}
+        DRIFT_CONFIG: ${{ inputs.config }}
+        DRIFT_BRIEF_TASK: ${{ inputs.brief-task }}
+      run: |
+        TASK="${DRIFT_BRIEF_TASK}"
+        if [ -z "${TASK}" ]; then
+          TASK="${{ github.event.pull_request.title }}"
+        fi
+
+        ARGS="--repo ${DRIFT_REPO} --format markdown --task"
+        if [ -n "${DRIFT_CONFIG}" ]; then
+          ARGS="--config ${DRIFT_CONFIG} ${ARGS}"
+        fi
+
+        BRIEF_OUT=$(drift brief ${ARGS} "${TASK}" 2>/dev/null || echo "⚠️ drift brief failed")
+
+        {
+          echo "brief-body<<DRIFT_BRIEF_EOF"
+          echo "## 🧭 Drift Brief"
+          echo ""
+          echo "${BRIEF_OUT}"
+          echo ""
+          echo "<sub>Posted by <a href=\"https://github.com/mick-gsk/drift\">drift-analyzer</a> · pre-task structural briefing</sub>"
+          echo "DRIFT_BRIEF_EOF"
+        } >> "${GITHUB_OUTPUT}"
+
+    - name: Post brief PR comment
+      if: always() && inputs.brief == 'true' && github.event_name == 'pull_request' && steps.drift-brief.outputs.brief-body != ''
+      uses: actions/github-script@v7
+      with:
+        script: |
+          const body = `${{ steps.drift-brief.outputs.brief-body }}`;
+          const marker = '## 🧭 Drift Brief';
           const { data: comments } = await github.rest.issues.listComments({
             owner: context.repo.owner,
             repo: context.repo.repo,

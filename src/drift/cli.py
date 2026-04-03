@@ -146,6 +146,7 @@ def main(verbose: bool = False) -> None:
 from drift.commands.analyze import analyze  # noqa: E402
 from drift.commands.badge import badge  # noqa: E402
 from drift.commands.baseline import baseline  # noqa: E402
+from drift.commands.brief import brief  # noqa: E402
 from drift.commands.check import check  # noqa: E402
 from drift.commands.config_cmd import config  # noqa: E402
 from drift.commands.copilot_context import copilot_context  # noqa: E402
@@ -164,6 +165,7 @@ from drift.commands.validate_cmd import validate  # noqa: E402
 
 main.add_command(analyze)
 main.add_command(baseline)
+main.add_command(brief)
 main.add_command(init)
 main.add_command(check)
 main.add_command(config)

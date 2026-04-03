@@ -35,6 +35,22 @@ def _load_labels() -> dict[str, str]:
     return labels
 
 
+def _load_labels_full() -> dict[str, dict]:
+    """Load ground-truth labels with full metadata (including fp_type)."""
+    if not LABELS_FILE.exists():
+        return {}
+    data = json.loads(LABELS_FILE.read_text(encoding="utf-8"))
+    labels: dict[str, dict] = {}
+    for entry in data:
+        key = entry.get("key")
+        if key:
+            labels[key] = entry
+        legacy_key = entry.get("legacy_key")
+        if legacy_key:
+            labels[legacy_key] = entry
+    return labels
+
+
 def _finding_keys(repo: str, finding: dict) -> list[str]:
     """Return stable lookup keys ordered from strict to legacy.
 
@@ -153,6 +169,34 @@ def main() -> None:
     out_path = results_dir / "ground_truth_analysis.json"
     out_path.write_text(json.dumps(output, indent=2, ensure_ascii=False), encoding="utf-8")
     print(f"\nUpdated: {out_path}")
+
+    # FP-type breakdown (Schicht 3)
+    labels_full = _load_labels_full()
+    fp_type_counts: dict[str, dict[str, int]] = {}
+    for entry in labels_full.values():
+        if entry.get("label") != "FP":
+            continue
+        fp_type = entry.get("fp_type", "unclassified")
+        signal = entry.get("signal", "unknown")
+        if signal not in fp_type_counts:
+            fp_type_counts[signal] = {}
+        fp_type_counts[signal][fp_type] = fp_type_counts[signal].get(fp_type, 0) + 1
+
+    if fp_type_counts:
+        print("\n\nFP-TYPE BREAKDOWN (Schicht 3)")
+        print("-" * 50)
+        all_types: set[str] = set()
+        for types in fp_type_counts.values():
+            all_types.update(types.keys())
+        type_list = sorted(all_types)
+        hdr2 = f"{'Signal':<28s} " + " ".join(f"{t:>12s}" for t in type_list)
+        print(hdr2)
+        for signal in sorted(fp_type_counts):
+            counts = fp_type_counts[signal]
+            row = f"{signal:<28s} " + " ".join(
+                f"{counts.get(t, 0):>12d}" for t in type_list
+            )
+            print(row)
 
 
 if __name__ == "__main__":

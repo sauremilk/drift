@@ -9,10 +9,10 @@ from __future__ import annotations
 import hashlib
 import json
 import logging
-import pickle
 import time
+from contextlib import suppress
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, cast
+from typing import TYPE_CHECKING, Any
 
 from drift.models import (
     ClassInfo,
@@ -225,7 +225,8 @@ def _deser_pattern(d: dict[str, Any]) -> PatternInstance:
 
 # Version tag embedded in each cache entry.  Bump when the Finding
 # dataclass or signal contract changes in an incompatible way.
-_SIGNAL_CACHE_VERSION = 2
+# v3: migrated from pickle to JSON to eliminate CWE-502 deserialization risk.
+_SIGNAL_CACHE_VERSION = 3
 
 
 class SignalCache:
@@ -237,8 +238,9 @@ class SignalCache:
     is that of a single file; for cross-file signals it is a hash over
     the sorted file hashes of all inputs.
 
-    Entries are stored as pickle because Finding contains Path objects
-    and enums.  A version tag invalidates stale entries automatically.
+    Entries are stored as JSON to avoid unsafe deserialization (CWE-502).
+    Path objects and enums are serialized as strings.
+    A version tag invalidates stale entries automatically.
     """
 
     _EVICTION_MAX_AGE_SECONDS = 7 * 24 * 60 * 60
@@ -250,12 +252,16 @@ class SignalCache:
 
     def _evict_stale(self) -> None:
         cutoff = time.time() - self._EVICTION_MAX_AGE_SECONDS
-        for entry in self._cache_dir.glob("*.pkl"):
+        for entry in self._cache_dir.glob("*.json"):
             try:
                 if entry.stat().st_mtime < cutoff:
                     entry.unlink(missing_ok=True)
             except OSError:
                 pass
+        # Clean up legacy pickle files from v2 cache.
+        for entry in self._cache_dir.glob("*.pkl"):
+            with suppress(OSError):
+                entry.unlink(missing_ok=True)
 
     @staticmethod
     def config_fingerprint(config: object) -> str:
@@ -307,7 +313,7 @@ class SignalCache:
 
     def _cache_path(self, signal_type: str, config_fp: str, content_hash: str) -> Path:
         key = f"{signal_type}_{config_fp}_{content_hash}"
-        return self._cache_dir / f"{key}.pkl"
+        return self._cache_dir / f"{key}.json"
 
     def get(
         self, signal_type: str, config_fp: str, content_hash: str,
@@ -317,15 +323,15 @@ class SignalCache:
         if not path.exists():
             return None
         try:
-            data = pickle.loads(path.read_bytes())  # noqa: S301
+            data = json.loads(path.read_text(encoding="utf-8"))
             if data.get("_v") != _SIGNAL_CACHE_VERSION:
                 path.unlink(missing_ok=True)
                 return None
-            findings = data.get("findings")
-            if not isinstance(findings, list):
+            raw_findings = data.get("findings")
+            if not isinstance(raw_findings, list):
                 path.unlink(missing_ok=True)
                 return None
-            return cast("list[Finding]", findings)
+            return [_deser_finding(f) for f in raw_findings]
         except Exception:
             path.unlink(missing_ok=True)
             return None
@@ -340,8 +346,65 @@ class SignalCache:
         """Store findings in the cache."""
         path = self._cache_path(signal_type, config_fp, content_hash)
         try:
-            path.write_bytes(
-                pickle.dumps({"_v": _SIGNAL_CACHE_VERSION, "findings": findings}),
+            payload = json.dumps(
+                {"_v": _SIGNAL_CACHE_VERSION, "findings": [_ser_finding(f) for f in findings]},
+                default=str,
             )
+            path.write_text(payload, encoding="utf-8")
         except OSError:
             return
+
+
+# ---------------------------------------------------------------------------
+# Finding JSON serialization (replaces pickle — CWE-502 fix)
+# ---------------------------------------------------------------------------
+
+
+def _ser_finding(f: Finding) -> dict[str, Any]:
+    """Serialize a Finding to a JSON-safe dictionary."""
+    return {
+        "signal_type": f.signal_type.value if f.signal_type else None,
+        "severity": f.severity.value if f.severity else None,
+        "score": f.score,
+        "title": f.title,
+        "description": f.description,
+        "file_path": f.file_path.as_posix() if f.file_path else None,
+        "start_line": f.start_line,
+        "end_line": f.end_line,
+        "symbol": f.symbol,
+        "related_files": [p.as_posix() for p in f.related_files],
+        "commit_hash": f.commit_hash,
+        "ai_attributed": f.ai_attributed,
+        "fix": f.fix,
+        "impact": f.impact,
+        "score_contribution": f.score_contribution,
+        "deferred": f.deferred,
+        "metadata": f.metadata,
+        "rule_id": f.rule_id,
+    }
+
+
+def _deser_finding(d: dict[str, Any]) -> Finding:
+    """Deserialize a Finding from a JSON dictionary."""
+    from drift.models import Finding, Severity, SignalType
+
+    return Finding(
+        signal_type=SignalType(d["signal_type"]),
+        severity=Severity(d["severity"]),
+        score=d.get("score", 0.0),
+        title=d.get("title", ""),
+        description=d.get("description", ""),
+        file_path=Path(d["file_path"]) if d.get("file_path") else None,
+        start_line=d.get("start_line"),
+        end_line=d.get("end_line"),
+        symbol=d.get("symbol"),
+        related_files=[Path(p) for p in d.get("related_files", [])],
+        commit_hash=d.get("commit_hash"),
+        ai_attributed=d.get("ai_attributed", False),
+        fix=d.get("fix"),
+        impact=d.get("impact", 0.0),
+        score_contribution=d.get("score_contribution", 0.0),
+        deferred=d.get("deferred", False),
+        metadata=d.get("metadata", {}),
+        rule_id=d.get("rule_id"),
+    )

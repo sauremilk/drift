@@ -11,6 +11,7 @@ Tool surface (v2):
     drift_explain    — Signal/rule/error explanations
     drift_fix_plan   — Prioritised repair tasks with constraints
     drift_validate   — Preflight config & environment check
+    drift_brief      — Pre-task structural briefing with guardrails
 """
 
 from __future__ import annotations
@@ -69,18 +70,23 @@ _BASE_INSTRUCTIONS = (
     "and near-duplicate code.\n\n"
     "Tool workflow:\n"
     "1. drift_validate — check config & environment before first analysis\n"
-    "2. drift_scan — assess overall architectural health\n"
-    "3. drift_negative_context — get anti-patterns to avoid in new code\n"
-    "4. drift_diff — detect regressions in a PR or after changes\n"
-    "5. drift_fix_plan — get actionable repair tasks with constraints\n"
-    "6. drift_explain — understand unfamiliar signals or findings\n"
-    "7. drift_nudge — get directional feedback after each file change "
+    "2. drift_brief — get a structural briefing BEFORE implementing a task "
+    "(returns scope-aware guardrails as prompt constraints)\n"
+    "3. drift_scan — assess overall architectural health\n"
+    "4. drift_negative_context — get anti-patterns to avoid in new code\n"
+    "5. drift_diff — detect regressions in a PR or after changes\n"
+    "6. drift_fix_plan — get actionable repair tasks with constraints\n"
+    "7. drift_explain — understand unfamiliar signals or findings\n"
+    "8. drift_nudge — get directional feedback after each file change "
     "(do not batch)\n\n"
-    "IMPORTANT: Before generating new code, call drift_negative_context "
-    "to learn which patterns to avoid.  After each file change, call "
-    "drift_nudge for fast directional feedback. Use drift_diff for full "
-    "regression analysis. Do not batch multiple file changes without "
-    "checking drift impact. "
+    "IMPORTANT: When asked to implement a feature, add functionality, or make "
+    "structural changes, call drift_brief(task=\"<task description>\") FIRST "
+    "before writing any code. Use the returned guardrails as constraints "
+    "in your code generation. If the scope confidence is below 0.5, ask the "
+    "user to specify a --scope path.\n\n"
+    "After each file change, call drift_nudge for fast directional feedback. "
+    "Use drift_diff for full regression analysis. Do not batch multiple file "
+    "changes without checking drift impact. "
     "Every response includes an 'agent_instruction' field — follow it."
 )
 
@@ -434,6 +440,84 @@ def drift_nudge(
 
 
 @mcp.tool()
+def drift_brief(
+    path: Annotated[str, Field(description="Repository path to analyze.")] = ".",
+    task: Annotated[
+        str,
+        Field(
+            description=(
+                "Natural-language task description, e.g."
+                " 'add payment integration to checkout'."
+            ),
+        ),
+    ] = "",
+    scope: Annotated[
+        str | None,
+        Field(
+            description=(
+                "Manual scope override (path, e.g. 'src/checkout/')."
+                " Auto-resolved from task if omitted."
+            ),
+        ),
+    ] = None,
+    max_guardrails: Annotated[
+        int, Field(description="Maximum number of guardrails to return.")
+    ] = 10,
+    response_detail: Annotated[
+        str,
+        Field(
+            description=(
+                "Detail level: 'concise' (guardrails + risk only)"
+                " or 'detailed' (full landscape)."
+            ),
+        ),
+    ] = "concise",
+) -> str:
+    """Get a pre-task structural briefing before writing code.
+
+    Resolves the task scope from the task description, assesses structural
+    risk in that scope, and returns copy-pastable guardrails (prompt
+    constraints) that prevent common architectural erosion patterns.
+
+    Call this BEFORE starting any feature implementation or refactoring.
+    Use the returned guardrails as constraints in your code generation.
+
+    Args:
+        path: Repository path (default: current directory).
+        task: Natural-language description of the planned work.
+        scope: Manual scope override path. Auto-resolved from task if omitted.
+        max_guardrails: Maximum guardrails to return (default: 10).
+        response_detail: "concise" (token-sparing) or "detailed" (full fields).
+    """
+    from drift.api import brief
+
+    try:
+        result = brief(
+            path,
+            task=task,
+            scope_override=scope,
+            max_guardrails=max_guardrails,
+        )
+
+        if response_detail == "concise":
+            # Strip verbose landscape fields for token efficiency
+            result.pop("landscape", None)
+            result.pop("meta", None)
+
+        return json.dumps(result, default=str)
+    except Exception as exc:
+        from drift.api_helpers import _error_response
+
+        error = _error_response("DRIFT-5010", str(exc), recoverable=True)
+        error["tool"] = "drift_brief"
+        error["agent_instruction"] = (
+            "Check that the repository path exists and the task string is not empty. "
+            "If the error persists, try passing an explicit --scope."
+        )
+        return json.dumps(error, default=str)
+
+
+@mcp.tool()
 def drift_negative_context(
     path: Annotated[str, Field(description="Repository path to analyze.")] = ".",
     scope: Annotated[
@@ -571,6 +655,7 @@ _EXPORTED_MCP_TOOLS = (
     drift_fix_plan,
     drift_validate,
     drift_nudge,
+    drift_brief,
     drift_negative_context,
 )
 

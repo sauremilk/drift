@@ -7,7 +7,9 @@
   {
     "key": "drift_self::README references missing directory: TypeScript/",
     "label": "FP",
-    "signal": "doc_impl_drift"
+    "signal": "doc_impl_drift",
+    "fp_type": "semantic",
+    "fp_category": "proper_noun_as_path"
   },
   {
     "key": "drift_self::README references missing directory: __pycache__/",
@@ -17,12 +19,16 @@
   {
     "key": "drift_self::README references missing directory: auth/",
     "label": "FP",
-    "signal": "doc_impl_drift"
+    "signal": "doc_impl_drift",
+    "fp_type": "scope",
+    "fp_category": "api_endpoint_as_path"
   },
   {
     "key": "drift_self::README references missing directory: db/",
     "label": "FP",
-    "signal": "doc_impl_drift"
+    "signal": "doc_impl_drift",
+    "fp_type": "scope",
+    "fp_category": "api_endpoint_as_path"
   },
   {
     "key": "drift_self::README references missing directory: drift/",
@@ -237,7 +243,9 @@
   {
     "key": "fastapi::README references missing directory: 8000/",
     "label": "FP",
-    "signal": "doc_impl_drift"
+    "signal": "doc_impl_drift",
+    "fp_type": "semantic",
+    "fp_category": "port_number_as_path"
   },
   {
     "key": "fastapi::README references missing directory: code/",
@@ -1197,12 +1205,16 @@
   {
     "key": "httpx::README references missing directory: Basic/",
     "label": "FP",
-    "signal": "doc_impl_drift"
+    "signal": "doc_impl_drift",
+    "fp_type": "semantic",
+    "fp_category": "proper_noun_as_path"
   },
   {
     "key": "httpx::README references missing directory: Key/",
     "label": "FP",
-    "signal": "doc_impl_drift"
+    "signal": "doc_impl_drift",
+    "fp_type": "semantic",
+    "fp_category": "proper_noun_as_path"
   },
   {
     "key": "httpx::README references missing directory: text/",
