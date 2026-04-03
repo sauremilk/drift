@@ -196,13 +196,27 @@ def generate_instructions(analysis: RepoAnalysis) -> str:
     if analysis.trend:
         direction = analysis.trend.direction
         delta = analysis.trend.delta
-        sections.append(f"- **Trend**: {direction}" + (f" (Δ{delta:+.2f})" if delta else ""))
+        sections.append(f"- **Trend**: {direction}" + (f" (delta {delta:+.2f})" if delta else ""))
     if analysis.module_scores:
         worst = max(analysis.module_scores, key=lambda m: m.drift_score)
         sections.append(
             f"- **Most eroded module**: `{worst.path.as_posix()}` "
             f"(score: {worst.drift_score:.2f})"
         )
+
+    # Cross-reference: security/anti-pattern context
+    sections.append("")
+    sections.append("### Security & Anti-Pattern Context")
+    sections.append(
+        "For security findings and anti-pattern rules (e.g. hardcoded secrets, "
+        "missing authorization), run:"
+    )
+    sections.append("")
+    sections.append("    drift export-context --format prompt")
+    sections.append("")
+    sections.append(
+        "Combine both outputs for complete architectural + security guidance."
+    )
 
     return _wrap_markers("\n".join(sections) + "\n")
 

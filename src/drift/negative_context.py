@@ -182,7 +182,7 @@ def _gen_dia(finding: Finding) -> list[NegativeContext]:
             '    """Process data with retries.\n\n'
             "    Args:\n"
             "        data: Input data\n"
-            "        max_retries: Number of retries  # ← param doesn't exist!\n"
+            "        max_retries: Number of retries  # <- param doesn't exist!\n"
             '    """'
         ),
         canonical_alternative=(
@@ -230,12 +230,12 @@ def _gen_maz(finding: Finding) -> list[NegativeContext]:
             "# ANTI-PATTERN: Endpoint without authorization (CWE-862)\n"
             f"# Framework: {framework}\n"
             "def create_item(request):\n"
-            "    # ← No auth check! Any anonymous user can access this\n"
+            "    # <- No auth check! Any anonymous user can access this\n"
             "    return create(request.data)"
         ),
         canonical_alternative=(
-            f"# REQUIRED: Use this repo's auth pattern: {auth_example}\n"
-            f"# Every new endpoint MUST be protected.\n"
+            "# REQUIRED: Apply this repo's established auth pattern\n"
+            "# Every new endpoint MUST be protected.\n"
             "# Only health-check and public docs endpoints are exempt."
         ),
         affected_files=_affected(finding),
@@ -310,7 +310,7 @@ def _gen_bem(finding: Finding) -> list[NegativeContext]:
             "try:\n"
             "    result = dangerous_operation()\n"
             "except Exception:\n"
-            "    pass  # ← Silently swallows ALL errors!"
+            "    pass  # <- Silently swallows ALL errors!"
         ),
         canonical_alternative=(
             "# REQUIRED: Catch specific exceptions, re-raise or handle\n"
@@ -372,13 +372,13 @@ def _gen_ecm(finding: Finding) -> list[NegativeContext]:
         forbidden = (
             f"# ANTI-PATTERN: Exception contract drift in '{module}'\n"
             f"# '{example_fn}' changed its exception behavior\n"
-            "class MyNewError(Exception): ...  # ← Conflicts with contract"
+            "class MyNewError(Exception): ...  # <- Conflicts with contract"
         )
     else:
         forbidden = (
             "# ANTI-PATTERN: Introducing a new exception type in a module\n"
             "# that already uses a different exception hierarchy\n"
-            "class MyNewError(Exception): ...  # ← Conflicts with contract"
+            "class MyNewError(Exception): ...  # <- Conflicts with contract"
         )
 
     enriched_meta: dict[str, Any] = {}
@@ -431,7 +431,7 @@ def _gen_avs(finding: Finding) -> list[NegativeContext]:
 
     # Build enriched description from real project data
     desc_parts = [
-        f"Layer violation: '{src_layer}' → '{dst_layer}'.",
+        f"Layer violation: '{src_layer}' -> '{dst_layer}'.",
     ]
     if rule:
         desc_parts.append(f"Boundary rule violated: {rule}.")
@@ -445,12 +445,12 @@ def _gen_avs(finding: Finding) -> list[NegativeContext]:
     if import_path:
         forbidden = (
             f"# ANTI-PATTERN: Forbidden cross-layer import\n"
-            f"import {import_path}  # ← violates {src_layer} → {dst_layer} boundary"
+            f"import {import_path}  # <- violates {src_layer} -> {dst_layer} boundary"
         )
     else:
         forbidden = (
             f"# ANTI-PATTERN: Importing from forbidden layer\n"
-            f"from {dst_layer} import ...  # ← violates layer boundary"
+            f"from {dst_layer} import ...  # <- violates layer boundary"
         )
 
     # Stability-aware canonical alternative
@@ -460,7 +460,7 @@ def _gen_avs(finding: Finding) -> list[NegativeContext]:
     ]
     if instability is not None:
         canonical_parts.append(
-            f"# Module instability={instability:.2f} — "
+            f"# Module instability={instability:.2f} -- "
             "depend on stable (low-I) modules only\n"
         )
     canonical_parts.append(
@@ -586,26 +586,27 @@ def _gen_hsc(finding: Finding) -> list[NegativeContext]:
     rule_id = meta.get("rule_id", "hardcoded_secret")
     cwe = meta.get("cwe", "CWE-798")
 
-    # Map rule_id to specific forbidden pattern
+    # Map rule_id to specific forbidden pattern -- use fixed variable names
+    # per rule category so identical signals deduplicate in export (#109).
     if rule_id == "hardcoded_api_token":
         forbidden = (
             f"# ANTI-PATTERN: Hardcoded API token ({cwe})\n"
-            f'{var_name} = "sk-A1B2C3..."  '
-            f"# ← NEVER hardcode API tokens"
+            'API_KEY = "sk-A1B2C3..."  '
+            "# <- NEVER hardcode API tokens"
         )
         desc_detail = "API token"
     elif rule_id == "placeholder_secret":
         forbidden = (
             f"# ANTI-PATTERN: Placeholder secret left in code ({cwe})\n"
-            f"{var_name} = \"changeme\"  "
-            f"# ← Placeholder secrets get deployed to production"
+            'SECRET = "changeme"  '
+            "# <- Placeholder secrets get deployed to production"
         )
         desc_detail = "placeholder secret"
     else:
         forbidden = (
             f"# ANTI-PATTERN: Hardcoded credentials ({cwe})\n"
-            f'{var_name} = "secret_value"  '
-            f"# ← NEVER embed secrets in source"
+            'SECRET = "secret_value"  '
+            "# <- NEVER embed secrets in source"
         )
         desc_detail = "hardcoded credential"
 
@@ -624,7 +625,7 @@ def _gen_hsc(finding: Finding) -> list[NegativeContext]:
         canonical_alternative=(
             "# REQUIRED: Use environment variables or a secrets manager\n"
             "import os\n"
-            f'{var_name} = os.environ["{var_name.upper()}"]\n'
+            'VAR = os.environ["SECRET_NAME"]\n'
             "# Alternative: use a .env file with python-dotenv or similar"
         ),
         affected_files=_affected(finding),
@@ -663,7 +664,7 @@ def _gen_pfs(finding: Finding) -> list[NegativeContext]:
         ),
         forbidden_pattern=(
             "# ANTI-PATTERN: Introducing yet another pattern variant\n"
-            f"# This module already has {variant_count} variants — do not add more"
+            f"# This module already has {variant_count} variants -- do not add more"
         ),
         canonical_alternative=(
             f"# REQUIRED: Follow the canonical pattern in this module:\n"
@@ -729,8 +730,8 @@ def _gen_isd(finding: Finding) -> list[NegativeContext]:
         ),
         forbidden_pattern=(
             "# ANTI-PATTERN: Insecure defaults (CWE-1188)\n"
-            'DEBUG = True  # ← NEVER as default\n'
-            'CORS_ALLOW_ALL = True  # ← NEVER in production'
+            'DEBUG = True  # <- NEVER as default\n'
+            'CORS_ALLOW_ALL = True  # <- NEVER in production'
         ),
         canonical_alternative=(
             "# REQUIRED: Secure defaults, opt-in for development\n"
@@ -800,7 +801,7 @@ def _gen_gcd(finding: Finding) -> list[NegativeContext]:
             "    if data:\n"
             "        if data.valid:\n"
             "            if data.ready:\n"
-            "                return do_work(data)  # ← 3 levels deep"
+            "                return do_work(data)  # <- 3 levels deep"
         ),
         canonical_alternative=(
             "# PREFERRED: Guard clauses with early return\n"
@@ -834,8 +835,8 @@ def _gen_dca(finding: Finding) -> list[NegativeContext]:
         description="Unreachable or unused code detected. Do not add speculative code.",
         forbidden_pattern=(
             "# ANTI-PATTERN: Unused imports, functions, or constants\n"
-            "import unused_module  # ← never referenced\n"
-            "def helper_just_in_case(): ...  # ← never called"
+            "import unused_module  # <- never referenced\n"
+            "def helper_just_in_case(): ...  # <- never called"
         ),
         canonical_alternative=(
             "# REQUIRED: Only add code that is immediately used\n"
@@ -855,7 +856,7 @@ def _gen_cir(finding: Finding) -> list[NegativeContext]:
     """FM-13 (RPN 96): Circular import introduction."""
     meta = finding.metadata
     cycle = meta.get("cycle", [])
-    cycle_str = " → ".join(str(c) for c in cycle[:5]) if cycle else "circular dependency"
+    cycle_str = " -> ".join(str(c) for c in cycle[:5]) if cycle else "circular dependency"
 
     return [NegativeContext(
         anti_pattern_id=_neg_id(SignalType.CIRCULAR_IMPORT, finding),
@@ -965,7 +966,7 @@ def _gen_cxs(finding: Finding) -> list[NegativeContext]:
         description=f"'{func_name}' has complexity {complexity}. Keep new code simple.",
         forbidden_pattern=(
             "# ANTI-PATTERN: Adding more branches to already-complex function\n"
-            f"# '{func_name}' complexity is already {complexity} — do not increase"
+            f"# '{func_name}' complexity is already {complexity} -- do not increase"
         ),
         canonical_alternative=(
             "# REQUIRED: Extract helper functions to reduce complexity\n"

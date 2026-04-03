@@ -93,7 +93,7 @@ def export_context(
     repo_path = repo.resolve()
     cfg = DriftConfig.load(config or repo_path)
 
-    click.echo("Running drift analysis…", err=True)
+    click.echo("Running drift analysis...", err=True)
     analysis = analyze_repo(repo_path, config=cfg, since_days=since)
 
     items = findings_to_negative_context(

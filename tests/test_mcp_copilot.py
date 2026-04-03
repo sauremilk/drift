@@ -198,6 +198,12 @@ class TestGenerateInstructions:
         assert MARKER_BEGIN in result
         assert "No significant architectural issues" in result
 
+    def test_cross_reference_to_export_context(self, _analysis: RepoAnalysis) -> None:
+        """Issue #112: copilot-context should mention export-context."""
+        result = generate_instructions(_analysis)
+        assert "drift export-context" in result
+        assert "Security" in result or "security" in result
+
 
 # ---------------------------------------------------------------------------
 # copilot_context — merge_into_file

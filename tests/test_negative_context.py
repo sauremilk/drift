@@ -541,7 +541,8 @@ class TestHSCProjectSpecific:
         result = findings_to_negative_context([f])
         nc = result[0]
         assert "API token" in nc.description
-        assert "OPENAI_KEY" in nc.forbidden_pattern
+        assert "OPENAI_KEY" in nc.description
+        assert "API_KEY" in nc.forbidden_pattern
         assert nc.metadata["rule_id"] == "hardcoded_api_token"
 
     def test_placeholder_secret_rule(self) -> None:

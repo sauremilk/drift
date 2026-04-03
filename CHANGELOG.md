@@ -22,6 +22,10 @@
 - Standardize path-scoping flags: all commands now accept both `--path` and `--target-path` as aliases to avoid agent round-trip failures (#107).
 - `primary_signal_for_next_step` in `drift scan` now skips weight-0 (report-only) signals so agents are not directed toward zero-impact remediation (#108).
 - All JSON outputs now include both `signal_abbrev` (e.g. `PFS`) and full signal name for cross-command finding correlation (#106).
+- Normalize `MISSING_AUTHORIZATION` and `HARDCODED_SECRET` negative-context templates to use fixed variable names so identical signals deduplicate correctly in `export-context`, reducing token waste by up to 60% (#109).
+- Add `description` fields to all MCP tool parameters via `Annotated[type, Field(description=...)]` and include descriptions in `drift mcp --schema` catalog output so agents can infer valid parameter ranges and formats (#110).
+- Replace all non-ASCII characters (emoji severity icons, arrows, ellipsis) in Markdown export output with ASCII equivalents to eliminate mojibake on Windows (#111).
+- Add cross-reference notes between `copilot-context` and `export-context` outputs so agents using either surface are made aware of the complementary context (#112).
 
 ## [2.1.3] - 2026-04-02
 

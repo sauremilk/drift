@@ -456,3 +456,78 @@ class TestExportContextCLI:
         assert result.output.lstrip().startswith("{")
         assert "Running drift analysis" not in result.output
         assert "Running drift analysis" in result.stderr
+
+
+# ---------------------------------------------------------------------------
+# Issue #111: ASCII-safe output (no mojibake on Windows)
+# ---------------------------------------------------------------------------
+
+
+class TestASCIISafeOutput:
+    """Verify output contains no non-ASCII characters that cause Windows mojibake."""
+
+    def test_instructions_format_is_ascii_safe(self) -> None:
+        items = [_make_nc()]
+        md = render_negative_context_markdown(items, fmt="instructions")
+        for line in md.splitlines():
+            assert all(ord(c) < 128 for c in line), (
+                f"Non-ASCII character in instructions output: {line!r}"
+            )
+
+    def test_prompt_format_is_ascii_safe(self) -> None:
+        items = [_make_nc()]
+        md = render_negative_context_markdown(items, fmt="prompt")
+        for line in md.splitlines():
+            assert all(ord(c) < 128 for c in line), (
+                f"Non-ASCII character in prompt output: {line!r}"
+            )
+
+
+# ---------------------------------------------------------------------------
+# Issue #112: Cross-reference between surfaces
+# ---------------------------------------------------------------------------
+
+
+class TestCrossReferences:
+    """Verify cross-references between copilot-context and export-context."""
+
+    def test_instructions_mentions_copilot_context(self) -> None:
+        items = [_make_nc()]
+        md = render_negative_context_markdown(items, fmt="instructions")
+        assert "drift copilot-context" in md
+
+    def test_prompt_mentions_copilot_context(self) -> None:
+        items = [_make_nc()]
+        md = render_negative_context_markdown(items, fmt="prompt")
+        assert "drift copilot-context" in md
+
+
+# ---------------------------------------------------------------------------
+# Issue #110: MCP schema parameter descriptions
+# ---------------------------------------------------------------------------
+
+
+class TestMCPSchemaDescriptions:
+    """Verify MCP tool catalog includes parameter descriptions."""
+
+    def test_catalog_parameters_have_descriptions(self) -> None:
+        from drift.mcp_server import get_tool_catalog
+
+        catalog = get_tool_catalog()
+        for tool in catalog:
+            for param in tool["parameters"]:
+                assert "description" in param, (
+                    f"Parameter '{param['name']}' in tool '{tool['name']}' "
+                    f"has no description"
+                )
+
+    def test_catalog_descriptions_are_nonempty(self) -> None:
+        from drift.mcp_server import get_tool_catalog
+
+        catalog = get_tool_catalog()
+        for tool in catalog:
+            for param in tool["parameters"]:
+                assert param.get("description", "").strip(), (
+                    f"Parameter '{param['name']}' in tool '{tool['name']}' "
+                    f"has empty description"
+                )

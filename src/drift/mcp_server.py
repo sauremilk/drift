@@ -20,19 +20,25 @@ import inspect
 import io
 import json
 import os
+import re as _re
 import threading
 from pathlib import Path
-from typing import Any
+from typing import Annotated, Any
 
 MCPFastMCPImpl: Any
 
 try:
     from mcp.server.fastmcp import FastMCP as _ImportedFastMCP
+    from pydantic import Field
 
     _MCP_AVAILABLE = True
     MCPFastMCPImpl = _ImportedFastMCP
 except ImportError:
     _MCP_AVAILABLE = False
+
+    def Field(**_kwargs: object) -> Any:  # type: ignore[misc,no-redef]  # noqa: N802
+        """No-op fallback when pydantic is unavailable."""
+        return ...
 
     class _FallbackFastMCP:
         """Minimal fallback so helper functions stay importable without mcp extra."""
@@ -152,13 +158,34 @@ mcp = MCPFastMCPImpl(
 
 @mcp.tool()
 def drift_scan(
-    path: str = ".",
-    target_path: str | None = None,
-    since_days: int = 90,
-    signals: str | None = None,
-    max_findings: int = 10,
-    response_detail: str = "concise",
-    include_non_operational: bool = False,
+    path: Annotated[str, Field(description="Repository path to analyze.")] = ".",
+    target_path: Annotated[
+        str | None,
+        Field(description="Restrict analysis to this subdirectory (relative to repo root)."),
+    ] = None,
+    since_days: Annotated[
+        int, Field(description="Days of git history to consider.")
+    ] = 90,
+    signals: Annotated[
+        str | None,
+        Field(description="Comma-separated signal IDs to include, e.g. 'PFS,AVS'. Omit for all."),
+    ] = None,
+    max_findings: Annotated[
+        int, Field(description="Maximum number of findings to return.")
+    ] = 10,
+    response_detail: Annotated[
+        str,
+        Field(description="Detail level: 'concise' (token-efficient) or 'detailed' (all fields)."),
+    ] = "concise",
+    include_non_operational: Annotated[
+        bool,
+        Field(
+            description=(
+                "Include findings from non-operational contexts"
+                " (fixtures, generated code)."
+            ),
+        ),
+    ] = False,
 ) -> str:
     """Analyze a repository for architectural drift.
 
@@ -202,13 +229,27 @@ def drift_scan(
 
 @mcp.tool()
 def drift_diff(
-    path: str = ".",
-    diff_ref: str = "HEAD~1",
-    uncommitted: bool = False,
-    staged_only: bool = False,
-    baseline_file: str | None = None,
-    max_findings: int = 10,
-    response_detail: str = "concise",
+    path: Annotated[str, Field(description="Repository path to analyze.")] = ".",
+    diff_ref: Annotated[
+        str, Field(description="Git ref to diff against, e.g. 'HEAD~1', 'main', or a commit SHA.")
+    ] = "HEAD~1",
+    uncommitted: Annotated[
+        bool, Field(description="Compare current working-tree changes against HEAD.")
+    ] = False,
+    staged_only: Annotated[
+        bool, Field(description="Compare only staged (git add) changes.")
+    ] = False,
+    baseline_file: Annotated[
+        str | None,
+        Field(description="Path to .drift-baseline.json file for snapshot comparison."),
+    ] = None,
+    max_findings: Annotated[
+        int, Field(description="Maximum number of findings to return.")
+    ] = 10,
+    response_detail: Annotated[
+        str,
+        Field(description="Detail level: 'concise' (token-efficient) or 'detailed' (all fields)."),
+    ] = "concise",
 ) -> str:
     """Detect drift changes since a git ref or baseline.
 
@@ -239,7 +280,17 @@ def drift_diff(
 
 
 @mcp.tool()
-def drift_explain(topic: str) -> str:
+def drift_explain(
+    topic: Annotated[
+        str,
+        Field(
+            description=(
+                "Signal abbreviation ('PFS'), signal name"
+                " ('pattern_fragmentation'), or error code ('DRIFT-1001')."
+            ),
+        ),
+    ],
+) -> str:
     """Explain a drift signal, rule, or error code.
 
     Use when you encounter an unfamiliar signal abbreviation (e.g. "PFS"),
@@ -256,12 +307,31 @@ def drift_explain(topic: str) -> str:
 
 @mcp.tool()
 def drift_fix_plan(
-    path: str = ".",
-    signal: str | None = None,
-    max_tasks: int = 5,
-    automation_fit_min: str | None = None,
-    target_path: str | None = None,
-    include_non_operational: bool = False,
+    path: Annotated[str, Field(description="Repository path to analyze.")] = ".",
+    signal: Annotated[
+        str | None,
+        Field(description="Filter to a specific signal ID, e.g. 'PFS', 'AVS', 'BEM'."),
+    ] = None,
+    max_tasks: Annotated[
+        int, Field(description="Maximum number of repair tasks to return.")
+    ] = 5,
+    automation_fit_min: Annotated[
+        str | None,
+        Field(description="Minimum automation fitness level: 'low', 'medium', or 'high'."),
+    ] = None,
+    target_path: Annotated[
+        str | None,
+        Field(description="Restrict tasks to findings inside this subdirectory."),
+    ] = None,
+    include_non_operational: Annotated[
+        bool,
+        Field(
+            description=(
+                "Include findings from non-operational contexts"
+                " (fixtures, generated code)."
+            ),
+        ),
+    ] = False,
 ) -> str:
     """Generate prioritised repair tasks with constraints and success criteria.
 
@@ -292,8 +362,11 @@ def drift_fix_plan(
 
 @mcp.tool()
 def drift_validate(
-    path: str = ".",
-    config_file: str | None = None,
+    path: Annotated[str, Field(description="Repository path to validate.")] = ".",
+    config_file: Annotated[
+        str | None,
+        Field(description="Explicit config file path (auto-discovered from repo root if omitted)."),
+    ] = None,
 ) -> str:
     """Validate configuration and environment before running analysis.
 
@@ -312,9 +385,26 @@ def drift_validate(
 
 @mcp.tool()
 def drift_nudge(
-    path: str = ".",
-    changed_files: str | None = None,
-    uncommitted: bool = True,
+    path: Annotated[str, Field(description="Repository path to analyze.")] = ".",
+    changed_files: Annotated[
+        str | None,
+        Field(
+            description=(
+                "Comma-separated changed file paths"
+                " (posix, relative to repo root)."
+                " Auto-detected via git if omitted."
+            ),
+        ),
+    ] = None,
+    uncommitted: Annotated[
+        bool,
+        Field(
+            description=(
+                "When auto-detecting changes, use uncommitted"
+                " working-tree changes (True) vs staged-only (False)."
+            ),
+        ),
+    ] = True,
 ) -> str:
     """Get directional feedback after a file change (experimental).
 
@@ -345,10 +435,23 @@ def drift_nudge(
 
 @mcp.tool()
 def drift_negative_context(
-    path: str = ".",
-    scope: str | None = None,
-    target_file: str | None = None,
-    max_items: int = 10,
+    path: Annotated[str, Field(description="Repository path to analyze.")] = ".",
+    scope: Annotated[
+        str | None,
+        Field(description="Filter by scope: 'file', 'module', or 'repo'. Omit for all scopes."),
+    ] = None,
+    target_file: Annotated[
+        str | None,
+        Field(
+            description=(
+                "Restrict to anti-patterns affecting this file path"
+                " (posix, relative to repo root)."
+            ),
+        ),
+    ] = None,
+    max_items: Annotated[
+        int, Field(description="Maximum number of anti-pattern items to return.")
+    ] = 10,
 ) -> str:
     """Get anti-pattern warnings derived from drift analysis.
 
@@ -472,6 +575,38 @@ _EXPORTED_MCP_TOOLS = (
 )
 
 
+def _extract_param_descriptions(doc: str) -> dict[str, str]:
+    """Extract parameter descriptions from Google-style Args: docstring section."""
+    result: dict[str, str] = {}
+    in_args = False
+    current_param: str | None = None
+    current_parts: list[str] = []
+    for line in doc.splitlines():
+        stripped = line.strip()
+        if stripped == "Args:":
+            in_args = True
+            continue
+        if not in_args:
+            continue
+        if not stripped:
+            continue
+        # Non-indented non-empty line = section ended
+        if not line.startswith("    ") and not line.startswith("\t"):
+            break
+        # New param: "name: description" at first indent level
+        m = _re.match(r"^(\w+):\s*(.*)", stripped)
+        if m:
+            if current_param:
+                result[current_param] = " ".join(current_parts).strip()
+            current_param = m.group(1)
+            current_parts = [m.group(2)] if m.group(2) else []
+        elif current_param:
+            current_parts.append(stripped)
+    if current_param:
+        result[current_param] = " ".join(current_parts).strip()
+    return result
+
+
 def _annotation_to_string(annotation: Any) -> str:
     if annotation is inspect.Signature.empty:
         return "Any"
@@ -491,6 +626,7 @@ def get_tool_catalog() -> list[dict[str, Any]]:
         signature = inspect.signature(tool)
         doc = inspect.getdoc(tool) or ""
         summary = doc.splitlines()[0] if doc else ""
+        param_descs = _extract_param_descriptions(doc)
 
         parameters: list[dict[str, Any]] = []
         for parameter in signature.parameters.values():
@@ -508,6 +644,8 @@ def get_tool_catalog() -> list[dict[str, Any]]:
             }
             if not required:
                 parameter_info["default"] = parameter.default
+            if parameter.name in param_descs:
+                parameter_info["description"] = param_descs[parameter.name]
             parameters.append(parameter_info)
 
         catalog.append(
