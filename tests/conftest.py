@@ -22,6 +22,12 @@ def pytest_addoption(parser: pytest.Parser) -> None:
         default=False,
         help="regenerate golden snapshot files instead of comparing",
     )
+    parser.addoption(
+        "--save-findings",
+        action="store_true",
+        default=False,
+        help="save smoke-test findings to benchmark_results/<repo>_full.json",
+    )
 
 
 def pytest_collection_modifyitems(config: pytest.Config, items: list[pytest.Item]) -> None:

@@ -20,12 +20,26 @@ import pytest
 from drift.analyzer import analyze_repo
 from drift.config import DriftConfig
 from drift.models import RepoAnalysis, Severity, SignalType
+from drift.output.json_output import analysis_to_json
 
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
 
 DRIFT_REPO = Path(__file__).resolve().parent.parent  # drift/ repo root
+BENCHMARK_DIR = DRIFT_REPO / "benchmark_results"
+
+
+def _save_findings_json(
+    analysis: RepoAnalysis, repo_name: str, request: pytest.FixtureRequest
+) -> None:
+    """Persist full analysis JSON when --save-findings is active."""
+    if not request.config.getoption("--save-findings", default=False):
+        return
+    BENCHMARK_DIR.mkdir(exist_ok=True)
+    dest = BENCHMARK_DIR / f"{repo_name}_full.json"
+    dest.write_text(analysis_to_json(analysis), encoding="utf-8")
+    print(f"\n  [save-findings] Wrote {dest}")
 
 
 def _shallow_clone(url: str, dest: Path, depth: int = 1, timeout: int = 120) -> Path:
@@ -125,8 +139,11 @@ class TestSelfAnalysis:
         for f in analysis.findings:
             assert f.file_path is not None, f"Finding without file_path: {f.title}"
 
-    def test_signal_distribution_report(self, analysis: RepoAnalysis) -> None:
+    def test_signal_distribution_report(
+        self, analysis: RepoAnalysis, request: pytest.FixtureRequest
+    ) -> None:
         """Print signal distribution for manual inspection (always passes)."""
+        _save_findings_json(analysis, "drift_self", request)
         dist = _signal_distribution(analysis)
         sev = _severity_distribution(analysis)
         print(f"\n{'=' * 60}")
@@ -303,9 +320,14 @@ class TestExternalRepos:
             f"{[f.title for f in criticals[:5]]}"
         )
 
-    def test_smoke_report(self, repo_analysis: tuple[str, RepoAnalysis]) -> None:
+    def test_smoke_report(
+        self,
+        repo_analysis: tuple[str, RepoAnalysis],
+        request: pytest.FixtureRequest,
+    ) -> None:
         """Print findings summary for manual FP review (always passes)."""
         name, analysis = repo_analysis
+        _save_findings_json(analysis, name, request)
         dist = _signal_distribution(analysis)
         sev = _severity_distribution(analysis)
         print(f"\n{'=' * 60}")
