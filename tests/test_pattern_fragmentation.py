@@ -93,7 +93,9 @@ def test_two_variants_detected():
     assert 0.4 <= f.score <= 0.6  # 1 - 1/2 = 0.5
     assert f.fix is not None
     assert "Consolidate to the dominant pattern" in f.fix
-    assert "deviations in:" in f.fix
+    assert "exemplar:" in f.fix
+    assert "Deviations:" in f.fix
+    assert ".py:" in f.fix
     assert "Konsolidiere" not in f.fix
 
 

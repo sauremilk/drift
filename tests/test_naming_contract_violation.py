@@ -95,6 +95,9 @@ def validate_input(data: dict) -> dict:
         assert len(findings) == 1
         assert findings[0].signal_type == SignalType.NAMING_CONTRACT_VIOLATION
         assert "validate_" in findings[0].metadata["prefix_rule"]
+        location = f"{findings[0].file_path.as_posix()}:{findings[0].start_line}"
+        assert location in findings[0].fix
+        assert "raise or return False/None" in findings[0].fix
 
     def test_check_without_rejection_finding(self, tmp_path: Path):
         pr = _write_and_parse(
@@ -147,6 +150,7 @@ def ensure_directory(path: str) -> str:
         findings = _run([pr], repo_path=tmp_path)
         assert len(findings) == 1
         assert "ensure_" in findings[0].metadata["prefix_rule"]
+        assert "add at least one raise path" in findings[0].fix
 
 
 # ===================================================================
@@ -198,6 +202,7 @@ def is_admin(user: object) -> str:
         findings = _run([pr], repo_path=tmp_path)
         assert len(findings) == 1
         assert "is_" in findings[0].metadata["prefix_rule"]
+        assert "return a bool-compatible result" in findings[0].fix
 
 
 # ===================================================================

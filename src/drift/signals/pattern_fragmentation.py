@@ -22,6 +22,7 @@ from drift.models import (
     Severity,
     SignalType,
 )
+from drift.signals._utils import is_test_file
 from drift.signals.base import BaseSignal, register_signal
 
 
@@ -74,6 +75,11 @@ def _canonical_variant(variants: dict[str, list[PatternInstance]]) -> str:
     return max(variants, key=lambda k: len(variants[k]))
 
 
+def _instance_ref(pattern: PatternInstance) -> str:
+    """Build a stable location reference for action-oriented guidance."""
+    return f"{pattern.file_path.as_posix()}:{pattern.start_line}"
+
+
 @register_signal
 class PatternFragmentationSignal(BaseSignal):
     """Detect multiple incompatible pattern variants within architectural modules."""
@@ -97,6 +103,8 @@ class PatternFragmentationSignal(BaseSignal):
         # Gather all patterns from all files
         all_patterns: dict[PatternCategory, list[PatternInstance]] = defaultdict(list)
         for pr in parse_results:
+            if is_test_file(pr.file_path):
+                continue
             for pattern in pr.patterns:
                 all_patterns[pattern.category].append(pattern)
 
@@ -138,7 +146,9 @@ class PatternFragmentationSignal(BaseSignal):
                     f"({canonical_count}/{total} use canonical pattern).",
                 ]
                 for p in non_canonical[:3]:
-                    desc_parts.append(f"  - {p.file_path.name}:{p.start_line} ({p.function_name})")
+                    desc_parts.append(
+                        f"  - {_instance_ref(p)} ({p.function_name})"
+                    )
 
                 severity = Severity.INFO
                 if frag_score >= 0.7:
@@ -148,14 +158,27 @@ class PatternFragmentationSignal(BaseSignal):
                 elif frag_score >= 0.3:
                     severity = Severity.LOW
 
-                # Derive names of non-canonical files for the FIX line
-                nc_files = sorted({p.file_path.name for p in non_canonical})
                 nc_count = len(non_canonical)
+                canonical_examples = sorted(
+                    variants[canonical],
+                    key=lambda p: (p.file_path.as_posix(), p.start_line, p.function_name),
+                )
+                canonical_exemplar = canonical_examples[0]
+                deviation_examples = sorted(
+                    non_canonical,
+                    key=lambda p: (p.file_path.as_posix(), p.start_line, p.function_name),
+                )
+                deviation_refs = [
+                    f"{_instance_ref(p)} ({p.function_name})"
+                    for p in deviation_examples[:3]
+                ]
+                if nc_count > 3:
+                    deviation_refs.append(f"+{nc_count - 3} more")
+
                 fix = (
-                    f"Consolidate to the dominant pattern ({canonical_count}×). "
-                    f"{nc_count} deviations in: {', '.join(nc_files[:5])}"
-                    + (f" and {nc_count - 5} more" if nc_count > 5 else "")
-                    + "."
+                    f"Consolidate to the dominant pattern ({canonical_count}x, "
+                    f"exemplar: {_instance_ref(canonical_exemplar)}). "
+                    f"Deviations: {', '.join(deviation_refs)}."
                 )
 
                 findings.append(
@@ -177,6 +200,7 @@ class PatternFragmentationSignal(BaseSignal):
                             "variant_count": num_variants,
                             "canonical_count": canonical_count,
                             "canonical_variant": canonical[:60],
+                            "canonical_exemplar": _instance_ref(canonical_exemplar),
                             "module": module_path.as_posix(),
                             "total_instances": total,
                             "deliberate_pattern_risk": (

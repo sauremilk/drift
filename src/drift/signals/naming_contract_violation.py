@@ -263,6 +263,29 @@ def _match_rule(
     return None
 
 
+def _contract_suggestion(matched_prefix: str, fn_name: str) -> str:
+    """Return a concrete next-step suggestion for one naming rule prefix."""
+    if matched_prefix in {"validate_", "check_"}:
+        return (
+            "implement a rejection path (raise or return False/None), "
+            "or rename the function to match non-validating behavior"
+        )
+    if matched_prefix == "ensure_":
+        return "add at least one raise path that enforces the ensured precondition"
+    if matched_prefix == "get_or_create_":
+        return (
+            "add an explicit conditional create path (lookup, then create in missing branch)"
+        )
+    if matched_prefix in {"is_", "has_"}:
+        return "return a bool-compatible result (annotation and runtime returns)"
+    if matched_prefix == "try_":
+        return "wrap risky operations in try/except and return a clear fallback"
+    return (
+        f"implement the behavior implied by '{matched_prefix}' for '{fn_name}()', "
+        "or rename the function"
+    )
+
+
 _TS_CHECKERS: dict[str, Callable[..., bool]] = {
     "_has_rejection_path": lambda root, src, _fn: _ts_has_rejection_path(root, src),
     "_has_raise": lambda root, src, _fn: _ts_has_raise(root, src),
@@ -372,9 +395,9 @@ class NamingContractViolationSignal(BaseSignal):
                         start_line=fn.start_line,
                         end_line=fn.end_line,
                         fix=(
-                            f"Either add the missing behaviour to '{fn.name}()' "
-                            f"(e.g. a raise statement or appropriate return) "
-                            f"or rename it to reflect its actual purpose."
+                            f"'{fn.name}()' at {pr.file_path.as_posix()}:{fn.start_line} "
+                            f"does not satisfy '{matched_prefix}' naming contract. "
+                            f"Suggestion: {_contract_suggestion(matched_prefix, fn.name)}."
                         ),
                         metadata={
                             "function_name": fn.name,
