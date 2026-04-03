@@ -27,6 +27,14 @@
 - Replace all non-ASCII characters (emoji severity icons, arrows, ellipsis) in Markdown export output with ASCII equivalents to eliminate mojibake on Windows (#111).
 - Add cross-reference notes between `copilot-context` and `export-context` outputs so agents using either surface are made aware of the complementary context (#112).
 
+## [2.2.0] - 2026-04-03
+
+Short version: Align release metadata with current project version.
+
+### Changed
+
+- Sync top changelog release marker to 2.2.0 so release-discipline checks match [project] version in pyproject.toml.
+
 ## [2.1.3] - 2026-04-02
 
 Short version: Keep release metadata aligned after CI runner hardening updates.
