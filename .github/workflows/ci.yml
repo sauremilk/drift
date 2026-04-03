@@ -21,6 +21,7 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Resolve Python executable
+        # [win-only] PowerShell-based resolver for self-hosted Windows runner.
         shell: powershell
         run: |
           $resolved = $false
@@ -44,16 +45,19 @@ jobs:
           }
 
       - name: Validate pyproject.toml version is SemVer
+        # [win-only] PowerShell invocation on Windows runner.
         shell: powershell
         run: |
           & $env:PYTHON_BIN scripts/check_version.py --check-semver
 
       - name: Enforce release discipline
+        # [win-only] PowerShell invocation on Windows runner.
         shell: powershell
         run: |
           & $env:PYTHON_BIN scripts/check_release_discipline.py
 
       - name: Check model consistency
+        # [win-only] PowerShell invocation on Windows runner.
         shell: powershell
         run: |
           & $env:PYTHON_BIN scripts/check_model_consistency.py
@@ -66,6 +70,7 @@ jobs:
     env:
       AGENT_TOOLSDIRECTORY: ${{ github.workspace }}\\.python-toolcache
       RUNNER_TOOL_CACHE: ${{ github.workspace }}\\.python-toolcache
+      PIP_CACHE_DIR: ${{ github.workspace }}\\.pip-cache
     permissions:
       contents: read
       id-token: write
@@ -80,38 +85,34 @@ jobs:
           fetch-depth: 0
 
       - name: Prepare isolated Python tool cache
+        # [win-only] Windows path + PowerShell setup for local toolcache.
         shell: powershell
         run: |
           New-Item -ItemType Directory -Force -Path $env:AGENT_TOOLSDIRECTORY | Out-Null
+          New-Item -ItemType Directory -Force -Path $env:PIP_CACHE_DIR | Out-Null
           Write-Host "Using isolated tool cache: $env:AGENT_TOOLSDIRECTORY"
+          Write-Host "Using pip cache directory: $env:PIP_CACHE_DIR"
 
-      - name: Probe local py launcher
-        id: probe_py
-        shell: powershell
-        run: |
-          $requested = "${{ matrix.python-version }}"
-          $hasLocal = $false
-
-          if (Get-Command py -ErrorAction SilentlyContinue) {
-            py -$requested --version
-            if ($LASTEXITCODE -eq 0) {
-              $hasLocal = $true
-            }
-          }
-
-          "has_local_python=$($hasLocal.ToString().ToLower())" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
-
-      - name: Setup Python from toolcache (preferred)
+      - name: Setup Python (primary path)
         id: setup_python
-        if: steps.probe_py.outputs.has_local_python != 'true'
         uses: actions/setup-python@v5
         continue-on-error: true
         with:
           python-version: ${{ matrix.python-version }}
-          cache: pip
-          cache-dependency-path: pyproject.toml
+          # Keep setup-python focused on interpreter provisioning.
+          # pip caching is handled explicitly via actions/cache for better control on self-hosted runners.
+
+      - name: Restore pip cache
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.PIP_CACHE_DIR }}
+          key: pip-${{ runner.os }}-${{ matrix.python-version }}-${{ hashFiles('pyproject.toml') }}
+          restore-keys: |
+            pip-${{ runner.os }}-${{ matrix.python-version }}-
+            pip-${{ runner.os }}-
 
       - name: Resolve Python executable with fallback
+        # [win-only] PowerShell fallback path for when setup-python cannot provision requested version.
         shell: powershell
         run: |
           $requested = "${{ matrix.python-version }}"
@@ -134,7 +135,7 @@ jobs:
           }
 
           if (-not $source) {
-            Write-Error "No usable Python interpreter found for $requested."
+            Write-Error "No usable Python interpreter found for $requested. setup-python failed and local py launcher is unavailable or missing this version."
             exit 1
           }
 
@@ -159,26 +160,33 @@ jobs:
           Write-Output ("Resolved Python via {0}: {1}" -f $source, $venvPython)
 
       - name: Install dependencies
+        # [win-only] PowerShell + local venv install path.
         shell: powershell
         run: |
+          & $env:PYTHON_BIN -m pip config set global.cache-dir $env:PIP_CACHE_DIR
+          & $env:PYTHON_BIN -m pip install --upgrade pip
           & $env:PYTHON_BIN -m pip install -e ".[dev]"
 
       - name: Lint with ruff
+        # [win-only] PowerShell invocation on Windows runner.
         shell: powershell
         run: |
           & $env:PYTHON_BIN -m ruff check src/ tests/
 
       - name: Type-check with mypy
+        # [win-only] PowerShell invocation on Windows runner.
         shell: powershell
         run: |
           & $env:PYTHON_BIN -m mypy src/drift
 
       - name: Dead code detection with vulture
+        # [win-only] PowerShell invocation on Windows runner.
         shell: powershell
         run: |
           & $env:PYTHON_BIN -m vulture src/drift --min-confidence 80
 
       - name: Run tests with coverage
+        # [win-only] PowerShell invocation on Windows runner.
         shell: powershell
         run: |
           & $env:PYTHON_BIN -m pytest -v --tb=short --cov=drift --cov-report=term-missing --cov-report=xml --cov-fail-under=80 -m "not slow"
@@ -193,11 +201,13 @@ jobs:
           verbose: true
 
       - name: Self-analysis
+        # [win-only] PowerShell invocation on Windows runner.
         shell: powershell
         run: |
           & $env:PYTHON_BIN -m drift analyze --repo . --format json --fail-on none | Out-Null
 
       - name: Drift self-check (score gate)
+        # [win-only] PowerShell invocation on Windows runner.
         shell: powershell
         run: |
           & $env:PYTHON_BIN -m drift self --format json | Set-Content drift_score.json
@@ -212,6 +222,7 @@ jobs:
           '@
 
       - name: Risk audit compliance (POLICY §18)
+        # [win-only] PowerShell invocation on Windows runner.
         shell: powershell
         run: |
           $diffBase = "HEAD~1"
