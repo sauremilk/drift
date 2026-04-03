@@ -33,7 +33,7 @@ from drift.errors import EXIT_FINDINGS_ABOVE_THRESHOLD
     "--format",
     "-f",
     "output_format",
-    type=click.Choice(["rich", "json", "sarif", "agent-tasks", "github"]),
+    type=click.Choice(["rich", "json", "sarif", "csv", "agent-tasks", "github"]),
     default="rich",
     help="Output format.",
 )
@@ -118,7 +118,7 @@ from drift.errors import EXIT_FINDINGS_ABOVE_THRESHOLD
     "output_file",
     type=click.Path(path_type=Path),
     default=None,
-    help="Write machine output (JSON/SARIF) to a file instead of stdout.",
+    help="Write machine output (JSON/SARIF/CSV) to a file instead of stdout.",
 )
 @click.option(
     "--save-baseline",
@@ -329,6 +329,15 @@ def analyze(
             click.echo(f"Output written to {output_file}", err=True)
         else:
             click.echo(sarif_text)
+    elif output_format == "csv":
+        from drift.output.csv_output import analysis_to_csv
+
+        csv_text = analysis_to_csv(analysis)
+        if output_file:
+            _write_output_file(csv_text, output_file)
+            click.echo(f"Output written to {output_file}", err=True)
+        else:
+            click.echo(csv_text)
     elif output_format == "agent-tasks":
         from drift.output.agent_tasks import analysis_to_agent_tasks_json
 

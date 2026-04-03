@@ -301,6 +301,14 @@ class TestOutputFormatAlias:
         result = runner.invoke(check, ["--output-format", "github", "--help"])
         assert result.exit_code == 0
 
+    def test_csv_format_in_choices(self):
+        """csv should be a valid output format choice."""
+        from drift.commands.check import check
+
+        runner = CliRunner()
+        result = runner.invoke(check, ["--output-format", "csv", "--help"])
+        assert result.exit_code == 0
+
     def test_analyze_format_alias(self):
         """analyze command should also accept --output-format."""
         from drift.commands.analyze import analyze

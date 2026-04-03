@@ -6,6 +6,7 @@
 - Add `--progress json` option to `scan` and `analyze` commands for structured JSON-lines progress feedback on stderr, enabling agents to distinguish running from hung processes (#104).
 - `drift check` now supports `--save-baseline` and `--max-findings` options for CI parity with `drift analyze` (#116).
 - `drift diff` JSON output now includes `score_basis` field (`"historical"` or `"zero_default"`) to clarify when `score_before` reflects actual repo baseline vs. synthetic zero (#119).
+- Add `csv` output format for `drift analyze` and `drift check` to export findings as one-row-per-finding tabular output (`signal,severity,score,title,file,start_line,end_line`) (#14).
 
 ### Changed
 
