@@ -325,3 +325,226 @@ class TestISDEdgeCases:
         assert len(findings) == 1
         # DEBUG = True has score 0.8, so severity should be HIGH
         assert findings[0].score == 0.8
+
+
+# ---------------------------------------------------------------------------
+# Framework-specific fixtures (Issue #26)
+# ---------------------------------------------------------------------------
+
+
+class TestFrameworkSpecificDefaults:
+    """Validate ISD against realistic Django, FastAPI, and Flask patterns."""
+
+    # -- Django true positives ------------------------------------------------
+
+    def test_django_settings_debug_true(self, tmp_path: Path) -> None:
+        """Django settings.py with DEBUG = True at module level."""
+        _write_source(
+            tmp_path, "myproject/settings.py",
+            """\
+            import os
+            from pathlib import Path
+
+            BASE_DIR = Path(__file__).resolve().parent.parent
+            SECRET_KEY = "insecure-dev-key"
+            DEBUG = True
+            ALLOWED_HOSTS = ["localhost"]
+            """,
+        )
+        signal = InsecureDefaultSignal(repo_path=tmp_path)
+        pr = _make_pr("myproject/settings.py")
+        findings = signal.analyze([pr], {}, DriftConfig())
+        assert len(findings) == 1
+        assert findings[0].rule_id == "insecure_debug_mode"
+
+    def test_django_settings_allowed_hosts_star(self, tmp_path: Path) -> None:
+        """Django ALLOWED_HOSTS = ['*'] is a common insecure default."""
+        _write_source(
+            tmp_path, "myproject/settings.py",
+            """\
+            DEBUG = False
+            ALLOWED_HOSTS = ["*"]
+            INSTALLED_APPS = [
+                "django.contrib.admin",
+                "django.contrib.auth",
+            ]
+            """,
+        )
+        signal = InsecureDefaultSignal(repo_path=tmp_path)
+        pr = _make_pr("myproject/settings.py")
+        findings = signal.analyze([pr], {}, DriftConfig())
+        assert len(findings) == 1
+        assert findings[0].rule_id == "insecure_allowed_hosts"
+
+    def test_django_multiple_insecure_defaults(self, tmp_path: Path) -> None:
+        """Full Django settings with several insecure defaults at once."""
+        _write_source(
+            tmp_path, "config/settings.py",
+            """\
+            import os
+            from pathlib import Path
+
+            BASE_DIR = Path(__file__).resolve().parent.parent
+            SECRET_KEY = "dev-only"
+            DEBUG = True
+            ALLOWED_HOSTS = ["*"]
+            CORS_ALLOW_ALL_ORIGINS = True
+            SESSION_COOKIE_SECURE = False
+            CSRF_COOKIE_SECURE = False
+            SECURE_SSL_REDIRECT = False
+            """,
+        )
+        signal = InsecureDefaultSignal(repo_path=tmp_path)
+        pr = _make_pr("config/settings.py")
+        findings = signal.analyze([pr], {}, DriftConfig())
+        rule_ids = {f.rule_id for f in findings}
+        assert "insecure_debug_mode" in rule_ids
+        assert "insecure_allowed_hosts" in rule_ids
+        assert "insecure_cors" in rule_ids
+        assert "insecure_cookie" in rule_ids
+        assert "insecure_ssl_redirect" in rule_ids
+        assert len(findings) >= 6  # 2× cookie (session + csrf)
+
+    def test_django_verify_false_in_view(self, tmp_path: Path) -> None:
+        """Django view calling external API with verify=False."""
+        _write_source(
+            tmp_path, "myapp/views.py",
+            """\
+            import requests
+            from django.http import JsonResponse
+
+            def proxy_api(request):
+                resp = requests.get("https://internal-api.local/data", verify=False)
+                return JsonResponse(resp.json())
+            """,
+        )
+        signal = InsecureDefaultSignal(repo_path=tmp_path)
+        pr = _make_pr("myapp/views.py")
+        findings = signal.analyze([pr], {}, DriftConfig())
+        assert len(findings) == 1
+        assert findings[0].rule_id == "insecure_ssl_verify"
+
+    # -- Django true negatives ------------------------------------------------
+
+    def test_django_debug_from_env(self, tmp_path: Path) -> None:
+        """DEBUG loaded from environment — should not flag."""
+        _write_source(
+            tmp_path, "myproject/settings.py",
+            """\
+            import os
+            DEBUG = os.environ.get("DEBUG", "False").lower() == "true"
+            ALLOWED_HOSTS = os.environ.get("ALLOWED_HOSTS", "").split(",")
+            """,
+        )
+        signal = InsecureDefaultSignal(repo_path=tmp_path)
+        pr = _make_pr("myproject/settings.py")
+        findings = signal.analyze([pr], {}, DriftConfig())
+        assert len(findings) == 0
+
+    # -- FastAPI true negatives (keyword args not at module level) ------------
+
+    def test_fastapi_debug_keyword_not_detected(self, tmp_path: Path) -> None:
+        """FastAPI(debug=True) is a keyword arg, not a module-level assignment.
+
+        The current ISD signal detects module-level ``DEBUG = True``
+        assignments and ``verify=False`` keyword args. Constructor keyword
+        ``debug=True`` is not in scope.
+        """
+        _write_source(
+            tmp_path, "app/main.py",
+            """\
+            from fastapi import FastAPI
+
+            app = FastAPI(debug=True)
+
+            @app.get("/")
+            def root():
+                return {"status": "ok"}
+            """,
+        )
+        signal = InsecureDefaultSignal(repo_path=tmp_path)
+        pr = _make_pr("app/main.py")
+        findings = signal.analyze([pr], {}, DriftConfig())
+        assert len(findings) == 0
+
+    def test_fastapi_config_driven_debug(self, tmp_path: Path) -> None:
+        """FastAPI(debug=settings.DEBUG) — config-driven, should not flag."""
+        _write_source(
+            tmp_path, "app/main.py",
+            """\
+            from fastapi import FastAPI
+            from app.config import settings
+
+            app = FastAPI(debug=settings.DEBUG)
+            """,
+        )
+        signal = InsecureDefaultSignal(repo_path=tmp_path)
+        pr = _make_pr("app/main.py")
+        findings = signal.analyze([pr], {}, DriftConfig())
+        assert len(findings) == 0
+
+    def test_fastapi_verify_false_in_endpoint(self, tmp_path: Path) -> None:
+        """FastAPI endpoint calling httpx with verify=False → should flag."""
+        _write_source(
+            tmp_path, "app/routes.py",
+            """\
+            import httpx
+            from fastapi import APIRouter
+
+            router = APIRouter()
+
+            @router.get("/proxy")
+            async def proxy():
+                async with httpx.AsyncClient(verify=False) as client:
+                    resp = await client.get("https://api.internal/data")
+                return resp.json()
+            """,
+        )
+        signal = InsecureDefaultSignal(repo_path=tmp_path)
+        pr = _make_pr("app/routes.py")
+        findings = signal.analyze([pr], {}, DriftConfig())
+        assert len(findings) == 1
+        assert findings[0].rule_id == "insecure_ssl_verify"
+
+    # -- Flask true negatives (keyword args not at module level) --------------
+
+    def test_flask_run_debug_keyword_not_detected(self, tmp_path: Path) -> None:
+        """app.run(debug=True) is a keyword arg — not in ISD scope.
+
+        ISD detects module-level assignments and verify=False only.
+        """
+        _write_source(
+            tmp_path, "app.py",
+            """\
+            from flask import Flask
+
+            app = Flask(__name__)
+
+            @app.route("/")
+            def index():
+                return "Hello"
+
+            if __name__ == "__main__":
+                app.run(debug=True)
+            """,
+        )
+        signal = InsecureDefaultSignal(repo_path=tmp_path)
+        pr = _make_pr("app.py")
+        findings = signal.analyze([pr], {}, DriftConfig())
+        assert len(findings) == 0
+
+    def test_flask_debug_module_level(self, tmp_path: Path) -> None:
+        """Flask project with DEBUG = True at module level → detected."""
+        _write_source(
+            tmp_path, "config.py",
+            """\
+            DEBUG = True
+            SECRET_KEY = "dev-secret"
+            SQLALCHEMY_DATABASE_URI = "sqlite:///app.db"
+            """,
+        )
+        signal = InsecureDefaultSignal(repo_path=tmp_path)
+        pr = _make_pr("config.py")
+        findings = signal.analyze([pr], {}, DriftConfig())
+        assert len(findings) == 1
+        assert findings[0].rule_id == "insecure_debug_mode"
