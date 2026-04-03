@@ -61,7 +61,12 @@ def self_analyze(since: int, output_format: str, output_file: Path | None) -> No
     info_console.print()
 
     with info_console.status("[bold blue]Running self-analysis..."):
-        analysis = analyze_repo(drift_root, cfg, since_days=since)
+        analysis = analyze_repo(
+            drift_root,
+            cfg,
+            since_days=since,
+            target_path="src/drift",
+        )
 
     if output_format == "json":
         from drift.output.json_output import analysis_to_json

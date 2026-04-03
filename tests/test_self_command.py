@@ -52,7 +52,7 @@ class TestSelfCommand:
         def _fake_load(cls, repo_path, config_path=None):
             return DriftConfig(include=["**/*.py"], exclude=[])
 
-        def _fake_analyze(repo_path, cfg, since_days=90):
+        def _fake_analyze(repo_path, cfg, since_days=90, target_path=None):
             captured_excludes.extend(cfg.exclude)
             return RepoAnalysis(
                 repo_path=Path(repo_path),
