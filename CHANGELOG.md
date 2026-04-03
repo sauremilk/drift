@@ -17,6 +17,7 @@
 
 ### Fixed
 
+- Unblock CI by making MCP thread-offloaded tool returns explicit `str` for mypy across Python 3.11-3.13 and excluding known secret-like test fixtures (`tests/test_insecure_default.py`, `tests/golden/corpus_snapshot.json`) plus template-heavy `src/drift/negative_context.py` from detect-secrets hook false positives.
 - Reduce DIA false positives by requiring structural context for plain markdown slash-tokens (e.g. `async/`, `scan/`, `connectors/`) before emitting missing-directory findings, while preserving explicit path references in code spans/backticks (#121).
 - Add trailing newlines in CSV formatter and CSV tests to satisfy lint gate requirements and keep pre-push checks green.
 - Surface file I/O errors in `analyze`, `check`, and `scan` commands as structured `DRIFT-2003` errors with exit code 2 instead of unhandled `OSError` tracebacks.
