@@ -157,6 +157,23 @@ The `frontend/` directory has the UI.
         assert "e" not in refs
         assert "i" not in refs
 
+    def test_generic_slash_tokens_without_context_are_ignored(self):
+        md = "CLI supports async/ scan/ connectors/ modes for examples."
+        refs = _extract_dir_refs_from_ast(md)
+        assert "async" not in refs
+        assert "scan" not in refs
+        assert "connectors" not in refs
+
+    def test_plain_text_dir_with_structure_context_is_kept(self):
+        md = "The connectors/ directory contains provider adapters."
+        refs = _extract_dir_refs_from_ast(md)
+        assert "connectors" in refs
+
+    def test_backticked_path_without_context_is_kept(self):
+        md = "Run checks in `scripts/` before packaging."
+        refs = _extract_dir_refs_from_ast(md)
+        assert "scripts" in refs
+
 
 class TestAdrScanning:
     """Test ADR file scanning for phantom directory references."""

@@ -146,6 +146,21 @@ def _get_mistune():
 
 _FALLBACK_DIR_RE = re.compile(r"(?<!\w)(\w[\w\-]*)/" r"(?!\S*://)")
 _VERSION_SEGMENT_RE = re.compile(r"^(?:v\d+(?:[._-]\d+)*)$")
+_DIRECTORY_CONTEXT_KEYWORDS: tuple[str, ...] = (
+    "directory",
+    "directories",
+    "folder",
+    "folders",
+    "path",
+    "paths",
+    "tree",
+    "layout",
+    "structure",
+    "module",
+    "modules",
+    "package",
+    "packages",
+)
 
 
 def _is_likely_proper_noun(name: str) -> bool:
@@ -182,6 +197,36 @@ def _is_noise_dir_reference(name: str) -> bool:
     return bool(_is_likely_proper_noun(name))
 
 
+def _has_directory_context(raw_text: str, match_start: int, match_end: int) -> bool:
+    """Return True when nearby prose indicates a structural directory claim."""
+    text = raw_text.lower()
+    window_start = max(0, match_start - 48)
+    window_end = min(len(text), match_end + 48)
+    window = text[window_start:window_end]
+    return any(keyword in window for keyword in _DIRECTORY_CONTEXT_KEYWORDS)
+
+
+def _extract_contextual_dir_refs(
+    raw_text: str,
+    *,
+    allow_without_context: bool = False,
+) -> set[str]:
+    """Extract directory refs while filtering prose slash-tokens without context."""
+    refs: set[str] = set()
+    for match in _PROSE_DIR_RE.finditer(raw_text):
+        ref = match.group("ref")
+        wrapped = bool(match.group("tick"))
+        if _is_noise_dir_reference(ref):
+            continue
+        if (
+            allow_without_context
+            or wrapped
+            or _has_directory_context(raw_text, match.start(), match.end())
+        ):
+            refs.add(ref)
+    return refs
+
+
 def _extract_dir_refs_from_ast(markdown_text: str) -> set[str]:
     """Parse Markdown via mistune AST and extract directory-like references.
 
@@ -198,8 +243,7 @@ def _extract_dir_refs_from_ast(markdown_text: str) -> set[str]:
         cleaned = re.sub(r"```[^`]*```", "", markdown_text, flags=re.DOTALL)
         # Strip inline links [text](url) to avoid extracting URL segments
         cleaned = re.sub(r"\[([^\]]*)\]\([^)]+\)", r"\1", cleaned)
-        fallback_refs = set(_FALLBACK_DIR_RE.findall(cleaned))
-        return {r for r in fallback_refs if not _is_noise_dir_reference(r)}
+        return _extract_contextual_dir_refs(cleaned)
 
     md = mistune.create_markdown(renderer="ast")
     try:
@@ -210,10 +254,10 @@ def _extract_dir_refs_from_ast(markdown_text: str) -> set[str]:
 
     refs: set[str] = set()
     _walk_tokens(tokens, refs)
-    return {r for r in refs if not _is_noise_dir_reference(r)}
+    return refs
 
 
-_PROSE_DIR_RE = re.compile(r"`?(\w[\w\-]*)/" r"`?")
+_PROSE_DIR_RE = re.compile(r"(?P<tick>`)?(?P<ref>\w[\w\-]*)/(?P=tick)?")
 
 
 def _walk_tokens(tokens: list[dict[str, Any]], refs: set[str]) -> None:
@@ -245,14 +289,19 @@ def _walk_tokens(tokens: list[dict[str, Any]], refs: set[str]) -> None:
         if tok_type == "codespan":
             raw = tok.get("raw", tok.get("text", ""))
             if raw:
-                refs.update(_PROSE_DIR_RE.findall(raw))
+                refs.update(
+                    _extract_contextual_dir_refs(
+                        raw,
+                        allow_without_context=True,
+                    )
+                )
             continue
 
         # For paragraphs, headings, list items — check raw text of
         # leaf children (text, softbreak, etc.)
         raw = tok.get("raw", tok.get("text", ""))
         if raw and tok_type in ("text", "paragraph", "heading"):
-            refs.update(_PROSE_DIR_RE.findall(raw))
+            refs.update(_extract_contextual_dir_refs(raw))
 
         # Recurse into children
         children = tok.get("children")

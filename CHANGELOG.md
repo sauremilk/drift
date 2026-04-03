@@ -13,6 +13,7 @@
 
 ### Fixed
 
+- Reduce DIA false positives by requiring structural context for plain markdown slash-tokens (e.g. `async/`, `scan/`, `connectors/`) before emitting missing-directory findings, while preserving explicit path references in code spans/backticks (#121).
 - Surface file I/O errors in `analyze`, `check`, and `scan` commands as structured `DRIFT-2003` errors with exit code 2 instead of unhandled `OSError` tracebacks.
 - Validate `--max-findings` range (1–200) in `drift scan` via `click.IntRange` and reject out-of-range values with exit code 2.
 - Improve `DRIFT-2003` action message to explicitly suggest checking output path writability and parent directory existence.
