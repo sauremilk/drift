@@ -14,6 +14,22 @@ from drift.guardrails import (
     guardrails_to_prompt_block,
 )
 
+
+def _make_runner() -> CliRunner:
+    """Create a CliRunner compatible with older/newer Click versions."""
+    try:
+        return CliRunner(mix_stderr=False)
+    except TypeError:
+        return CliRunner()
+
+
+def _parse_json_from_output(output: str) -> dict:
+    """Parse JSON payload even when noisy prelude text is present."""
+    start = output.find("{")
+    end = output.rfind("}")
+    assert start != -1 and end != -1 and end >= start, output
+    return json.loads(output[start : end + 1])
+
 # ---------------------------------------------------------------------------
 # API-layer tests
 # ---------------------------------------------------------------------------
