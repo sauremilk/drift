@@ -368,7 +368,7 @@ Import (CIR), Dead Code Accumulation (DCA), Missing Authorization (MAZ),
 Insecure Default (ISD), Hardcoded Secret (HSC). These are visible in findings
 but don't affect the composite score yet — precision validation in progress.
 
-See the [signal reference](https://sauremilk.github.io/drift/reference/signals/) for full details.
+See the [signal reference](https://mick-gsk.github.io/drift/reference/signals/) for full details.
 
 ## No LLMs. Deterministic. Fast.
 
@@ -450,7 +450,7 @@ that reads the whole codebase instead of just the diff.
 
 - GitHub: [mick-gsk/drift](https://github.com/mick-gsk/drift)
 - PyPI: [drift-analyzer](https://pypi.org/project/drift-analyzer/)
-- Docs: [sauremilk.github.io/drift](https://sauremilk.github.io/drift/)
+- Docs: [mick-gsk.github.io/drift](https://mick-gsk.github.io/drift/)
 ````
 
 ---

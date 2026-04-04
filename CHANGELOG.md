@@ -18,6 +18,7 @@
 
 ### Fixed
 
+- Complete repository transfer cleanup by replacing remaining `sauremilk` owner/docs references in operational metadata, docs, and `drift self` guidance with `mick-gsk` (#132).
 - Prevent MCP stdio hangs on Windows by enforcing `stdin=subprocess.DEVNULL` on all relevant `subprocess.run` calls, making `drift_nudge` async like the other MCP tools, adding uniform MCP error envelopes, and eager-importing heavy modules before the MCP event loop starts.
 - Standardize drift score precision to 3 decimal places across all surfaces (copilot-context, export-context, API, raw JSON) to eliminate score inconsistency between commands (#124).
 - Fix MCP schema `--schema` output leaking `type: "Annotated"` for all parameters instead of actual JSON Schema types (`string`, `integer`, `boolean`) by properly unwrapping `typing.Annotated` wrappers (#126).

@@ -2,29 +2,29 @@
 # See: https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
 
 # Default owner for everything
-* @sauremilk
+* @mick-gsk
 
 # Signal detectors
-src/drift/signals/ @sauremilk
+src/drift/signals/ @mick-gsk
 
 # Scoring and aggregation
-src/drift/scoring/ @sauremilk
+src/drift/scoring/ @mick-gsk
 
 # Ingestion (AST, git, file discovery)
-src/drift/ingestion/ @sauremilk
+src/drift/ingestion/ @mick-gsk
 
 # Tests and fixtures
-tests/ @sauremilk
+tests/ @mick-gsk
 
 # Documentation site
-docs-site/ @sauremilk
+docs-site/ @mick-gsk
 
 # Security-sensitive paths (require extra review attention)
-SECURITY.md @sauremilk
-.github/workflows/security-hygiene.yml @sauremilk
-.github/workflows/codeql.yml @sauremilk
-.github/workflows/publish.yml @sauremilk
-.pre-commit-config.yaml @sauremilk
-.secrets.baseline @sauremilk
-src/drift/ingestion/ast_parser.py @sauremilk
-src/drift/ingestion/git_history.py @sauremilk
+SECURITY.md @mick-gsk
+.github/workflows/security-hygiene.yml @mick-gsk
+.github/workflows/codeql.yml @mick-gsk
+.github/workflows/publish.yml @mick-gsk
+.pre-commit-config.yaml @mick-gsk
+.secrets.baseline @mick-gsk
+src/drift/ingestion/ast_parser.py @mick-gsk
+src/drift/ingestion/git_history.py @mick-gsk

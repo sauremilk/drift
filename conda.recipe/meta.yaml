@@ -52,9 +52,9 @@ about:
     Python codebases. It produces Rich terminal output, machine-readable JSON,
     and SARIF for CI integration. All 15 signals are configurable via a YAML
     config file.
-  doc_url: https://sauremilk.github.io/drift/
+  doc_url: https://mick-gsk.github.io/drift/
   dev_url: https://github.com/mick-gsk/drift
 
 extra:
   recipe-maintainers:
-    - sauremilk
+    - mick-gsk

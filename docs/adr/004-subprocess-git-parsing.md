@@ -2,7 +2,7 @@
 
 **Status:** Accepted  
 **Date:** 2025-12-15  
-**Decision Makers:** @sauremilk
+**Decision Makers:** @mick-gsk
 
 ## Context
 
