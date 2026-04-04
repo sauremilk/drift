@@ -236,7 +236,7 @@ runs:
     # Post PR summary comment. Updates existing comment if one exists.
     - name: Post PR comment
       if: always() && inputs.comment == 'true' && github.event_name == 'pull_request'
-      uses: actions/github-script@v7
+      uses: actions/github-script@v8
       with:
         script: |
           const body = `${{ steps.drift-json.outputs.comment-body }}`;
@@ -297,7 +297,7 @@ runs:
 
     - name: Post brief PR comment
       if: always() && inputs.brief == 'true' && github.event_name == 'pull_request' && steps.drift-brief.outputs.brief-body != ''
-      uses: actions/github-script@v7
+      uses: actions/github-script@v8
       with:
         script: |
           const body = `${{ steps.drift-brief.outputs.brief-body }}`;
