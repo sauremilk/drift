@@ -162,6 +162,7 @@ class TestMcpToolErrorEnvelopes:
         result = json.loads(raw)
 
         assert result["type"] == "error", f"{tool_name} did not return error envelope"
+        assert result["error_code"] == "DRIFT-5001"
         assert result["tool"] == tool_name
 
 
