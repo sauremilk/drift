@@ -58,7 +58,7 @@ def test_patterns_json_output_file_and_target_path_passthrough(monkeypatch, tmp_
     }
 
     fake_analysis = SimpleNamespace(pattern_catalog=fake_catalog)
-    monkeypatch.setattr("drift.config.DriftConfig.load", lambda repo_path, config_path=None: object())
+    monkeypatch.setattr("drift.config.DriftConfig.load", lambda *args, **kwargs: object())
 
     def _fake_analyze(repo_path: Path, cfg: object, target_path: str | None = None):
         calls["args"] = (repo_path, target_path)
@@ -98,7 +98,7 @@ def test_patterns_rich_output_empty_catalog_prints_no_patterns(monkeypatch, tmp_
     repo.mkdir(parents=True, exist_ok=True)
     fake_analysis = SimpleNamespace(pattern_catalog={})
 
-    monkeypatch.setattr("drift.config.DriftConfig.load", lambda repo_path, config_path=None: object())
+    monkeypatch.setattr("drift.config.DriftConfig.load", lambda *args, **kwargs: object())
     monkeypatch.setattr("drift.analyzer.analyze_repo", lambda *args, **kwargs: fake_analysis)
 
     runner = CliRunner()

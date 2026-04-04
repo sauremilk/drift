@@ -29,7 +29,7 @@ def test_timeline_command_builds_and_renders_timeline(
     fake_timeline = object()
     calls: dict[str, object] = {}
 
-    monkeypatch.setattr("drift.config.DriftConfig.load", lambda repo_path, config_path=None: fake_cfg)
+    monkeypatch.setattr("drift.config.DriftConfig.load", lambda *args, **kwargs: fake_cfg)
 
     def _fake_analyze(repo_path: Path, cfg: object, since_days: int):
         calls["analyze_repo"] = (repo_path, cfg, since_days)
@@ -77,7 +77,7 @@ def test_timeline_command_handles_empty_commit_history(
     )
     calls: dict[str, object] = {}
 
-    monkeypatch.setattr("drift.config.DriftConfig.load", lambda repo_path, config_path=None: fake_cfg)
+    monkeypatch.setattr("drift.config.DriftConfig.load", lambda *args, **kwargs: fake_cfg)
     monkeypatch.setattr(
         "drift.analyzer.analyze_repo",
         lambda repo_path, cfg, since_days: fake_analysis,
