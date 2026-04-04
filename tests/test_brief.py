@@ -14,6 +14,22 @@ from drift.guardrails import (
     guardrails_to_prompt_block,
 )
 
+
+def _make_runner() -> CliRunner:
+    """Create a CliRunner compatible with older/newer Click versions."""
+    try:
+        return CliRunner(mix_stderr=False)
+    except TypeError:
+        return CliRunner()
+
+
+def _parse_json_from_output(output: str) -> dict:
+    """Parse JSON payload even when noisy prelude text is present."""
+    start = output.find("{")
+    end = output.rfind("}")
+    assert start != -1 and end != -1 and end >= start, output
+    return json.loads(output[start : end + 1])
+
 # ---------------------------------------------------------------------------
 # API-layer tests
 # ---------------------------------------------------------------------------
@@ -74,18 +90,18 @@ class TestApiBrief:
 
 class TestBriefCli:
     def test_json_output_is_valid(self, tmp_repo: Path) -> None:
-        runner = CliRunner(mix_stderr=False)
+        runner = _make_runner()
         result = runner.invoke(
             brief_cmd,
             ["--task", "refactor api", "--repo", str(tmp_repo), "--json"],
         )
         # Exit code 0 or 1 (BLOCK) is acceptable
         assert result.exit_code in (0, 1), result.output
-        parsed = json.loads(result.output)
+        parsed = _parse_json_from_output(result.output)
         assert parsed["type"] == "brief"
 
     def test_markdown_output(self, tmp_repo: Path) -> None:
-        runner = CliRunner(mix_stderr=False)
+        runner = _make_runner()
         result = runner.invoke(
             brief_cmd,
             ["--task", "update services", "--repo", str(tmp_repo),
@@ -95,7 +111,7 @@ class TestBriefCli:
         assert "# Drift Brief" in result.output or "## " in result.output
 
     def test_rich_output(self, tmp_repo: Path) -> None:
-        runner = CliRunner(mix_stderr=False)
+        runner = _make_runner()
         result = runner.invoke(
             brief_cmd,
             ["--task", "fix db layer", "--repo", str(tmp_repo)],
@@ -103,7 +119,7 @@ class TestBriefCli:
         assert result.exit_code in (0, 1), result.output
 
     def test_task_option_required(self) -> None:
-        runner = CliRunner(mix_stderr=False)
+        runner = _make_runner()
         result = runner.invoke(brief_cmd, ["--repo", "."])
         assert result.exit_code != 0
         combined = result.output + (result.stderr or "")
@@ -111,7 +127,7 @@ class TestBriefCli:
 
     def test_quiet_flag(self, tmp_repo: Path) -> None:
         """--quiet should suppress the header but still print guardrails."""
-        runner = CliRunner(mix_stderr=False)
+        runner = _make_runner()
         result = runner.invoke(
             brief_cmd,
             ["--task", "update api", "--repo", str(tmp_repo), "--quiet"],
@@ -119,14 +135,14 @@ class TestBriefCli:
         assert result.exit_code in (0, 1)
 
     def test_select_signals(self, tmp_repo: Path) -> None:
-        runner = CliRunner(mix_stderr=False)
+        runner = _make_runner()
         result = runner.invoke(
             brief_cmd,
             ["--task", "refactor", "--repo", str(tmp_repo),
              "--json", "--select", "PFS,BEM"],
         )
         assert result.exit_code in (0, 1), result.output
-        parsed = json.loads(result.output)
+        parsed = _parse_json_from_output(result.output)
         assert "landscape" in parsed
 
 
