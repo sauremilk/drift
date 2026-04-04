@@ -1,0 +1,63 @@
+name: "Documentation drift"
+description: "Report a documentation-code inconsistency found by the doc-consistency workflow or manual review."
+title: "docs: [category] — [file]"
+labels: ["doc-drift"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting a documentation-code inconsistency.
+        Please fill out the fields below so we can fix the drift.
+
+  - type: dropdown
+    id: category
+    attributes:
+      label: Category
+      description: What type of inconsistency is this?
+      options:
+        - Signal count mismatch
+        - Weight table mismatch
+        - Version reference outdated
+        - Broken internal link
+        - CLI help / command mismatch
+        - Config schema mismatch
+        - DIA finding (README/ADR drift)
+        - Other
+    validations:
+      required: true
+
+  - type: input
+    id: source_file
+    attributes:
+      label: Affected file
+      description: Path to the documentation file with the inconsistency.
+      placeholder: "docs-site/algorithms/signals.md"
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected (from code)
+      description: What the code / config says.
+      placeholder: "15 scoring signals"
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual (in docs)
+      description: What the documentation currently says.
+      placeholder: "13 scoring signals"
+    validations:
+      required: true
+
+  - type: textarea
+    id: fix_suggestion
+    attributes:
+      label: Suggested fix
+      description: How should the documentation be updated?
+      placeholder: "Update signal count from 13 to 15 in line 42"
+    validations:
+      required: false

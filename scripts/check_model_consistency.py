@@ -7,23 +7,64 @@ check_release_discipline.py in pre-push hooks and CI.
 
 Exit 0 = all checks pass.
 Exit 1 = critical inconsistency (blocks push/merge).
+
+Use ``--json`` to emit machine-readable output (one JSON array of
+discrepancy objects) for downstream automation (doc-consistency workflow).
 """
 
 from __future__ import annotations
 
 import ast
+import json
 import re
 import sys
 import tomllib
 from pathlib import Path
+from typing import Any
+
+# ---------------------------------------------------------------------------
+# Structured discrepancy record
+# ---------------------------------------------------------------------------
+
+_JSON_MODE = "--json" in sys.argv
+
+
+def _discrepancy(
+    *,
+    check_id: str,
+    category: str,
+    severity: str,
+    source_file: str,
+    description: str,
+    expected: str = "",
+    actual: str = "",
+    fix_suggestion: str = "",
+    source_line: int | None = None,
+) -> dict[str, Any]:
+    """Build a machine-readable discrepancy dict."""
+    rec: dict[str, Any] = {
+        "check_id": check_id,
+        "category": category,
+        "severity": severity,
+        "source_file": source_file,
+        "description": description,
+        "expected": expected,
+        "actual": actual,
+        "fix_suggestion": fix_suggestion,
+    }
+    if source_line is not None:
+        rec["source_line"] = source_line
+    return rec
 
 
 def _fail(message: str) -> None:
-    print(f"FAIL: {message}", flush=True)
+    if not _JSON_MODE:
+        print(f"FAIL: {message}", flush=True)
 
 
 def _ok(message: str) -> None:
-    print(f"OK: {message}", flush=True)
+    if not _JSON_MODE:
+        print(f"OK: {message}", flush=True)
 
 
 def _repo_root() -> Path:
@@ -76,9 +117,10 @@ _SIGNAL_COUNT_PATTERNS = [
 ]
 
 
-def _check_signal_count(expected: int) -> list[str]:
+def _check_signal_count(expected: int) -> tuple[list[str], list[dict[str, Any]]]:
     """Verify docs claim the correct number of scoring signals."""
     errors: list[str] = []
+    discs: list[dict[str, Any]] = []
     root = _repo_root()
     doc_files = [
         root / "docs-site" / "index.md",
@@ -95,12 +137,28 @@ def _check_signal_count(expected: int) -> list[str]:
             for m in pattern.finditer(text):
                 claimed = int(m.group(1))
                 if claimed != expected:
-                    rel = path.relative_to(root)
-                    errors.append(
+                    rel = str(path.relative_to(root))
+                    msg = (
                         f"{rel}: claims {claimed} signals, expected {expected} "
                         f"(match: '{m.group(0)}')"
                     )
-    return errors
+                    errors.append(msg)
+                    discs.append(
+                        _discrepancy(
+                            check_id="signal_count_mismatch",
+                            category="signal_count",
+                            severity="high",
+                            source_file=rel,
+                            expected=str(expected),
+                            actual=str(claimed),
+                            description=msg,
+                            fix_suggestion=(
+                                f"Update signal count in {rel}"
+                                f" from {claimed} to {expected}"
+                            ),
+                        )
+                    )
+    return errors, discs
 
 
 # ---------------------------------------------------------------------------
@@ -112,12 +170,15 @@ _WEIGHT_ROW_RE = re.compile(
 )
 
 
-def _check_scoring_weights(config_weights: dict[str, float]) -> list[str]:
+def _check_scoring_weights(
+    config_weights: dict[str, float],
+) -> tuple[list[str], list[dict[str, Any]]]:
     """Verify the weight table in scoring.md matches config.py."""
     errors: list[str] = []
+    discs: list[dict[str, Any]] = []
     scoring_md = _repo_root() / "docs-site" / "algorithms" / "scoring.md"
     if not scoring_md.exists():
-        return errors
+        return errors, discs
 
     text = scoring_md.read_text(encoding="utf-8")
 
@@ -146,11 +207,25 @@ def _check_scoring_weights(config_weights: dict[str, float]) -> list[str]:
             continue
         expected = config_weights.get(config_key)
         if expected is not None and abs(doc_weight - expected) > 0.01:
-            errors.append(
-                f"scoring.md: {code} weight={doc_weight}, config.py={expected}"
+            msg = f"scoring.md: {code} weight={doc_weight}, config.py={expected}"
+            errors.append(msg)
+            discs.append(
+                _discrepancy(
+                    check_id=f"weight_mismatch_{code.lower()}",
+                    category="weight_table",
+                    severity="high",
+                    source_file="docs-site/algorithms/scoring.md",
+                    expected=str(expected),
+                    actual=str(doc_weight),
+                    description=msg,
+                    fix_suggestion=(
+                        f"Update {code} weight in scoring.md"
+                        f" from {doc_weight} to {expected}"
+                    ),
+                )
             )
 
-    return errors
+    return errors, discs
 
 
 # ---------------------------------------------------------------------------
@@ -160,12 +235,13 @@ def _check_scoring_weights(config_weights: dict[str, float]) -> list[str]:
 _YAML_WEIGHT_RE = re.compile(r"^\s+([\w_]+):\s+([\d.]+)", re.MULTILINE)
 
 
-def _check_example_yaml(config_weights: dict[str, float]) -> list[str]:
+def _check_example_yaml(config_weights: dict[str, float]) -> tuple[list[str], list[dict[str, Any]]]:
     """Verify drift.example.yaml weight values match config.py defaults."""
     errors: list[str] = []
+    discs: list[dict[str, Any]] = []
     yaml_path = _repo_root() / "drift.example.yaml"
     if not yaml_path.exists():
-        return errors
+        return errors, discs
 
     text = yaml_path.read_text(encoding="utf-8")
     in_weights = False
@@ -181,13 +257,27 @@ def _check_example_yaml(config_weights: dict[str, float]) -> list[str]:
                 yaml_val = float(m.group(2))
                 expected = config_weights.get(key)
                 if expected is not None and abs(yaml_val - expected) > 0.01:
-                    errors.append(
-                        f"drift.example.yaml: {key}={yaml_val}, config.py={expected}"
+                    msg = f"drift.example.yaml: {key}={yaml_val}, config.py={expected}"
+                    errors.append(msg)
+                    discs.append(
+                        _discrepancy(
+                            check_id=f"yaml_weight_mismatch_{key}",
+                            category="yaml_weights",
+                            severity="medium",
+                            source_file="drift.example.yaml",
+                            expected=str(expected),
+                            actual=str(yaml_val),
+                            description=msg,
+                            fix_suggestion=(
+                                f"Update {key} in drift.example.yaml"
+                                f" from {yaml_val} to {expected}"
+                            ),
+                        )
                     )
             elif not stripped.startswith("#"):
                 in_weights = False
 
-    return errors
+    return errors, discs
 
 
 # ---------------------------------------------------------------------------
@@ -195,20 +285,194 @@ def _check_example_yaml(config_weights: dict[str, float]) -> list[str]:
 # ---------------------------------------------------------------------------
 
 
-def _check_security_version(version: str) -> list[str]:
+def _check_security_version(version: str) -> tuple[list[str], list[dict[str, Any]]]:
     errors: list[str] = []
+    discs: list[dict[str, Any]] = []
     security_md = _repo_root() / "SECURITY.md"
     if not security_md.exists():
-        return errors
+        return errors, discs
 
     text = security_md.read_text(encoding="utf-8")
     major_minor = ".".join(version.split(".")[:2])
     pattern = f"{major_minor}.x"
     if pattern not in text:
-        errors.append(
-            f"SECURITY.md does not list {pattern} as supported (current version: {version})"
+        msg = f"SECURITY.md does not list {pattern} as supported (current version: {version})"
+        errors.append(msg)
+        discs.append(
+            _discrepancy(
+                check_id="security_version_missing",
+                category="version_ref",
+                severity="medium",
+                source_file="SECURITY.md",
+                expected=pattern,
+                actual="(not listed)",
+                description=msg,
+                fix_suggestion=f"Add '{pattern}' to the supported versions table in SECURITY.md",
+            )
         )
-    return errors
+    return errors, discs
+
+
+# ---------------------------------------------------------------------------
+# Check 5: llms.txt signal weights match config.py
+# ---------------------------------------------------------------------------
+
+_LLMS_WEIGHT_RE = re.compile(
+    r"-\s+(\w+):\s+.+\(weight\s+([\d.]+)\)",
+)
+
+
+def _check_llms_txt(config_weights: dict[str, float]) -> tuple[list[str], list[dict[str, Any]]]:
+    """Verify llms.txt signal list and weights match config.py."""
+    errors: list[str] = []
+    discs: list[dict[str, Any]] = []
+    llms_path = _repo_root() / "llms.txt"
+    if not llms_path.exists():
+        return errors, discs
+
+    text = llms_path.read_text(encoding="utf-8")
+
+    code_to_key = {
+        "PFS": "pattern_fragmentation",
+        "AVS": "architecture_violation",
+        "MDS": "mutant_duplicate",
+        "TVS": "temporal_volatility",
+        "EDS": "explainability_deficit",
+        "SMS": "system_misalignment",
+        "DIA": "doc_impl_drift",
+        "BEM": "broad_exception_monoculture",
+        "TPD": "test_polarity_deficit",
+        "NBV": "naming_contract_violation",
+        "GCD": "guard_clause_deficit",
+        "BAT": "bypass_accumulation",
+        "ECM": "exception_contract_drift",
+        "COD": "cohesion_deficit",
+        "CCC": "co_change_coupling",
+    }
+
+    for m in _LLMS_WEIGHT_RE.finditer(text):
+        code = m.group(1)
+        doc_weight = float(m.group(2))
+        config_key = code_to_key.get(code)
+        if config_key is None:
+            continue
+        expected = config_weights.get(config_key)
+        if expected is not None and abs(doc_weight - expected) > 0.01:
+            msg = f"llms.txt: {code} weight={doc_weight}, config.py={expected}"
+            errors.append(msg)
+            discs.append(
+                _discrepancy(
+                    check_id=f"llms_weight_mismatch_{code.lower()}",
+                    category="weight_table",
+                    severity="medium",
+                    source_file="llms.txt",
+                    expected=str(expected),
+                    actual=str(doc_weight),
+                    description=msg,
+                    fix_suggestion=(
+                        f"Update {code} weight in llms.txt"
+                        f" from {doc_weight} to {expected}"
+                    ),
+                )
+            )
+
+    return errors, discs
+
+
+# ---------------------------------------------------------------------------
+# Check 6: llms.txt / README version matches pyproject.toml
+# ---------------------------------------------------------------------------
+
+_VERSION_RE = re.compile(r"v?([\d]+\.[\d]+\.[\d]+)")
+
+
+def _check_version_refs(version: str) -> tuple[list[str], list[dict[str, Any]]]:
+    """Verify version references in llms.txt match pyproject.toml."""
+    errors: list[str] = []
+    discs: list[dict[str, Any]] = []
+    root = _repo_root()
+
+    llms_path = root / "llms.txt"
+    if llms_path.exists():
+        text = llms_path.read_text(encoding="utf-8")
+        # Look for "Release status: vX.Y.Z" or similar version lines
+        status_re = re.compile(r"Release status:\s*v?([\d]+\.[\d]+\.[\d]+)")
+        for m in status_re.finditer(text):
+            claimed = m.group(1)
+            if claimed != version:
+                msg = f"llms.txt: claims version {claimed}, pyproject.toml has {version}"
+                errors.append(msg)
+                discs.append(
+                    _discrepancy(
+                        check_id="llms_version_mismatch",
+                        category="version_ref",
+                        severity="medium",
+                        source_file="llms.txt",
+                        expected=version,
+                        actual=claimed,
+                        description=msg,
+                        fix_suggestion=f"Update version in llms.txt from {claimed} to {version}",
+                    )
+                )
+
+    return errors, discs
+
+
+# ---------------------------------------------------------------------------
+# Check 7: Python version requirement in installation docs
+# ---------------------------------------------------------------------------
+
+
+def _check_python_version_docs() -> tuple[list[str], list[dict[str, Any]]]:
+    """Verify installation docs match pyproject.toml requires-python."""
+    errors: list[str] = []
+    discs: list[dict[str, Any]] = []
+    root = _repo_root()
+
+    pyproject = root / "pyproject.toml"
+    with pyproject.open("rb") as f:
+        data = tomllib.load(f)
+    requires_python = data.get("project", {}).get("requires-python", "")
+    if not requires_python:
+        return errors, discs
+
+    install_md = root / "docs-site" / "getting-started" / "installation.md"
+    if not install_md.exists():
+        return errors, discs
+
+    text = install_md.read_text(encoding="utf-8")
+    # Match patterns like "Python 3.11+" or "Python >=3.11"
+    py_ver_re = re.compile(r"Python\s+([\d.]+)\+|Python\s*>=\s*([\d.]+)")
+    for m in py_ver_re.finditer(text):
+        claimed = m.group(1) or m.group(2)
+        # Extract version from requires-python like ">=3.11"
+        req_match = re.search(r"([\d.]+)", requires_python)
+        if req_match:
+            expected = req_match.group(1)
+            if claimed != expected:
+                msg = (
+                    f"installation.md: claims Python {claimed}+,"
+                    f" pyproject.toml requires >={expected}"
+                )
+                errors.append(msg)
+                discs.append(
+                    _discrepancy(
+                        check_id="python_version_mismatch",
+                        category="version_ref",
+                        severity="medium",
+                        source_file="docs-site/getting-started/installation.md",
+                        expected=f">={expected}",
+                        actual=f"{claimed}+",
+                        description=msg,
+                        fix_suggestion=(
+                            f"Update Python version in"
+                            f" installation.md from {claimed}"
+                            f" to {expected}"
+                        ),
+                    )
+                )
+
+    return errors, discs
 
 
 # ---------------------------------------------------------------------------
@@ -222,18 +486,37 @@ def main() -> int:
     version = _extract_pyproject_version()
 
     all_errors: list[str] = []
+    all_discs: list[dict[str, Any]] = []
+
+    def _collect(result: tuple[list[str], list[dict[str, Any]]]) -> None:
+        errs, discs = result
+        all_errors.extend(errs)
+        all_discs.extend(discs)
 
     # Check 1: signal count
-    all_errors.extend(_check_signal_count(scoring_count))
+    _collect(_check_signal_count(scoring_count))
 
     # Check 2: scoring.md weights
-    all_errors.extend(_check_scoring_weights(config_weights))
+    _collect(_check_scoring_weights(config_weights))
 
     # Check 3: example yaml
-    all_errors.extend(_check_example_yaml(config_weights))
+    _collect(_check_example_yaml(config_weights))
 
     # Check 4: security version
-    all_errors.extend(_check_security_version(version))
+    _collect(_check_security_version(version))
+
+    # Check 5: llms.txt weights
+    _collect(_check_llms_txt(config_weights))
+
+    # Check 6: version references
+    _collect(_check_version_refs(version))
+
+    # Check 7: Python version in docs
+    _collect(_check_python_version_docs())
+
+    if _JSON_MODE:
+        print(json.dumps(all_discs, indent=2))
+        return 1 if all_discs else 0
 
     if all_errors:
         print(f"\n{'='*60}", flush=True)

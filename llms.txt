@@ -2,7 +2,7 @@
 
 > Deterministic architectural drift detection for AI-accelerated Python codebases. Drift is a static analyzer for architecture erosion analysis and cross-file coherence detection, covering pattern fragmentation, architecture violations, dependency cycles, mutant duplicates, and structural technical debt. No LLM in the detection pipeline.
 
-Release status: v0.8.2 (2026-03-28)
+Release status: v2.4.1
 
 Package: drift-analyzer
 Install: pip install -q drift-analyzer  (add -q for quiet output, hiding verbose dependency chains)
@@ -26,7 +26,7 @@ Command: drift analyze --repo .
 - PFS: Pattern Fragmentation (weight 0.16)
 - AVS: Architecture Violations (weight 0.16)
 - MDS: Mutant Duplicates (weight 0.13)
-- TVS: Temporal Volatility (weight 0.13)
+- TVS: Temporal Volatility (weight 0.0)
 - EDS: Explainability Deficit (weight 0.09)
 - SMS: System Misalignment (weight 0.08)
 - DIA: Doc-Implementation Drift (weight 0.04)

@@ -1,0 +1,67 @@
+name: Doc-consistency check
+
+on:
+  workflow_dispatch:
+  schedule:
+    # Weekly Monday 08:00 UTC
+    - cron: '0 8 * * 1'
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  doc-consistency:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install drift
+        run: pip install -e .
+
+      - name: Model consistency check
+        id: consistency
+        run: |
+          python scripts/check_model_consistency.py --json > consistency.json || true
+          echo "count=$(python -c "import json; d=json.load(open('consistency.json')); print(len(d))")" >> "$GITHUB_OUTPUT"
+
+      - name: Doc link check
+        id: links
+        run: |
+          python scripts/check_doc_links.py > links.json || true
+          echo "count=$(python -c "import json; d=json.load(open('links.json')); print(len(d))")" >> "$GITHUB_OUTPUT"
+
+      - name: DIA self-analysis
+        id: dia
+        run: |
+          drift analyze --repo . --select DIA --format json --max-findings 50 --exit-zero > dia.json || true
+          echo "count=$(python -c "import json; d=json.load(open('dia.json')); print(len(d.get('findings',[])))" 2>/dev/null || echo 0)" >> "$GITHUB_OUTPUT"
+
+      - name: Create issues for discrepancies
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          python scripts/doc_consistency_issues.py \
+            --consistency consistency.json \
+            --links links.json \
+            --dia dia.json \
+            --max-issues 5
+
+      - name: Write summary
+        if: always()
+        run: |
+          echo "## Doc-Consistency Results" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Check | Discrepancies |" >> "$GITHUB_STEP_SUMMARY"
+          echo "|-------|---------------|" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Model consistency | ${{ steps.consistency.outputs.count || '0' }} |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Doc links | ${{ steps.links.outputs.count || '0' }} |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| DIA findings | ${{ steps.dia.outputs.count || '0' }} |" >> "$GITHUB_STEP_SUMMARY"
