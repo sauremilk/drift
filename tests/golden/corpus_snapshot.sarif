@@ -1105,7 +1105,7 @@
             }
           ],
           "message": {
-            "text": "Naming contract violation: Inventory.check_stock()\nFunction 'Inventory.check_stock' has prefix 'check_' but does not satisfy the expected contract: validate_*/check_* expects at least one raise or return False/None.\nFIX: Either add the missing behaviour to 'Inventory.check_stock()' (e.g. a raise statement or appropriate return) or rename it to reflect its actual purpose."
+            "text": "Naming contract violation: Inventory.check_stock()\nFunction 'Inventory.check_stock' has prefix 'check_' but does not satisfy the expected contract: validate_*/check_* expects at least one raise or return False/None.\nFIX: 'Inventory.check_stock()' at src/myapp/models/core.py:38 does not satisfy 'check_' naming contract. Suggestion: implement a rejection path (raise or return False/None), or rename the function to match non-validating behavior."
           },
           "ruleId": "naming_contract_violation"
         },
@@ -1125,7 +1125,7 @@
             }
           ],
           "message": {
-            "text": "Naming contract violation: validate_user_profile()\nFunction 'validate_user_profile' has prefix 'validate_' but does not satisfy the expected contract: validate_*/check_* expects at least one raise or return False/None.\nFIX: Either add the missing behaviour to 'validate_user_profile()' (e.g. a raise statement or appropriate return) or rename it to reflect its actual purpose."
+            "text": "Naming contract violation: validate_user_profile()\nFunction 'validate_user_profile' has prefix 'validate_' but does not satisfy the expected contract: validate_*/check_* expects at least one raise or return False/None.\nFIX: 'validate_user_profile()' at src/myapp/utils/naming.py:4 does not satisfy 'validate_' naming contract. Suggestion: implement a rejection path (raise or return False/None), or rename the function to match non-validating behavior."
           },
           "ruleId": "naming_contract_violation"
         },
@@ -1145,7 +1145,7 @@
             }
           ],
           "message": {
-            "text": "Naming contract violation: ensure_database_connection()\nFunction 'ensure_database_connection' has prefix 'ensure_' but does not satisfy the expected contract: ensure_* expects at least one raise statement.\nFIX: Either add the missing behaviour to 'ensure_database_connection()' (e.g. a raise statement or appropriate return) or rename it to reflect its actual purpose."
+            "text": "Naming contract violation: ensure_database_connection()\nFunction 'ensure_database_connection' has prefix 'ensure_' but does not satisfy the expected contract: ensure_* expects at least one raise statement.\nFIX: 'ensure_database_connection()' at src/myapp/utils/naming.py:11 does not satisfy 'ensure_' naming contract. Suggestion: add at least one raise path that enforces the ensured precondition."
           },
           "ruleId": "naming_contract_violation"
         },

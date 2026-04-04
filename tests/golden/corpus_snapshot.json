@@ -1378,7 +1378,7 @@
       "end_line": 43,
       "file": "src/myapp/models/core.py",
       "finding_context": "library",
-      "fix": "Either add the missing behaviour to 'Inventory.check_stock()' (e.g. a raise statement or appropriate return) or rename it to reflect its actual purpose.",
+      "fix": "'Inventory.check_stock()' at src/myapp/models/core.py:38 does not satisfy 'check_' naming contract. Suggestion: implement a rejection path (raise or return False/None), or rename the function to match non-validating behavior.",
       "impact": 0.0244,
       "impact_rank": 36,
       "metadata": {
@@ -1408,7 +1408,7 @@
       "end_line": 8,
       "file": "src/myapp/utils/naming.py",
       "finding_context": "library",
-      "fix": "Either add the missing behaviour to 'validate_user_profile()' (e.g. a raise statement or appropriate return) or rename it to reflect its actual purpose.",
+      "fix": "'validate_user_profile()' at src/myapp/utils/naming.py:4 does not satisfy 'validate_' naming contract. Suggestion: implement a rejection path (raise or return False/None), or rename the function to match non-validating behavior.",
       "impact": 0.0244,
       "impact_rank": 37,
       "metadata": {
@@ -1438,7 +1438,7 @@
       "end_line": 17,
       "file": "src/myapp/utils/naming.py",
       "finding_context": "library",
-      "fix": "Either add the missing behaviour to 'ensure_database_connection()' (e.g. a raise statement or appropriate return) or rename it to reflect its actual purpose.",
+      "fix": "'ensure_database_connection()' at src/myapp/utils/naming.py:11 does not satisfy 'ensure_' naming contract. Suggestion: add at least one raise path that enforces the ensured precondition.",
       "impact": 0.0244,
       "impact_rank": 38,
       "metadata": {
@@ -2863,7 +2863,7 @@
       "file": "src/myapp/models/core.py",
       "finding_context": "library",
       "impact": 0.0244,
-      "next_step": "Either add the missing behaviour to 'Inventory.check_stock()' (e.g. a raise statement or appropriate return) or rename it to reflect its actual purpose.",
+      "next_step": "'Inventory.check_stock()' at src/myapp/models/core.py:38 does not satisfy 'check_' naming contract. Suggestion: implement a rejection path (raise or return False/None), or rename the function to match non-validating behavior.",
       "rank": 36,
       "rule_id": "naming_contract_violation",
       "score_contribution": 0.0275,
@@ -2878,7 +2878,7 @@
       "file": "src/myapp/utils/naming.py",
       "finding_context": "library",
       "impact": 0.0244,
-      "next_step": "Either add the missing behaviour to 'validate_user_profile()' (e.g. a raise statement or appropriate return) or rename it to reflect its actual purpose.",
+      "next_step": "'validate_user_profile()' at src/myapp/utils/naming.py:4 does not satisfy 'validate_' naming contract. Suggestion: implement a rejection path (raise or return False/None), or rename the function to match non-validating behavior.",
       "rank": 37,
       "rule_id": "naming_contract_violation",
       "score_contribution": 0.0275,
@@ -2893,7 +2893,7 @@
       "file": "src/myapp/utils/naming.py",
       "finding_context": "library",
       "impact": 0.0244,
-      "next_step": "Either add the missing behaviour to 'ensure_database_connection()' (e.g. a raise statement or appropriate return) or rename it to reflect its actual purpose.",
+      "next_step": "'ensure_database_connection()' at src/myapp/utils/naming.py:11 does not satisfy 'ensure_' naming contract. Suggestion: add at least one raise path that enforces the ensured precondition.",
       "rank": 38,
       "rule_id": "naming_contract_violation",
       "score_contribution": 0.0275,
@@ -3838,7 +3838,6 @@
       "source_signal": "mutant_duplicate"
     }
   ],
-  "repo": "C:/Users/mickg/PWBS/drift/benchmarks/corpus",
   "schema_version": "1.0",
   "severity": "medium",
   "summary": {
