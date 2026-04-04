@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+from types import SimpleNamespace
 
 from click.testing import CliRunner
 
@@ -56,7 +57,7 @@ def test_patterns_json_output_file_and_target_path_passthrough(monkeypatch, tmp_
         ],
     }
 
-    fake_analysis = type("A", (), {"pattern_catalog": fake_catalog})()
+    fake_analysis = SimpleNamespace(pattern_catalog=fake_catalog)
     monkeypatch.setattr("drift.config.DriftConfig.load", lambda r: object())
 
     def _fake_analyze(repo_path: Path, cfg: object, target_path: str | None = None):
@@ -95,7 +96,7 @@ def test_patterns_json_output_file_and_target_path_passthrough(monkeypatch, tmp_
 def test_patterns_rich_output_empty_catalog_prints_no_patterns(monkeypatch, tmp_path: Path) -> None:
     repo = tmp_path / "repo"
     repo.mkdir(parents=True, exist_ok=True)
-    fake_analysis = type("A", (), {"pattern_catalog": {}})()
+    fake_analysis = SimpleNamespace(pattern_catalog={})
 
     monkeypatch.setattr("drift.config.DriftConfig.load", lambda r: object())
     monkeypatch.setattr("drift.analyzer.analyze_repo", lambda *args, **kwargs: fake_analysis)
