@@ -1,0 +1,32 @@
+name-template: v$RESOLVED_VERSION
+tag-template: v$RESOLVED_VERSION
+change-template: '- $TITLE (#$NUMBER) @$AUTHOR'
+no-changes-template: '- No significant user-facing changes in this release.'
+
+categories:
+  - title: Features
+    labels:
+      - release:feature
+  - title: Fixes
+    labels:
+      - release:fix
+  - title: Maintenance
+    labels:
+      - release:maintenance
+  - title: Documentation
+    labels:
+      - release:docs
+
+exclude-labels:
+  - release:skip
+
+template: |
+  ## Release Summary
+  This release was created automatically via python-semantic-release and published with Release Drafter.
+  The detailed change list below is generated from merged pull requests and grouped by category.
+
+  ## Upgrade Notes
+  - Review CHANGELOG.md for curated history and migration context.
+  - If you pin versions in CI or automation, update to v$RESOLVED_VERSION.
+
+  $CHANGES

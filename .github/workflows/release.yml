@@ -7,6 +7,7 @@ on:
 
 permissions:
   contents: write
+  pull-requests: read
 
 concurrency:
   group: release
@@ -70,14 +71,16 @@ jobs:
         shell: powershell
         run: git push origin main --tags
 
-      - name: Create GitHub Release
+      - name: Create GitHub Release (Release Drafter)
         if: steps.release.outputs.released == 'true'
-        shell: powershell
+        uses: release-drafter/release-drafter@v6
+        with:
+          publish: true
+          tag: ${{ steps.release.outputs.tag }}
+          name: ${{ steps.release.outputs.tag }}
+          version: ${{ steps.release.outputs.version }}
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          $tag = "${{ steps.release.outputs.tag }}"
-          gh release create $tag --title $tag --generate-notes --verify-tag
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   publish:
     name: Build and publish to PyPI

@@ -275,6 +275,22 @@ Goal: Each iteration should systematically reduce the amount of untested risk su
 5. Verify `drift self` score stays within SLO (Δ ≤ +0.010)
 6. For new features, include empirical evidence (benchmark/validation output + reproducible command)
 
+## Release notes labeling convention (required)
+
+To keep GitHub release notes consistently categorized, each PR must carry exactly one `release:*` label:
+
+- `release:feature` for user-visible new capabilities
+- `release:fix` for user-visible bug fixes
+- `release:maintenance` for internal technical changes (refactor, CI, deps)
+- `release:docs` for documentation-only user-facing updates
+- `release:skip` for changes that should not appear in release notes
+
+Team convention:
+
+1. Apply one release label when opening the PR.
+2. If scope changes, update the release label before merge.
+3. Maintainers confirm the final release label during review.
+
 ## Feature Evidence Gate (Required)
 
 For every PR that introduces a new feature (`feat:` commits), empirical evidence is mandatory.

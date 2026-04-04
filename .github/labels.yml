@@ -49,3 +49,23 @@
 - name: stale
   color: "ededed"
   description: Inactive for 90+ days — will auto-close if no further activity
+
+- name: release:feature
+  color: "1d76db"
+  description: Include this PR under Features in release notes
+
+- name: release:fix
+  color: "d73a4a"
+  description: Include this PR under Fixes in release notes
+
+- name: release:maintenance
+  color: "6f42c1"
+  description: Include this PR under Maintenance in release notes
+
+- name: release:docs
+  color: "0e8a16"
+  description: Include this PR under Documentation in release notes
+
+- name: release:skip
+  color: "cfd3d7"
+  description: Exclude this PR from release notes

@@ -33,6 +33,16 @@
 - [ ] Test-only change
 - [ ] CI/Build change
 
+## Release notes label (required)
+
+<!-- Add exactly one release:* label to this PR so Release Drafter can categorize it. -->
+
+- [ ] `release:feature`
+- [ ] `release:fix`
+- [ ] `release:maintenance`
+- [ ] `release:docs`
+- [ ] `release:skip` (internal-only, should not appear in release notes)
+
 ## Validation
 
 - [ ] `pytest` passes locally
