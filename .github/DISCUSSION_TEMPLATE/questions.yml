@@ -5,7 +5,7 @@ body:
     attributes:
       value: |
         **Before posting**, please check:
-        - [Documentation](https://sauremilk.github.io/drift/)
+        - [Documentation](https://mick-gsk.github.io/drift/)
         - [Existing discussions](https://github.com/mick-gsk/drift/discussions)
 
   - type: textarea

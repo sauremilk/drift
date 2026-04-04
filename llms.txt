@@ -7,7 +7,7 @@ Release status: v2.4.2
 Package: drift-analyzer
 Install: pip install -q drift-analyzer  (add -q for quiet output, hiding verbose dependency chains)
 Repository: https://github.com/mick-gsk/drift
-Documentation: https://sauremilk.github.io/drift/
+Documentation: https://mick-gsk.github.io/drift/
 Command: drift analyze --repo .
 
 ## Use Cases
@@ -41,18 +41,18 @@ Command: drift analyze --repo .
 
 ## Docs
 
-- [Documentation](https://sauremilk.github.io/drift/)
-- [Quick Start](https://sauremilk.github.io/drift/getting-started/quickstart/)
-- [Signal Reference](https://sauremilk.github.io/drift/algorithms/signals/)
-- [Scoring Model](https://sauremilk.github.io/drift/algorithms/scoring/)
-- [FAQ](https://sauremilk.github.io/drift/faq/)
-- [Trust & Evidence](https://sauremilk.github.io/drift/trust-evidence/)
+- [Documentation](https://mick-gsk.github.io/drift/)
+- [Quick Start](https://mick-gsk.github.io/drift/getting-started/quickstart/)
+- [Signal Reference](https://mick-gsk.github.io/drift/algorithms/signals/)
+- [Scoring Model](https://mick-gsk.github.io/drift/algorithms/scoring/)
+- [FAQ](https://mick-gsk.github.io/drift/faq/)
+- [Trust & Evidence](https://mick-gsk.github.io/drift/trust-evidence/)
 
 ## Optional
 
 - [Full Benchmark Study](https://github.com/mick-gsk/drift/blob/main/docs/STUDY.md): 97.3% precision on 263 ground-truth-labeled findings across 15 repositories
 - [Changelog](https://github.com/mick-gsk/drift/blob/main/CHANGELOG.md): version history and signal improvements
-- [Case Studies](https://sauremilk.github.io/drift/case-studies/): FastAPI, Pydantic, Django
+- [Case Studies](https://mick-gsk.github.io/drift/case-studies/): FastAPI, Pydantic, Django
 - [GitHub Action](https://github.com/mick-gsk/drift/blob/main/action.yml): CI integration with SARIF upload
 
 ## Keywords

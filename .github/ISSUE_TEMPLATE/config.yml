@@ -10,7 +10,7 @@ contact_links:
     url: https://github.com/mick-gsk/drift/discussions
     about: Please ask and answer general questions in Discussions.
   - name: Documentation
-    url: https://sauremilk.github.io/drift/
+    url: https://mick-gsk.github.io/drift/
     about: Check the docs site for setup, configuration, and examples.
   - name: Security report
     url: https://github.com/mick-gsk/drift/security/policy

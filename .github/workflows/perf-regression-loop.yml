@@ -1,0 +1,226 @@
+name: Performance Regression Loop
+
+# Automated iterative performance improvement cycle.
+# Runs benchmark + cProfile → creates/updates GitHub issue with profiler
+# data → assigns Copilot Coding Agent for optimization → re-benchmarks
+# on resulting PR.  Loop stops when wall-clock budget is met or max
+# iterations are reached.
+
+on:
+  workflow_dispatch:
+    inputs:
+      budget:
+        description: "Wall-clock budget in seconds"
+        required: false
+        default: "30"
+        type: string
+      max_iterations:
+        description: "Maximum optimization iterations"
+        required: false
+        default: "5"
+        type: string
+      target_path:
+        description: "Subpath to benchmark (default: src/drift)"
+        required: false
+        default: "src/drift"
+        type: string
+  schedule:
+    # Weekly Sunday 04:00 UTC
+    - cron: "0 4 * * 0"
+
+concurrency:
+  group: "perf-regression-loop"
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  issues: write
+  pull-requests: write
+
+jobs:
+  benchmark:
+    name: Performance benchmark
+    # NOTE: Uses GitHub-hosted Windows runner (consistent with CI).
+    runs-on: windows-latest
+    outputs:
+      passed: ${{ steps.gate.outputs.passed }}
+      wall_clock: ${{ steps.gate.outputs.wall_clock }}
+      budget: ${{ steps.gate.outputs.budget }}
+      issue_body: ${{ steps.gate.outputs.issue_body }}
+      findings_count: ${{ steps.gate.outputs.findings_count }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Resolve Python executable
+        shell: powershell
+        run: |
+          $resolved = $false
+          if (Get-Command python -ErrorAction SilentlyContinue) {
+            python --version
+            if ($LASTEXITCODE -eq 0) {
+              "PYTHON_BIN=python" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+              $resolved = $true
+            }
+          }
+          if (-not $resolved -and (Get-Command py -ErrorAction SilentlyContinue)) {
+            py --version
+            if ($LASTEXITCODE -eq 0) {
+              "PYTHON_BIN=py" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+              $resolved = $true
+            }
+          }
+          if (-not $resolved) {
+            Write-Error "Neither 'python' nor 'py' is available on this runner."
+            exit 1
+          }
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        shell: powershell
+        run: |
+          & $env:PYTHON_BIN -m pip install --upgrade pip
+          & $env:PYTHON_BIN -m pip install -e ".[dev]"
+
+      - name: Determine iteration
+        id: iter
+        shell: powershell
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # Count existing perf-regression-loop issue comments as iteration proxy
+          $issues = gh issue list --label "perf-regression-loop" --state open --json number --jq '.[0].number' 2>$null
+          if ($issues -and $issues -ne "null") {
+            $comments = gh issue view $issues --json comments --jq '.comments | length' 2>$null
+            $iter = [int]$comments + 1
+          } else {
+            $iter = 1
+          }
+          "iteration=$iter" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
+          Write-Host "Iteration: $iter"
+
+      - name: Run performance gate
+        id: gate
+        shell: powershell
+        run: |
+          $budget = "${{ inputs.budget || '30' }}"
+          $maxIter = "${{ inputs.max_iterations || '5' }}"
+          $targetPath = "${{ inputs.target_path || 'src/drift' }}"
+          $iteration = "${{ steps.iter.outputs.iteration }}"
+
+          $raw = & $env:PYTHON_BIN scripts/perf_gate.py `
+            --budget $budget `
+            --target-path $targetPath `
+            --runs 3 `
+            --warmup 1 `
+            --iteration $iteration `
+            --max-iterations $maxIter `
+            --json 2>&1
+          # Write without BOM (PS 5.1 compat)
+          [IO.File]::WriteAllText("$PWD\perf_result.json", ($raw -join "`n"), [Text.Encoding]::UTF8)
+
+          $result = $raw | ConvertFrom-Json
+
+          "passed=$($result.passed.ToString().ToLower())" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
+          "wall_clock=$($result.wall_clock_seconds)" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
+          "budget=$($result.budget_seconds)" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
+          "findings_count=$($result.findings_count)" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
+
+          # Write agent_prompt to a file without BOM (too large for output)
+          [IO.File]::WriteAllText("$PWD\agent_prompt.md", $result.agent_prompt, [Text.Encoding]::UTF8)
+
+          if ($result.passed) {
+            Write-Host "PASS: $($result.wall_clock_seconds)s < $($result.budget_seconds)s"
+          } else {
+            Write-Host "FAIL: $($result.wall_clock_seconds)s > $($result.budget_seconds)s"
+          }
+
+      - name: Upload benchmark artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: perf-result
+          path: |
+            perf_result.json
+            agent_prompt.md
+
+  trigger-agent:
+    name: Create/update optimization issue
+    needs: benchmark
+    if: needs.benchmark.outputs.passed == 'false'
+    runs-on: windows-latest
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download benchmark artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: perf-result
+
+      - name: Create or update issue
+        shell: powershell
+        run: |
+          $body = Get-Content agent_prompt.md -Raw -Encoding utf8
+          $wall = "${{ needs.benchmark.outputs.wall_clock }}"
+          $budget = "${{ needs.benchmark.outputs.budget }}"
+
+          # Check for existing open issue
+          $existingNum = gh issue list `
+            --label "perf-regression-loop" `
+            --state open `
+            --json number `
+            --jq '.[0].number' 2>$null
+
+          if ($existingNum -and $existingNum -ne "null" -and $existingNum -ne "") {
+            Write-Host "Updating existing issue #$existingNum"
+            gh issue comment $existingNum --body $body
+          } else {
+            Write-Host "Creating new issue"
+            $title = "perf: Self-Analysis at ${wall}s exceeds ${budget}s budget"
+            $num = gh issue create `
+              --title $title `
+              --body $body `
+              --label "perf-regression-loop" `
+              --label "performance" | Select-String -Pattern '#(\d+)' | ForEach-Object { $_.Matches.Groups[1].Value }
+
+            if ($num) {
+              Write-Host "Created issue #$num, assigning to copilot"
+              gh issue edit $num --add-assignee copilot
+            }
+          }
+
+  budget-met:
+    name: Budget met — no action needed
+    needs: benchmark
+    if: needs.benchmark.outputs.passed == 'true'
+    runs-on: windows-latest
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Close resolved issues
+        shell: powershell
+        run: |
+          # If budget is met and there's an open perf issue, close it
+          $existingNum = gh issue list `
+            --label "perf-regression-loop" `
+            --state open `
+            --json number `
+            --jq '.[0].number' 2>$null
+
+          if ($existingNum -and $existingNum -ne "null" -and $existingNum -ne "") {
+            $wall = "${{ needs.benchmark.outputs.wall_clock }}"
+            $budget = "${{ needs.benchmark.outputs.budget }}"
+            gh issue comment $existingNum --body "Performance budget met: ${wall}s < ${budget}s. Closing."
+            gh issue close $existingNum --reason completed
+            Write-Host "Closed issue #$existingNum"
+          } else {
+            Write-Host "No open perf-regression-loop issue to close"
+          }

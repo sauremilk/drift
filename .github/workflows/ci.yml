@@ -228,3 +228,81 @@ jobs:
             $diffBase = "origin/$($env:GITHUB_BASE_REF)"
           }
           & $env:PYTHON_BIN scripts/check_risk_audit.py --diff-base $diffBase
+
+      # --- Performance regression loop (conditional on PR label) ---
+      - name: Performance benchmark (perf-loop PR)
+        if: >-
+          github.event_name == 'pull_request' &&
+          contains(github.event.pull_request.labels.*.name, 'perf-regression-loop')
+        shell: powershell
+        run: |
+          $raw = & $env:PYTHON_BIN scripts/perf_gate.py `
+            --budget 30 `
+            --target-path src/drift `
+            --runs 3 `
+            --json 2>&1
+          [IO.File]::WriteAllText("$PWD\perf_result.json", ($raw -join "`n"), [Text.Encoding]::UTF8)
+
+          & $env:PYTHON_BIN -c @'
+          import json, sys
+          with open("perf_result.json", encoding="utf-8") as f:
+              r = json.load(f)
+          wc = r["wall_clock_seconds"]
+          budget = r["budget_seconds"]
+          if r["passed"]:
+              print(f"PASS: {wc:.1f}s < {budget:.0f}s budget")
+          else:
+              print(f"FAIL: {wc:.1f}s > {budget:.0f}s budget (+{r['overshoot_seconds']:.1f}s)")
+              sys.exit(1)
+          '@
+
+      - name: Post benchmark result to PR
+        if: >-
+          github.event_name == 'pull_request' &&
+          contains(github.event.pull_request.labels.*.name, 'perf-regression-loop') &&
+          always()
+        shell: powershell
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          if (-not (Test-Path perf_result.json)) {
+            Write-Host "No perf_result.json — benchmark step likely skipped"
+            exit 0
+          }
+
+          $r = Get-Content perf_result.json -Raw | ConvertFrom-Json
+          $wc = $r.wall_clock_seconds
+          $budget = $r.budget_seconds
+          $iter = $r.iteration
+          $maxIter = $r.max_iterations
+          $findings = $r.findings_count
+          $prNum = "${{ github.event.pull_request.number }}"
+
+          if ($r.passed) {
+            $comment = "### Performance Gate: PASS`n`n"
+            $comment += "| Metric | Value |`n|--------|-------|`n"
+            $comment += "| Wall-clock (median) | $($wc)s |`n"
+            $comment += "| Budget | $($budget)s |`n"
+            $comment += "| Findings | $findings |`n`n"
+            $comment += "Budget met. This PR can be merged."
+          } else {
+            $overshoot = $r.overshoot_seconds
+            $comment = "### Performance Gate: FAIL`n`n"
+            $comment += "| Metric | Value |`n|--------|-------|`n"
+            $comment += "| Wall-clock (median) | $($wc)s |`n"
+            $comment += "| Budget | $($budget)s |`n"
+            $comment += "| Overshoot | +$($overshoot)s |`n"
+            $comment += "| Iteration | $iter / $maxIter |`n"
+            $comment += "| Findings | $findings |`n`n"
+            $comment += "Budget exceeded by $($overshoot)s."
+
+            if ($iter -lt $maxIter) {
+              $comment += "`n`n@copilot Iteration $($iter + 1)/$maxIter still $($overshoot)s over budget. Focus on top hotspots from the benchmark artifact."
+            } else {
+              $comment += "`n`nMax iterations ($maxIter) reached. Manual optimization required."
+              gh pr edit $prNum --add-label "needs-manual-review"
+            }
+          }
+
+          [IO.File]::WriteAllText("$PWD\pr_comment.md", $comment, [Text.Encoding]::UTF8)
+          gh pr comment $prNum --body-file pr_comment.md

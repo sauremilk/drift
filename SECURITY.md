@@ -28,7 +28,7 @@ If you discover a security vulnerability in drift, **please do not open a public
 
 Instead, report it privately:
 
-1. **Email:** Send a detailed description to the maintainer via the contact listed on the [GitHub profile](https://github.com/sauremilk).
+1. **Email:** Send a detailed description to the maintainer via the contact listed on the [GitHub profile](https://github.com/mick-gsk).
 2. **GitHub Security Advisory:** Use the [private vulnerability reporting](https://github.com/mick-gsk/drift/security/advisories/new) feature.
 
 Please include:

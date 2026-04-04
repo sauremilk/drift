@@ -17,7 +17,7 @@ Use the right channel so requests are handled quickly and in context. When in do
 
 ## Before opening a thread
 
-1. Check the docs: <https://sauremilk.github.io/drift/>
+1. Check the docs: <https://mick-gsk.github.io/drift/>
 2. Search existing issues and discussions
 3. Include drift version, Python version, OS, and a minimal reproduction when possible
 

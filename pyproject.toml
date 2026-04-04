@@ -55,10 +55,10 @@ dependencies = [
 ]
 
 [project.urls]
-Homepage = "https://sauremilk.github.io/drift/"
+Homepage = "https://mick-gsk.github.io/drift/"
 Repository = "https://github.com/mick-gsk/drift"
 Issues = "https://github.com/mick-gsk/drift/issues"
-Documentation = "https://sauremilk.github.io/drift/"
+Documentation = "https://mick-gsk.github.io/drift/"
 Changelog = "https://github.com/mick-gsk/drift/blob/main/CHANGELOG.md"
 
 [project.optional-dependencies]

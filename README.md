@@ -16,7 +16,7 @@
 [![License](https://img.shields.io/github/license/mick-gsk/drift)](LICENSE)
 [![Stars](https://img.shields.io/github/stars/mick-gsk/drift?style=social)](https://github.com/mick-gsk/drift)
 
-97.3% precision (single-rater) · 23 signals · deterministic · no LLM in pipeline · [full study](docs/STUDY.md) · [docs](https://sauremilk.github.io/drift/)
+97.3% precision (single-rater) · 23 signals · deterministic · no LLM in pipeline · [full study](docs/STUDY.md) · [docs](https://mick-gsk.github.io/drift/)
 
 </div>
 
