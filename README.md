@@ -100,7 +100,7 @@ Drift focuses on that gap:
 - **Semgrep / CodeQL / security scanners:** risky flows and policy violations, not architectural consistency.
 - **Maintainability dashboards:** broad quality heuristics, not a drift-specific score with reproducible signal families.
 
-Current public evidence: 15 real-world repositories in the study corpus, 22 signal families (15 scoring-active, 7 report-only), and auto-calibration that rebalances weights at runtime. [Full study →](docs/STUDY.md) · [Trust & limitations](docs-site/benchmarking.md)
+Current public evidence: 15 real-world repositories in the study corpus, 23 signal families (15 scoring-active, 8 report-only), and auto-calibration that rebalances weights at runtime. [Full study →](docs/STUDY.md) · [Trust & limitations](docs-site/benchmarking.md)
 
 ## Use cases
 
@@ -224,9 +224,9 @@ Project operations:
 
 If you want example findings before integrating, start with [docs-site/product/example-findings.md](docs-site/product/example-findings.md).
 
-## All 22 signals
+## All 23 signals
 
-Drift scores 22 signal families (15 scoring-active, 7 report-only) — from pattern fragmentation and architecture violations to temporal volatility, security-by-default checks, and co-change coupling. Each finding includes a severity, file location, and concrete next action.
+Drift scores 23 signal families (15 scoring-active, 8 report-only) — from pattern fragmentation and architecture violations to temporal volatility, security-by-default checks, and co-change coupling. Each finding includes a severity, file location, and concrete next action.
 
 `drift explain <SIGNAL>` shows what any signal detects and how to fix it.
 
@@ -283,7 +283,7 @@ Recommended guides:
 
 ## Trust and limitations
 
-> **Public claims safe to repeat today:** Drift is deterministic, benchmarked on 15 real-world repositories in the current study corpus, and uses 22 signal families (15 scoring-active, 7 report-only) with auto-calibration for runtime weight rebalancing and small-repo noise suppression.
+> **Public claims safe to repeat today:** Drift is deterministic, benchmarked on 15 real-world repositories in the current study corpus, and uses 23 signal families (15 scoring-active, 8 report-only) with auto-calibration for runtime weight rebalancing and small-repo noise suppression.
 >
 > **What's limited:** Benchmark validation is single-rater; not yet independently replicated. Small repos can be noisy. Temporal signals depend on clone depth. The composite score is orientation, not a verdict.
 >
