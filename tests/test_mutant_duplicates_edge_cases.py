@@ -17,9 +17,12 @@ from pathlib import Path
 
 import pytest
 
-from drift.models import FunctionInfo
+from drift.config import DriftConfig
+from drift.models import FunctionInfo, ParseResult
 from drift.signals.mutant_duplicates import (
+    MutantDuplicateSignal,
     _get_precomputed_ngrams,
+    _is_package_lazy_getattr,
     _jaccard,
     _structural_similarity,
 )
@@ -199,3 +202,114 @@ def test_similarity_threshold_in_valid_range():
     from drift.signals.mutant_duplicates import SIMILARITY_THRESHOLD
 
     assert 0.5 <= SIMILARITY_THRESHOLD <= 1.0
+
+
+# ── Package lazy __getattr__ suppression ───────────────────────────────────
+
+
+def _make_fn(
+    *,
+    name: str,
+    file_path: str,
+    body_hash: str,
+    ngrams: list[list[str]],
+) -> FunctionInfo:
+    return FunctionInfo(
+        name=name,
+        start_line=1,
+        end_line=7,
+        loc=7,
+        complexity=2,
+        file_path=Path(file_path),
+        language="python",
+        body_hash=body_hash,
+        ast_fingerprint={"ngrams": ngrams},
+    )
+
+
+def test_is_package_lazy_getattr_helper():
+    package_fn = _make_fn(
+        name="__getattr__",
+        file_path="pkg_a/__init__.py",
+        body_hash="h1",
+        ngrams=[["Name", "Load"], ["If", "Return"]],
+    )
+    module_fn = _make_fn(
+        name="__getattr__",
+        file_path="pkg_a/exports.py",
+        body_hash="h2",
+        ngrams=[["Name", "Load"], ["If", "Return"]],
+    )
+
+    assert _is_package_lazy_getattr(package_fn) is True
+    assert _is_package_lazy_getattr(module_fn) is False
+
+
+def test_analyze_skips_package_init_getattr_duplicates():
+    signal = MutantDuplicateSignal()
+    config = DriftConfig()
+    ngrams = [["Name", "Load"], ["If", "Return"], ["Raise", "NameError"]]
+
+    pr_a = ParseResult(
+        file_path=Path("pkg_a/__init__.py"),
+        language="python",
+        functions=[
+            _make_fn(
+                name="__getattr__",
+                file_path="pkg_a/__init__.py",
+                body_hash="lazy_hash",
+                ngrams=ngrams,
+            )
+        ],
+    )
+    pr_b = ParseResult(
+        file_path=Path("pkg_b/__init__.py"),
+        language="python",
+        functions=[
+            _make_fn(
+                name="__getattr__",
+                file_path="pkg_b/__init__.py",
+                body_hash="lazy_hash",
+                ngrams=ngrams,
+            )
+        ],
+    )
+
+    findings = signal.analyze([pr_a, pr_b], {}, config)
+    assert findings == []
+
+
+def test_analyze_keeps_non_init_getattr_duplicates_detectable():
+    signal = MutantDuplicateSignal()
+    config = DriftConfig()
+    ngrams = [["Name", "Load"], ["If", "Return"], ["Raise", "NameError"]]
+
+    pr_a = ParseResult(
+        file_path=Path("pkg_a/exports.py"),
+        language="python",
+        functions=[
+            _make_fn(
+                name="__getattr__",
+                file_path="pkg_a/exports.py",
+                body_hash="dup_hash",
+                ngrams=ngrams,
+            )
+        ],
+    )
+    pr_b = ParseResult(
+        file_path=Path("pkg_b/exports.py"),
+        language="python",
+        functions=[
+            _make_fn(
+                name="__getattr__",
+                file_path="pkg_b/exports.py",
+                body_hash="dup_hash",
+                ngrams=ngrams,
+            )
+        ],
+    )
+
+    findings = signal.analyze([pr_a, pr_b], {}, config)
+    assert len(findings) == 1
+    assert findings[0].severity.value == "high"
+    assert findings[0].metadata.get("group_size") == 2

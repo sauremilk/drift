@@ -66,6 +66,17 @@ _DUNDER_METHODS: frozenset[str] = frozenset({
 })
 
 
+def _is_package_lazy_getattr(fn: FunctionInfo) -> bool:
+    """Return True for the common package lazy-loading __getattr__ idiom.
+
+    PEP 562 enables package-level ``__getattr__`` in ``__init__.py``. Identical
+    implementations across packages are often intentional and should not inflate
+    duplicate findings by default.
+    """
+    bare_name = fn.name.rsplit(".", 1)[-1]
+    return bare_name == "__getattr__" and fn.file_path.name == "__init__.py"
+
+
 def _get_precomputed_ngrams(func: FunctionInfo) -> list[tuple[str, ...]] | None:
     """Retrieve pre-computed AST n-grams from FunctionInfo.ast_fingerprint."""
     raw = func.ast_fingerprint.get("ngrams")
@@ -179,6 +190,8 @@ class MutantDuplicateSignal(BaseSignal):
             if is_test_file(pr.file_path):
                 continue
             for fn in pr.functions:
+                if _is_package_lazy_getattr(fn):
+                    continue
                 # Strip class qualifier to get bare method name for dunder check
                 bare_name = fn.name.rsplit(".", 1)[-1]
                 if fn.loc >= 5 and fn.complexity >= 2 and bare_name not in _DUNDER_METHODS:

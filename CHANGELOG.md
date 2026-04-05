@@ -19,6 +19,7 @@
 
 ### Fixed
 
+- Prevent `mutant_duplicate` from flagging deliberate package-level lazy-loading `__getattr__` implementations in `__init__.py` as high-severity duplicates, while keeping non-package `__getattr__` duplicate detection active (#144).
 - Improve `test_polarity_deficit` negative assertion counting for expressive Python test styles (`assert not`, `assert ... is False/None`) and functional `pytest.raises`/`pytest.fail` usage to reduce happy-path-only false positives (#143).
 - Reduce HSC false positives for OAuth endpoint constants by excluding plain HTTP(S) endpoint URL literals (for example `TOKEN_URL`/`AUTH_URL`) while still detecting credential-bearing URLs (#161).
 - Align `scan --strategy diverse` with `analyze` priorities by guaranteeing a minimum top-impact share and exposing explicit `selection_diagnostics.top_impact_window` data when high-impact findings are deprioritized by strategy (#154).
