@@ -402,6 +402,7 @@ class ArchitectureViolationSignal(BaseSignal):
                                 f"{imp.source_file.name}:{imp.line_number}. "
                                 f"Route access through a service layer or interface."
                             ),
+                            rule_id="avs_policy_boundary",
                             metadata={
                                 "rule": boundary.name,
                                 "import": imp.imported_module,
@@ -495,6 +496,7 @@ class ArchitectureViolationSignal(BaseSignal):
                         file_path=Path(src),
                         start_line=line,
                         related_files=[Path(dst)],
+                        rule_id="avs_upward_import",
                         fix=(
                             f"Move {Path(dst).name} logic behind a service layer "
                             f"or abstraction interface that {Path(src).name} "
@@ -533,6 +535,7 @@ class ArchitectureViolationSignal(BaseSignal):
                     severity=Severity.MEDIUM,
                     score=0.6,
                     title=f"Circular dependency ({len(cycle)} modules)",
+                    rule_id="avs_circular_dep",
                     description=f"Cycle: {cycle_str}",
                     file_path=Path(cycle[0]),
                     related_files=[Path(p) for p in cycle[1:]],
@@ -585,6 +588,7 @@ class ArchitectureViolationSignal(BaseSignal):
                         f"High blast radius: {Path(node).name} "
                         f"({br} transitive dependents)"
                     ),
+                    rule_id="avs_blast_radius",
                     description=(
                         f"A change in {node} transitively affects {br} of "
                         f"{total} modules ({pct}%). This indicates tight "
@@ -694,6 +698,7 @@ class ArchitectureViolationSignal(BaseSignal):
                         f"Zone of Pain: {Path(node).name} "
                         f"(I={instability:.2f}, D={distance:.2f})"
                     ),
+                    rule_id="avs_zone_of_pain",
                     description=(
                         f"{node} is concrete (A={abstraction:.2f}) and stable "
                         f"(I={instability:.2f}) with {ca} dependents. "
@@ -767,6 +772,7 @@ class ArchitectureViolationSignal(BaseSignal):
                     severity=Severity.MEDIUM if score < 0.6 else Severity.HIGH,
                     score=score,
                     title=f"God module candidate: {Path(node).name}",
+                    rule_id="avs_god_module",
                     description=(
                         f"{node} has high coupling (Ca={ca}, Ce={ce}, total={total}) "
                         f"and blast radius {br}. This concentration of responsibilities "
@@ -843,6 +849,7 @@ class ArchitectureViolationSignal(BaseSignal):
                     title=(
                         f"Unstable dependency: {Path(src).name} -> {Path(dst).name}"
                     ),
+                    rule_id="avs_unstable_dep",
                     description=(
                         f"Stable module {src} (I={src_i:.2f}, Ca={src_ca}) depends on "
                         f"unstable/volatile module {dst} (I={dst_i:.2f}, "
@@ -904,6 +911,7 @@ class ArchitectureViolationSignal(BaseSignal):
                         f"{Path(pair.file_b).name} "
                         f"({pair.co_change_count} co-changes)"
                     ),
+                    rule_id="avs_co_change",
                     description=(
                         f"{pair.file_a} and {pair.file_b} changed together in "
                         f"{pair.co_change_count} commits "

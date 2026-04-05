@@ -1,5 +1,23 @@
 # Risk Register
 
+## 2026-04-05 - MAZ, AVS, EDS signal quality improvements (Issues #148, #149, #150, #151)
+
+- Risk ID: RISK-SIG-2026-04-05-148-151
+- Components: src/drift/signals/missing_authorization.py, src/drift/signals/architecture_violation.py, src/drift/signals/explainability_deficit.py, src/drift/models.py, src/drift/api_helpers.py, src/drift/config.py
+- Type: Signal quality (precision, severity calibration, location completeness, sub-signal attribution)
+- Description: Four signal quality issues addressed in a single batch:
+  - #148: MAZ flagged intentionally public endpoints (anon, public, security_txt, etc.) and dev-tool paths as missing authorization. Estimated precision ~20%.
+  - #149: Multiple signals produced findings with null start_line, making agent-driven fix workflows impossible.
+  - #150: AVS scan output conflated co-change coupling, circular deps, blast radius, and other sub-checks under a single "AVS" signal abbreviation with no rule_id disambiguation.
+  - #151: EDS severity was not calibrated to actual function complexity/LOC — trivial getters received the same HIGH rating as complex algorithms.
+- Mitigations:
+  - #148: Expanded default maz_public_endpoint_allowlist (+25 patterns: public, anon, security_txt, pricing, manifest, etc.) and added dev-tool path heuristic (maz_dev_tool_paths config with 7 defaults).
+  - #149: Added start_line=1 fallback in Finding.__post_init__ when file_path is set but start_line is None, ensuring all findings have machine-readable location data.
+  - #150: Added explicit rule_id to each AVS sub-check (avs_policy_boundary, avs_upward_import, avs_circular_dep, avs_blast_radius, avs_zone_of_pain, avs_god_module, avs_unstable_dep, avs_co_change). Exposed rule_id in concise scan output format.
+  - #151: Added LOC-based dampening (loc_factor = loc/30) and private function visibility dampening (0.7×) to EDS severity calculation.
+- Verification: 1903+ tests passed (excluding 1 pre-existing MCP schema type failure). New regression tests for MAZ allowlist, dev-tool path, and non-dev-path behavior.
+- Residual risk: Low; allowlist-based pattern matching may need further tuning for unusual naming conventions.
+
 ## 2026-04-05 - HSC OAuth endpoint URL false-positive mitigation (Issue #161)
 
 - Risk ID: RISK-SIG-2026-04-05-161

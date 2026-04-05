@@ -169,6 +169,16 @@ class ExplainabilityDeficitSignal(BaseSignal):
             complexity_factor = min(1.0, func.complexity / 20)
             weighted_score = deficit * complexity_factor
 
+            # Dampen severity for short/simple functions (#151):
+            # Functions with low LOC are less likely to hide critical debt.
+            loc_factor = min(1.0, func.loc / 30)
+            # Private functions (underscore-prefixed) are less critical
+            # for external consumers to understand.
+            is_private = base_name.startswith("_")
+            visibility_factor = 0.7 if is_private else 1.0
+            # Combine complexity-weighted deficit with LOC and visibility.
+            weighted_score = weighted_score * (0.7 + 0.3 * loc_factor) * visibility_factor
+
             if weighted_score < 0.3:
                 continue
 

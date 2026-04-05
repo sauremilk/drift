@@ -221,6 +221,10 @@ class Finding:
     def __post_init__(self) -> None:
         if self.rule_id is None:
             self.rule_id = self.signal_type.value
+        # Ensure machine-readable location is always populated when a file
+        # is known — agents cannot parse file paths from free-text fields.
+        if self.file_path is not None and self.start_line is None:
+            self.start_line = 1
 
 
 @dataclass

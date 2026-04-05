@@ -407,3 +407,44 @@ class TestMAZEdgeCases:
         signal = MissingAuthorizationSignal()
         findings = signal.analyze([pr], {}, config)
         assert len(findings) == 0
+
+    def test_public_endpoint_allowlisted_by_default(self) -> None:
+        """Endpoints with 'public' or 'anon' in name should be allowlisted (#148)."""
+        names = ["get_public_prices", "create_anon_session", "anon_coach", "security_txt"]
+        for name in names:
+            pr = ParseResult(
+                file_path=Path("api.py"),
+                language="python",
+                functions=[_func(name, "api.py", 10)],
+                imports=[_imp("api.py", "fastapi")],
+                patterns=[_endpoint_pattern(name, "api.py", 10)],
+            )
+            signal = MissingAuthorizationSignal()
+            findings = signal.analyze([pr], {}, DriftConfig())
+            assert len(findings) == 0, f"'{name}' should be allowlisted by default"
+
+    def test_dev_tool_path_skipped(self) -> None:
+        """Endpoints in dev/internal tool directories should be skipped (#148)."""
+        pr = ParseResult(
+            file_path=Path("internal/tools/api.py"),
+            language="python",
+            functions=[_func("run_pipeline", "internal/tools/api.py", 10)],
+            imports=[_imp("internal/tools/api.py", "fastapi")],
+            patterns=[_endpoint_pattern("run_pipeline", "internal/tools/api.py", 10)],
+        )
+        signal = MissingAuthorizationSignal()
+        findings = signal.analyze([pr], {}, DriftConfig())
+        assert len(findings) == 0
+
+    def test_non_dev_path_still_flagged(self) -> None:
+        """Endpoints in production paths should still be flagged."""
+        pr = ParseResult(
+            file_path=Path("src/api/routes.py"),
+            language="python",
+            functions=[_func("delete_user", "src/api/routes.py", 10)],
+            imports=[_imp("src/api/routes.py", "fastapi")],
+            patterns=[_endpoint_pattern("delete_user", "src/api/routes.py", 10)],
+        )
+        signal = MissingAuthorizationSignal()
+        findings = signal.analyze([pr], {}, DriftConfig())
+        assert len(findings) == 1

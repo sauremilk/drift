@@ -79,6 +79,7 @@ def _finding_concise(f: Any) -> dict[str, Any]:
     return {
         "signal": signal_abbrev(f.signal_type),
         "signal_type": f.signal_type.value,
+        "rule_id": f.rule_id,
         "severity": f.severity.value,
         "title": f.title,
         "file": f.file_path.as_posix() if f.file_path else None,

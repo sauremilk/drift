@@ -1,5 +1,16 @@
 # FMEA Matrix
 
+## 2026-04-05 - MAZ, AVS, EDS signal quality batch (Issues #148, #149, #150, #151)
+
+| Signal | Failure Mode | Cause | Effect | Detection | Mitigation | S | O | D | RPN |
+|---|---|---|---|---|---|---:|---:|---:|---:|
+| MAZ | FP: intentionally public endpoints flagged as missing auth | Allowlist too narrow — common public patterns (anon, pricing, security_txt) not covered; dev-tool paths not excluded | ~20% precision, triage noise, trust erosion | Quality audit benchmark + new regression tests | Expanded allowlist (+25 patterns) + dev-tool path heuristic (7 defaults) | 6 | 6 | 3 | 108 |
+| MAZ | FN: real auth gap missed due to expanded allowlist | Over-broad substring matching could suppress genuine missing-auth endpoints | Delayed remediation for true auth gaps | Regression test: non-dev-path still flagged | Conservative substring matching, keep finding emitted, metadata for auditability | 7 | 2 | 5 | 70 |
+| EDS | FP-severity: trivial getters rated HIGH same as complex algorithms | No LOC or visibility weighting — severity derived from raw complexity ratio only | LOW-complexity findings clutter HIGH-priority triage | Field comparison across benchmark repos | LOC-based dampening (loc/30) + private-function visibility dampening (0.7×) | 5 | 5 | 3 | 75 |
+| EDS | FN-severity: meaningful private complex function under-ranked | Private visibility factor always 0.7× even for high-complexity functions | Delayed remediation for complex private code | Test: complexity-20 private function still emitted as HIGH | Visibility dampening is mild (0.7×), only reduces not suppresses | 5 | 2 | 5 | 50 |
+| AVS | Attribution: all sub-checks conflated under "AVS" abbreviation | No rule_id on 8 AVS sub-checks (boundary, upward-import, circular-dep, etc.) | Impossible to filter or distinguish sub-signals in scan output | Quality audit issue #150 | Added explicit rule_id per sub-check, exposed in concise output | 4 | 7 | 2 | 56 |
+| All | Location gap: findings with null start_line | Signals emit findings without start_line when AST node unavailable | Agent fix workflows cannot navigate to finding location | Automated field check across all 9 signal files | Finding.__post_init__ fallback: start_line=1 when file_path is set | 4 | 5 | 2 | 40 |
+
 ## 2026-04-05 - HSC OAuth endpoint URL false positives (Issue #161)
 
 | Signal | Failure Mode | Cause | Effect | Detection | Mitigation | S | O | D | RPN |

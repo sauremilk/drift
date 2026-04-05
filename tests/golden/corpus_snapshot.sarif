@@ -1046,7 +1046,7 @@
           "ruleId": "explainability_deficit"
         },
         {
-          "level": "warning",
+          "level": "note",
           "locations": [
             {
               "physicalLocation": {

@@ -84,6 +84,47 @@ class ThresholdsConfig(BaseModel):
             "robots",
             "sitemap",
             "schema",
+            # Common intentionally-public endpoints (#148)
+            "public",
+            "anon",
+            "anonymous",
+            "root",
+            "index",
+            "manifest",
+            "version",
+            "status",
+            "info",
+            "pricing",
+            "price",
+            "security_txt",
+            "wellknown",
+            "well_known",
+            "callback",
+            "webhook",
+            "csrf",
+            "csp_report",
+            "invite",
+            "unsubscribe",
+            "confirm",
+            "verify_email",
+            "reset_password",
+            "register",
+            "signup",
+            "login",
+            "logout",
+            "oauth",
+            "sso",
+        ]
+    )
+    maz_dev_tool_paths: list[str] = Field(
+        default_factory=lambda: [
+            "debug",
+            "internal",
+            "dev",
+            "devtools",
+            "playground",
+            "_debug",
+            "__debug__",
         ]
     )
 

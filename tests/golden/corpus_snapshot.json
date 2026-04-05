@@ -16,7 +16,7 @@
     "high_count": 47
   },
   "context_tagged_count": 0,
-  "drift_score": 0.516,
+  "drift_score": 0.515,
   "finding_context_policy": {
     "counts": {
       "library": 13,
@@ -1313,7 +1313,7 @@
       "file": "src/myapp/processors/validator.py",
       "finding_context": "production",
       "fix": "Function process_registration (complexity 10): add Docstring, Tests, Return-Type.",
-      "impact": 0.0457,
+      "impact": 0.0434,
       "impact_rank": 34,
       "metadata": {
         "complexity": 10,
@@ -1333,9 +1333,9 @@
         "title": "Document 'process_registration'"
       },
       "rule_id": "explainability_deficit",
-      "score": 0.5,
-      "score_contribution": 0.0516,
-      "severity": "medium",
+      "score": 0.475,
+      "score_contribution": 0.049,
+      "severity": "low",
       "signal": "explainability_deficit",
       "signal_abbrev": "EDS",
       "start_line": 4,
@@ -1367,7 +1367,7 @@
       "severity": "high",
       "signal": "guard_clause_deficit",
       "signal_abbrev": "GCD",
-      "start_line": null,
+      "start_line": 1,
       "symbol": null,
       "title": "Guard clause deficit in src/myapp/processors/"
     },
@@ -1487,7 +1487,7 @@
       "severity": "medium",
       "signal": "test_polarity_deficit",
       "signal_abbrev": "TPD",
-      "start_line": null,
+      "start_line": 1,
       "symbol": null,
       "title": "Happy-path-only test suite in tests/"
     },
@@ -1598,7 +1598,7 @@
       "severity": "low",
       "signal": "doc_impl_drift",
       "signal_abbrev": "DIA",
-      "start_line": null,
+      "start_line": 1,
       "symbol": null,
       "title": "README references missing directory: connectors/"
     },
@@ -1625,7 +1625,7 @@
       "severity": "low",
       "signal": "doc_impl_drift",
       "signal_abbrev": "DIA",
-      "start_line": null,
+      "start_line": 1,
       "symbol": null,
       "title": "README references missing directory: handlers/"
     },
@@ -1652,7 +1652,7 @@
       "severity": "low",
       "signal": "doc_impl_drift",
       "signal_abbrev": "DIA",
-      "start_line": null,
+      "start_line": 1,
       "symbol": null,
       "title": "README references missing directory: middleware/"
     },
@@ -1679,7 +1679,7 @@
       "severity": "low",
       "signal": "doc_impl_drift",
       "signal_abbrev": "DIA",
-      "start_line": null,
+      "start_line": 1,
       "symbol": null,
       "title": "README references missing directory: models/"
     },
@@ -1706,7 +1706,7 @@
       "severity": "low",
       "signal": "doc_impl_drift",
       "signal_abbrev": "DIA",
-      "start_line": null,
+      "start_line": 1,
       "symbol": null,
       "title": "README references missing directory: myapp/"
     },
@@ -1733,7 +1733,7 @@
       "severity": "low",
       "signal": "doc_impl_drift",
       "signal_abbrev": "DIA",
-      "start_line": null,
+      "start_line": 1,
       "symbol": null,
       "title": "README references missing directory: utils/"
     },
@@ -1760,7 +1760,7 @@
       "severity": "low",
       "signal": "doc_impl_drift",
       "signal_abbrev": "DIA",
-      "start_line": null,
+      "start_line": 1,
       "symbol": null,
       "title": "README references missing directory: views/"
     },
@@ -2832,12 +2832,12 @@
       "duplicate_count": 1,
       "file": "src/myapp/processors/validator.py",
       "finding_context": "production",
-      "impact": 0.0457,
+      "impact": 0.0434,
       "next_step": "Document 'process_registration'",
       "rank": 34,
       "rule_id": "explainability_deficit",
-      "score_contribution": 0.0516,
-      "severity": "medium",
+      "score_contribution": 0.049,
+      "severity": "low",
       "signal": "explainability_deficit",
       "signal_abbrev": "EDS",
       "start_line": 4,
@@ -2855,7 +2855,7 @@
       "severity": "high",
       "signal": "guard_clause_deficit",
       "signal_abbrev": "GCD",
-      "start_line": null,
+      "start_line": 1,
       "title": "Guard clause deficit in src/myapp/processors/"
     },
     {
@@ -2915,7 +2915,7 @@
       "severity": "medium",
       "signal": "test_polarity_deficit",
       "signal_abbrev": "TPD",
-      "start_line": null,
+      "start_line": 1,
       "title": "Happy-path-only test suite in tests/"
     },
     {
@@ -2975,7 +2975,7 @@
       "severity": "low",
       "signal": "doc_impl_drift",
       "signal_abbrev": "DIA",
-      "start_line": null,
+      "start_line": 1,
       "title": "README references missing directory: connectors/"
     },
     {
@@ -2990,7 +2990,7 @@
       "severity": "low",
       "signal": "doc_impl_drift",
       "signal_abbrev": "DIA",
-      "start_line": null,
+      "start_line": 1,
       "title": "README references missing directory: handlers/"
     },
     {
@@ -3005,7 +3005,7 @@
       "severity": "low",
       "signal": "doc_impl_drift",
       "signal_abbrev": "DIA",
-      "start_line": null,
+      "start_line": 1,
       "title": "README references missing directory: middleware/"
     },
     {
@@ -3020,7 +3020,7 @@
       "severity": "low",
       "signal": "doc_impl_drift",
       "signal_abbrev": "DIA",
-      "start_line": null,
+      "start_line": 1,
       "title": "README references missing directory: models/"
     },
     {
@@ -3035,7 +3035,7 @@
       "severity": "low",
       "signal": "doc_impl_drift",
       "signal_abbrev": "DIA",
-      "start_line": null,
+      "start_line": 1,
       "title": "README references missing directory: myapp/"
     },
     {
@@ -3050,7 +3050,7 @@
       "severity": "low",
       "signal": "doc_impl_drift",
       "signal_abbrev": "DIA",
-      "start_line": null,
+      "start_line": 1,
       "title": "README references missing directory: utils/"
     },
     {
@@ -3065,7 +3065,7 @@
       "severity": "low",
       "signal": "doc_impl_drift",
       "signal_abbrev": "DIA",
-      "start_line": null,
+      "start_line": 1,
       "title": "README references missing directory: views/"
     },
     {
@@ -3451,13 +3451,13 @@
     },
     {
       "ai_ratio": 0.0,
-      "drift_score": 0.472,
+      "drift_score": 0.468,
       "finding_count": 10,
       "path": "src/myapp/processors",
       "severity": "medium",
       "signal_scores": {
         "cognitive_complexity": 0.5357,
-        "explainability_deficit": 0.4721,
+        "explainability_deficit": 0.4673,
         "guard_clause_deficit": 0.4698
       }
     },
