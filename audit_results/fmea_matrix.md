@@ -1,5 +1,12 @@
 # FMEA Matrix
 
+## 2026-04-05 - HSC OpenTelemetry GenAI semconv false positives (Issue #175)
+
+| Signal | Failure Mode | Cause | Effect | Detection | Mitigation | S | O | D | RPN |
+|---|---|---|---|---|---|---:|---:|---:|---:|
+| HSC | FP: OpenTelemetry GenAI metric/attribute constants are flagged as hardcoded secrets | Variable-name heuristic matches `token` in telemetry symbols (`INPUT_TOKENS`), while literal values are semantic-convention keys (for example `gen_ai.usage.input_tokens`) | High-severity triage noise in observability modules and reduced confidence in HSC precision | Field test on microsoft/agent-framework + targeted HSC regressions | Suppress OpenTelemetry GenAI semantic-convention literals (`gen_ai.*`) before generic fallback detection while keeping known-prefix secret checks first | 6 | 6 | 4 | 144 |
+| HSC | FN: real credentials could be under-reported if they resemble semconv literals | New semconv suppression could hide unusual dotted lowercase literals under secret-shaped variables | Rare credential leakage may be delayed | Regression verifies known-prefix secrets remain detectable before suppression | Keep suppression narrow to `gen_ai.<segment>.<segment...>` pattern, preserve high-confidence prefix detection ordering, monitor field deltas | 5 | 2 | 6 | 60 |
+
 ## 2026-04-05 - AVS/ECM/TPD Recall-Härtung auf Groß-Repositories (Issue #170)
 
 | Signal | Failure Mode | Cause | Effect | Detection | Mitigation | S | O | D | RPN |

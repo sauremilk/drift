@@ -23,6 +23,7 @@
 
 ### Fixed
 
+- Reduce HSC false positives for OpenTelemetry GenAI observability constants by excluding semantic-convention literals (for example `gen_ai.usage.input_tokens`) while still preserving known-prefix secret detection (#175).
 - Suppress DIA missing-README finding for bootstrap-sized repositories (≤1 parsed Python file or only `__init__.py` skeletons) to avoid false positives on newly scaffolded projects.
 - Reduce token-heavy duplication in `drift export-context` by grouping remediation-equivalent anti-pattern findings per signal/remediation across `instructions`, `prompt`, and `raw` output formats, while preserving forbidden-pattern variants for traceability (#174).
 - Stabilize CI regression tests by aligning the `tpd_boundary_tp` fixture with its zero-negative-assertion expectation and using neutral `services/worker_*` filenames in the PFS medium-threshold test to avoid framework-surface dampening side effects.

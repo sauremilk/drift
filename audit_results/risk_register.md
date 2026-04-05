@@ -1,5 +1,22 @@
 # Risk Register
 
+## 2026-04-05 - HSC OpenTelemetry GenAI semconv false-positive mitigation (Issue #175)
+
+- Risk ID: RISK-SIG-2026-04-05-175
+- Component: src/drift/signals/hardcoded_secret.py
+- Type: Signal quality (false positives / precision calibration)
+- Description: HSC flagged OpenTelemetry GenAI observability constants (for example `INPUT_TOKENS = "gen_ai.usage.input_tokens"`) as hardcoded secrets because `token` in symbol names triggered the secret-variable heuristic.
+- Trigger examples:
+  - microsoft/agent-framework: `python/packages/core/agent_framework/observability.py` with GenAI metrics constants.
+  - Similar repositories using OpenTelemetry GenAI semantic-convention keys (`gen_ai.*`) in constants.
+- Impact: High-severity false positives in telemetry modules, reduced trust in HSC precision, and avoidable remediation churn.
+- Mitigation:
+  - Added conservative suppression for OpenTelemetry GenAI semantic-convention literals (`gen_ai.<segment>.<segment...>`).
+  - Preserved high-confidence secret detection ordering (known prefixes are evaluated before suppression).
+  - Added targeted regressions in `tests/test_hardcoded_secret.py` for non-detection of semconv constants and continued detection of known-prefix secrets.
+- Verification: `python -m pytest tests/test_hardcoded_secret.py -q --maxfail=1`
+- Residual risk: Low-medium; rare credential strings mimicking `gen_ai.*` key format may be under-reported, but suppression scope is intentionally narrow and known-prefix checks remain active.
+
 ## 2026-04-05 - Scan/Analyze Cross-Validation Felder im Scan-Output (Issue #171)
 
 - Risk ID: RISK-OUT-2026-04-05-171

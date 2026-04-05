@@ -408,6 +408,34 @@ class TestHSCTrueNegatives:
         assert len(findings) == 1
         assert findings[0].rule_id == "hardcoded_api_token"
 
+    def test_otel_genai_metric_constants_not_flagged(self, tmp_path: Path) -> None:
+        _write_source(
+            tmp_path,
+            "observability.py",
+            '''\
+            INPUT_TOKENS = "gen_ai.usage.input_tokens"
+            OUTPUT_TOKENS = "gen_ai.usage.output_tokens"
+            ''',
+        )
+        signal = HardcodedSecretSignal(repo_path=tmp_path)
+        findings = signal.analyze([_make_pr("observability.py")], {}, DriftConfig())
+        assert len(findings) == 0
+
+    def test_otel_semconv_suppression_does_not_hide_real_secret_prefix(
+        self, tmp_path: Path
+    ) -> None:
+        _write_source(
+            tmp_path,
+            "observability.py",
+            '''\
+            INPUT_TOKENS = "ghp_ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefgh"
+            ''',
+        )
+        signal = HardcodedSecretSignal(repo_path=tmp_path)
+        findings = signal.analyze([_make_pr("observability.py")], {}, DriftConfig())
+        assert len(findings) == 1
+        assert findings[0].rule_id == "hardcoded_api_token"
+
 
 # ---------------------------------------------------------------------------
 # Edge cases

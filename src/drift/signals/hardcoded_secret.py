@@ -102,6 +102,8 @@ _ML_TOKENIZER_SYMBOL_NAMES: frozenset[str] = frozenset({
 
 _SYMBOL_DECLARATION_RE = re.compile(r"^[A-Za-z_][A-Za-z0-9_:-]{2,}$")
 
+_OTEL_GENAI_SEMCONV_RE = re.compile(r"^gen_ai\.[a-z0-9_]+(?:\.[a-z0-9_]+)+$")
+
 _ENUM_BASE_NAMES: frozenset[str] = frozenset({
     "Enum",
     "StrEnum",
@@ -273,6 +275,13 @@ def _is_ml_tokenizer_context_literal(var_name: str, string_val: str) -> bool:
     return bool(re.match(r"^\[[^\]]+\]$", string_val))
 
 
+def _is_otel_semconv_literal(string_val: str) -> bool:
+    """Return True for OpenTelemetry semantic-convention keys, not secrets."""
+    if len(string_val) > 128 or " " in string_val:
+        return False
+    return bool(_OTEL_GENAI_SEMCONV_RE.match(string_val))
+
+
 @register_signal
 class HardcodedSecretSignal(BaseSignal):
     """Detect hardcoded secrets and credentials in source code."""
@@ -440,6 +449,11 @@ class HardcodedSecretSignal(BaseSignal):
         # ML tokenizer metadata (pad_token/chat_template/tokenizer_class_name)
         # uses "token" as NLP terminology, not credential material.
         if _is_ml_tokenizer_context_literal(var_name, string_val):
+            return None
+
+        # OpenTelemetry semantic-convention constants are telemetry metadata,
+        # not credential material (for example gen_ai.usage.input_tokens).
+        if _is_otel_semconv_literal(string_val):
             return None
 
         # Check for placeholder values.

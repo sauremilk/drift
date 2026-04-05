@@ -1,5 +1,20 @@
 # Fault Tree Analysis
 
+## 2026-04-05 - HSC OpenTelemetry GenAI semconv false positives (Issue #175)
+
+### FT-1: False positives on OpenTelemetry GenAI semconv constants
+- Top event: HSC emits hardcoded-secret findings for observability constants (for example `INPUT_TOKENS`).
+- Branch A: Variable-name heuristic matches `token` in metric constant symbol names.
+- Branch B: Literal value is a semantic-convention key (`gen_ai.usage.input_tokens`) and not credential material.
+- Branch C: Generic fallback path treats non-trivial string literals in secret-shaped variables as suspicious.
+- Mitigation implemented: Add narrow suppression for OpenTelemetry GenAI semantic-convention literals (`gen_ai.*`) before generic fallback finding emission.
+
+### FT-2: Under-reporting risk after semconv suppression
+- Top event: Real credential literal may be missed when assigned to token-shaped observability symbols.
+- Branch A: New semconv suppression path is active.
+- Branch B: Credential-like value might resemble structured dotted literal format.
+- Mitigation implemented: Keep high-confidence known-prefix detection (`ghp_`, `sk-`, `AKIA`, etc.) before semconv suppression and constrain suppression to conservative `gen_ai.<segment>.<segment...>` pattern.
+
 ## 2026-04-05 - AVS/ECM/TPD Recall-Härtung auf Groß-Repositories (Issue #170)
 
 ### FT-1: AVS interne Kanten gehen bei relativen Imports verloren
