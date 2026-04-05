@@ -28,6 +28,7 @@
 - Standardize drift score precision to 3 decimal places across all surfaces (copilot-context, export-context, API, raw JSON) to eliminate score inconsistency between commands (#124).
 - Fix MCP schema `--schema` output leaking `type: "Annotated"` for all parameters instead of actual JSON Schema types (`string`, `integer`, `boolean`) by properly unwrapping `typing.Annotated` wrappers (#126).
 - Negative context generators now use actual variable names, endpoint names, and file:line references from findings instead of generic template code in DO NOT / INSTEAD examples (#127).
+- Sync `CITATION.cff` version and date to current release (`2.4.4`, `2026-04-05`); add automated CITATION.cff update step to release workflow so future releases stay synchronized (#137).
 - Unblock CI by making MCP thread-offloaded tool returns explicit `str` for mypy across Python 3.11-3.13 and excluding known secret-like test fixtures (`tests/test_insecure_default.py`, `tests/golden/corpus_snapshot.json`) plus template-heavy `src/drift/negative_context.py` from detect-secrets hook false positives.
 - Reduce DIA false positives by requiring structural context for plain markdown slash-tokens (e.g. `async/`, `scan/`, `connectors/`) before emitting missing-directory findings, while preserving explicit path references in code spans/backticks (#121).
 - Add trailing newlines in CSV formatter and CSV tests to satisfy lint gate requirements and keep pre-push checks green.

@@ -66,6 +66,19 @@ jobs:
           "version=$version" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
           "tag=$tag" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
 
+      - name: Update CITATION.cff version
+        if: steps.release.outputs.released == 'true'
+        shell: powershell
+        run: |
+          $version = "${{ steps.release.outputs.version }}"
+          $date = Get-Date -Format "yyyy-MM-dd"
+          $content = Get-Content CITATION.cff -Raw
+          $content = $content -replace 'version: "[^"]*"', "version: `"$version`""
+          $content = $content -replace 'date-released: "[^"]*"', "date-released: `"$date`""
+          Set-Content CITATION.cff $content -NoNewline
+          git add CITATION.cff
+          git commit --amend --no-edit
+
       - name: Push release commit and tag
         if: steps.release.outputs.released == 'true'
         shell: powershell
