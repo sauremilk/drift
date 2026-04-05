@@ -29,6 +29,8 @@ def test_fix_plan_help() -> None:
     assert result.exit_code == 0
     assert "automation-fit-min" in result.output
     assert "--target-path" in result.output
+    assert "--exclude" in result.output
+    assert "--include-deferred" in result.output
 
 
 def test_validate_outputs_json(tmp_path: Path) -> None:
@@ -192,6 +194,56 @@ def test_fix_plan_target_path_filters(monkeypatch) -> None:
     )
     assert result.exit_code == 0
     assert captured.get("target_path") == "src/drift"
+
+
+def test_fix_plan_exclude_paths_pass_through(monkeypatch) -> None:
+    """fix-plan CLI passes repeated --exclude paths as a list."""
+    import drift.commands.fix_plan as fp_module
+
+    captured: dict = {}
+
+    def fake_fix_plan(*args, **kwargs):
+        captured.update(kwargs)
+        return {"schema_version": "2.0", "tasks": [], "task_count": 0}
+
+    monkeypatch.setattr(fp_module, "api_fix_plan", fake_fix_plan)
+
+    runner = CliRunner()
+    result = runner.invoke(
+        main,
+        [
+            "fix-plan",
+            "--repo",
+            ".",
+            "--exclude",
+            "backend/api/routers/billing.py",
+            "--exclude",
+            "backend/api/routers/strategy.py",
+        ],
+    )
+    assert result.exit_code == 0
+    assert captured.get("exclude_paths") == [
+        "backend/api/routers/billing.py",
+        "backend/api/routers/strategy.py",
+    ]
+
+
+def test_fix_plan_include_deferred_pass_through(monkeypatch) -> None:
+    """fix-plan CLI passes --include-deferred through to the API."""
+    import drift.commands.fix_plan as fp_module
+
+    captured: dict = {}
+
+    def fake_fix_plan(*args, **kwargs):
+        captured.update(kwargs)
+        return {"schema_version": "2.0", "tasks": [], "task_count": 0}
+
+    monkeypatch.setattr(fp_module, "api_fix_plan", fake_fix_plan)
+
+    runner = CliRunner()
+    result = runner.invoke(main, ["fix-plan", "--repo", ".", "--include-deferred"])
+    assert result.exit_code == 0
+    assert captured.get("include_deferred") is True
 
 
 # ---------------------------------------------------------------------------

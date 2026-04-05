@@ -361,6 +361,14 @@ async def drift_fix_plan(
         str | None,
         Field(description="Restrict tasks to findings inside this subdirectory."),
     ] = None,
+    exclude_paths: Annotated[
+        list[str] | None,
+        Field(description="Exclude findings inside these subdirectories."),
+    ] = None,
+    include_deferred: Annotated[
+        bool,
+        Field(description="Include findings marked deferred in drift config."),
+    ] = False,
     include_non_operational: Annotated[
         bool,
         Field(
@@ -383,6 +391,8 @@ async def drift_fix_plan(
         max_tasks: Maximum tasks to return (default: 5).
         automation_fit_min: Minimum automation fitness: "low", "medium", or "high".
         target_path: Restrict tasks to findings inside this subpath.
+        exclude_paths: Exclude findings inside one or more subpaths.
+        include_deferred: Include findings tagged deferred by config.
         include_non_operational: Include non-operational contexts in prioritized tasks.
     """
 
@@ -397,6 +407,8 @@ async def drift_fix_plan(
                     max_tasks=max_tasks,
                     automation_fit_min=automation_fit_min,
                     target_path=target_path,
+                    exclude_paths=exclude_paths,
+                    include_deferred=include_deferred,
                     include_non_operational=include_non_operational,
                 )
             return json.dumps(result, default=str)

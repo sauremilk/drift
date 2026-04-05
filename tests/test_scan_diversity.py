@@ -457,6 +457,194 @@ class TestNonOperationalContextFiltering:
         assert result["tasks"][0]["id"] == "avs-prod"
         assert result["finding_context"]["excluded_from_fix_plan"] == 1
 
+    def test_fix_plan_excludes_deferred_by_default(self, monkeypatch):
+        import drift.analyzer as analyzer_module
+        import drift.api as api_module
+        from drift.api import fix_plan
+
+        deferred_finding = _make_finding(
+            AVS,
+            0.8,
+            0.8,
+            file="backend/api/routers/billing.py",
+            line=12,
+        )
+        deferred_finding.deferred = True
+
+        active_finding = _make_finding(
+            PFS,
+            0.7,
+            0.7,
+            file="src/core/service.py",
+            line=8,
+        )
+        active_finding.deferred = False
+
+        analysis = SimpleNamespace(
+            findings=[deferred_finding, active_finding],
+            drift_score=0.41,
+            severity=Severity.MEDIUM,
+            total_files=5,
+            total_functions=10,
+            ai_attributed_ratio=0.0,
+            trend=None,
+        )
+        tasks = [
+            AgentTask(
+                id="avs-deferred",
+                signal_type=SignalType.ARCHITECTURE_VIOLATION,
+                severity=Severity.HIGH,
+                priority=1,
+                title=deferred_finding.title,
+                description="desc",
+                action="action",
+                file_path="backend/api/routers/billing.py",
+                metadata={"finding_context": "production"},
+            ),
+            AgentTask(
+                id="pfs-active",
+                signal_type=SignalType.PATTERN_FRAGMENTATION,
+                severity=Severity.HIGH,
+                priority=2,
+                title=active_finding.title,
+                description="desc",
+                action="action",
+                file_path="src/core/service.py",
+                metadata={"finding_context": "production"},
+            ),
+        ]
+
+        monkeypatch.setattr(DriftConfig, "load", staticmethod(lambda *a, **kw: DriftConfig()))
+        monkeypatch.setattr(analyzer_module, "analyze_repo", lambda *a, **kw: analysis)
+        monkeypatch.setattr(
+            "drift.output.agent_tasks.analysis_to_agent_tasks",
+            lambda *a, **kw: tasks,
+        )
+        monkeypatch.setattr(api_module, "_emit_api_telemetry", lambda **kw: None)
+
+        result = fix_plan(Path("."), max_tasks=5)
+        assert result["task_count"] == 1
+        assert result["tasks"][0]["id"] == "pfs-active"
+
+    def test_fix_plan_include_deferred_opt_in(self, monkeypatch):
+        import drift.analyzer as analyzer_module
+        import drift.api as api_module
+        from drift.api import fix_plan
+
+        deferred_finding = _make_finding(
+            AVS,
+            0.8,
+            0.8,
+            file="backend/api/routers/billing.py",
+            line=12,
+        )
+        deferred_finding.deferred = True
+
+        active_finding = _make_finding(
+            PFS,
+            0.7,
+            0.7,
+            file="src/core/service.py",
+            line=8,
+        )
+        active_finding.deferred = False
+
+        analysis = SimpleNamespace(
+            findings=[deferred_finding, active_finding],
+            drift_score=0.41,
+            severity=Severity.MEDIUM,
+            total_files=5,
+            total_functions=10,
+            ai_attributed_ratio=0.0,
+            trend=None,
+        )
+        tasks = [
+            AgentTask(
+                id="avs-deferred",
+                signal_type=SignalType.ARCHITECTURE_VIOLATION,
+                severity=Severity.HIGH,
+                priority=1,
+                title=deferred_finding.title,
+                description="desc",
+                action="action",
+                file_path="backend/api/routers/billing.py",
+                metadata={"finding_context": "production"},
+            ),
+            AgentTask(
+                id="pfs-active",
+                signal_type=SignalType.PATTERN_FRAGMENTATION,
+                severity=Severity.HIGH,
+                priority=2,
+                title=active_finding.title,
+                description="desc",
+                action="action",
+                file_path="src/core/service.py",
+                metadata={"finding_context": "production"},
+            ),
+        ]
+
+        monkeypatch.setattr(DriftConfig, "load", staticmethod(lambda *a, **kw: DriftConfig()))
+        monkeypatch.setattr(analyzer_module, "analyze_repo", lambda *a, **kw: analysis)
+        monkeypatch.setattr(
+            "drift.output.agent_tasks.analysis_to_agent_tasks",
+            lambda *a, **kw: tasks,
+        )
+        monkeypatch.setattr(api_module, "_emit_api_telemetry", lambda **kw: None)
+
+        result = fix_plan(Path("."), include_deferred=True, max_tasks=5)
+        assert result["task_count"] == 2
+
+    def test_fix_plan_exclude_paths_filters_scope(self, monkeypatch):
+        import drift.analyzer as analyzer_module
+        import drift.api as api_module
+        from drift.api import fix_plan
+
+        analysis = SimpleNamespace(
+            findings=[],
+            drift_score=0.41,
+            severity=Severity.MEDIUM,
+            total_files=5,
+            total_functions=10,
+            ai_attributed_ratio=0.0,
+            trend=None,
+        )
+        tasks = [
+            AgentTask(
+                id="avs-billing",
+                signal_type=SignalType.ARCHITECTURE_VIOLATION,
+                severity=Severity.HIGH,
+                priority=1,
+                title="billing boundary",
+                description="desc",
+                action="action",
+                file_path="backend/api/routers/billing.py",
+                metadata={"finding_context": "production"},
+            ),
+            AgentTask(
+                id="pfs-core",
+                signal_type=SignalType.PATTERN_FRAGMENTATION,
+                severity=Severity.HIGH,
+                priority=2,
+                title="core duplicate",
+                description="desc",
+                action="action",
+                file_path="src/core/service.py",
+                metadata={"finding_context": "production"},
+            ),
+        ]
+
+        monkeypatch.setattr(DriftConfig, "load", staticmethod(lambda *a, **kw: DriftConfig()))
+        monkeypatch.setattr(analyzer_module, "analyze_repo", lambda *a, **kw: analysis)
+        monkeypatch.setattr(
+            "drift.output.agent_tasks.analysis_to_agent_tasks",
+            lambda *a, **kw: tasks,
+        )
+        monkeypatch.setattr(api_module, "_emit_api_telemetry", lambda **kw: None)
+
+        result = fix_plan(Path("."), exclude_paths=["backend/api/routers"], max_tasks=5)
+        assert result["task_count"] == 1
+        assert result["tasks"][0]["id"] == "pfs-core"
+
 
 # --- Task 3: diff --uncommitted scope ---
 

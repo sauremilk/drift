@@ -1132,6 +1132,8 @@ def fix_plan(
     max_tasks: int = 5,
     automation_fit_min: str | None = None,
     target_path: str | None = None,
+    exclude_paths: list[str] | None = None,
+    include_deferred: bool = False,
     include_non_operational: bool = False,
 ) -> dict[str, Any]:
     """Generate a prioritized fix plan with constraints and success criteria.
@@ -1150,6 +1152,10 @@ def fix_plan(
         Minimum automation fitness level: ``"low"``, ``"medium"``, or ``"high"``.
     target_path:
         Restrict tasks to findings inside this subpath.
+    exclude_paths:
+        Exclude tasks whose file path is inside one of these subpaths.
+    include_deferred:
+        Include findings marked as ``deferred`` by config when ``True``.
     include_non_operational:
         Include non-operational contexts (fixture/generated/migration/docs)
         in prioritization when ``True``.
@@ -1168,6 +1174,8 @@ def fix_plan(
         "max_tasks": max_tasks,
         "automation_fit_min": automation_fit_min,
         "target_path": target_path,
+        "exclude_paths": exclude_paths,
+        "include_deferred": include_deferred,
         "include_non_operational": include_non_operational,
     }
 
@@ -1208,24 +1216,57 @@ def fix_plan(
             cfg = DriftConfig()
         cfg_warnings = _warn_config_issues(cfg)
 
+        def _normalize_rel_path(raw: str | None) -> str:
+            if not raw:
+                return ""
+            return Path(str(raw).replace("\\", "/")).as_posix().strip("/")
+
+        def _in_scope(file_path: str | None, scope_path: str) -> bool:
+            if not file_path:
+                return False
+            normalized_file = _normalize_rel_path(file_path)
+            normalized_scope = _normalize_rel_path(scope_path)
+            return (
+                normalized_file == normalized_scope
+                or normalized_file.startswith(normalized_scope + "/")
+            )
+
+        normalized_excludes = [
+            _normalize_rel_path(p)
+            for p in (exclude_paths or [])
+            if _normalize_rel_path(p)
+        ]
+
         # Validate target_path existence
         warnings: list[str] = cfg_warnings
         if target_path and not (repo_path / target_path).exists():
             warnings.append(
                 f"target_path '{target_path}' does not exist in repository"
             )
+        for excluded_path in normalized_excludes:
+            if not (repo_path / excluded_path).exists():
+                warnings.append(
+                    f"exclude path '{excluded_path}' does not exist in repository"
+                )
 
         analysis = analyze_repo(repo_path, config=cfg)
         tasks = analysis_to_agent_tasks(analysis)
 
         # Filter by target_path
         if target_path:
-            normalized = Path(target_path).as_posix().strip("/")
             tasks = [
                 t for t in tasks
-                if t.file_path and (
-                    Path(t.file_path).as_posix().strip("/") == normalized
-                    or Path(t.file_path).as_posix().strip("/").startswith(normalized + "/")
+                if t.file_path and _in_scope(t.file_path, target_path)
+            ]
+
+        # Filter by exclude_paths
+        if normalized_excludes:
+            tasks = [
+                t
+                for t in tasks
+                if not (
+                    t.file_path
+                    and any(_in_scope(t.file_path, excluded) for excluded in normalized_excludes)
                 )
             ]
 
@@ -1257,6 +1298,27 @@ def fix_plan(
                 )
                 return result
             tasks = [t for t in tasks if t.signal_type == resolved]
+
+        deferred_task_keys: set[tuple[str, str | None, str]] = set()
+        for finding in analysis.findings:
+            if not getattr(finding, "deferred", False):
+                continue
+            fp = finding.file_path.as_posix() if finding.file_path else None
+            deferred_task_keys.add((finding.signal_type.value, fp, finding.title))
+
+        excluded_deferred = 0
+        if not include_deferred and deferred_task_keys:
+            before = len(tasks)
+            tasks = [
+                t
+                for t in tasks
+                if (t.signal_type.value, t.file_path, t.title) not in deferred_task_keys
+            ]
+            excluded_deferred = before - len(tasks)
+            if excluded_deferred > 0:
+                warnings.append(
+                    f"Excluded {excluded_deferred} deferred finding(s) from fix-plan scope"
+                )
 
         finding_id_diagnostic: str | None = None
         finding_id_message: str | None = None

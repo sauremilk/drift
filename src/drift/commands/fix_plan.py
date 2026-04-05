@@ -36,6 +36,18 @@ from drift.api import to_json
     help="Restrict tasks to findings inside this subpath.",
 )
 @click.option(
+    "--exclude",
+    "exclude_paths",
+    multiple=True,
+    help="Exclude findings inside this subpath. Can be provided multiple times.",
+)
+@click.option(
+    "--include-deferred",
+    is_flag=True,
+    default=False,
+    help="Include findings marked as deferred in drift config.",
+)
+@click.option(
     "--automation-fit-min",
     type=click.Choice(["low", "medium", "high"]),
     default=None,
@@ -60,6 +72,8 @@ def fix_plan(
     signal: str | None,
     max_tasks: int,
     target_path: str | None,
+    exclude_paths: tuple[str, ...],
+    include_deferred: bool,
     automation_fit_min: str | None,
     include_non_operational: bool,
     output: Path | None,
@@ -72,6 +86,8 @@ def fix_plan(
         max_tasks=max_tasks,
         automation_fit_min=automation_fit_min,
         target_path=target_path,
+        exclude_paths=list(exclude_paths) or None,
+        include_deferred=include_deferred,
         include_non_operational=include_non_operational,
     )
     text = to_json(result)
