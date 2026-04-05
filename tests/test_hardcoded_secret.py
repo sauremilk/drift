@@ -358,12 +358,28 @@ class TestHSCTrueNegatives:
             tmp_path,
             "tokenization_llm.py",
             '''\
+            tokenizer_class = "LlamaTokenizer"
             tokenizer_class_name = "LlamaTokenizerFast"
             chat_template = "{{ bos_token }}{% for m in messages %}{{ m['content'] }}{% endfor %}"
             ''',
         )
         signal = HardcodedSecretSignal(repo_path=tmp_path)
         findings = signal.analyze([_make_pr("tokenization_llm.py")], {}, DriftConfig())
+        assert len(findings) == 0
+
+    def test_ml_vocab_files_names_not_flagged(self, tmp_path: Path) -> None:
+        _write_source(
+            tmp_path,
+            "tokenization_vocab.py",
+            '''\
+            vocab_files_names = {
+                "vocab_file": "vocab.txt",
+                "tokenizer_file": "tokenizer.json",
+            }
+            ''',
+        )
+        signal = HardcodedSecretSignal(repo_path=tmp_path)
+        findings = signal.analyze([_make_pr("tokenization_vocab.py")], {}, DriftConfig())
         assert len(findings) == 0
 
     def test_ml_tokenizer_keyword_arg_not_flagged(self, tmp_path: Path) -> None:
