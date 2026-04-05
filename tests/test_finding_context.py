@@ -128,3 +128,35 @@ def test_split_findings_excludes_library_context_by_default() -> None:
     assert len(excluded) == 1
     assert counts["library"] == 1
     assert counts["production"] == 1
+
+
+def test_adapted_header_is_classified_as_library(tmp_path: Path) -> None:
+    cfg = DriftConfig()
+    adapted = tmp_path / "libs" / "core" / "mustache.py"
+    adapted.parent.mkdir(parents=True, exist_ok=True)
+    adapted.write_text(
+        '"""Adapted from https://github.com/noahmorrison/chevron.\nMIT License.\n"""\n\n'
+        "def render(template: str) -> str:\n"
+        "    return template\n",
+        encoding="utf-8",
+    )
+
+    finding = _finding(str(adapted), signal_type=SignalType.GUARD_CLAUSE_DEFICIT)
+
+    assert classify_finding_context(finding, cfg) == "library"
+    assert finding.metadata.get("vendored_context_candidate") is True
+
+
+def test_vendored_directory_is_classified_as_library(tmp_path: Path) -> None:
+    cfg = DriftConfig()
+    vendored = tmp_path / "third_party" / "helpers.py"
+    vendored.parent.mkdir(parents=True, exist_ok=True)
+    vendored.write_text(
+        "def helper() -> int:\n"
+        "    return 1\n",
+        encoding="utf-8",
+    )
+
+    finding = _finding(str(vendored), signal_type=SignalType.COHESION_DEFICIT)
+
+    assert classify_finding_context(finding, cfg) == "library"

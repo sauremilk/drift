@@ -8,7 +8,9 @@ metadata heuristics.
 from __future__ import annotations
 
 import fnmatch
+import re
 from collections import Counter
+from functools import lru_cache
 from pathlib import Path
 from typing import TYPE_CHECKING
 
@@ -22,6 +24,24 @@ _LIBRARY_CONTEXT_SIGNALS: frozenset[str] = frozenset({
     "doc_impl_drift",
     "naming_contract_violation",
 })
+
+_VENDORED_DIR_MARKERS: frozenset[str] = frozenset({
+    "vendor",
+    "vendors",
+    "vendored",
+    "third_party",
+    "third-party",
+    "thirdparty",
+    "external",
+})
+
+_VENDORED_HEADER_MARKERS: tuple[re.Pattern[str], ...] = (
+    re.compile(r"\badapted from\b"),
+    re.compile(r"\bported from\b"),
+    re.compile(r"\bvendored\b"),
+    re.compile(r"\bvendor(?:ed|ized)? from\b"),
+)
+_VENDORED_HEADER_MAX_LINES = 80
 
 
 def _normalise_context(raw: str | None, *, fallback: str = "production") -> str:
@@ -88,6 +108,41 @@ def _ensure_metadata_dict(finding: Finding) -> dict[str, object]:
     return new_meta
 
 
+def _path_contains_vendored_marker(path: Path) -> bool:
+    return any(part.lower() in _VENDORED_DIR_MARKERS for part in path.parts)
+
+
+@lru_cache(maxsize=8192)
+def _file_header_contains_vendored_marker(path_str: str) -> bool:
+    path = Path(path_str)
+    try:
+        with path.open("r", encoding="utf-8", errors="ignore") as handle:
+            header = "\n".join(
+                line.strip().lower()
+                for _, line in zip(range(_VENDORED_HEADER_MAX_LINES), handle, strict=False)
+            )
+    except OSError:
+        return False
+    return any(pattern.search(header) for pattern in _VENDORED_HEADER_MARKERS)
+
+
+def _is_vendored_or_adapted_file(path: Path | None) -> bool:
+    if path is None:
+        return False
+
+    if _path_contains_vendored_marker(path):
+        return True
+
+    if _file_header_contains_vendored_marker(path.as_posix()):
+        return True
+
+    # Fall back to absolute path resolution for relative file paths.
+    if not path.is_absolute():
+        return _file_header_contains_vendored_marker(str(path.resolve()))
+
+    return False
+
+
 def classify_finding_context(finding: Finding, config: DriftConfig) -> str:
     """Classify a finding into an operational context."""
     metadata = _ensure_metadata_dict(finding)
@@ -109,6 +164,10 @@ def classify_finding_context(finding: Finding, config: DriftConfig) -> str:
             return "migration"
         if "docs" in lowered:
             return "docs"
+
+    if _is_vendored_or_adapted_file(finding.file_path):
+        metadata["vendored_context_candidate"] = True
+        return "library"
 
     signal_type = str(getattr(finding, "signal_type", "")).strip().lower()
     if (
