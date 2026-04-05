@@ -12,6 +12,7 @@ from drift.models import (
     ParseResult,
     PatternCategory,
     PatternInstance,
+    Severity,
     SignalType,
 )
 from drift.signals.missing_authorization import MissingAuthorizationSignal
@@ -46,6 +47,7 @@ def _func(
     file_path: str,
     line: int,
     decorators: list[str] | None = None,
+    has_docstring: bool = False,
 ) -> FunctionInfo:
     return FunctionInfo(
         name=name,
@@ -54,6 +56,7 @@ def _func(
         end_line=line + 10,
         language="python",
         decorators=decorators or [],
+        has_docstring=has_docstring,
     )
 
 
@@ -283,6 +286,60 @@ class TestMAZTrueNegatives:
         signal = MissingAuthorizationSignal()
         findings = signal.analyze([pr], {}, DriftConfig())
         assert len(findings) == 0
+
+    def test_documented_publishable_key_endpoint_is_downgraded(self) -> None:
+        pr = ParseResult(
+            file_path=Path("backend/ee/onyx/server/billing/api.py"),
+            language="python",
+            functions=[
+                _func(
+                    "get_stripe_publishable_key",
+                    "backend/ee/onyx/server/billing/api.py",
+                    10,
+                    has_docstring=True,
+                )
+            ],
+            imports=[_imp("backend/ee/onyx/server/billing/api.py", "fastapi")],
+            patterns=[
+                _endpoint_pattern(
+                    "get_stripe_publishable_key",
+                    "backend/ee/onyx/server/billing/api.py",
+                    10,
+                )
+            ],
+        )
+        signal = MissingAuthorizationSignal()
+        findings = signal.analyze([pr], {}, DriftConfig())
+        assert len(findings) == 1
+        assert findings[0].severity == Severity.LOW
+        assert findings[0].metadata["public_safe_documented"] is True
+
+    def test_publishable_key_without_docstring_stays_high(self) -> None:
+        pr = ParseResult(
+            file_path=Path("backend/ee/onyx/server/billing/api.py"),
+            language="python",
+            functions=[
+                _func(
+                    "get_stripe_publishable_key",
+                    "backend/ee/onyx/server/billing/api.py",
+                    10,
+                    has_docstring=False,
+                )
+            ],
+            imports=[_imp("backend/ee/onyx/server/billing/api.py", "fastapi")],
+            patterns=[
+                _endpoint_pattern(
+                    "get_stripe_publishable_key",
+                    "backend/ee/onyx/server/billing/api.py",
+                    10,
+                )
+            ],
+        )
+        signal = MissingAuthorizationSignal()
+        findings = signal.analyze([pr], {}, DriftConfig())
+        assert len(findings) == 1
+        assert findings[0].severity == Severity.HIGH
+        assert findings[0].metadata["public_safe_documented"] is False
 
 
 # ---------------------------------------------------------------------------

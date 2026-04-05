@@ -1,5 +1,23 @@
 # Risk Register
 
+## 2026-04-05 - MAZ documented public-safe publishable-key severity downgrade (Issue #162)
+
+- Risk ID: RISK-SIG-2026-04-05-162
+- Component: src/drift/signals/missing_authorization.py
+- Type: Signal quality (severity calibration / false-positive reduction)
+- Description: MAZ emitted HIGH severity for intentionally public-safe publishable-key endpoints where no authorization is expected by design.
+- Trigger examples:
+  - onyx-dot-app/onyx: `get_stripe_publishable_key` reported as MAZ HIGH despite explicit public-safe rationale in code documentation.
+  - Similar endpoint families: publishable/public client key retrieval routes.
+- Impact: Over-prioritized findings, reduced analyst trust, and avoidable remediation churn.
+- Mitigation:
+  - Add conservative public-safe heuristic for MAZ severity dampening.
+  - Require both conditions for LOW downgrade: endpoint name marker (`publishable/public key`) + explicit function docstring.
+  - Keep finding emitted (no suppression) and expose `public_safe_documented` metadata for explainability.
+  - Add regression tests for downgraded documented case and non-documented HIGH case.
+- Verification: tests/test_missing_authorization.py (new Issue #162 regressions).
+- Residual risk: Medium-low; semantic naming/docstring heuristics may still need repository-specific tuning for edge cases.
+
 ## 2026-04-05 - AVS tiny foundational module over-severity recalibration (Issue #153)
 
 - Risk ID: RISK-SIG-2026-04-05-153

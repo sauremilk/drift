@@ -1,5 +1,20 @@
 # Fault Tree Analysis
 
+## 2026-04-05 - MAZ documented public-safe endpoint severity calibration (Issue #162)
+
+### FT-1: False HIGH severity on intentionally public publishable-key endpoint
+- Top event: Missing-Authorization finding is emitted as HIGH for an endpoint intentionally exposed for non-sensitive publishable key retrieval.
+- Branch A: Endpoint has no auth check by design.
+- Branch B: Existing MAZ logic does not consider explicit in-code public-safe documentation.
+- Branch C: Endpoint name semantics indicate publishable/public key intent, but this context is not used.
+- Mitigation implemented: Severity is downgraded to LOW when endpoint is documented (`has_docstring`) and function name matches conservative publishable/public-key markers.
+
+### FT-2: Under-ranked true auth gap after severity dampening
+- Top event: A genuinely sensitive unauthenticated endpoint receives lower severity due name-based heuristic.
+- Branch A: Endpoint name includes marker token used by dampening heuristic.
+- Branch B: Endpoint includes a docstring but still returns sensitive material.
+- Mitigation implemented: Finding is still emitted (not suppressed), dampening is limited to a conservative marker set + documentation requirement, and metadata explicitly flags the downgrade path for reviewer audit.
+
 ## 2026-04-05 - AVS tiny foundational module severity recalibration (Issue #153)
 
 ### FT-1: False HIGH severity on tiny foundational modules

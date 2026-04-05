@@ -1,5 +1,12 @@
 # FMEA Matrix
 
+## 2026-04-05 - MAZ documented public-safe endpoint severity calibration (Issue #162)
+
+| Signal | Failure Mode | Cause | Effect | Detection | Mitigation | S | O | D | RPN |
+|---|---|---|---|---|---|---:|---:|---:|---:|
+| MAZ | FP-severity: intentionally public publishable-key endpoint is emitted as HIGH | MAZ considered only missing auth marker and endpoint naming allowlist, but not explicit documented public-safe intent | High-priority triage noise, reduced trust in MAZ findings | Field report on onyx-dot-app/onyx + targeted regression test | Downgrade to LOW when endpoint name indicates publishable/public key semantics and function is explicitly documented (docstring present) | 6 | 5 | 4 | 120 |
+| MAZ | FN risk: real sensitive endpoint under-ranked due heuristic dampening | Over-broad public-safe matching could hide materially risky unauthenticated endpoints | Delayed remediation for true auth gaps | Regression test for same endpoint name without docstring (remains HIGH) | Keep finding emitted (no suppression), require docstring + conservative marker set, attach metadata for auditability | 7 | 2 | 6 | 84 |
+
 ## 2026-04-05 - AVS tiny foundational module severity calibration (Issue #153)
 
 | Signal | Failure Mode | Cause | Effect | Detection | Mitigation | S | O | D | RPN |

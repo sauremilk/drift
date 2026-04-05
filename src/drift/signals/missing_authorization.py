@@ -16,6 +16,7 @@ from drift.config import DriftConfig
 from drift.models import (
     FileHistory,
     Finding,
+    FunctionInfo,
     ParseResult,
     PatternCategory,
     Severity,
@@ -35,11 +36,37 @@ _AUTH_MIXINS: frozenset[str] = frozenset({
     "isauthenticated",
 })
 
+# Public-safe endpoint intent markers. Keep this list conservative to avoid
+# suppressing truly sensitive unauthenticated handlers.
+_PUBLIC_SAFE_NAME_MARKERS: frozenset[str] = frozenset({
+    "publishable",
+    "publishablekey",
+    "publickey",
+    "clientkey",
+})
+
 
 def _is_public_allowlisted(fn_name: str, allowlist: list[str]) -> bool:
     """Return True if the function name matches a known public endpoint."""
     lower = fn_name.lower().replace("_", "")
     return any(allowed.replace("_", "") in lower for allowed in allowlist)
+
+
+def _is_dev_tool_path(file_path: str, dev_paths: list[str]) -> bool:
+    """Return True if the file lives under a known dev/internal tool directory."""
+    parts = file_path.lower().replace("\\", "/").split("/")
+    return any(part in dev_paths for part in parts)
+
+
+def _is_documented_public_safe_endpoint(
+    fn_name: str,
+    fn_info: FunctionInfo | None,
+) -> bool:
+    """Return True when endpoint looks intentionally public-safe and documented."""
+    if fn_info is None or not fn_info.has_docstring:
+        return False
+    normalized = fn_name.split(".")[-1].lower().replace("_", "")
+    return any(marker in normalized for marker in _PUBLIC_SAFE_NAME_MARKERS)
 
 
 def _detect_framework(parse_result: ParseResult) -> str:
@@ -99,14 +126,18 @@ class MissingAuthorizationSignal(BaseSignal):
     ) -> list[Finding]:
         findings: list[Finding] = []
         allowlist = config.thresholds.maz_public_endpoint_allowlist
+        dev_paths = config.thresholds.maz_dev_tool_paths
 
         for pr in parse_results:
             if pr.language != "python":
                 continue
             if is_test_file(pr.file_path):
                 continue
+            if _is_dev_tool_path(pr.file_path.as_posix(), dev_paths):
+                continue
 
             framework = _detect_framework(pr)
+            functions_by_name = {fn.name: fn for fn in pr.functions}
 
             # Build set of class names with auth mixins for CBV detection.
             authed_classes: set[str] = set()
@@ -134,8 +165,33 @@ class MissingAuthorizationSignal(BaseSignal):
                     if class_name in authed_classes:
                         continue
 
-                score = 0.7
-                severity = Severity.HIGH
+                fn_info = functions_by_name.get(fn_name)
+                is_documented_public_safe = _is_documented_public_safe_endpoint(
+                    fn_name,
+                    fn_info,
+                )
+
+                score = 0.35 if is_documented_public_safe else 0.7
+                severity = Severity.LOW if is_documented_public_safe else Severity.HIGH
+
+                description = (
+                    f"The route handler '{fn_name}' in {pr.file_path} "
+                    f"is missing an authorization check. Without auth, "
+                    f"any caller can access this endpoint. "
+                    f"Detected framework: {framework}."
+                )
+                fix = _fix_suggestion(framework)
+                if is_documented_public_safe:
+                    description += (
+                        " This endpoint appears intentionally public-safe "
+                        "(documented publishable/public key semantics), "
+                        "so severity was downgraded for triage."
+                    )
+                    fix = (
+                        "If this endpoint is intentionally public, keep explicit "
+                        "documentation and ensure only non-sensitive publishable "
+                        "key material is returned; otherwise add authorization."
+                    )
 
                 findings.append(
                     Finding(
@@ -143,22 +199,18 @@ class MissingAuthorizationSignal(BaseSignal):
                         severity=severity,
                         score=score,
                         title=f"Endpoint '{fn_name}' has no authorization check",
-                        description=(
-                            f"The route handler '{fn_name}' in {pr.file_path} "
-                            f"is missing an authorization check. Without auth, "
-                            f"any caller can access this endpoint. "
-                            f"Detected framework: {framework}."
-                        ),
+                        description=description,
                         file_path=pr.file_path,
                         start_line=pat.start_line,
                         end_line=pat.end_line,
                         symbol=fn_name,
-                        fix=_fix_suggestion(framework),
+                        fix=fix,
                         metadata={
                             "framework": framework,
                             "cwe": "CWE-862",
                             "endpoint_name": fn_name,
                             "auth_mechanism": "none",
+                            "public_safe_documented": is_documented_public_safe,
                         },
                         rule_id="missing_authz_route",
                     )
