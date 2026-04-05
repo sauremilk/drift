@@ -1,5 +1,20 @@
 # Fault Tree Analysis
 
+## 2026-04-05 - MAZ localhost CLI serving false positives (Issue #167)
+
+### FT-1: False positives on local CLI serving modules
+- Top event: MAZ emits missing-authorization findings for local CLI serving endpoints that are not production-facing APIs.
+- Branch A: Endpoint patterns are detected from framework routes (for example FastAPI handlers).
+- Branch B: File path indicates CLI serving context (`cli/serving/server.py`-style layout).
+- Branch C: Prior MAZ logic had no local CLI deployment-context suppression.
+- Mitigation implemented: Add targeted path heuristic that suppresses MAZ finding emission when path contains `cli` and `serving`/`serve` markers.
+
+### FT-2: Under-reporting risk after CLI-serving suppression
+- Top event: A genuinely externally exposed endpoint under a CLI-marked serving path is not reported.
+- Branch A: Repository uses `cli/serving/*` path tokens for production-exposed handlers.
+- Branch B: New suppression triggers before finding emission.
+- Mitigation implemented: Keep suppression scoped to combined markers only and retain MAZ detection for serving paths without CLI marker; regression verifies non-CLI serving path still emits findings.
+
 ## 2026-04-05 - HSC ML tokenizer constant false positives (Issue #166)
 
 ### FT-1: False positives on ML tokenizer constants

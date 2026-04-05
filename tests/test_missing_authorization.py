@@ -436,6 +436,33 @@ class TestMAZEdgeCases:
         findings = signal.analyze([pr], {}, DriftConfig())
         assert len(findings) == 0
 
+    def test_cli_serving_path_skipped(self) -> None:
+        """Local CLI serving modules should be skipped for MAZ (#167)."""
+        file_path = "src/transformers/cli/serving/server.py"
+        endpoint_names = [
+            "chat_completions",
+            "responses",
+            "load_model",
+            "list_models",
+            "generate",
+        ]
+        pr = ParseResult(
+            file_path=Path(file_path),
+            language="python",
+            functions=[
+                _func(name, file_path, idx * 10)
+                for idx, name in enumerate(endpoint_names, start=1)
+            ],
+            imports=[_imp(file_path, "fastapi")],
+            patterns=[
+                _endpoint_pattern(name, file_path, idx * 10)
+                for idx, name in enumerate(endpoint_names, start=1)
+            ],
+        )
+        signal = MissingAuthorizationSignal()
+        findings = signal.analyze([pr], {}, DriftConfig())
+        assert len(findings) == 0
+
     def test_non_dev_path_still_flagged(self) -> None:
         """Endpoints in production paths should still be flagged."""
         pr = ParseResult(
@@ -444,6 +471,25 @@ class TestMAZEdgeCases:
             functions=[_func("delete_user", "src/api/routes.py", 10)],
             imports=[_imp("src/api/routes.py", "fastapi")],
             patterns=[_endpoint_pattern("delete_user", "src/api/routes.py", 10)],
+        )
+        signal = MissingAuthorizationSignal()
+        findings = signal.analyze([pr], {}, DriftConfig())
+        assert len(findings) == 1
+
+    def test_serving_path_without_cli_still_flagged(self) -> None:
+        """Serving modules outside CLI context should still be flagged."""
+        pr = ParseResult(
+            file_path=Path("src/transformers/serving/server.py"),
+            language="python",
+            functions=[_func("chat_completions", "src/transformers/serving/server.py", 10)],
+            imports=[_imp("src/transformers/serving/server.py", "fastapi")],
+            patterns=[
+                _endpoint_pattern(
+                    "chat_completions",
+                    "src/transformers/serving/server.py",
+                    10,
+                )
+            ],
         )
         signal = MissingAuthorizationSignal()
         findings = signal.analyze([pr], {}, DriftConfig())

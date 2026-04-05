@@ -1,5 +1,12 @@
 # FMEA Matrix
 
+## 2026-04-05 - MAZ localhost CLI serving false positives (Issue #167)
+
+| Signal | Failure Mode | Cause | Effect | Detection | Mitigation | S | O | D | RPN |
+|---|---|---|---|---|---|---:|---:|---:|---:|
+| MAZ | FP: localhost CLI serving tool endpoints flagged as missing authorization | MAZ classified API endpoints by route/auth markers only and lacked deployment-context heuristics for local CLI serving modules (`cli/serving/*`) | 0% precision in this context, high-severity triage noise, and reduced trust in MAZ ranking | Field report on `huggingface/transformers` + targeted MAZ regressions for `cli/serving/server.py` | Suppress MAZ findings for CLI-local serving paths (`cli` + `serving/serve` path markers) while keeping standard endpoint checks elsewhere | 7 | 6 | 4 | 168 |
+| MAZ | FN: true production auth gaps could be under-reported in CLI-marked serving modules | New path-based suppression may hide real externally exposed endpoints located under `cli/serving/*` | Delayed remediation for rare production deployments that reuse CLI serving path conventions | Regression test ensures serving paths without CLI marker are still flagged | Keep suppression narrow to combined markers (`cli` plus `serving/serve`), preserve non-CLI serving detection, and monitor precision/recall deltas from field reports | 6 | 2 | 6 | 72 |
+
 ## 2026-04-05 - HSC ML tokenizer constant false positives (Issue #166)
 
 | Signal | Failure Mode | Cause | Effect | Detection | Mitigation | S | O | D | RPN |

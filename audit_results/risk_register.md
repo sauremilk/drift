@@ -1,5 +1,21 @@
 # Risk Register
 
+## 2026-04-05 - MAZ localhost CLI serving false-positive mitigation (Issue #167)
+
+- Risk ID: RISK-SIG-2026-04-05-167
+- Component: src/drift/signals/missing_authorization.py
+- Type: Signal quality (false positives / context-sensitive suppression)
+- Description: MAZ flagged local CLI serving endpoints (for example `src/transformers/cli/serving/server.py`) as missing authorization even when handlers are intended for localhost-oriented development tooling rather than production API exposure.
+- Trigger examples:
+  - huggingface/transformers: `cli/serving/server.py` handlers (`chat_completions`, `responses`, `load_model`, `list_models`, `generate`) reported as MAZ findings.
+  - Similar repositories with route handlers embedded in CLI-local serving entry modules.
+- Impact: Severe precision collapse in this context (reported 0%), high-priority triage noise, and risk of incorrect remediation guidance.
+- Mitigation:
+  - Added targeted MAZ suppression for CLI-local serving path context (`cli` + `serving/serve` markers).
+  - Added Issue #167 regressions ensuring CLI-serving path is suppressed while non-CLI serving path remains reportable.
+- Verification: `python -m pytest tests/test_missing_authorization.py -q`
+- Residual risk: Medium-low; unusual production deployments using CLI-serving path conventions may be under-reported, but suppression remains tightly scoped.
+
 ## 2026-04-05 - HSC ML tokenizer constant false-positive mitigation (Issue #166)
 
 - Risk ID: RISK-SIG-2026-04-05-166

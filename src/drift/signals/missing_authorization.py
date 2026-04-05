@@ -45,6 +45,10 @@ _PUBLIC_SAFE_NAME_MARKERS: frozenset[str] = frozenset({
     "clientkey",
 })
 
+# Local CLI serving tools are typically development utilities (localhost-only)
+# and should not be treated as production-facing APIs for MAZ.
+_CLI_LOCAL_SERVER_PATH_MARKERS: frozenset[str] = frozenset({"serving", "serve"})
+
 
 def _is_public_allowlisted(fn_name: str, allowlist: list[str]) -> bool:
     """Return True if the function name matches a known public endpoint."""
@@ -56,6 +60,14 @@ def _is_dev_tool_path(file_path: str, dev_paths: list[str]) -> bool:
     """Return True if the file lives under a known dev/internal tool directory."""
     parts = file_path.lower().replace("\\", "/").split("/")
     return any(part in dev_paths for part in parts)
+
+
+def _is_cli_local_serving_path(file_path: str) -> bool:
+    """Return True for CLI-local serving modules (e.g. cli/serving/server.py)."""
+    parts = file_path.lower().replace("\\", "/").split("/")
+    if "cli" not in parts:
+        return False
+    return any(marker in parts for marker in _CLI_LOCAL_SERVER_PATH_MARKERS)
 
 
 def _is_documented_public_safe_endpoint(
@@ -134,6 +146,8 @@ class MissingAuthorizationSignal(BaseSignal):
             if is_test_file(pr.file_path):
                 continue
             if _is_dev_tool_path(pr.file_path.as_posix(), dev_paths):
+                continue
+            if _is_cli_local_serving_path(pr.file_path.as_posix()):
                 continue
 
             framework = _detect_framework(pr)
