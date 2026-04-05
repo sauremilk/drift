@@ -53,6 +53,46 @@ drift analyze
 drift baseline --output .drift-baseline.json
 ```
 
+## Practical Remediation Loop (triage -> fix -> baseline update)
+
+Use this exact sequence after your first baseline to keep remediation small,
+measurable, and repeatable.
+
+1. Capture a Day-0 snapshot (`drift_day0.json`).
+2. Triage the top findings (`impact` sort + signal explanation).
+3. Create a focused fix queue (`max-tasks 3`).
+4. Implement one concrete remediation.
+5. Re-run analysis and verify trend direction.
+6. Update baseline to lock in the improvement.
+
+```bash
+# 1) Snapshot before remediation
+drift analyze --repo . --format json -o drift_day0.json
+
+# 2) Triage first
+drift analyze --repo . --sort-by impact --max-findings 5
+drift explain PFS
+
+# 3) Build a small remediation queue
+drift fix-plan --repo . --max-tasks 3
+
+# 4) Apply one fix from the queue
+
+# 5) Verify improvement
+drift analyze --repo . --format json -o drift_after_fix.json
+drift trend --repo . --last 30
+
+# 6) Update baseline for future delta checks
+drift baseline --output .drift-baseline.json
+```
+
+Concrete before/after example:
+
+- Before: `PFS` reports fragmented connector error handling as a high-severity finding.
+- After: one shared error handler lowers fragmentation and reduces PFS severity in the next scan.
+
+Related docs: [Getting Started](../../docs-site/getting-started/quickstart.md) · [Finding Triage](../../docs-site/getting-started/finding-triage.md) · [Team Rollout](../../docs-site/getting-started/team-rollout.md)
+
 ## 30-Day Rollout Plan
 
 ### Week 1: Foundation (Day 1–7)

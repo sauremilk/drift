@@ -90,6 +90,44 @@ drift fix-plan --repo .                # agent-friendly repair tasks
 
 Full setup: [Integrations](docs-site/integrations.md) · [MCP](docs-site/integrations.md) · [Vibe-Coding Guide](examples/vibe-coding/README.md)
 
+### Vibe-Coding Remediation Walkthrough
+
+Use this loop after your first scan to go from findings to verified improvement.
+
+1. Run an initial scan and save the baseline snapshot.
+2. Triage only the top findings by impact and actionability.
+3. Generate a small fix queue and implement one focused change.
+4. Re-scan and confirm that the finding count and/or severity improved.
+5. Update the baseline so future regressions can be caught early.
+
+```bash
+# 1) Day-0 baseline snapshot
+drift analyze --repo . --format json -o drift_day0.json
+
+# 2) Triage high-impact findings first
+drift analyze --repo . --sort-by impact --max-findings 5
+drift explain PFS
+
+# 3) Create focused remediation tasks
+drift fix-plan --repo . --max-tasks 3
+
+# 4) Implement one remediation (example: consolidate connector error handling)
+
+# 5) Confirm improvement
+drift analyze --repo . --format json -o drift_after_fix.json
+drift trend --repo . --last 30
+
+# 6) Update baseline (new ratchet point)
+drift baseline --output .drift-baseline.json
+```
+
+Concrete before/after example (PFS):
+
+- Before: fragmented error handling in one connector layer appears as a high-severity PFS finding.
+- After: a shared handler reduces fragmentation, lowering the PFS score and total high-severity findings.
+
+Related guides: [Quick Start](docs-site/getting-started/quickstart.md) · [Finding Triage](docs-site/getting-started/finding-triage.md) · [Team Rollout](docs-site/getting-started/team-rollout.md)
+
 ## Why teams use drift
 
 Your linter, type checker, and test suite can tell you whether code is valid. They do not tell you whether the repository is quietly splitting into incompatible patterns across modules.
