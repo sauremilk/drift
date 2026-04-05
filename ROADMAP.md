@@ -4,7 +4,7 @@ This roadmap communicates what the project needs most right now,
 what is accessible for new contributors, and what is explicitly
 deprioritized. It is updated with each release.
 
-Last updated: v1.3.0 (2026-04-01)
+Last updated: v2.4.4 (2026-04-05)
 
 ---
 
@@ -56,12 +56,12 @@ moratorium for language expansion.
 
 ---
 
-## Completed since v0.7.1
+## Completed since v0.8.2
 
-- **v0.7.3:** Cohesion Deficit signal (COD) added — detects semantically incoherent modules
-- **v0.8.0:** Co-Change Coupling signal (CCC) added — detects hidden file coupling from co-change patterns; all 15 signals now scoring-active with auto-calibration
-- **v0.8.1:** Language consistency — all user-facing finding text switched to English
-- **v0.8.2:** `drift config validate` / `drift config show` commands; stable `rule_id` for deduplication
+- **v1.1.x:** Navigation track introduced — `drift_nudge` (directional feedback + safe-to-commit guard), incremental baseline/cache model, and diagnosis-vs-navigation framing documented.
+- **v1.3.x -> v1.4.x:** Machine-readable reliability hardened — consistent JSON error envelopes across CLI and MCP flows, plus deterministic baseline refresh reasoning.
+- **v1.5.0 -> v2.1.x:** Agent UX and release operations matured — agent-focused command/output improvements, PSR-based automated release pipeline, and improved governance/maintainer workflows.
+- **v2.4.x:** Context and export surfaces expanded — finding-context triage policy, CSV output for `analyze`/`check`, `diff` score-basis clarity, and stronger MCP robustness (schema typing, structured error envelopes, Windows stdio stability).
 
 ---
 
