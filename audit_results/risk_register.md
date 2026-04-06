@@ -1,5 +1,22 @@
 # Risk Register
 
+## 2026-04-06 - HSC YAML env-template variable-name false-positive mitigation (Issue #181)
+
+- Risk ID: RISK-SIG-2026-04-06-181
+- Component: src/drift/signals/hardcoded_secret.py
+- Type: Signal quality (false positives / precision calibration)
+- Description: HSC flagged YAML configuration templates as hardcoded secrets when variable names contained secret-like tokens (for example `YAML_OPENAI_WITH_API_KEY`) although values only referenced `${ENV_VAR}` placeholders.
+- Trigger examples:
+  - microsoft/agent-framework: multi-line YAML template containing `openai_api_key: ${OPENAI_API_KEY}`.
+  - Similar repositories storing config templates in Python triple-quoted strings.
+- Impact: High-severity false positives and reduced trust in HSC precision/actionability.
+- Mitigation:
+  - Added narrow suppression for multi-line key/value template literals that contain environment placeholders (`${...}`).
+  - Preserved high-confidence known-prefix checks before suppression.
+  - Added targeted regressions in `tests/test_hardcoded_secret.py` for suppression and known-prefix safety.
+- Verification: `python -m pytest tests/test_hardcoded_secret.py -q --maxfail=1`
+- Residual risk: Low-medium; mixed template literals containing unusual non-prefixed credentials may be under-reported, but suppression remains constrained and known-prefix coverage is unchanged.
+
 ## 2026-04-06 - TPD ast.get_source_segment crash mitigation (Issue #180)
 
 - Risk ID: RISK-SIG-2026-04-06-180

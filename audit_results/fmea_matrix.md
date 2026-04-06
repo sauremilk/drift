@@ -1,5 +1,12 @@
 # FMEA Matrix
 
+## 2026-04-06 - HSC YAML env-template variable-name false positives (Issue #181)
+
+| Signal | Failure Mode | Cause | Effect | Detection | Mitigation | S | O | D | RPN |
+|---|---|---|---|---|---|---:|---:|---:|---:|
+| HSC | FP: multi-line YAML templates with `${ENV_VAR}` placeholders are flagged as hardcoded secrets | Secret-shaped variable names (`*_API_KEY`, `*_TOKEN`) trigger generic fallback although string literal is a configuration template referencing env injection | High-severity triage noise and reduced trust in HSC precision for framework/sample repos | Field report on microsoft/agent-framework + targeted HSC regressions | Suppress configuration-style multi-line literals containing env placeholders (`${...}`) before generic fallback detection while preserving known-prefix checks first | 6 | 5 | 4 | 120 |
+| HSC | FN: credentials embedded in template-like literals could be under-reported | New suppression path could hide mixed literals that include both template markers and real credentials | Delayed remediation in rare misuse cases | Regression ensures known-prefix secrets are still emitted before suppression | Keep suppression narrow (multi-line + `${...}` + key/value template markers), preserve known-prefix detection ordering, monitor precision/recall deltas | 5 | 2 | 6 | 60 |
+
 ## 2026-04-06 - TPD ast.get_source_segment crash guard (Issue #180)
 
 | Signal | Failure Mode | Cause | Effect | Detection | Mitigation | S | O | D | RPN |

@@ -1,5 +1,20 @@
 # Fault Tree Analysis
 
+## 2026-04-06 - HSC YAML env-template variable-name false positives (Issue #181)
+
+### FT-1: False positives on YAML templates that reference environment placeholders
+- Top event: HSC emits hardcoded-secret findings for configuration template constants.
+- Branch A: Variable-name heuristic matches secret-like symbols (`*_API_KEY`, `*_TOKEN`).
+- Branch B: Assigned value is a multi-line configuration template with `${ENV_VAR}` placeholders.
+- Branch C: Generic fallback treats non-trivial string literals as suspicious despite env indirection.
+- Mitigation implemented: Add narrow suppression for configuration-style multi-line literals that contain `${...}` placeholders.
+
+### FT-2: Under-reporting risk after template suppression
+- Top event: Real secret in a template-like literal is not emitted.
+- Branch A: New template suppression path is active.
+- Branch B: Literal combines template placeholders and accidental credential value.
+- Mitigation implemented: Keep high-confidence known-prefix detection before suppression and constrain suppression to multi-line key/value templates with `${...}` markers.
+
 ## 2026-04-06 - TPD ast.get_source_segment crash guard (Issue #180)
 
 ### FT-1: TPD runtime abort on malformed AST source-position metadata

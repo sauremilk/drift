@@ -436,6 +436,38 @@ class TestHSCTrueNegatives:
         assert len(findings) == 1
         assert findings[0].rule_id == "hardcoded_api_token"
 
+    def test_yaml_env_placeholder_template_not_flagged(self, tmp_path: Path) -> None:
+        _write_source(
+            tmp_path,
+            "mcp_tool_yaml.py",
+            '''\
+            YAML_OPENAI_WITH_API_KEY = """
+            model:
+              openai_api_key: ${OPENAI_API_KEY}
+              endpoint: ${OPENAI_ENDPOINT}
+            """
+            ''',
+        )
+        signal = HardcodedSecretSignal(repo_path=tmp_path)
+        findings = signal.analyze([_make_pr("mcp_tool_yaml.py")], {}, DriftConfig())
+        assert len(findings) == 0
+
+    def test_yaml_env_template_suppression_does_not_hide_known_prefix(self, tmp_path: Path) -> None:
+        _write_source(
+            tmp_path,
+            "mcp_tool_yaml.py",
+            '''\
+            YAML_OPENAI_WITH_API_KEY = (
+                "ghp_ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefgh\\n"
+                "openai_api_key: ${OPENAI_API_KEY}"
+            )
+            ''',
+        )
+        signal = HardcodedSecretSignal(repo_path=tmp_path)
+        findings = signal.analyze([_make_pr("mcp_tool_yaml.py")], {}, DriftConfig())
+        assert len(findings) == 1
+        assert findings[0].rule_id == "hardcoded_api_token"
+
 
 # ---------------------------------------------------------------------------
 # Edge cases

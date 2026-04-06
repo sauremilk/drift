@@ -104,6 +104,8 @@ _SYMBOL_DECLARATION_RE = re.compile(r"^[A-Za-z_][A-Za-z0-9_:-]{2,}$")
 
 _OTEL_GENAI_SEMCONV_RE = re.compile(r"^gen_ai\.[a-z0-9_]+(?:\.[a-z0-9_]+)+$")
 
+_ENV_PLACEHOLDER_RE = re.compile(r"\$\{[A-Za-z_][A-Za-z0-9_]*\}")
+
 _ENUM_BASE_NAMES: frozenset[str] = frozenset({
     "Enum",
     "StrEnum",
@@ -282,6 +284,17 @@ def _is_otel_semconv_literal(string_val: str) -> bool:
     return bool(_OTEL_GENAI_SEMCONV_RE.match(string_val))
 
 
+def _is_env_placeholder_template_literal(string_val: str) -> bool:
+    """Return True for multi-line templates that only reference env placeholders."""
+    if "\n" not in string_val and "\r" not in string_val:
+        return False
+    if not _ENV_PLACEHOLDER_RE.search(string_val):
+        return False
+
+    # Restrict to configuration-style templates (YAML/INI-like key-value lines).
+    return ":" in string_val or "=" in string_val
+
+
 @register_signal
 class HardcodedSecretSignal(BaseSignal):
     """Detect hardcoded secrets and credentials in source code."""
@@ -454,6 +467,11 @@ class HardcodedSecretSignal(BaseSignal):
         # OpenTelemetry semantic-convention constants are telemetry metadata,
         # not credential material (for example gen_ai.usage.input_tokens).
         if _is_otel_semconv_literal(string_val):
+            return None
+
+        # Config templates can mention env vars like ${OPENAI_API_KEY} while
+        # still not containing any hardcoded credential value.
+        if _is_env_placeholder_template_literal(string_val):
             return None
 
         # Check for placeholder values.
