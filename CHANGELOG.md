@@ -23,6 +23,7 @@
 
 ### Fixed
 
+- Security Hygiene detect-secrets gate no longer flags intentional secret-like test fixtures in `tests/test_negative_context_export.py` by marking those literals with inline allowlist pragmas.
 - Emit an explicit MCP startup handshake for `drift mcp --serve --allow-tty` on both stdout and stderr, including `type: server_started`, `version`, and `tools_count` so agent workflows can reliably detect readiness (#193).
 - Prevent `mutant_duplicate` from over-penalizing intentional duplication in numbered tutorial/sample progression directories (for example `01_single_agent`, `02_multi_agent`) by extending step-context suppression while keeping non-step sample duplicates detectable (#179).
 - Prevent DCA from reporting executable Python utility/CI scripts (for example `.github/workflows/python-check-coverage.py`) as dead exports by treating script-context paths separately from import-oriented library modules (#176).
