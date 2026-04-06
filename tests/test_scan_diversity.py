@@ -181,6 +181,28 @@ class TestDiverseFindings:
         signals_in_findings = {f["signal"] for f in result["findings"]}
         assert len(signals_in_findings) >= 3
 
+    def test_scan_response_exposes_signal_abbrev_map(self):
+        """scan output includes a stable abbreviation -> signal_type map."""
+        analysis = SimpleNamespace(
+            findings=[_make_finding(PFS, 0.8, 0.8)],
+            drift_score=0.6,
+            severity=Severity.HIGH,
+            total_files=1,
+            total_functions=1,
+            ai_attributed_ratio=0.0,
+            trend=None,
+        )
+
+        result = _format_scan_response(
+            analysis,
+            config=DriftConfig(),
+            max_findings=10,
+            strategy="top-severity",
+        )
+
+        assert result["signal_abbrev_map"]["AVS"] == "architecture_violation"
+        assert result["signal_abbrev_map"]["HSC"] == "hardcoded_secret"
+
     def test_scan_reports_omitted_signals_when_truncated(self, monkeypatch):
         """scan response should expose signals omitted by truncation strategy."""
         import drift.api as api_module

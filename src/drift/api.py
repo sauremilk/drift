@@ -31,6 +31,7 @@ from drift.api_helpers import (
     resolve_signal,
     severity_rank,
     signal_abbrev,
+    signal_abbrev_map,
     signal_scope_label,
 )
 from drift.finding_context import is_non_operational_context, split_findings_by_context
@@ -449,6 +450,7 @@ def _format_scan_response(
     result = _base_response(
         drift_score=round(analysis.drift_score, 3),
         drift_score_scope=drift_score_scope or build_drift_score_scope(context="repo"),
+        signal_abbrev_map=signal_abbrev_map(),
         severity=analysis.severity.value,
         total_files=analysis.total_files,
         total_functions=analysis.total_functions,

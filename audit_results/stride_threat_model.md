@@ -1,5 +1,21 @@
 # STRIDE Threat Model
 
+## 2026-04-06 - Stable signal_abbrev_map in scan/analyze JSON (Issue #183)
+
+- Scope: Additive output metadata field `signal_abbrev_map` in both `scan` and
+  `analyze --format json` payloads for stable abbreviation-to-canonical mapping.
+- Input path changes: None.
+- Output path changes: Yes (existing JSON payloads gain one additive top-level field).
+- External interface changes: Additive only; existing fields and semantics stay intact.
+- STRIDE review:
+	- S (Spoofing): No identity or trust-boundary change.
+	- T (Tampering): Risk decreases because consumers can verify mapping from tool output
+	  instead of maintaining mutable external tables.
+	- R (Repudiation): Improved traceability of signal joins across commands.
+	- I (Information Disclosure): No new sensitive data; mapping is static taxonomy metadata.
+	- D (Denial of Service): Negligible overhead (small constant-size dictionary).
+	- E (Elevation of Privilege): No privilege boundary change.
+
 ## 2026-04-05 - Scan Cross-Validation Output Metadata (Issue #171)
 
 - Scope: Additive Felder im `scan`-Output für stabile Cross-Validation (`signal_id`, `signal_abbrev`, `signal_type`, `severity_rank`, `fingerprint`) sowie Top-Level-Block `cross_validation`.

@@ -1,5 +1,25 @@
 # Risk Register
 
+## 2026-04-06 - Stable signal abbreviation mapping in scan/analyze JSON (Issue #183)
+
+- Risk ID: RISK-OUT-2026-04-06-183
+- Component: src/drift/api.py, src/drift/api_helpers.py, src/drift/output/json_output.py
+- Type: Output contract clarity / cross-command interoperability
+- Description: `scan` and `analyze` used different identifier conventions without a
+  first-class mapping field, forcing consumers to hardcode and maintain manual lookup tables.
+- Trigger examples:
+  - Agent workflows that correlate `scan` findings (`signal_id`/abbrev) with
+    `analyze` findings (`signal_type`/snake_case).
+  - CI pipelines that merge or compare findings across commands and versions.
+- Impact: Reduced reproducibility and higher risk of wrong signal joins when mapping drifts.
+- Mitigation:
+  - Added top-level `signal_abbrev_map` (abbrev -> canonical `signal_type`) to
+    both `scan` and `analyze --format json` outputs.
+  - Reused centralized mapping source in `api_helpers` to prevent divergent maps.
+  - Added regression tests in `tests/test_scan_diversity.py` and `tests/test_json_output.py`.
+- Verification: `python -m pytest tests/test_scan_diversity.py tests/test_json_output.py -q --maxfail=1`
+- Residual risk: Low; additive schema extension, existing fields remain unchanged.
+
 ## 2026-04-06 - HSC YAML env-template variable-name false-positive mitigation (Issue #181)
 
 - Risk ID: RISK-SIG-2026-04-06-181

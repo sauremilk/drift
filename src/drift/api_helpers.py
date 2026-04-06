@@ -60,6 +60,14 @@ _SIGNAL_TO_ABBREV: dict[str, str] = {v.value: k for k, v in _ABBREV_TO_SIGNAL.it
 VALID_SIGNAL_IDS = sorted(_ABBREV_TO_SIGNAL.keys())
 
 
+def signal_abbrev_map() -> dict[str, str]:
+    """Return stable abbreviation -> canonical signal_type mapping."""
+    return {
+        abbrev: signal_type.value
+        for abbrev, signal_type in sorted(_ABBREV_TO_SIGNAL.items())
+    }
+
+
 def resolve_signal(name: str) -> SignalType | None:
     """Resolve a signal abbreviation or full name to ``SignalType``."""
     upper = name.upper()

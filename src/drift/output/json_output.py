@@ -6,7 +6,7 @@ import json
 from typing import Any
 
 from drift import __version__
-from drift.api_helpers import build_drift_score_scope, signal_abbrev
+from drift.api_helpers import build_drift_score_scope, signal_abbrev, signal_abbrev_map
 from drift.config import DriftConfig
 from drift.finding_context import classify_finding_context, split_findings_by_context
 from drift.models import Finding, ModuleScore, RepoAnalysis, Severity, SignalType
@@ -268,6 +268,7 @@ def analysis_to_json(
     data: dict[str, Any] = {
         "schema_version": SCHEMA_VERSION,
         "version": __version__,
+        "signal_abbrev_map": signal_abbrev_map(),
         "repo": analysis.repo_path.as_posix(),
         "analyzed_at": analysis.analyzed_at.isoformat(),
         "drift_score": round(analysis.drift_score, 3),
