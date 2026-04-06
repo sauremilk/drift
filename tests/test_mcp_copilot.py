@@ -664,8 +664,12 @@ class TestCLICommands:
         result = runner.invoke(main, ["mcp", "--serve", "--allow-tty"])
 
         assert result.exit_code == 0
-        event = _json.loads(result.stderr.strip())
+        stdout_event = _json.loads(result.stdout.strip())
+        stderr_event = _json.loads(result.stderr.strip())
+        assert stdout_event == stderr_event
+        event = stderr_event
         assert event["event"] == "drift.mcp.startup"
+        assert event["type"] == "server_started"
         assert event["ready"] is True
         assert event["tools_count"] == 1
         assert "version" in event

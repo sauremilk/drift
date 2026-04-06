@@ -23,6 +23,7 @@
 
 ### Fixed
 
+- Emit an explicit MCP startup handshake for `drift mcp --serve --allow-tty` on both stdout and stderr, including `type: server_started`, `version`, and `tools_count` so agent workflows can reliably detect readiness (#193).
 - Prevent `mutant_duplicate` from over-penalizing intentional duplication in numbered tutorial/sample progression directories (for example `01_single_agent`, `02_multi_agent`) by extending step-context suppression while keeping non-step sample duplicates detectable (#179).
 - Prevent DCA from reporting executable Python utility/CI scripts (for example `.github/workflows/python-check-coverage.py`) as dead exports by treating script-context paths separately from import-oriented library modules (#176).
 - Reduce HSC false positives for OpenTelemetry GenAI observability constants by excluding semantic-convention literals (for example `gen_ai.usage.input_tokens`) while still preserving known-prefix secret detection (#175).

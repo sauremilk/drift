@@ -26,11 +26,15 @@ def _emit_tty_startup_handshake(*, tools_count: int) -> None:
     """Emit a one-time startup event for manual TTY debug sessions."""
     payload = {
         "event": "drift.mcp.startup",
+        "type": "server_started",
         "version": __version__,
         "tools_count": tools_count,
         "ready": True,
     }
-    click.echo(json.dumps(payload), err=True)
+    serialized = json.dumps(payload)
+    # Emit on both streams for debug workflows that monitor only one channel.
+    click.echo(serialized)
+    click.echo(serialized, err=True)
 
 
 @click.command("mcp")
