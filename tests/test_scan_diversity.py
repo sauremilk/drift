@@ -1235,6 +1235,50 @@ class TestAgentInstruction:
 
 
 class TestFixPlanFindingIdDiagnostics:
+    def test_fix_plan_task_includes_automation_fitness_alias(self, monkeypatch):
+        """Fix-plan task schema exposes both automation_fit and automation_fitness."""
+        import drift.analyzer as analyzer_module
+        import drift.api as api_module
+        from drift.api import fix_plan
+        from drift.config import DriftConfig
+
+        analysis = SimpleNamespace(
+            findings=[],
+            drift_score=0.41,
+            severity=Severity.MEDIUM,
+            total_files=5,
+            total_functions=10,
+            ai_attributed_ratio=0.0,
+            trend=None,
+        )
+        tasks = [
+            AgentTask(
+                id="eds-1111111111",
+                signal_type=SignalType.EXPLAINABILITY_DEFICIT,
+                severity=Severity.HIGH,
+                priority=1,
+                title="Improve explainability",
+                description="desc",
+                action="action",
+                automation_fit="high",
+            ),
+        ]
+
+        monkeypatch.setattr(DriftConfig, "load", staticmethod(lambda *a, **kw: object()))
+        monkeypatch.setattr(analyzer_module, "analyze_repo", lambda *a, **kw: analysis)
+        monkeypatch.setattr(
+            "drift.output.agent_tasks.analysis_to_agent_tasks",
+            lambda *a, **kw: tasks,
+        )
+        monkeypatch.setattr(api_module, "_emit_api_telemetry", lambda **kw: None)
+
+        result = fix_plan(Path("."), max_tasks=5)
+
+        assert result["task_count"] == 1
+        task = result["tasks"][0]
+        assert task["automation_fit"] == "high"
+        assert task["automation_fitness"] == "high"
+
     def test_fix_plan_finding_id_accepts_rule_id(self, monkeypatch):
         """finding_id may use rule_id/signal style from scan output."""
         import drift.analyzer as analyzer_module

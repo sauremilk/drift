@@ -319,6 +319,7 @@ def _fix_first_concise(analysis: RepoAnalysis, max_items: int = 5) -> list[dict[
 
 def _task_to_api_dict(t: Any) -> dict[str, Any]:
     """Convert an AgentTask to the API dict format."""
+    automation_fit = t.automation_fit
     return {
         "id": t.id,
         "priority": t.priority,
@@ -333,7 +334,8 @@ def _task_to_api_dict(t: Any) -> dict[str, Any]:
         "symbol": t.symbol,
         "related_files": t.related_files,
         "complexity": t.complexity,
-        "automation_fit": t.automation_fit,
+        "automation_fit": automation_fit,
+        "automation_fitness": automation_fit,
         "review_risk": t.review_risk,
         "change_scope": t.change_scope,
         "constraints": t.constraints,
