@@ -471,11 +471,14 @@ class SignalPhase:
                     st_enum = getattr(signal, "signal_type", None)
                     sort_key = st_enum.value if st_enum is not None else signal.name
                     results.append((sort_key, findings))
-                except Exception:
-                    logging.getLogger("drift").warning(
-                        "Signal '%s' failed; skipping.",
+                except Exception as exc:
+                    logger = logging.getLogger("drift")
+                    logger.warning(
+                        "Signal '%s' failed; skipping. %s: %s",
                         signal.name,
-                        exc_info=True,
+                        type(exc).__name__,
+                        exc,
+                        exc_info=logger.isEnabledFor(logging.DEBUG),
                     )
                     degradation.causes.add("signal_failure")
                     degradation.components.add(f"signal:{signal.name}")
@@ -484,7 +487,11 @@ class SignalPhase:
                             cause="signal_failure",
                             component=f"signal:{signal.name}",
                             message=f"Signal '{signal.name}' failed and was skipped.",
-                            details={"signal": signal.name},
+                            details={
+                                "signal": signal.name,
+                                "error_type": type(exc).__name__,
+                                "error_message": str(exc),
+                            },
                         ),
                     )
 

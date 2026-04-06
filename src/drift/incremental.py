@@ -456,11 +456,13 @@ class IncrementalSignalRunner:
                 st = getattr(inst, "signal_type", None)
                 if st is not None:
                     file_local_signal_names.append(st.value)
-            except Exception:
+            except Exception as exc:
                 logger.warning(
-                    "Incremental signal '%s' failed; skipping.",
+                    "Incremental signal '%s' failed; skipping. %s: %s",
                     cls.__name__,
-                    exc_info=True,
+                    type(exc).__name__,
+                    exc,
+                    exc_info=logger.isEnabledFor(logging.DEBUG),
                 )
 
         # 4. Carry forward non-file-local findings from baseline

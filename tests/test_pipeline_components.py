@@ -193,6 +193,12 @@ def test_signal_phase_records_degradation_on_signal_failure(tmp_path: Path) -> N
     assert "signal_failure" in degradation.causes
     assert "signal:failing" in degradation.components
     assert len(degradation.events) == 1
+    event = degradation.events[0]
+    assert event["cause"] == "signal_failure"
+    assert event["component"] == "signal:failing"
+    assert event["details"]["signal"] == "failing"
+    assert event["details"]["error_type"] == "RuntimeError"
+    assert event["details"]["error_message"] == "boom"
 
 
 def test_signal_phase_filters_active_signals(tmp_path: Path) -> None:
