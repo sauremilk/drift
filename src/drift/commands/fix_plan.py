@@ -127,6 +127,12 @@ def fix_plan(
         include_non_operational=include_non_operational,
         on_progress=progress_cb,
     )
+
+    # API-level validation errors (e.g. unknown signal) must surface as
+    # CLI failures so machine-mode callers receive a non-zero exit code.
+    if bool(result.get("error")):
+        raise click.UsageError(str(result.get("message", "Invalid fix-plan input")))
+
     text = to_json(result)
     if output is not None:
         output.write_text(text + "\n", encoding="utf-8")

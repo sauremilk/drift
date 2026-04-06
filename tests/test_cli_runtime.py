@@ -292,3 +292,56 @@ def test_safe_main_scan_output_path_error_is_config_error_json(
     assert payload["error"] is True
     assert payload["error_code"] == "DRIFT-2003"
     assert payload["exit_code"] == 2
+
+
+def test_safe_main_fix_plan_invalid_signal_emits_single_json_and_nonzero(
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+    tmp_path,
+) -> None:
+    import drift.commands.fix_plan as fix_plan_command
+
+    monkeypatch.setenv("DRIFT_ERROR_FORMAT", "json")
+    monkeypatch.setattr(
+        fix_plan_command,
+        "api_fix_plan",
+        lambda *args, **kwargs: {
+            "error": True,
+            "schema_version": "2.0",
+            "error_code": "DRIFT-1003",
+            "message": "Unknown signal: 'INVALID_SIGNAL'",
+            "invalid_fields": [
+                {
+                    "field": "signal",
+                    "value": "INVALID_SIGNAL",
+                    "reason": "Not a valid signal ID",
+                }
+            ],
+        },
+    )
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "drift",
+            "fix-plan",
+            "--repo",
+            str(tmp_path),
+            "--signal",
+            "INVALID_SIGNAL",
+        ],
+    )
+
+    with pytest.raises(SystemExit) as exc_info:
+        cli.safe_main()
+
+    assert exc_info.value.code == 2
+    captured = capsys.readouterr()
+    assert captured.out == ""
+    stderr = captured.err.strip()
+    payload = json.loads(stderr)
+    assert payload["error"] is True
+    assert payload["error_code"] == "DRIFT-1012"
+    assert payload["exit_code"] == 2
+    assert payload["message"] == "Unknown signal: 'INVALID_SIGNAL'"
+    assert "Usage:" not in stderr
