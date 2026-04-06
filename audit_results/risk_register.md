@@ -1,5 +1,21 @@
 # Risk Register
 
+## 2026-04-06 - DCA script-context false-positive mitigation (Issue #176)
+
+- Risk ID: RISK-SIG-2026-04-06-176
+- Component: src/drift/signals/dead_code_accumulation.py
+- Type: Signal quality (false positives / precision calibration)
+- Description: DCA reported script-internal functions in executable Python utility/CI modules as unused exports because usage is often local call graph + `__main__` execution, not cross-file imports.
+- Trigger examples:
+  - microsoft/agent-framework: `.github/workflows/python-check-coverage.py`
+  - Similar repositories with executable Python scripts under `.github/workflows`, `scripts`, `tools`, or `bin`.
+- Impact: Medium-high false-positive noise in DCA, reduced trust in dead-code recommendations.
+- Mitigation:
+  - Added conservative script-context path suppression for Python files in script-like locations.
+  - Added regression test in `tests/test_dead_code_accumulation.py` for `.github/workflows/python-check-coverage.py`.
+- Verification: `python -m pytest tests/test_dead_code_accumulation.py -q --maxfail=1`
+- Residual risk: Medium-low; script-like paths containing genuine import-oriented library modules may be under-reported, but scope is intentionally limited to executable-context locations.
+
 ## 2026-04-05 - HSC OpenTelemetry GenAI semconv false-positive mitigation (Issue #175)
 
 - Risk ID: RISK-SIG-2026-04-05-175

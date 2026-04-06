@@ -106,6 +106,25 @@ _INTERNAL_LIBRARY_PATH_TOKENS: frozenset[str] = frozenset({
     "generated",
 })
 
+_SCRIPT_PATH_TOKENS: frozenset[str] = frozenset({
+    "scripts",
+    "tools",
+    "bin",
+    "workflows",
+})
+
+
+def _is_script_context_path(file_path: Path) -> bool:
+    """Return True for path contexts that are likely executable scripts."""
+    tokens = _path_tokens(file_path)
+    if not tokens:
+        return False
+
+    if len(tokens) >= 2 and tokens[0] == ".github" and tokens[1] == "workflows":
+        return True
+
+    return any(token in _SCRIPT_PATH_TOKENS for token in tokens)
+
 
 def _path_tokens(file_path: Path) -> list[str]:
     """Return lowercase path tokens for deterministic path heuristics."""
@@ -233,6 +252,9 @@ class DeadCodeAccumulationSignal(BaseSignal):
             if pr.language not in _SUPPORTED_LANGUAGES:
                 continue
             if is_test_file(pr.file_path):
+                continue
+            if pr.language == "python" and _is_script_context_path(pr.file_path):
+                # Script-like modules are typically executed, not imported.
                 continue
 
             file_name = pr.file_path.name

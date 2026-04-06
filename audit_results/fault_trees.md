@@ -1,5 +1,20 @@
 # Fault Tree Analysis
 
+## 2026-04-06 - DCA script-context false positives (Issue #176)
+
+### FT-1: False positives on executable Python script modules
+- Top event: DCA emits dead-code findings for script helper functions that are used only by local control flow.
+- Branch A: File is an executable script path (for example `.github/workflows/*`, `scripts/*`, `tools/*`, `bin/*`).
+- Branch B: Symbol usage occurs through local function calls and script entrypoint execution, not via cross-file imports.
+- Branch C: Export/import heuristic interprets public symbols as unused exports.
+- Mitigation implemented: Skip export-based DCA evaluation for Python files in conservative script-context paths.
+
+### FT-2: Under-reporting risk after script-context suppression
+- Top event: True dead code within script-like paths is not surfaced by DCA.
+- Branch A: Suppression triggers based on script-context path token.
+- Branch B: File actually contains import-oriented module code despite script-like location.
+- Mitigation implemented: Keep suppression narrow and path-scoped, preserve existing behavior for non-script module paths, and monitor future field reports.
+
 ## 2026-04-05 - HSC OpenTelemetry GenAI semconv false positives (Issue #175)
 
 ### FT-1: False positives on OpenTelemetry GenAI semconv constants

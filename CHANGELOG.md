@@ -23,6 +23,7 @@
 
 ### Fixed
 
+- Prevent DCA from reporting executable Python utility/CI scripts (for example `.github/workflows/python-check-coverage.py`) as dead exports by treating script-context paths separately from import-oriented library modules (#176).
 - Reduce HSC false positives for OpenTelemetry GenAI observability constants by excluding semantic-convention literals (for example `gen_ai.usage.input_tokens`) while still preserving known-prefix secret detection (#175).
 - Suppress DIA missing-README finding for bootstrap-sized repositories (≤1 parsed Python file or only `__init__.py` skeletons) to avoid false positives on newly scaffolded projects.
 - Reduce token-heavy duplication in `drift export-context` by grouping remediation-equivalent anti-pattern findings per signal/remediation across `instructions`, `prompt`, and `raw` output formats, while preserving forbidden-pattern variants for traceability (#174).

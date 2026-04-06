@@ -245,3 +245,21 @@ class TestDCATrueNegative:
         findings = signal.analyze([pr_pkg_init, pr_public], {}, DriftConfig())
 
         assert len(findings) == 0
+
+    def test_script_context_exports_are_not_reported(self) -> None:
+        """Executable script paths should not be treated as import-style exports."""
+        pr_script = ParseResult(
+            file_path=Path(".github/workflows/python-check-coverage.py"),
+            language="python",
+            functions=[
+                _func("collect_modules", ".github/workflows/python-check-coverage.py", 10),
+                _func("calculate_coverage", ".github/workflows/python-check-coverage.py", 25),
+                _func("main", ".github/workflows/python-check-coverage.py", 40),
+            ],
+            imports=[],
+        )
+
+        signal = DeadCodeAccumulationSignal()
+        findings = signal.analyze([pr_script], {}, DriftConfig())
+
+        assert len(findings) == 0

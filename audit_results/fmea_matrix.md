@@ -1,5 +1,12 @@
 # FMEA Matrix
 
+## 2026-04-06 - DCA script-context false positives (Issue #176)
+
+| Signal | Failure Mode | Cause | Effect | Detection | Mitigation | S | O | D | RPN |
+|---|---|---|---|---|---|---:|---:|---:|---:|
+| DCA | FP: executable Python scripts are flagged for unused exports | DCA infers usage primarily from cross-file imports and treats script helpers as library exports | CI/utility scripts get noisy dead-code recommendations and DCA trust drops | Field test on microsoft/agent-framework + targeted DCA regression | Suppress export-based DCA evaluation for Python files in script-like path contexts (`.github/workflows`, `scripts`, `tools`, `bin`) | 6 | 5 | 4 | 120 |
+| DCA | FN: true dead exports in script-like paths can be under-reported | Path-based script-context suppression bypasses report generation for those files | Some actionable cleanup candidates in script directories may be missed | Regression keeps non-script contexts unchanged | Keep suppression conservative and path-scoped to executable-context locations only | 4 | 3 | 6 | 72 |
+
 ## 2026-04-05 - HSC OpenTelemetry GenAI semconv false positives (Issue #175)
 
 | Signal | Failure Mode | Cause | Effect | Detection | Mitigation | S | O | D | RPN |
