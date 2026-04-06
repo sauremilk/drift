@@ -1010,6 +1010,41 @@ class TestScanSignalFiltering:
         assert result["selection_diagnostics"]["max_per_signal"] == 2
         assert max(per_signal.values()) <= 2
 
+    def test_single_signal_scan_exposes_suppressed_finding_counts(self, monkeypatch):
+        import drift.api as api_module
+
+        findings = [_make_finding(AVS, 0.9, 0.9 - i * 0.01) for i in range(6)]
+        analysis = SimpleNamespace(
+            findings=findings,
+            drift_score=0.5,
+            severity=Severity.HIGH,
+            total_files=10,
+            total_functions=25,
+            ai_attributed_ratio=0.0,
+            trend=None,
+        )
+        monkeypatch.setattr(
+            api_module, "_finding_concise",
+            lambda f: {"signal": api_module.signal_abbrev(f.signal_type), "title": f.title},
+        )
+        monkeypatch.setattr(
+            api_module, "_fix_first_concise",
+            lambda analysis, max_items=5: [],
+        )
+
+        result = _format_scan_response(
+            analysis,
+            config=DriftConfig(),
+            max_findings=2,
+            strategy="top-severity",
+            signal_filter={"AVS"},
+        )
+
+        diagnostics = result["selection_diagnostics"]
+        assert diagnostics["suppressed_findings_total"] == 4
+        assert diagnostics["suppressed_findings_by_signal"] == {"AVS": 4}
+        assert result["avs_suppressed_findings"] == 4
+
     def test_scan_forwards_exclude_signals_to_config(self, monkeypatch):
         import drift.analyzer as analyzer_module
         import drift.api as api_module

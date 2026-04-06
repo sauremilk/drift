@@ -514,6 +514,22 @@ def _format_scan_response(
 
         if omitted_signals:
             selection_diagnostics["signals_with_omitted_findings"] = omitted_signals
+            suppressed_findings_by_signal = {
+                str(item["signal"]): int(item["omitted"])
+                for item in omitted_signals
+            }
+            selection_diagnostics["suppressed_findings_total"] = sum(
+                suppressed_findings_by_signal.values()
+            )
+            selection_diagnostics["suppressed_findings_by_signal"] = (
+                suppressed_findings_by_signal
+            )
+
+            if signal_filter and len(signal_filter) == 1:
+                selected_signal = next(iter(signal_filter)).upper()
+                suppressed_count = suppressed_findings_by_signal.get(selected_signal, 0)
+                if suppressed_count > 0:
+                    result[f"{selected_signal.lower()}_suppressed_findings"] = suppressed_count
 
         if strategy == "diverse" and max_findings > 0:
             top_window = ranked_selected[:max_findings]
