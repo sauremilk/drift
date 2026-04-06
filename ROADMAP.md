@@ -4,7 +4,7 @@ This roadmap communicates what the project needs most right now,
 what is accessible for new contributors, and what is explicitly
 deprioritized. It is updated with each release.
 
-Last updated: v2.4.4 (2026-04-05)
+Last updated: v2.5.1 (2026-04-06)
 
 ---
 
@@ -14,6 +14,17 @@ Last updated: v2.4.4 (2026-04-05)
 Goal for this quarter: validate demand, reach ≥10 external users.
 
 Exceptions: bugfixes that block installation or first-run experience.
+
+### Distribution Milestones
+
+| Meilenstein | Bedingung | Frühester Termin | Status |
+|---|---|---|---|
+| **pre-commit Discoverability** | `.pre-commit-hooks.yaml` im Repo vorhanden | ✅ erledigt | Automatisch via GitHub-Suche + Sourcegraph indexiert |
+| **awesome-static-analysis PR** | >20 Stars, ≥3 Monate alt, >1 Kontributor | ~18.06.2026 | ⏳ Gate nicht erfüllt (7 Stars, 19 Tage) |
+| **awesome-python PR** | ≥100 Stars, ≥3 Monate alt | ~18.06.2026 + Stars-Wachstum | ⏳ Gate nicht erfüllt (hard auto-reject davor) |
+| **pre-commit.com Featured** | >500 Stars | offen | ⏳ langfristig |
+
+Vollständige Gate-Kriterien und vorbereitete PR-Texte: [`docs/distribution/awesome-submissions.md`](docs/distribution/awesome-submissions.md)
 
 ## Go support MVP (post-moratorium track)
 
@@ -62,6 +73,8 @@ moratorium for language expansion.
 - **v1.3.x -> v1.4.x:** Machine-readable reliability hardened — consistent JSON error envelopes across CLI and MCP flows, plus deterministic baseline refresh reasoning.
 - **v1.5.0 -> v2.1.x:** Agent UX and release operations matured — agent-focused command/output improvements, PSR-based automated release pipeline, and improved governance/maintainer workflows.
 - **v2.4.x:** Context and export surfaces expanded — finding-context triage policy, CSV output for `analyze`/`check`, `diff` score-basis clarity, and stronger MCP robustness (schema typing, structured error envelopes, Windows stdio stability).
+
+- **v2.5.0:** Schema-based config validation, mutation testing infrastructure, per-signal cap for scan, signal abbreviation map, CITATION.cff automation, and diverse-strategy scan improvements.
 
 ---
 

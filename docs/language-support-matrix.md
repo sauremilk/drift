@@ -1,3 +1,5 @@
+# Language Support Matrix
+
 | Language | Support Level | Since | Definition of Done |
 | --- | --- | --- | --- |
 | Python | full-semantic | v0.1 | All 7 core signals run on language-native AST (`ast` stdlib); findings include reproducible evidence and actionable next step. Validated on 8+ repos with 85% precision. |

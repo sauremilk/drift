@@ -33,6 +33,8 @@ pip install drift-analyzer
 drift analyze --repo .
 ```
 
+Adopt drift through the path that fits your team: package install from PyPI, a [GitHub Action](#add-to-ci-start-report-only), or the built-in [pre-commit hook](#pre-commit-hook).
+
 ```text
 ╭─ drift analyze  myproject/ ──────────────────────────────────────────────────╮
 │  DRIFT SCORE  0.52  Δ -0.031 ↓ improving  │  87 files  │  AI: 34%  │  2.1s │
@@ -81,19 +83,29 @@ Once the team trusts the output, tighten: `fail-on: high`.
 
 More: [Quick Start](docs-site/getting-started/quickstart.md) · [Example Findings](docs-site/product/example-findings.md) · [Team Rollout](docs-site/getting-started/team-rollout.md)
 
-## AI-assisted workflows
+### Discovery Surfaces
+
+If you are evaluating drift for team rollout, the three highest-signal entry points are already available in this repo:
+
+- PyPI package: `pip install drift-analyzer`
+- GitHub Action: `uses: mick-gsk/drift@v1`
+- pre-commit hook: `repo: https://github.com/mick-gsk/drift`
+
+For questions, rollout feedback, and real-world findings, use [GitHub Discussions](https://github.com/mick-gsk/drift/discussions).
+
+## AI-Assisted Workflows
 
 Drift integrates with AI coding sessions (Copilot, Cursor, Claude) and MCP-capable editors:
 
 ```bash
 drift scan --repo . --max-findings 5   # session baseline for agents
 drift diff --staged-only               # pre-commit check
-drift mcp --serve                      # MCP server for IDE integration
 drift fix-plan --repo .                # agent-friendly repair tasks
+drift mcp --serve                      # MCP server for IDE integration
 ```
 
 <div align="center">
-  <img src="demos/agent-workflow.gif" alt="drift agent workflow: scan → fix-plan → diff" width="720">
+  <img src="demos/agent-workflow.gif" alt="drift agent workflow: scan → diff --staged-only → fix-plan" width="720">
 </div>
 
 Full setup: [Integrations](docs-site/integrations.md) · [MCP](docs-site/integrations.md) · [Vibe-Coding Guide](examples/vibe-coding/README.md)
@@ -242,7 +254,7 @@ The fastest way to add drift to your workflow:
 # .pre-commit-config.yaml
 repos:
   - repo: https://github.com/mick-gsk/drift
-    rev: vX.Y.Z                  # pin to the latest stable tag from GitHub Releases
+    rev: vX.Y.Z                  # replace with the latest tag from https://github.com/mick-gsk/drift/releases
     hooks:
       - id: drift-check          # blocks on high-severity findings
       # - id: drift-report        # report-only alternative (start here)
@@ -376,7 +388,7 @@ Further reading:
 - **1 645+ tests**, 0 regressions
 - **Mutation kill rate: 100 %** (23/23 mutants killed)
   - All 5 core signals (PFS, AVS, MDS, EDS, GCD) at 100 %
-- Baseline: [`benchmark_results/mutation_baseline.json`](benchmark_results/mutation_baseline.json)
+- Baseline: [`benchmark_results/mutation_benchmark.json`](benchmark_results/mutation_benchmark.json)
 
 ## Release status
 

@@ -96,7 +96,7 @@ Files: 490 | Functions: 5,073
 
 ### Was sich NICHT ändert
 
-- Die Kern-Signale bleiben stabil. Seit v0.8.0 sind alle 15 Signale scoring-aktiv (6 Core + 9 promoted/new).
+- Die Kern-Signale bleiben stabil. Seit v0.8.0 sind alle 15 Kern-Signale scoring-aktiv (6 Core + 9 promoted/new). Seit v2.0.0 kommen 8 weitere Signale im report-only Modus hinzu (23 total).
 - Die Scoring-Formel bleibt deterministisch.
 - Kein LLM in der Pipeline.
 - Kein neuer CLI-Befehl nötig – die bestehenden Outputs (Rich, JSON, SARIF) werden angereichert.

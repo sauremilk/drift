@@ -6,22 +6,9 @@
 | ------- | ------------------ |
 | 2.5.x   | :white_check_mark: |
 | 2.4.x   | :white_check_mark: |
-| 2.3.x   | :white_check_mark: |
-| 2.2.x   | :white_check_mark: |
-| 2.1.x   | :white_check_mark: |
-| 2.0.x   | :white_check_mark: |
-| 1.5.x   | :white_check_mark: |
-| 1.4.x   | :white_check_mark: |
-| 1.3.x   | :white_check_mark: |
-| 1.2.x   | :white_check_mark: |
-| 1.1.x   | :white_check_mark: |
-| 0.10.x  | :white_check_mark: |
-| 0.9.x   | :white_check_mark: |
-| 0.8.x   | :white_check_mark: |
-| 0.7.x   | :white_check_mark: |
-| < 0.7   | :x:                |
+| < 2.4   | :x:                |
 
-Current release line: **v2.4.0**.
+Current release line: **v2.5.1**.
 
 ## Reporting a Vulnerability
 

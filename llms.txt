@@ -2,7 +2,7 @@
 
 > Deterministic architectural drift detection for AI-accelerated Python codebases. Drift is a static analyzer for architecture erosion analysis and cross-file coherence detection, covering pattern fragmentation, architecture violations, dependency cycles, mutant duplicates, and structural technical debt. No LLM in the detection pipeline.
 
-Release status: v2.5.0
+Release status: v2.5.1
 
 Package: drift-analyzer
 Install: pip install -q drift-analyzer  (add -q for quiet output, hiding verbose dependency chains)
@@ -23,6 +23,7 @@ Command: drift analyze --repo .
 
 ## Signals
 
+### Scoring-active (15)
 - PFS: Pattern Fragmentation (weight 0.16)
 - AVS: Architecture Violations (weight 0.16)
 - MDS: Mutant Duplicates (weight 0.13)
@@ -38,6 +39,16 @@ Command: drift analyze --repo .
 - ECM: Exception Contract Drift (weight 0.03)
 - COD: Cohesion Deficit (weight 0.01)
 - CCC: Co-Change Coupling (weight 0.005)
+
+### Report-only (8, weight 0.0, pending validation)
+- TSA: TypeScript Architecture — TS/JS layer leaks, cycles, cross-package imports
+- CXS: Cognitive Complexity — deeply nested control flow
+- FOE: Fan-Out Explosion — high dependency fan-out
+- CIR: Circular Import — circular dependency chains
+- DCA: Dead Code Accumulation — unreferenced symbols
+- MAZ: Missing Authorization — API endpoints lacking auth checks (CWE-862)
+- ISD: Insecure Default — unsafe default config patterns (CWE-1188)
+- HSC: Hardcoded Secret — embedded secrets/credentials (CWE-798)
 
 ## Docs
 

@@ -18,3 +18,26 @@ Operational assets for discovery and adoption work.
 ## KPI Focus
 
 Primary KPI for week one: increase PyPI downloads with attributable referral traffic.
+
+## Windows Patch Paths
+
+When editing distribution assets on Windows with patch-based tooling:
+
+- use one path format consistently inside the patch
+- do not mix `\\` and `/` in the same path string
+- prefer forward-slash reasoning for repo-relative paths
+- if patch application fails, check path normalization before changing content
+
+Treat these failures as path-resolution problems first, not SVG or Markdown content problems.
+
+## SVG Review Failures
+
+Reject a public SVG revision if any of these are true:
+
+- the headline is clipped or runs too close to the canvas edge
+- background ornaments sit behind high-priority copy and lower readability
+- footer claims are so faint that they look accidental instead of intentional
+- the composition feels tightly cropped at the top, bottom, or right edge
+- supporting copy drops to a size that is marginal in normal GitHub README view
+- the flow from problem to Drift output to repair step is decorative instead of obvious
+- the center panel overwhelms the side panels so strongly that the sequence loses clarity

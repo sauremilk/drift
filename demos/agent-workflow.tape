@@ -16,15 +16,8 @@ Sleep 800ms
 Type ".venv\\Scripts\\drift.exe scan --repo examples/demo-project --max-findings 5 --select PFS,BEM,EDS" Sleep 350ms Enter
 Sleep 7s
 
-# Step 2: Prioritized repair tasks
-Type "echo Step 2 — prioritized repair tasks for agent" Sleep 250ms Enter
-Sleep 1000ms
-
-Type ".venv\\Scripts\\drift.exe fix-plan --repo examples/demo-project --max-tasks 3" Sleep 350ms Enter
-Sleep 7s
-
-# Step 3: Agent diff guardrail (pre-commit)
-Type "echo Step 3 — pre-commit guardrail (staged diff)" Sleep 250ms Enter
+# Step 2: Agent diff guardrail (pre-commit)
+Type "echo Step 2 — pre-commit guardrail (staged diff)" Sleep 250ms Enter
 Sleep 800ms
 
 Type "cd demos\\.tmp_agent_workflow_demo 2>nul & rmdir /s /q demos\\.tmp_agent_workflow_demo 2>nul" Sleep 200ms Enter
@@ -39,3 +32,10 @@ Type "echo # staged drift demo >> services\\user_service.py && git add services\
 Sleep 500ms
 Type "cd ..\\..\ && .venv\\Scripts\\drift.exe diff --repo demos\\.tmp_agent_workflow_demo --staged-only --max-findings 3" Sleep 350ms Enter
 Sleep 5s
+
+# Step 3: Prioritized repair tasks
+Type "echo Step 3 — prioritized repair tasks for agent" Sleep 250ms Enter
+Sleep 1000ms
+
+Type ".venv\\Scripts\\drift.exe fix-plan --repo examples/demo-project --max-tasks 3" Sleep 350ms Enter
+Sleep 7s

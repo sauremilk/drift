@@ -81,7 +81,9 @@ baselines per repository and automatically invalidates them when:
 
 ---
 
-## Signals (15 detectors)
+## Signals (23 total — 15 scoring-active, 8 report-only)
+
+### Scoring-active signals
 
 | Abbrev | Signal | Detects |
 |--------|--------|---------|
@@ -100,6 +102,19 @@ baselines per repository and automatically invalidates them when:
 | **ECM** | Exception Contract Drift | Public functions whose exception profile changed across recent commits (git-based, MVP) |
 | **COD** | Cohesion Deficit | Modules that mix weakly related semantic responsibilities |
 | **CCC** | Co-Change Coupling | Files that repeatedly co-change without explicit import dependency |
+
+### Report-only signals (weight 0.0, pending validation)
+
+| Abbrev | Signal | Detects |
+|--------|--------|---------|
+| **TSA** | TypeScript Architecture | TS/JS layer leaks, cycles, cross-package imports |
+| **CXS** | Cognitive Complexity | Functions with deeply nested, hard-to-follow control flow |
+| **FOE** | Fan-Out Explosion | Modules/functions with unusually high dependency fan-out |
+| **CIR** | Circular Import | Circular dependency chains in the module import graph |
+| **DCA** | Dead Code Accumulation | Unreferenced functions/classes/symbols accumulating over time |
+| **MAZ** | Missing Authorization | API endpoints lacking auth/authz checks (CWE-862) |
+| **ISD** | Insecure Default | Unsafe default config patterns (CWE-1188) |
+| **HSC** | Hardcoded Secret | Embedded secrets/tokens/credentials in source (CWE-798) |
 
 Adding a new signal: see [CONTRIBUTING.md → Adding a new signal](CONTRIBUTING.md#adding-a-new-signal).
 
@@ -128,13 +143,25 @@ make clean       Remove caches
 ### CLI subcommands
 
 ```
-drift analyze    Full repo analysis (--format rich|json|sarif)
-drift check      CI diff-mode (--fail-on high, --diff HEAD~1)
-drift self       Analyze drift's own codebase
-drift patterns   Code pattern catalog
-drift timeline   Root-cause timeline per module
-drift trend      Score trend over time
-drift badge      Generate shields.io badge URL
+drift analyze          Full repo analysis (--format rich|json|sarif)
+drift check            CI diff-mode (--fail-on high, --diff HEAD~1)
+drift scan             Agent-native repository scan
+drift diff             Change-focused drift analysis for agent workflows
+drift fix-plan         Prioritized repair plan for agents
+drift copilot-context  Generate Copilot instructions from analysis
+drift export-context   Export negative context for agent consumption
+drift explain          Describe a signal in the terminal
+drift init             Scaffold drift.yaml config and CI integration
+drift mcp              Start drift as an MCP server (VS Code / Copilot)
+drift validate         Preflight config and environment validation
+drift config           Configuration inspection and schema export
+drift baseline         Save and compare finding baselines
+drift brief            Pre-task structural briefing for agent delegation
+drift self             Analyze drift's own codebase
+drift patterns         Code pattern catalog
+drift timeline         Root-cause timeline per module
+drift trend            Score trend over time
+drift badge            Generate shields.io badge URL
 ```
 
 ---
@@ -162,7 +189,7 @@ drift badge      Generate shields.io badge URL
 | Integration | Full pipeline on `tmp_repo` fixture | `make test` |
 | Ground truth | Precision/recall on labeled findings | `pytest tests/test_precision_recall.py` |
 | Smoke (slow) | Real open-source repos | `make test-all` (marker: `slow`) |
-| Mutation | Synthetic injections for recall | `python scripts/mutation_benchmark.py` |
+| Mutation | Synthetic injections for recall | `python scripts/_mutation_benchmark.py` |
 | Property-based | Fuzzing of config/path boundaries | `pytest tests/test_property_based.py` |
 
 **Shared fixture:** `conftest.py` → `tmp_repo` creates a complete 3-layer mini-project (services/api/db).
@@ -175,7 +202,7 @@ Three tools supplement the standard test suite. They are not required for every 
 
 ### Vulture — Dead Code Detection
 
-Finds unerreichbaren Code, der durch Tests nicht erreichbar ist. Läuft automatisch im CI (test-Job, nach mypy).
+Finds unreachable code that tests do not exercise. Runs automatically in CI (test job, after mypy).
 
 ```bash
 python -m vulture src/drift --min-confidence 80

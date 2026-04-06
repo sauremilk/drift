@@ -3742,6 +3742,224 @@ BAT_BOUNDARY_TP = GroundTruthFixture(
 )
 
 
+# ── MDS: PEP 562 lazy __getattr__ false-positive mitigation (RISK-SIG-2026-04-05-144) ──
+
+MDS_TN_PACKAGE_LAZY_GETATTR = GroundTruthFixture(
+    name="mds_tn_package_lazy_getattr",
+    description=(
+        "Identical __getattr__ in two __init__.py files (PEP 562 lazy loading) "
+        "→ should NOT fire MDS"
+    ),
+    kind=FixtureKind.CONFOUNDER,
+    files={
+        "pkg_a/__init__.py": """\
+            def __getattr__(name):
+                import importlib
+                mod = importlib.import_module(f".{name}", __name__)
+                globals()[name] = mod
+                return mod
+        """,
+        "pkg_b/__init__.py": """\
+            def __getattr__(name):
+                import importlib
+                mod = importlib.import_module(f".{name}", __name__)
+                globals()[name] = mod
+                return mod
+        """,
+    },
+    expected=[
+        ExpectedFinding(
+            signal_type=SignalType.MUTANT_DUPLICATE,
+            file_path="pkg_a/__init__.py",
+            should_detect=False,
+            description=(
+                "PEP 562 lazy __getattr__ in __init__.py must not be flagged as duplicate"
+            ),
+        ),
+    ],
+)
+
+
+# ── TPD: Inline negative assertions false-negative mitigation (RISK-SIG-2026-04-05-143) ──
+
+TPD_TN_NEGATIVE_ASSERT_INLINE = GroundTruthFixture(
+    name="tpd_tn_negative_assert_inline",
+    description=(
+        "Test suite with 'assert not', 'assert ... is None', 'assert ... is False' "
+        "→ should NOT fire TPD (inline negative assertions counted)"
+    ),
+    kind=FixtureKind.CONFOUNDER,
+    files={
+        "tests/__init__.py": "",
+        "tests/test_service.py": """\
+            def test_empty_result_is_none():
+                result = lookup_user(999)
+                assert result is None
+
+            def test_disabled_flag_is_false():
+                flag = get_feature_flag("beta")
+                assert flag is False
+
+            def test_empty_list_not_truthy():
+                items = get_items_for_unknown_user()
+                assert not items
+
+            def test_valid_happy_path():
+                result = lookup_user(1)
+                assert result is not None
+
+            def test_another_happy_path():
+                result = lookup_user(2)
+                assert result["id"] == 2
+
+            def test_disabled_returns_empty():
+                result = get_items_for_disabled_account()
+                assert not result
+        """,
+    },
+    expected=[
+        ExpectedFinding(
+            signal_type=SignalType.TEST_POLARITY_DEFICIT,
+            file_path="tests/",
+            should_detect=False,
+            description=(
+                "assert is None / is False / not ... count as negative assertions "
+                "→ balanced polarity, no TPD expected"
+            ),
+        ),
+    ],
+)
+
+
+# ── MAZ: CLI-serving path TN (RISK-SIG-2026-04-05-167) ──────────────────────────────────
+
+MAZ_TN_CLI_SERVING_PATH = GroundTruthFixture(
+    name="maz_tn_cli_serving_path",
+    description=(
+        "CLI-serving path handlers for localhost development tooling "
+        "→ should NOT fire MISSING_AUTHORIZATION"
+    ),
+    kind=FixtureKind.CONFOUNDER,
+    files={
+        "cli/__init__.py": "",
+        "cli/serving/__init__.py": "",
+        "cli/serving/server.py": """\
+            from http.server import BaseHTTPRequestHandler
+
+            class LocalServingHandler(BaseHTTPRequestHandler):
+                def do_GET(self):
+                    if self.path == "/load_model":
+                        self._send_json({"status": "ok"})
+                    elif self.path == "/list_models":
+                        self._send_json({"models": []})
+                    elif self.path == "/generate":
+                        self._send_json({"output": ""})
+                    elif self.path == "/chat_completions":
+                        self._send_json({"choices": []})
+                    else:
+                        self.send_response(404)
+
+                def _send_json(self, data):
+                    self.send_response(200)
+                    self.end_headers()
+        """,
+    },
+    expected=[
+        ExpectedFinding(
+            signal_type=SignalType.MISSING_AUTHORIZATION,
+            file_path="cli/serving/server.py",
+            should_detect=False,
+            description=(
+                "CLI-local serving handlers are localhost-only dev tooling "
+                "→ missing auth is intentional, not a production gap"
+            ),
+        ),
+    ],
+)
+
+
+# ── HSC: ML tokenizer constants TN (RISK-SIG-2026-04-05-166) ────────────────────────────
+
+HSC_TN_ML_TOKENIZER_CONSTANTS = GroundTruthFixture(
+    name="hsc_tn_ml_tokenizer_constants",
+    description=(
+        "NLP tokenizer configuration constants (pad_token, cls_token, etc.) "
+        "→ should NOT fire HARDCODED_SECRET"
+    ),
+    kind=FixtureKind.CONFOUNDER,
+    files={
+        "tokenization/__init__.py": "",
+        "tokenization/tokenizer_config.py": """\
+            PAD_TOKEN = "[PAD]"
+            CLS_TOKEN = "[CLS]"
+            SEP_TOKEN = "[SEP]"
+            MASK_TOKEN = "[MASK]"
+            UNK_TOKEN = "[UNK]"
+
+            pad_token_id: int = 0
+            cls_token_id: int = 101
+            sep_token_id: int = 102
+            mask_token_id: int = 103
+
+            tokenizer_class_name: str = "BertTokenizer"
+            chat_template: str = (
+                "{% for message in messages %}{{ message['content'] }}{% endfor %}"
+            )
+        """,
+    },
+    expected=[
+        ExpectedFinding(
+            signal_type=SignalType.HARDCODED_SECRET,
+            file_path="tokenization/tokenizer_config.py",
+            should_detect=False,
+            description=(
+                "NLP tokenizer constants ([PAD], [CLS] etc.) are NLP metadata, "
+                "not credentials → HSC must not fire"
+            ),
+        ),
+    ],
+)
+
+
+# ── NBV: try_* comparison-semantics TN (RISK-SIG-2026-04-05-165) ────────────────────────
+
+NBV_TN_TRY_COMPARISON_HELPER = GroundTruthFixture(
+    name="nbv_tn_try_comparison_helper",
+    description=(
+        "try_* helper functions with comparison/check semantics "
+        "→ should NOT fire NBV (attempt-semantics suppression)"
+    ),
+    kind=FixtureKind.CONFOUNDER,
+    files={
+        "utils/__init__.py": "",
+        "utils/comparison_helpers.py": """\
+            def try_neq_default(val, default):
+                return val is not None and val != default
+
+            def try_eq_empty(container):
+                return len(container) == 0 if container is not None else True
+
+            def try_gt_zero(value):
+                return isinstance(value, (int, float)) and value > 0
+
+            def try_is_valid_key(key, mapping):
+                return key is not None and key in mapping
+        """,
+    },
+    expected=[
+        ExpectedFinding(
+            signal_type=SignalType.NAMING_CONTRACT_VIOLATION,
+            file_path="utils/comparison_helpers.py",
+            should_detect=False,
+            description=(
+                "try_* functions with comparison body (is None, ==, isinstance) "
+                "use attempt-semantics → NBV suppression must apply"
+            ),
+        ),
+    ],
+)
+
+
 # Append NBV + BAT fixtures to ALL_FIXTURES
 ALL_FIXTURES.extend([
     NBV_VALIDATE_TP,
@@ -3789,6 +4007,12 @@ ALL_FIXTURES.extend([
     BAT_CONFOUNDER_FEATURE_TOGGLE_TN,
     BAT_CONFOUNDER_TYPE_STUB_TN,
     BAT_CONFOUNDER_NOQA_CONFIG_TN,
+    # ── Risk-Register FP mitigation fixtures (TN) ──
+    MDS_TN_PACKAGE_LAZY_GETATTR,
+    TPD_TN_NEGATIVE_ASSERT_INLINE,
+    MAZ_TN_CLI_SERVING_PATH,
+    HSC_TN_ML_TOKENIZER_CONSTANTS,
+    NBV_TN_TRY_COMPARISON_HELPER,
 ])
 
 

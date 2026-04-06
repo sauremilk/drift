@@ -3,7 +3,7 @@
 Status-Tracker für den öffentlichen Launch von Drift.
 Jeder Punkt hat einen Status und ggf. eine Erklärung was noch fehlt.
 
-Last updated: v1.3.0 (2026-04-01)
+Last updated: v2.5.1 (2026-04-06)
 
 ---
 

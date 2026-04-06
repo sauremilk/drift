@@ -50,6 +50,16 @@ weights:
   # Added in v0.7.3 / v0.8.0
   cohesion_deficit: 0.01
   co_change_coupling: 0.005
+  # Report-only signals (weight 0.0, pending validation)
+  typescript_architecture: 0.0
+  cognitive_complexity: 0.0
+  fan_out_explosion: 0.0
+  circular_import: 0.0
+  dead_code_accumulation: 0.0
+  # Security-by-default signals (report-only)
+  missing_authorization: 0.0
+  insecure_default: 0.0
+  hardcoded_secret: 0.0
 
 # Auto-calibration rebalances weights at runtime based on finding distribution.
 # Set to false for fully manual weight control.
@@ -85,7 +95,10 @@ policies:
   #   manual_ratio: 0.95  # 0.0-1.0; omit for automatic detection
 
 # CI severity gate: exit 1 if findings meet or exceed this level
-# Options: critical, high, medium, low
+# Options: critical, high, medium, low, none
+# NOTE: The library default (when no drift.yaml is present) is "high".
+# This example uses "none" as the recommended safe starting point for
+# first rollouts. The GitHub Action also defaults to "none".
 fail_on: none  # recommended for the first rollout pass
 
 # Context-tagging dampening factor (ADR-006): findings annotated with

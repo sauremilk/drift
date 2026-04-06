@@ -8,8 +8,8 @@ Order = recommended priority.
 - Repo: `mick-gsk/drift`
 - Package: `drift-analyzer`
 - Command: `drift`
-- Version: v1.3.0
-- Safe signal claim: 14 scoring signals (auto-calibrated at runtime) + 8 report-only signals (including TVS, security, and complexity) = 22 total detectors.
+- Version: v2.5.1
+- Safe signal claim: 15 scoring signals (auto-calibrated at runtime) + 8 report-only signals (including TypeScript architecture, security, and complexity) = 23 total detectors.
 - Safe CLI claim: 18 commands — `analyze`, `init`, `scan`, `diff`, `baseline`, `mcp`, `export-context`, `copilot-context`, `timeline`, `trend`, `patterns`, `badge`, `check`, `config`, `explain`, `fix-plan`, `self`, `validate`.
 - Safe rollout claim: `drift init --profile vibe-coding` for zero-config start, then baseline + incremental adoption.
 - Execution assets: see `docs/distribution/README.md` for awesome submissions, article draft, IDE MVP spec, and week-1 runbook.
@@ -37,16 +37,16 @@ near-identical functions accumulate with subtle differences.
 
 Drift doesn't detect bugs. It detects the loss of design intent.
 
-14 scoring signals cover pattern fragmentation, architecture violations,
+15 scoring signals cover pattern fragmentation, architecture violations,
 mutant duplicates, explainability deficit, temporal volatility, system
 misalignment, doc-impl drift, naming contracts, guard clauses, cohesion,
-coupling, and more. 7 additional report-only signals cover security
-(missing auth, hardcoded secrets, insecure defaults) and complexity.
+coupling, and more. 8 additional report-only signals cover TypeScript
+architecture, security (missing auth, hardcoded secrets, insecure defaults) and complexity.
 
 All signals are deterministic, LLM-free, fast. Uses Python's built-in `ast`
 module — zero dependencies on ML infrastructure.
 
-New in v1.3.0:
+Key features:
 - `drift init --profile vibe-coding` — zero-config onboarding with profiles
 - `drift scan` / `drift diff` — agent-native JSON output for IDE integrations
 - `drift mcp` — built-in MCP server for AI coding assistants
@@ -83,9 +83,9 @@ I built drift – deterministic architectural drift detection for AI-accelerated
 TL;DR: `pip install -q drift-analyzer && drift init --profile vibe-coding && drift analyze --repo .`
 
 Copilot and Cursor write code that solves local tasks correctly but weakens
-global design. Drift detects that architectural drift with 14 scoring signals
+global design. Drift detects that architectural drift with 15 scoring signals
 covering pattern, architecture, consistency, and contract dimensions — plus
-7 report-only security signals.
+8 report-only signals.
 
 Core signals:
 - Pattern Fragmentation – same thing done N ways in one module
@@ -134,7 +134,7 @@ GitHub: https://github.com/mick-gsk/drift
   languages: [python]
   description: >
     Deterministic architectural drift detection for AI-accelerated Python codebases.
-    22 detectors covering pattern fragmentation, architecture violations, mutant
+    23 detectors covering pattern fragmentation, architecture violations, mutant
     duplicates, security signals, and more. Built-in MCP server, baseline
     management, and profiles for incremental adoption.
   homepage: https://github.com/mick-gsk/drift
@@ -154,7 +154,7 @@ GitHub: https://github.com/mick-gsk/drift
 **Entry:**
 
 ```
-* [drift](https://github.com/mick-gsk/drift) - Deterministic architectural drift detection for AI-accelerated Python codebases. 22 detectors, MCP server, agent-native workflows.
+* [drift](https://github.com/mick-gsk/drift) - Deterministic architectural drift detection for AI-accelerated Python codebases. 23 detectors, MCP server, agent-native workflows.
 ```
 
 **PR title:** `Add drift to Code Analysis section`
@@ -185,10 +185,10 @@ These aren't bugs. Linters won't flag them. They compound silently until the
 codebase resists change.
 
 I built drift, a static analyzer focused specifically on this problem. It runs
-14 scoring signals covering pattern fragmentation, layer violations,
+15 scoring signals covering pattern fragmentation, layer violations,
 near-duplicates, explainability gaps, naming contracts, cohesion, coupling,
-exception contracts, and more — plus 7 report-only detectors for security
-(missing auth, hardcoded secrets, insecure defaults) and complexity.
+exception contracts, and more — plus 8 report-only detectors for TypeScript
+architecture, security (missing auth, hardcoded secrets, insecure defaults) and complexity.
 
 Key design decisions:
 - No LLMs in the pipeline. Deterministic, reproducible, fast.
@@ -322,9 +322,9 @@ On Frappe (1,179 files):
 
 This isn't "bad code." It's code that grew without coherent design pressure.
 
-## The 22 detectors
+## The 23 detectors
 
-Drift runs 14 scoring signals plus 8 report-only detectors.
+Drift runs 15 scoring signals plus 8 report-only detectors.
 
 ### Core signals (ablation-validated)
 
@@ -363,7 +363,7 @@ weights, auto-calibrated at runtime.
 
 ### Report-only signals (security & complexity)
 
-**16–22:** Cognitive Complexity (CXS), Fan-Out Explosion (FOE), Circular
+**16–23:** TypeScript Architecture (TSA), Cognitive Complexity (CXS), Fan-Out Explosion (FOE), Circular
 Import (CIR), Dead Code Accumulation (DCA), Missing Authorization (MAZ),
 Insecure Default (ISD), Hardcoded Secret (HSC). These are visible in findings
 but don't affect the composite score yet — precision validation in progress.
@@ -469,7 +469,7 @@ Built an open-source static analyzer for architectural drift — the kind of
 structural erosion that happens when AI coding tools fragment your patterns,
 cross layer boundaries, and accumulate near-duplicates.
 
-22 detectors (15 scoring + 7 security/complexity), no LLMs, fast.
+23 detectors (15 scoring + 8 security/complexity), no LLMs, fast.
 Pure AST + git history analysis.
 
 New: built-in MCP server for Copilot/Cursor, agent-native `scan`/`diff`
@@ -493,7 +493,7 @@ Feedback welcome: https://github.com/mick-gsk/drift
 #    Environment: pypi
 
 # 2. Then simply create a new GitHub Release:
-gh release create v1.3.0 --title "v1.3.0" --generate-notes
+gh release create v2.5.1 --title "v2.5.1" --generate-notes
 # → GitHub Action publish.yml builds and pushes to PyPI automatically
 ```
 

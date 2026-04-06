@@ -364,53 +364,12 @@ Short version: Extract api helpers and improve mcp docs.
 
 - Extract api helpers and improve mcp docs.
 
-## [1.1.8] - 2026-03-30
-
-Short version: Maintenance and dependency updates.
-
-### Changed
-
-- Maintenance and dependency updates.
-
-## [1.1.8] - 2026-03-30
-
-Short version: Maintenance and dependency updates.
-
-### Changed
-
-- Maintenance and dependency updates.
-
 ## [1.1.7] - 2026-03-30
-
-Short version: Relocate docs artifacts under approved directories. (+3 more commits)
-
-### Changed
-
-- Relocate docs artifacts under approved directories. (+3 more commits)
-
-## [1.1.7] - 2026-03-30
-
-Short version: Sync changelog and lockfile for 1.1.7 release. (+2 more commits)
-
-### Changed
-
-- Sync changelog and lockfile for 1.1.7 release. (+2 more commits)
-
-## [1.1.7] - 2026-03-30
-
-Short version: Add no-color CLI evidence for release. (+1 more commits)
-
-### Changed
-
-- Add no-color CLI evidence for release. (+1 more commits)
-
-## [1.1.7] - 2026-03-30
-
-Short version: Refresh branding and add no-color CLI output.
 
 ### Changed
 
 - Refresh branding and add no-color CLI output.
+- Relocate docs artifacts under approved directories.
 
 ## [1.1.6] - 2026-03-30
 
@@ -430,24 +389,13 @@ Short version: AVS dedup + MDS remediation placeholders + cache version bump. (+
 
 ## [1.1.4] - 2026-03-30
 
-Short version: Add explicit diff decision reason fields.
-
-### Changed
-
-- Add explicit diff decision reason fields.
-
-## [Unreleased]
-
 ### Added
 
 - `drift diff` now returns `decision_reason_code` and `decision_reason` as explicit machine-readable acceptance context.
 
-## [1.1.4] - 2026-03-30
-
-Short version: Version-bump gate uses remote tags instead of local git describe.
-
 ### Changed
 
+- Add explicit diff decision reason fields.
 - Version-bump gate uses remote tags instead of local git describe.
 
 ## [1.1.3] - 2026-03-30
@@ -468,10 +416,8 @@ Short version: Use remote tags for version tracking and clean up release state. 
 
 ## [1.1.2] - 2026-03-30
 
-Short version: drift reduziert DCA-Fehlalarme für Framework-Entry-Points in API-Routern, damit Agenten keine aktiven Endpunkte als Dead-Code-Löschkandidaten priorisieren.
-
 ### Fixed
-- DCA reduziert False Positives für Framework-Entry-Points: Route-dekorierte Handler und schema-nahe Klassen in Router-Dateien werden nicht mehr als potenziell ungenutzte Exports priorisiert.
+- Reduce DCA false positives for framework entry-points: route-decorated handlers and schema-adjacent classes in router files are no longer prioritized as potentially unused exports.
 
 ## [1.1.1] - 2026-03-30
 

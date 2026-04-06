@@ -1,3 +1,5 @@
+# Language Roadmap
+
 Python = Tier 1 (full-semantic, v0.1+)
 TypeScript = Tier 1 (full-semantic, v0.5+)
 JavaScript = Tier 1 (full-semantic, v0.5+, via TS parser)

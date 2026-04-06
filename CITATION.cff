@@ -3,7 +3,7 @@ message: "If you use drift in your research, please cite it as below."
 title: "drift-analyzer"
 type: software
 authors:
-  - family-names: Gottsch
+  - family-names: Gottschalk
     given-names: Mick
     email: mick.gottsch@gmail.com
 repository-code: "https://github.com/mick-gsk/drift"

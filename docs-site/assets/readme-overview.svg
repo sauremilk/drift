@@ -1,0 +1,188 @@
+<svg viewBox="0 0 1200 540" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="ovtitle ovdesc">
+  <title id="ovtitle">Drift overview</title>
+  <desc id="ovdesc">Repeated behavior splinters across modules. Drift produces named structural findings with a concrete next step per finding.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#f8f1e9"/>
+      <stop offset="55%" stop-color="#eef5f3"/>
+      <stop offset="100%" stop-color="#eaf1fb"/>
+    </linearGradient>
+    <linearGradient id="ink" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#17324c"/>
+      <stop offset="100%" stop-color="#2a5c80"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#1f7a6b"/>
+      <stop offset="100%" stop-color="#2d5b9f"/>
+    </linearGradient>
+    <linearGradient id="warm" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#fff3d8"/>
+      <stop offset="100%" stop-color="#ffe2da"/>
+    </linearGradient>
+    <linearGradient id="cool" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#eef5ff"/>
+      <stop offset="100%" stop-color="#dfebfc"/>
+    </linearGradient>
+    <filter id="shadow" x="-14%" y="-14%" width="128%" height="128%">
+      <feDropShadow dx="0" dy="12" stdDeviation="14" flood-color="#17324d" flood-opacity="0.13"/>
+    </filter>
+    <filter id="soft" x="-14%" y="-14%" width="128%" height="128%">
+      <feDropShadow dx="0" dy="6" stdDeviation="8" flood-color="#17324d" flood-opacity="0.08"/>
+    </filter>
+    <!-- hard clip boundaries — text cannot physically escape these rectangles -->
+    <clipPath id="cpB">
+      <rect x="48" y="220" width="292" height="240" rx="26"/>
+    </clipPath>
+    <clipPath id="cpC">
+      <rect x="426" y="210" width="348" height="250" rx="32"/>
+    </clipPath>
+    <clipPath id="cpA">
+      <rect x="858" y="220" width="294" height="240" rx="26"/>
+    </clipPath>
+    <style>
+      .kicker { font: 700 13px 'Segoe UI',Arial,sans-serif; letter-spacing:2px; fill:#53697c; }
+      .h1     { font: 700 36px 'Segoe UI',Arial,sans-serif; fill:#14324a; }
+      .sub    { font: 600 18px 'Segoe UI',Arial,sans-serif; fill:#587082; }
+      .ey     { font: 700 12px 'Segoe UI',Arial,sans-serif; letter-spacing:.8px; fill:#16314b; }
+      .ct     { font: 700 20px 'Segoe UI',Arial,sans-serif; fill:#15324a; }
+      .cs     { font: 600 13px 'Segoe UI',Arial,sans-serif; fill:#5e7688; }
+      .lb     { font: 700 12px 'Segoe UI',Arial,sans-serif; fill:#244058; }
+      .mn     { font: 700 11px 'Segoe UI',Arial,sans-serif; fill:#566f80; }
+      .ch     { font: 700 13px 'Segoe UI',Arial,sans-serif; fill:#16314b; }
+      .mt     { font: 700 13px 'Segoe UI',Arial,sans-serif; fill:#14324a; }
+      .bd     { font: 600 14px 'Segoe UI',Arial,sans-serif; fill:#4c6478; }
+      .bs     { font: 700 14px 'Segoe UI',Arial,sans-serif; fill:#17324d; }
+      .mo     { font: 700 13px Consolas,'Courier New',monospace; fill:#dce8f2; }
+    </style>
+  </defs>
+
+  <!-- canvas -->
+  <rect x="24" y="24" width="1152" height="492" rx="34" fill="url(#bg)"/>
+
+  <!-- HEADER (full width, no clip needed — text fits comfortably) -->
+  <text x="48" y="76"  class="kicker">DRIFT · ARCHITECTURAL DRIFT ANALYZER</text>
+  <text x="48" y="120" class="h1">One behavior splinters.</text>
+  <text x="48" y="162" class="h1">Drift turns it into one repair path.</text>
+  <text x="48" y="196" class="sub">Deterministic findings, named signals, and a concrete next step.</text>
+
+  <!-- ── BEFORE card (x:48–340, y:220–460) ──────────────────────────── -->
+  <g filter="url(#soft)">
+    <rect x="48" y="220" width="292" height="240" rx="26" fill="#fff"/>
+  </g>
+  <g clip-path="url(#cpB)">
+    <!-- eyebrow pill -->
+    <rect x="68" y="238" width="76" height="24" rx="12" fill="url(#warm)"/>
+    <text x="106" y="253" text-anchor="middle" class="ey">BEFORE</text>
+    <!-- heading -->
+    <text x="68" y="294" class="ct">Behavior splinters</text>
+    <text x="68" y="314" class="cs">3 paths, same intent</text>
+    <!-- API row (y:330–358) -->
+    <rect x="68" y="330" width="248" height="28" rx="14" fill="#f4f8fd" stroke="#d6e2ef" stroke-width="1"/>
+    <rect x="84"  y="340" width="36" height="8" rx="4" fill="#8fb7ef"/>
+    <rect x="128" y="340" width="80" height="8" rx="4" fill="#77a7e9"/>
+    <rect x="282" y="336" width="26" height="16" rx="8" fill="#dce9f8"/>
+    <text x="295" y="347" text-anchor="middle" class="lb">API</text>
+    <!-- service row (y:366–394) -->
+    <rect x="68" y="366" width="248" height="28" rx="14" fill="#fff6eb" stroke="#f0dfc4" stroke-width="1"/>
+    <rect x="84"  y="376" width="50" height="8" rx="4" fill="#f2b05a"/>
+    <rect x="142" y="376" width="54" height="8" rx="4" fill="#eca54a"/>
+    <rect x="270" y="372" width="38" height="16" rx="8" fill="#fde6de"/>
+    <text x="289" y="383" text-anchor="middle" class="lb" style="fill:#8a442b;">svc</text>
+    <!-- storage row (y:402–430) — bottom: 430 < clip-bottom 460 ✓ -->
+    <rect x="68" y="402" width="248" height="28" rx="14" fill="#eef7f3" stroke="#d6e9df" stroke-width="1"/>
+    <rect x="84"  y="412" width="24" height="8" rx="4" fill="#1f7a6b"/>
+    <rect x="116" y="412" width="100" height="8" rx="4" fill="#1f7a6b" opacity=".8"/>
+    <rect x="278" y="408" width="30" height="16" rx="8" fill="#dff3ec"/>
+    <text x="293" y="419" text-anchor="middle" class="lb" style="fill:#245847;">db</text>
+    <!-- split badge -->
+    <circle cx="302" cy="282" r="20" fill="#e78d76"/>
+    <text x="302" y="287" text-anchor="middle" style="font:700 11px 'Segoe UI',Arial,sans-serif;fill:#fff;">split</text>
+  </g>
+
+  <!-- detect arrow (lives outside clip zones) -->
+  <path d="M340 333 L410 333" stroke="url(#accent)" stroke-width="7" stroke-linecap="round"/>
+  <path d="M398 322 L416 333 L398 344" fill="none" stroke="url(#accent)" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
+  <text x="375" y="320" text-anchor="middle" class="mn">detect</text>
+
+  <!-- ── CENTER card (x:426–774, y:210–460) ─────────────────────────── -->
+  <g filter="url(#shadow)">
+    <rect x="426" y="210" width="348" height="250" rx="32" fill="url(#ink)"/>
+  </g>
+  <g clip-path="url(#cpC)">
+    <!-- titlebar chrome -->
+    <rect x="426" y="210" width="348" height="52" rx="32" fill="#1f3c54"/>
+    <circle cx="456" cy="236" r="5" fill="#ff8d7a"/>
+    <circle cx="474" cy="236" r="5" fill="#ffd166"/>
+    <circle cx="492" cy="236" r="5" fill="#7bd389"/>
+    <!-- mono: 22 chars × ~8px = 176px; from x=516 → 692 < clip-right 774 ✓ -->
+    <text x="516" y="241" class="mo">drift analyze --repo .</text>
+    <!-- eyebrow -->
+    <rect x="446" y="276" width="66" height="22" rx="11" fill="#eaf7f2"/>
+    <text x="479" y="290" text-anchor="middle" class="ey" style="fill:#1f6b5c;">DRIFT</text>
+    <!-- heading — "Top findings" 12 ch × ~16px = 192px; 446→638 < 774 ✓ -->
+    <text x="446" y="338" style="font:700 28px 'Segoe UI',Arial,sans-serif;fill:#f7fbff;">Top findings</text>
+    <!-- sub — 31 ch × ~8.4px = 260px; 446→706 < 774 ✓ -->
+    <text x="446" y="360" style="font:600 14px 'Segoe UI',Arial,sans-serif;fill:#bbd0e0;">signals · rationale · next step</text>
+    <!-- signal chips — last chip ends at 630+82=712 < 774 ✓ -->
+    <rect x="446" y="376" width="82" height="26" rx="13" fill="#fff1cf"/>
+    <text x="487" y="393" text-anchor="middle" class="ch">PFS</text>
+    <rect x="538" y="376" width="82" height="26" rx="13" fill="#ffe4d7"/>
+    <text x="579" y="393" text-anchor="middle" class="ch">AVS</text>
+    <rect x="630" y="376" width="82" height="26" rx="13" fill="#e4eefc"/>
+    <text x="671" y="393" text-anchor="middle" class="ch">MDS</text>
+    <!-- action row — rect bottom: 412+28=440 < clip-bottom 460 ✓ -->
+    <rect x="446" y="412" width="308" height="28" rx="14" fill="#f4fbf8"/>
+    <!-- "Converge into one shared path." 30 ch × ~7.7px = 231px; 516→747 < clip-right 774 ✓ -->
+    <text x="464" y="430" class="bs">Action</text>
+    <text x="516" y="430" class="bd">Converge into one shared path.</text>
+  </g>
+
+  <!-- repair arrow (lives outside clip zones) -->
+  <path d="M774 333 L844 333" stroke="url(#accent)" stroke-width="7" stroke-linecap="round"/>
+  <path d="M832 322 L850 333 L832 344" fill="none" stroke="url(#accent)" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
+  <text x="809" y="320" text-anchor="middle" class="mn">repair</text>
+
+  <!-- ── AFTER card (x:858–1152, y:220–460) ─────────────────────────── -->
+  <g filter="url(#soft)">
+    <rect x="858" y="220" width="294" height="240" rx="26" fill="#fff"/>
+  </g>
+  <g clip-path="url(#cpA)">
+    <!-- eyebrow pill -->
+    <rect x="878" y="238" width="62" height="24" rx="12" fill="#eaf7f2"/>
+    <text x="909" y="253" text-anchor="middle" class="ey" style="fill:#1f6b5c;">AFTER</text>
+    <!-- heading — "Unify the path" 14 ch × ~11px = 154px; 878→1032 < 1152 ✓ -->
+    <text x="878" y="294" class="ct">Unify the path</text>
+    <!-- sub — "3 paths → one flow" 19 ch × ~7.2px = 137px; 878→1015 < 1152 ✓ -->
+    <text x="878" y="314" class="cs">3 paths → one flow</text>
+    <!-- module chips (y:334–414) — bottom: 414+24=438 < clip-bottom 460 ✓ -->
+    <rect x="878" y="334" width="68" height="24" rx="12" fill="#f4f8fd" stroke="#d6e2ef" stroke-width="1"/>
+    <text x="912" y="350" text-anchor="middle" class="lb" style="fill:#244a70;">API</text>
+    <rect x="878" y="370" width="68" height="24" rx="12" fill="#fff6eb" stroke="#f0dfc4" stroke-width="1"/>
+    <text x="912" y="386" text-anchor="middle" class="lb" style="fill:#8a442b;">svc</text>
+    <rect x="878" y="406" width="68" height="24" rx="12" fill="#eef7f3" stroke="#d6e9df" stroke-width="1"/>
+    <text x="912" y="422" text-anchor="middle" class="lb" style="fill:#245847;">db</text>
+    <!-- merge connector lines -->
+    <path d="M946 346 H978" stroke="#9eb9ce" stroke-width="3" stroke-linecap="round"/>
+    <path d="M946 382 H978" stroke="#9eb9ce" stroke-width="3" stroke-linecap="round"/>
+    <path d="M946 418 H978" stroke="#9eb9ce" stroke-width="3" stroke-linecap="round"/>
+    <path d="M978 346 V418" stroke="#9eb9ce" stroke-width="3" stroke-linecap="round"/>
+    <path d="M978 382 H994" stroke="#9eb9ce" stroke-width="3" stroke-linecap="round"/>
+    <!-- shared flow box — right: 998+110=1108 < 1152 ✓; bottom: 360+48=408 < 460 ✓ -->
+    <rect x="998" y="360" width="110" height="48" rx="14" fill="#1f7a6b"/>
+    <text x="1053" y="381" text-anchor="middle" style="font:700 12px 'Segoe UI',Arial,sans-serif;fill:#fff;">shared</text>
+    <text x="1053" y="399" text-anchor="middle" style="font:700 12px 'Segoe UI',Arial,sans-serif;fill:#fff;">flow</text>
+  </g>
+
+  <!-- ── FOOTER (y:468–500, safe area bottom 516) ────────────────────── -->
+  <g filter="url(#soft)">
+    <rect x="48" y="468" width="1104" height="32" rx="16" fill="#fff" opacity=".97"/>
+  </g>
+  <rect x="64"  y="474" width="156" height="20" rx="10" fill="url(#warm)"/>
+  <text x="142" y="488" text-anchor="middle" class="mt">deterministic</text>
+  <rect x="236" y="474" width="148" height="20" rx="10" fill="url(#cool)"/>
+  <text x="310" y="488" text-anchor="middle" class="mt">named signals</text>
+  <rect x="400" y="474" width="170" height="20" rx="10" fill="#dff2ea"/>
+  <text x="485" y="488" text-anchor="middle" class="mt">next step included</text>
+  <rect x="752" y="474" width="376" height="20" rx="10" fill="#e6eefb"/>
+  <text x="940" y="488" text-anchor="middle" class="mt">one concrete unification target</text>
+</svg>

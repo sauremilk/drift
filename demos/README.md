@@ -5,7 +5,7 @@ This folder contains the reproducible terminal demo setup for Drift.
 ## Files
 
 - `demo.tape`: Vhs script that records core CLI commands (`analyze` + `check`). → `demo.gif` (README hero)
-- `agent-workflow.tape`: Full agent loop — session baseline (`scan`), repair tasks (`fix-plan`), staged diff guardrail (`diff --staged-only`). → `agent-workflow.gif`
+- `agent-workflow.tape`: Full agent loop — session baseline (`scan`), staged diff guardrail (`diff --staged-only`), repair tasks (`fix-plan`). → `agent-workflow.gif`
 - `trend.tape`: Temporal analysis — score history (`trend`) + per-module root-cause timeline (`timeline`). → `trend.gif`
 - `ci-gate.tape`: CI integration — analysis, `check --fail-on` gate, SARIF export. → `ci-gate.gif`
 - `onboarding.tape`: First use — `explain PFS`, pattern findings, `init --dry-run`. → `onboarding.gif`
@@ -66,7 +66,7 @@ The command updates `demos/demo.gif`.
 
 The other tapes render to:
 
-- `demos/agent-workflow.gif` — agent loop (scan → fix-plan → diff)
+- `demos/agent-workflow.gif` — agent loop (scan → diff --staged-only → fix-plan)
 - `demos/trend.gif` — temporal score history + module timeline
 - `demos/ci-gate.gif` — CI check gate + SARIF export
 - `demos/onboarding.gif` — explain PFS, patterns, init

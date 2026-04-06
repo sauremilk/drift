@@ -10,15 +10,23 @@ readme = "README.md"
 license = "MIT"
 requires-python = ">=3.11"
 authors = [
-    { name = "Mick Gottsch", email = "mick.gottsch@gmail.com" },
+    { name = "Mick Gottschalk", email = "mick.gottsch@gmail.com" },
 ]
 keywords = [
+    "ai",
+    "ai-assisted-development",
     "code-analysis",
+    "code-quality",
     "architecture",
     "architecture-drift",
     "architectural-erosion",
     "architectural-linter",
     "codebase-coherence",
+    "developer-tools",
+    "developer-tooling",
+    "github-actions",
+    "linter",
+    "pre-commit",
     "technical-debt",
     "github-action",
     "sarif",
@@ -34,11 +42,16 @@ keywords = [
 classifiers = [
     "Development Status :: 4 - Beta",
     "Intended Audience :: Developers",
+    "Operating System :: OS Independent",
     "Topic :: Software Development :: Quality Assurance",
+    "Topic :: Software Development :: Build Tools",
     "Topic :: Software Development :: Testing",
     "Topic :: Software Development :: Libraries :: Python Modules",
+    "Topic :: Scientific/Engineering :: Information Analysis",
+    "Topic :: Utilities",
     "License :: OSI Approved :: MIT License",
     "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3 :: Only",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
@@ -58,8 +71,11 @@ dependencies = [
 Homepage = "https://mick-gsk.github.io/drift/"
 Repository = "https://github.com/mick-gsk/drift"
 Issues = "https://github.com/mick-gsk/drift/issues"
+Discussions = "https://github.com/mick-gsk/drift/discussions"
 Documentation = "https://mick-gsk.github.io/drift/"
 Changelog = "https://github.com/mick-gsk/drift/blob/main/CHANGELOG.md"
+Releases = "https://github.com/mick-gsk/drift/releases"
+CI = "https://github.com/mick-gsk/drift/actions/workflows/ci.yml"
 
 [project.optional-dependencies]
 typescript = [

@@ -1,3 +1,5 @@
+# Epistemics — Limits of Drift
+
 ## 1. Die falsche Prämisse — Wann ein hoher Drift-Score besser ist als ein niedriger
 
 Drift setzt implizit voraus: *Kohärenz ist ein Proxy für Qualität*. Die Scoring-Formel belohnt Einheitlichkeit, bestraft Varianz. Aber Kohärenz ist keine hinreichende Bedingung für Richtigkeit — und unter bestimmten Bedingungen ist sie sogar ein Feind des Fortschritts.

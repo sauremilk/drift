@@ -89,6 +89,14 @@
 - Source Module: src/drift/signals/exception_contract_drift.py
 - Signal: SignalType.EXCEPTION_CONTRACT_DRIFT
 - Expected Finding: Öffentliche Funktionen, deren Exception-Profil (geworfene/gefangene Exception-Typen) sich über kürzliche Commits verändert hat, während die Signatur stabil blieb (Titelmuster: "Exception contract drift in {module}/ ({N} function(s))").
+
+---
+
+> **Scope note:** This inventory covers the 15 scoring-active signals only.
+> The 8 report-only signals (TSA, CXS, FOE, CIR, DCA, MAZ, ISD, HSC) are
+> visible in findings but do not contribute to the composite score. Their
+> detection behaviour is documented in the
+> [signal reference](https://mick-gsk.github.io/drift/reference/signals/).
 - Known False Positives: Nur Python-Dateien mit Git-Historie (≥2 Commits); stabile Signatur (gleiche Parameteranzahl) erforderlich; neue Funktionen werden übersprungen; Git-Abruffehler werden graceful behandelt.
 
 ## Cohesion Deficit
