@@ -43,6 +43,7 @@ llms.txt
 master-backlog
 mkdocs.yml
 overrides
+package.json
 pyproject.toml
 scripts
 src

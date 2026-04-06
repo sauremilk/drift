@@ -65,6 +65,20 @@
 - Map git-root-relative paths to repo-relative paths in `analyze_diff` and `parse_git_history` so `--repo` on nested subdirectories no longer leaks parent-repo file scope (#117).
 - `drift self` error guidance now suggests valid next actions (`drift scan`/`drift analyze`) instead of invalid `--repo` flag (#120).
 
+## [2.5.0] – 2026-04-05
+
+Short version: Signal-filtering for scan, cross-validation fields, and false-positive reductions across multiple signals.
+
+### Added
+
+- Add `--exclude-signals` and `--max-per-signal` options to `drift scan` and the MCP `drift_scan` tool so callers can suppress dominant signals or cap per-signal finding counts.
+- Harmonize scan finding fields (`signal_abbrev`, `signal_id`, `severity_rank`, `fingerprint`) and a `cross_validation` block across all scan output formats for stable agent correlation.
+
+### Fixed
+
+- Reduce DIA false positives for bootstrap-sized repositories and improve recall for AVS, MAZ, BEM, NBV, and ECM on large or src-root repository shapes.
+- Suppress HSC false positives for OpenTelemetry semantic-convention constants, natural-language error messages, and OAuth endpoint URL literals.
+
 ## [2.4.5] - 2026-04-05
 
 Short version: Restore release-discipline consistency after the automated patch release.
