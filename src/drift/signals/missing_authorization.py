@@ -12,6 +12,8 @@ Deterministic, AST-only, LLM-free.
 
 from __future__ import annotations
 
+import re
+
 from drift.config import DriftConfig
 from drift.models import (
     FileHistory,
@@ -74,6 +76,36 @@ _AUTH_DECORATOR_MARKERS: frozenset[str] = frozenset({
     "token_required",
 })
 
+# Conservative fallback-only parameter markers that usually indicate injected
+# auth context (for example current_user from dependency injection).
+_AUTH_PARAM_MARKERS: frozenset[str] = frozenset({
+    "currentuser",
+    "authenticateduser",
+    "authuser",
+    "requestuser",
+    "principal",
+    "credentials",
+    "token",
+    "jwttoken",
+    "jwtclaims",
+    "userclaims",
+})
+
+_AUTH_PARAM_REGEXES: tuple[re.Pattern[str], ...] = (
+    re.compile(r"^(?:current|authenticated|request|auth)user(?:context|info|obj|object)?$"),
+    re.compile(r"^(?:jwt|access|id|bearer|auth)token(?:s|value|str|string)?$"),
+    re.compile(r"^(?:auth|user|principal)claims?$"),
+    re.compile(r"^credentials?$"),
+    re.compile(r"^principal$"),
+)
+
+
+def _normalize_param_name(param: str) -> str:
+    """Normalize parameter names across snake_case and camelCase variants."""
+    with_boundaries = re.sub(r"([a-z0-9])([A-Z])", r"\1_\2", param)
+    lower = with_boundaries.lower()
+    return re.sub(r"[^a-z0-9]", "", lower)
+
 
 def _is_public_allowlisted(fn_name: str, allowlist: list[str]) -> bool:
     """Return True if the function name matches a known public endpoint."""
@@ -122,6 +154,17 @@ def _looks_like_auth_decorator(decorator: str) -> bool:
     """Return True for common auth-related decorators."""
     normalized = _decorator_name(decorator).replace("_", "")
     return any(marker.replace("_", "") in normalized for marker in _AUTH_DECORATOR_MARKERS)
+
+
+def _has_auth_like_parameter(fn_info: FunctionInfo) -> bool:
+    """Return True if function parameters indicate injected auth context."""
+    for param in fn_info.parameters:
+        normalized = _normalize_param_name(param)
+        if normalized in _AUTH_PARAM_MARKERS:
+            return True
+        if any(regex.match(normalized) for regex in _AUTH_PARAM_REGEXES):
+            return True
+    return False
 
 
 def _fallback_endpoint_functions(pr: ParseResult) -> list[FunctionInfo]:
@@ -294,6 +337,8 @@ class MissingAuthorizationSignal(BaseSignal):
             for fn_info in _fallback_endpoint_functions(pr):
                 fn_name = fn_info.name
                 if any(_looks_like_auth_decorator(deco) for deco in fn_info.decorators):
+                    continue
+                if _has_auth_like_parameter(fn_info):
                     continue
                 if _is_public_allowlisted(fn_name, allowlist):
                     continue

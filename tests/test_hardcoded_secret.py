@@ -106,6 +106,51 @@ class TestHSCTruePositives:
         assert len(findings) == 1
         assert findings[0].rule_id == "hardcoded_api_token"
 
+    def test_known_prefix_with_non_secret_variable_name(self, tmp_path: Path) -> None:
+        _write_source(
+            tmp_path,
+            "config.py",
+            '''\
+            CONFIG_VALUE = "ghp_ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefgh"
+            ''',
+        )
+        signal = HardcodedSecretSignal(repo_path=tmp_path)
+        findings = signal.analyze([_make_pr()], {}, DriftConfig())
+        assert len(findings) == 1
+        assert findings[0].rule_id == "hardcoded_api_token"
+        assert "CONFIG_VALUE" in findings[0].title
+
+    def test_known_prefix_with_bearer_wrapper(self, tmp_path: Path) -> None:
+        _write_source(
+            tmp_path,
+            "config.py",
+            '''\
+            AUTH_HEADER = "Bearer sk-abcdefghijklmnopqrstuvwxyz123456"
+            ''',
+        )
+        signal = HardcodedSecretSignal(repo_path=tmp_path)
+        findings = signal.analyze([_make_pr()], {}, DriftConfig())
+        assert len(findings) == 1
+        assert findings[0].rule_id == "hardcoded_api_token"
+        assert "AUTH_HEADER" in findings[0].title
+
+    def test_known_prefix_in_generic_keyword_argument(self, tmp_path: Path) -> None:
+        _write_source(
+            tmp_path,
+            "config.py",
+            '''\
+            def build_client(**kwargs):
+                return kwargs
+
+            settings = build_client(value="sk-abcdefghijklmnopqrstuvwxyz123456")
+            ''',
+        )
+        signal = HardcodedSecretSignal(repo_path=tmp_path)
+        findings = signal.analyze([_make_pr()], {}, DriftConfig())
+        assert len(findings) == 1
+        assert findings[0].rule_id == "hardcoded_api_token"
+        assert "value" in findings[0].title
+
     def test_password_literal(self, tmp_path: Path) -> None:
         _write_source(
             tmp_path, "config.py",

@@ -140,6 +140,22 @@ class TestISDTruePositives:
         assert len(findings) == 1
         assert findings[0].rule_id == "insecure_ssl_verify"
 
+    def test_verify_false_localhost_is_downgraded(self, tmp_path: Path) -> None:
+        _write_source(
+            tmp_path,
+            "client.py",
+            """\
+            import requests
+            response = requests.get("https://localhost:8443/health", verify=False)
+            """,
+        )
+        signal = InsecureDefaultSignal(repo_path=tmp_path)
+        pr = _make_pr("client.py")
+        findings = signal.analyze([pr], {}, DriftConfig())
+        assert len(findings) == 1
+        assert findings[0].rule_id == "insecure_ssl_verify_localhost"
+        assert findings[0].score == 0.45
+
     def test_multiple_insecure_defaults(self, tmp_path: Path) -> None:
         _write_source(
             tmp_path, "settings.py",
@@ -153,6 +169,20 @@ class TestISDTruePositives:
         signal = InsecureDefaultSignal(repo_path=tmp_path)
         findings = signal.analyze([_make_pr()], {}, DriftConfig())
         assert len(findings) == 4
+
+    def test_similar_ignore_marker_does_not_skip_file(self, tmp_path: Path) -> None:
+        _write_source(
+            tmp_path,
+            "settings.py",
+            """\
+            # drift:ignore-security-bypass
+            DEBUG = True
+            """,
+        )
+        signal = InsecureDefaultSignal(repo_path=tmp_path)
+        findings = signal.analyze([_make_pr()], {}, DriftConfig())
+        assert len(findings) == 1
+        assert findings[0].rule_id == "insecure_debug_mode"
 
 
 # ---------------------------------------------------------------------------
@@ -241,6 +271,19 @@ class TestISDTrueNegatives:
         signal = InsecureDefaultSignal(repo_path=tmp_path)
         pr = _make_pr("conftest.py")
         findings = signal.analyze([pr], {}, DriftConfig())
+        assert len(findings) == 0
+
+    def test_exact_ignore_directive_with_reason_skips_file(self, tmp_path: Path) -> None:
+        _write_source(
+            tmp_path,
+            "settings.py",
+            """\
+            # drift:ignore-security migration-temporary
+            DEBUG = True
+            """,
+        )
+        signal = InsecureDefaultSignal(repo_path=tmp_path)
+        findings = signal.analyze([_make_pr()], {}, DriftConfig())
         assert len(findings) == 0
 
     def test_non_python_skipped(self, tmp_path: Path) -> None:

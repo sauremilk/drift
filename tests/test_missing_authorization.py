@@ -48,6 +48,7 @@ def _func(
     line: int,
     decorators: list[str] | None = None,
     has_docstring: bool = False,
+    parameters: list[str] | None = None,
 ) -> FunctionInfo:
     return FunctionInfo(
         name=name,
@@ -55,6 +56,7 @@ def _func(
         start_line=line,
         end_line=line + 10,
         language="python",
+        parameters=parameters or [],
         decorators=decorators or [],
         has_docstring=has_docstring,
     )
@@ -538,3 +540,110 @@ class TestMAZEdgeCases:
         signal = MissingAuthorizationSignal()
         findings = signal.analyze([pr], {}, DriftConfig())
         assert len(findings) == 0
+
+    def test_decorator_fallback_skips_auth_like_parameter(self) -> None:
+        """Fallback should not flag routes with injected auth-like parameters."""
+        pr = ParseResult(
+            file_path=Path("api/routes.py"),
+            language="python",
+            functions=[
+                _func(
+                    "get_orders",
+                    "api/routes.py",
+                    12,
+                    decorators=["router.get('/orders')"],
+                    parameters=["current_user"],
+                )
+            ],
+            imports=[_imp("api/routes.py", "fastapi")],
+            patterns=[],
+        )
+        signal = MissingAuthorizationSignal()
+        findings = signal.analyze([pr], {}, DriftConfig())
+        assert len(findings) == 0
+
+    def test_decorator_fallback_skips_camel_case_auth_parameter(self) -> None:
+        """Fallback should normalize camelCase auth-context parameters."""
+        pr = ParseResult(
+            file_path=Path("api/routes.py"),
+            language="python",
+            functions=[
+                _func(
+                    "get_orders",
+                    "api/routes.py",
+                    12,
+                    decorators=["router.get('/orders')"],
+                    parameters=["currentUserContext"],
+                )
+            ],
+            imports=[_imp("api/routes.py", "fastapi")],
+            patterns=[],
+        )
+        signal = MissingAuthorizationSignal()
+        findings = signal.analyze([pr], {}, DriftConfig())
+        assert len(findings) == 0
+
+    def test_decorator_fallback_skips_access_token_parameter(self) -> None:
+        """Fallback should treat access-token style params as auth context."""
+        pr = ParseResult(
+            file_path=Path("api/routes.py"),
+            language="python",
+            functions=[
+                _func(
+                    "get_orders",
+                    "api/routes.py",
+                    12,
+                    decorators=["router.get('/orders')"],
+                    parameters=["access_token"],
+                )
+            ],
+            imports=[_imp("api/routes.py", "fastapi")],
+            patterns=[],
+        )
+        signal = MissingAuthorizationSignal()
+        findings = signal.analyze([pr], {}, DriftConfig())
+        assert len(findings) == 0
+
+    def test_decorator_fallback_keeps_user_id_path_param_flagged(self) -> None:
+        """Path params like user_id must not be mistaken for auth context."""
+        pr = ParseResult(
+            file_path=Path("api/routes.py"),
+            language="python",
+            functions=[
+                _func(
+                    "get_user",
+                    "api/routes.py",
+                    12,
+                    decorators=["router.get('/users/{user_id}')"],
+                    parameters=["user_id"],
+                )
+            ],
+            imports=[_imp("api/routes.py", "fastapi")],
+            patterns=[],
+        )
+        signal = MissingAuthorizationSignal()
+        findings = signal.analyze([pr], {}, DriftConfig())
+        assert len(findings) == 1
+        assert findings[0].metadata["detection_source"] == "decorator_fallback"
+
+    def test_decorator_fallback_keeps_user_id_token_param_flagged(self) -> None:
+        """Composite path-style params must not be auto-suppressed as auth context."""
+        pr = ParseResult(
+            file_path=Path("api/routes.py"),
+            language="python",
+            functions=[
+                _func(
+                    "get_user",
+                    "api/routes.py",
+                    12,
+                    decorators=["router.get('/users/{user_id_token}')"],
+                    parameters=["user_id_token"],
+                )
+            ],
+            imports=[_imp("api/routes.py", "fastapi")],
+            patterns=[],
+        )
+        signal = MissingAuthorizationSignal()
+        findings = signal.analyze([pr], {}, DriftConfig())
+        assert len(findings) == 1
+        assert findings[0].metadata["detection_source"] == "decorator_fallback"

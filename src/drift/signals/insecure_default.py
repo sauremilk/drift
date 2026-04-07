@@ -18,7 +18,9 @@ Deterministic, AST-only, LLM-free.
 from __future__ import annotations
 
 import ast
+import re
 from pathlib import Path
+from urllib.parse import urlsplit
 
 from drift.config import DriftConfig
 from drift.models import (
@@ -145,6 +147,12 @@ _ASSIGN_CHECKS = [
     _check_ssl_redirect,
 ]
 
+_LOOPBACK_HOSTS: frozenset[str] = frozenset({"localhost", "127.0.0.1", "::1"})
+_IGNORE_SECURITY_DIRECTIVE_RE = re.compile(
+    r"^\s*#\s*drift:ignore-security(?:\s|$)",
+    re.IGNORECASE,
+)
+
 
 def _check_verify_false(node: ast.keyword) -> _AssignCheck | None:
     """Detect verify=False in HTTP library calls."""
@@ -159,6 +167,35 @@ def _check_verify_false(node: ast.keyword) -> _AssignCheck | None:
             0.7,
         )
     return None
+
+
+def _call_targets_loopback(node: ast.Call) -> bool:
+    """Return True when the first call argument targets localhost/loopback."""
+    if not node.args:
+        return False
+    first_arg = node.args[0]
+    if not (isinstance(first_arg, ast.Constant) and isinstance(first_arg.value, str)):
+        return False
+
+    target = first_arg.value.strip()
+    if not target.lower().startswith(("http://", "https://")):
+        return False
+
+    try:
+        parsed = urlsplit(target)
+    except ValueError:
+        return False
+
+    host = (parsed.hostname or "").lower()
+    return host in _LOOPBACK_HOSTS or host.endswith(".localhost")
+
+
+def _has_ignore_security_directive(source: str) -> bool:
+    """Return True if module header contains explicit ignore-security directive."""
+    for line in source.split("\n")[:5]:
+        if _IGNORE_SECURITY_DIRECTIVE_RE.search(line):
+            return True
+    return False
 
 
 @register_signal
@@ -213,10 +250,8 @@ class InsecureDefaultSignal(BaseSignal):
         findings: list[Finding],
     ) -> None:
         # Check for drift:ignore-security comment at module level.
-        if "drift:ignore-security" in source.split("\n", 5)[0:5].__repr__():
-            for line in source.split("\n")[:5]:
-                if "drift:ignore-security" in line:
-                    return
+        if _has_ignore_security_directive(source):
+            return
 
         for node in ast.walk(tree):
             # Simple assignments: NAME = value
@@ -242,6 +277,20 @@ class InsecureDefaultSignal(BaseSignal):
                     result = _check_verify_false(kw)
                     if result:
                         rule_id, title, desc, fix, score = result
+                        if _call_targets_loopback(node):
+                            rule_id = "insecure_ssl_verify_localhost"
+                            title = "SSL verification disabled for localhost target"
+                            desc = (
+                                "verify=False disables TLS certificate validation. "
+                                "The detected target appears to be localhost/loopback, "
+                                "so severity is reduced for local-dev context."
+                            )
+                            fix = (
+                                "Prefer verify=True even for local endpoints. "
+                                "If local testing requires verify=False, keep it narrowly "
+                                "scoped and document why."
+                            )
+                            score = 0.45
                         findings.append(
                             self._make_finding(
                                 rule_id, title, desc, fix, score,

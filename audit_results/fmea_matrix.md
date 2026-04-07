@@ -1,5 +1,32 @@
 # FMEA Matrix
 
+## 2026-04-07 - MAZ/ISD/HSC wave-2 calibration
+
+| Signal | Failure Mode | Cause | Effect | Detection | Mitigation | S | O | D | RPN |
+|---|---|---|---|---|---|---:|---:|---:|---:|
+| MAZ | FN: auth-injected endpoints still flagged due narrow parameter normalization | Fallback previously matched only exact parameter markers and missed camelCase/composed auth-context names | Reduced precision and noisy missing-auth findings in decorator-only fallback contexts | New MAZ regressions for camelCase and access-token parameter variants | Normalize snake/camel/non-alnum parameter names and apply conservative auth-context regex patterns in fallback-only path | 6 | 4 | 4 | 96 |
+| MAZ | FN: broad auth-parameter patterns may hide real unauthenticated routes | Expanded auth-like parameter matching can classify rare business params as auth context | Potential under-reporting in edge naming conventions | Control regression keeps plain path params reportable | Keep patterns conservative and fallback-scoped; retain existing auth-decorator/allowlist guards | 5 | 3 | 6 | 90 |
+| ISD | FN: insecure defaults can be accidentally suppressed by loose ignore substring | Header check accepted any line containing `drift:ignore-security` substring | Entire-file skip in unintended comment variants, reducing signal trust | New regressions for valid directive vs similar invalid marker | Require explicit comment directive with word boundary in first header lines | 6 | 3 | 4 | 72 |
+| HSC | FN: wrapped credential literals (for example `Bearer sk-...`) bypass known-prefix detection | Prefix detection expected token prefix at string start only | Missed high-confidence secret findings in auth-header style assignments | New regression for Bearer-wrapped prefix literal | Normalize common wrappers (`Bearer `, `token `) before known-prefix checks | 7 | 4 | 4 | 112 |
+
+## 2026-04-06 - MAZ/ISD/HSC scoring-readiness calibration
+
+| Signal | Failure Mode | Cause | Effect | Detection | Mitigation | S | O | D | RPN |
+|---|---|---|---|---|---|---:|---:|---:|---:|
+| MAZ | FP: decorator fallback flags routes that already carry injected auth context | Fallback previously treated all decorated handlers without auth decorators as unauthenticated, even when parameters indicated injected identity context | Reduced triage trust and lower actionability for missing-auth findings | New fallback regressions for auth-like and non-auth-like parameters | Skip fallback findings when conservative auth-like parameter markers are present; keep path-parameter control test | 6 | 4 | 4 | 96 |
+| MAZ | FN: auth-like parameter suppression can hide real unauthenticated routes | Endpoint parameter names may overlap with auth-like marker tokens in edge naming conventions | Some true missing-auth findings may be delayed | Control regression keeps `user_id` path parameter reportable | Keep marker set conservative and scoped to fallback-only path; preserve allowlist/dev-path/auth-decorator checks | 5 | 3 | 6 | 90 |
+| ISD | FP-severity: localhost `verify=False` is ranked too harshly for local-dev context | Previous rule emitted full `insecure_ssl_verify` severity without distinguishing loopback targets | Lower perceived signal credibility for local testing scenarios | New regression for localhost downgrade path | Keep finding visible but downgrade to `insecure_ssl_verify_localhost` with lower score for loopback/localhost URLs | 5 | 5 | 4 | 100 |
+| ISD | FN-severity: non-loopback misuse could be downgraded if target classification is too broad | Loopback detection heuristic may overmatch unusual host strings | Real TLS verification misuse may be under-prioritized | Precision/recall suite plus localhost-specific regression | Restrict downgrade to first-argument literal HTTP(S) URLs with strict loopback host matching | 6 | 2 | 5 | 60 |
+| HSC | FN: known API-token prefixes in generic variable names are missed | Previous detection depended heavily on secret-shaped variable names before high-confidence literal cues | High-confidence secret leaks remained undetected in generic config names | New regressions for generic variable and keyword-argument cases | Evaluate known-prefix literals before name-shaped fallback to emit `hardcoded_api_token` deterministically | 8 | 4 | 4 | 128 |
+| HSC | FP: known-prefix expansion may flag benign placeholder-like values | Prefix-first detection increases sensitivity when generic names carry token-like literals | Potential triage noise in synthetic/template contexts | Existing TN fixtures + new template confounder in ground truth | Keep `_is_safe_value` checks and minimum literal length gate; retain TN fixture coverage in precision/recall suite | 5 | 3 | 6 | 90 |
+
+## 2026-04-06 - MDS precision-first scoring-readiness calibration
+
+| Signal | Failure Mode | Cause | Effect | Detection | Mitigation | S | O | D | RPN |
+|---|---|---|---|---|---|---:|---:|---:|---:|
+| MDS | FP: semantic-only and intentional variant pairs inflate scoring noise | Semantic-only matching accepted same-file conceptual similarity; sync/async intentional variants looked like duplicates; hybrid threshold was looser than AST threshold | Reduced confidence in MDS as scoring input and lower actionability of findings | Live-scan triage + targeted edge-case regression tests | Precision-first hybrid threshold, sync/async variant suppression, stricter semantic gate, same-file semantic suppression | 6 | 5 | 4 | 120 |
+| MDS | FN: true duplicates in sync/async ecosystems may be suppressed | New suppression treats same-name sync/async path variants as intentional by default | Potential under-reporting of some real copy-paste drift patterns | Control regression keeps non-variant exact duplicates detectable | Conservative path-token gating and regression coverage for non-variant duplicate detection | 4 | 3 | 6 | 72 |
+
 ## 2026-04-06 - TPD unexpected source-segment exception hardening (Issue #184)
 
 | Signal | Failure Mode | Cause | Effect | Detection | Mitigation | S | O | D | RPN |

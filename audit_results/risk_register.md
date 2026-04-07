@@ -1,5 +1,72 @@
 # Risk Register
 
+## 2026-04-07 - MAZ/ISD/HSC wave-2 calibration
+
+- Risk ID: RISK-SIG-2026-04-07-188
+- Component: src/drift/signals/missing_authorization.py, src/drift/signals/insecure_default.py, src/drift/signals/hardcoded_secret.py
+- Type: Signal quality (edge-case precision/recall hardening)
+- Description: Follow-up calibration addressed remaining edge-cases after ADR-015: MAZ auth-parameter matching was too narrow for composed/camelCase contexts, ISD ignore directive parsing was too permissive, and HSC missed wrapped known-prefix tokens.
+- Trigger examples:
+  - Decorator fallback endpoints with `currentUserContext` or `access_token` parameters.
+  - Header comments like `drift:ignore-security-bypass` accidentally suppressing ISD.
+  - Literals like `Bearer sk-...` in auth-header assignments.
+- Impact: Prior behavior could reduce signal credibility via missed detections or unintended suppression.
+- Mitigation:
+  - MAZ: normalize parameter names and apply conservative auth-context regexes in fallback path.
+  - ISD: accept only explicit `# drift:ignore-security` directive forms.
+  - HSC: normalize common credential wrappers before known-prefix checks.
+  - Add regressions in `tests/test_missing_authorization.py`, `tests/test_insecure_default.py`, `tests/test_hardcoded_secret.py`.
+- Verification:
+  - `python -m pytest tests/test_missing_authorization.py tests/test_insecure_default.py tests/test_hardcoded_secret.py -q --maxfail=1`
+  - `python -m pytest tests/test_precision_recall.py::test_precision_recall_report -q -s`
+- Residual risk: Medium-low; matcher scope is conservative but may require future tuning for uncommon naming conventions.
+
+## 2026-04-06 - MAZ/ISD/HSC scoring-readiness calibration
+
+- Risk ID: RISK-SIG-2026-04-06-187
+- Component: src/drift/signals/missing_authorization.py, src/drift/signals/insecure_default.py, src/drift/signals/hardcoded_secret.py
+- Type: Signal quality (precision/recall readiness for scoring promotion)
+- Description: MAZ/ISD/HSC had quality gaps that reduced scoring-readiness credibility: MAZ fallback over-reported some auth-injected routes, ISD lacked local-dev severity context for localhost `verify=False`, and HSC under-reported known token prefixes in generic variable names.
+- Trigger examples:
+  - Decorated route handlers with injected auth context but no explicit auth decorator marker.
+  - Localhost health calls using `verify=False` for local development.
+  - Generic config names containing high-confidence API-token prefixes (`ghp_`, `sk-`, `AKIA`).
+- Impact: Unbalanced precision/recall behavior in security findings, limiting confidence for future scoring-weight activation.
+- Mitigation:
+  - MAZ: conservative auth-like parameter suppression in decorator fallback path.
+  - ISD: explicit localhost/loopback downgrade rule (`insecure_ssl_verify_localhost`, lower score) while keeping finding visibility.
+  - HSC: prefix-first known-token literal detection independent of variable name shape.
+  - Expanded TP/TN fixtures and explicit security precision/recall gates in `tests/test_precision_recall.py`.
+- Verification:
+  - `python -m pytest tests/test_missing_authorization.py tests/test_insecure_default.py tests/test_hardcoded_secret.py -q --maxfail=1`
+  - `python -m pytest tests/test_precision_recall.py::test_precision_recall_report -q -s`
+- Residual risk: Medium-low; conservative heuristics may still trade off edge-case recall or severity ranking, but regression coverage now enforces explicit security readiness gates.
+
+## 2026-04-06 - MDS precision-first scoring-readiness calibration
+
+- Risk ID: RISK-SIG-2026-04-06-186
+- Component: src/drift/signals/mutant_duplicates.py
+- Type: Signal quality (false positives / scoring credibility)
+- Description: MDS produced low-actionability noise from semantic-only matches and
+  intentional sync/async API variants, weakening trust when MDS contributes to
+  repository scoring.
+- Trigger examples:
+  - Semantic-only matches within same-file context with high embedding similarity.
+  - Sync/async file variants (`sync_*` vs `async_*`) with same function names.
+  - Hybrid threshold previously lower than AST threshold, allowing borderline findings.
+- Impact: Inflated MDS noise density and score distortion in precision-sensitive workflows.
+- Mitigation:
+  - Hybrid threshold is now precision-first (not lower than AST threshold).
+  - Suppress intentional sync/async variant pairs for exact/near/semantic checks.
+  - Tighten semantic-only gate and suppress same-file semantic pairs.
+  - Keep cross-file semantic matches (including same class names) to avoid over-suppression.
+  - Add regression tests in `tests/test_mutant_duplicates_edge_cases.py`.
+- Verification:
+  - `python -m pytest tests/test_mutant_duplicates_edge_cases.py -q --maxfail=1`
+  - `python -m pytest tests/test_precision_recall.py::test_precision_recall_report -q -s`
+- Residual risk: Medium-low; some true duplicates in sync/async ecosystems may be
+  under-reported, but suppression is conservative and precision gains improve scoring reliability.
+
 ## 2026-04-06 - TPD unexpected source-segment exception hardening (Issue #184)
 
 - Risk ID: RISK-SIG-2026-04-06-184

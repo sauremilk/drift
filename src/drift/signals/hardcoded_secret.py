@@ -164,6 +164,16 @@ def _extract_string_value(node: ast.expr) -> str | None:
     return None
 
 
+def _normalize_secret_literal_candidate(value: str) -> str:
+    """Normalize common wrapper forms around credential literals."""
+    normalized = value.strip()
+    lower = normalized.lower()
+    for prefix in ("bearer ", "token "):
+        if lower.startswith(prefix):
+            return normalized[len(prefix):].lstrip()
+    return normalized
+
+
 def _is_endpoint_url_literal(value: str) -> bool:
     """Return True for plain HTTP(S) endpoint URL literals without credentials."""
     if not re.match(r"^https?://", value, flags=re.IGNORECASE):
@@ -363,7 +373,18 @@ class HardcodedSecretSignal(BaseSignal):
             in_enum_member_context = _is_in_enum_member_context(node, parent_map)
             for target in node.targets:
                 var_name = self._extract_var_name(target)
-                if var_name and _SECRET_VAR_RE.search(var_name):
+                if not var_name:
+                    continue
+
+                # High-confidence token prefixes should fire even for generic
+                # variable names (for example CONFIG_VALUE = "ghp_...").
+                known_prefix_finding = self._detect_known_prefix_literal(
+                    node.value, var_name, file_path, node.lineno
+                )
+                if known_prefix_finding:
+                    return known_prefix_finding
+
+                if _SECRET_VAR_RE.search(var_name):
                     return self._evaluate_value(
                         node.value, var_name, file_path, node.lineno,
                         min_entropy, min_length,
@@ -374,7 +395,16 @@ class HardcodedSecretSignal(BaseSignal):
         if isinstance(node, ast.AnnAssign) and node.value and node.target:
             in_enum_member_context = _is_in_enum_member_context(node, parent_map)
             var_name = self._extract_var_name(node.target)
-            if var_name and _SECRET_VAR_RE.search(var_name):
+            if not var_name:
+                return None
+
+            known_prefix_finding = self._detect_known_prefix_literal(
+                node.value, var_name, file_path, node.lineno
+            )
+            if known_prefix_finding:
+                return known_prefix_finding
+
+            if _SECRET_VAR_RE.search(var_name):
                 return self._evaluate_value(
                     node.value, var_name, file_path, node.lineno,
                     min_entropy, min_length,
@@ -382,8 +412,18 @@ class HardcodedSecretSignal(BaseSignal):
                 )
 
         # Handle keyword arguments: func(secret_key="value")
-        if isinstance(node, ast.keyword) and node.arg and _SECRET_VAR_RE.search(node.arg):
-            return self._evaluate_value(
+        if isinstance(node, ast.keyword) and node.arg:
+            known_prefix_finding = self._detect_known_prefix_literal(
+                node.value,
+                node.arg,
+                file_path,
+                getattr(node, "lineno", 0),
+            )
+            if known_prefix_finding:
+                return known_prefix_finding
+
+            if _SECRET_VAR_RE.search(node.arg):
+                return self._evaluate_value(
                     node.value, node.arg, file_path,
                     getattr(node, "lineno", 0),
                     min_entropy, min_length,
@@ -399,6 +439,36 @@ class HardcodedSecretSignal(BaseSignal):
             return target.id
         if isinstance(target, ast.Attribute):
             return target.attr
+        return None
+
+    def _detect_known_prefix_literal(
+        self,
+        value_node: ast.expr,
+        var_name: str,
+        file_path: Path,
+        lineno: int,
+    ) -> Finding | None:
+        """Detect high-confidence known secret prefixes irrespective of variable name."""
+        if _is_safe_value(value_node):
+            return None
+
+        string_val = _extract_string_value(value_node)
+        if string_val is None or len(string_val) < 8:
+            return None
+
+        candidate = _normalize_secret_literal_candidate(string_val)
+
+        for prefix in _KNOWN_PREFIXES:
+            if candidate.startswith(prefix):
+                return self._make_finding(
+                    var_name,
+                    file_path,
+                    lineno,
+                    rule_id="hardcoded_api_token",
+                    score=0.9,
+                    detail=f"Value starts with known API token prefix '{prefix}'.",
+                )
+
         return None
 
     def _evaluate_value(
@@ -425,8 +495,9 @@ class HardcodedSecretSignal(BaseSignal):
             return None
 
         # Check for known API token prefixes (high confidence).
+        normalized_literal = _normalize_secret_literal_candidate(string_val)
         for prefix in _KNOWN_PREFIXES:
-            if string_val.startswith(prefix):
+            if normalized_literal.startswith(prefix):
                 return self._make_finding(
                     var_name, file_path, lineno,
                     rule_id="hardcoded_api_token",

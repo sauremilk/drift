@@ -1,5 +1,54 @@
 # Fault Tree Analysis
 
+## 2026-04-07 - MAZ/ISD/HSC wave-2 calibration
+
+### FT-1: Security findings lose credibility through wrapper and directive edge-cases
+- Top event: Security signal output is incomplete or overly noisy in realistic endpoint/config patterns.
+- Branch A: MAZ fallback misses auth-context parameters that are camelCase or composed names.
+- Branch B: ISD file-level ignore is triggered by similar but unintended marker strings.
+- Branch C: HSC misses known token prefixes when literals are wrapped as auth headers.
+- Mitigation implemented: MAZ parameter normalization + conservative auth regexes, strict ISD ignore directive parsing, and HSC wrapper normalization before prefix checks.
+
+### FT-2: Precision/recall trade-off after wave-2 hardening
+- Top event: Mitigations may under- or over-suppress findings in edge naming styles.
+- Branch A: MAZ auth-like regex may suppress rare non-auth business parameters.
+- Branch B: ISD stricter directive can surface findings where teams previously relied on loose comments.
+- Branch C: HSC wrapper normalization can increase sensitivity on synthetic token-like literals.
+- Mitigation implemented: Added targeted TP/TN regressions and kept conservative matcher scope with existing safe-value checks.
+
+## 2026-04-06 - MAZ/ISD/HSC scoring-readiness calibration
+
+### FT-1: Security readiness blocked by recall/precision imbalance
+- Top event: Security signals are not credible enough for scoring-promotion decisions.
+- Branch A: MAZ fallback reports unauthenticated endpoints although auth context is injected via parameters.
+- Branch B: ISD treats localhost `verify=False` with full severity, reducing local-dev signal actionability.
+- Branch C: HSC misses high-confidence prefixed token literals when variable names are generic.
+- Mitigation implemented: Fallback auth-like parameter suppression (MAZ), loopback severity downgrade with explicit rule (ISD), and prefix-first literal detection independent of variable names (HSC).
+
+### FT-2: Trade-off risk after precision-first calibration
+- Top event: Calibrations introduce selective under- or over-reporting in edge contexts.
+- Branch A: MAZ auth-like parameter suppression can hide rare real auth gaps with misleading names.
+- Branch B: ISD loopback downgrade can under-prioritize misuse if host classification is overly permissive.
+- Branch C: HSC prefix-first logic can increase sensitivity on synthetic or template-like token strings.
+- Mitigation implemented: Conservative marker sets, strict loopback host checks, and expanded TP/TN regression coverage in per-signal tests and precision/recall fixtures.
+
+## 2026-04-06 - MDS precision-first scoring-readiness calibration
+
+### FT-1: MDS scoring noise from semantic and intentional-variant matches
+- Top event: MDS contributes low-actionability findings that distort scoring trust.
+- Branch A: Semantic-only matching reports same-file conceptual similarity that is not duplicate drift.
+- Branch B: Sync/async API variants with same function names are interpreted as copy-paste drift.
+- Branch C: Hybrid threshold below AST threshold admitted borderline pairs.
+- Mitigation implemented: Raise semantic gate strictness, suppress same-file semantic pairs,
+	suppress sync/async variant pairs, and enforce precision-first hybrid threshold.
+
+### FT-2: Recall trade-off after precision-focused suppression
+- Top event: Some real duplicates in sync/async ecosystems are not emitted by MDS.
+- Branch A: File-path token heuristic classifies pair as intentional variant.
+- Branch B: Duplicate is real but follows sync/async naming conventions.
+- Mitigation implemented: Keep suppression conservative (same bare function name + sync/async path markers)
+	and retain control regression for non-variant exact duplicate detection.
+
 ## 2026-04-06 - TPD unexpected source-segment exception hardening (Issue #184)
 
 ### FT-1: TPD signal skip due to unexpected source-segment exception
