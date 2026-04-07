@@ -73,7 +73,7 @@
 - Map git-root-relative paths to repo-relative paths in `analyze_diff` and `parse_git_history` so `--repo` on nested subdirectories no longer leaks parent-repo file scope (#117).
 - `drift self` error guidance now suggests valid next actions (`drift scan`/`drift analyze`) instead of invalid `--repo` flag (#120).
 
-## [2.5.2] – 2026-04-07
+## [2.5.3] – 2026-04-07
 
 Short version: Signal-filtering for scan, cross-validation fields, and false-positive reductions across multiple signals.
 
