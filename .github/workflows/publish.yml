@@ -125,7 +125,7 @@ jobs:
           }
           $env:TWINE_USERNAME = "__token__"
           $env:TWINE_PASSWORD = $env:PYPI_API_TOKEN
-          & $env:PYTHON_BIN -m twine upload --non-interactive dist/*
+          & $env:PYTHON_BIN -m twine upload --non-interactive --skip-existing dist/*
 
   update-major-tag:
     name: Update major-version tag (e.g. v1 → latest patch)

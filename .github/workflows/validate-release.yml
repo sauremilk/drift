@@ -72,13 +72,13 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           TAG: ${{ github.ref_name }}
         run: |
-          gh release view "$env:TAG" *> $null
+          gh release view "$env:TAG" --repo "$env:GITHUB_REPOSITORY" *> $null
           if ($LASTEXITCODE -eq 0) {
             Write-Output "Release for $env:TAG already exists - skipping creation"
             exit 0
           }
 
-          gh release create "$env:TAG" --title "$env:TAG" --generate-notes
+          gh release create "$env:TAG" --repo "$env:GITHUB_REPOSITORY" --title "$env:TAG" --generate-notes
           if ($LASTEXITCODE -ne 0) {
             Write-Error "Failed to create release for $env:TAG"
             exit 1
