@@ -617,7 +617,11 @@ async def drift_nudge(
                 file_list = [f.strip() for f in changed_files.split(",") if f.strip()]
 
             with contextlib.redirect_stdout(io.StringIO()):
-                result = nudge(path, changed_files=file_list, uncommitted=uncommitted)
+                result = nudge(
+                    path,
+                    changed_files=file_list,
+                    uncommitted=uncommitted,
+                )
             return json.dumps(result, default=str)
         except Exception as exc:
             from drift.api_helpers import _error_response
