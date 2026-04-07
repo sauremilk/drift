@@ -192,10 +192,7 @@ def _call_targets_loopback(node: ast.Call) -> bool:
 
 def _has_ignore_security_directive(source: str) -> bool:
     """Return True if module header contains explicit ignore-security directive."""
-    for line in source.split("\n")[:5]:
-        if _IGNORE_SECURITY_DIRECTIVE_RE.search(line):
-            return True
-    return False
+    return any(_IGNORE_SECURITY_DIRECTIVE_RE.search(line) for line in source.split("\n")[:5])
 
 
 @register_signal
