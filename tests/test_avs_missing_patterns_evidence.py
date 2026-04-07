@@ -169,14 +169,14 @@ def _build_scenarios() -> list[Scenario]:
         expected_detect=True,
         parse_results=[
             _pr("services/auth.py", []),
-            _pr("services/billing.py", []),
+            _pr("handlers/billing.py", []),
             _pr("services/notifications.py", []),
         ],
         file_histories={},
         commits=[
-            _commit(["services/auth.py", "services/billing.py"]),
-            _commit(["services/auth.py", "services/billing.py"]),
-            _commit(["services/auth.py", "services/billing.py"]),
+            _commit(["services/auth.py", "handlers/billing.py"]),
+            _commit(["services/auth.py", "handlers/billing.py"]),
+            _commit(["services/auth.py", "handlers/billing.py"]),
         ],
     )
 
@@ -185,14 +185,14 @@ def _build_scenarios() -> list[Scenario]:
         target="hidden",
         expected_detect=False,
         parse_results=[
-            _pr("services/auth.py", [_imp("services/auth.py", "services.billing")]),
-            _pr("services/billing.py", []),
+            _pr("services/auth.py", [_imp("services/auth.py", "handlers.billing")]),
+            _pr("handlers/billing.py", []),
         ],
         file_histories={},
         commits=[
-            _commit(["services/auth.py", "services/billing.py"]),
-            _commit(["services/auth.py", "services/billing.py"]),
-            _commit(["services/auth.py", "services/billing.py"]),
+            _commit(["services/auth.py", "handlers/billing.py"]),
+            _commit(["services/auth.py", "handlers/billing.py"]),
+            _commit(["services/auth.py", "handlers/billing.py"]),
         ],
     )
 

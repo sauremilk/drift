@@ -467,11 +467,16 @@ def build_co_change_pairs(
 
     Complexity: O(C × F²) where C = commits, F = avg files per commit.
     Bounded by filtering commits with >20 files (bulk refactors).
+
+    Each commit is weighted inversely by the number of files it touches,
+    so that bulk/sweep commits contribute less per pair than surgical
+    two-file commits.  The hard cut at >20 files is kept as a secondary
+    guard.
     """
     from itertools import combinations
 
-    pair_counts: dict[tuple[str, str], int] = defaultdict(int)
-    file_commit_counts: dict[str, int] = defaultdict(int)
+    pair_counts: dict[tuple[str, str], float] = defaultdict(float)
+    file_commit_counts: dict[str, float] = defaultdict(float)
 
     for commit in commits:
         files = commit.files_changed
@@ -482,11 +487,15 @@ def build_co_change_pairs(
         if len(files) > 20 or len(files) < 2:
             continue
 
+        # Weight inversely by number of files: surgical commits (2 files)
+        # count fully (1.0); a 15-file commit counts ~0.07 per pair.
+        weight = 1.0 / max(1, len(files) - 1)
+
         for f in files:
-            file_commit_counts[f] += 1
+            file_commit_counts[f] += weight
 
         for a, b in combinations(sorted(files), 2):
-            pair_counts[(a, b)] += 1
+            pair_counts[(a, b)] += weight
 
     pairs: list[CoChangePair] = []
     for (a, b), count in pair_counts.items():
@@ -501,9 +510,9 @@ def build_co_change_pairs(
             CoChangePair(
                 file_a=a,
                 file_b=b,
-                co_change_count=count,
-                total_commits_a=total_a,
-                total_commits_b=total_b,
+                co_change_count=round(count),
+                total_commits_a=round(total_a),
+                total_commits_b=round(total_b),
                 confidence=round(confidence, 3),
             ),
         )

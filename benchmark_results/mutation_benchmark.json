@@ -112,7 +112,7 @@
           "must_detect": true,
           "min_findings": 1
         },
-        "rationale": "Novel dependencies: outlier_module.py uses ctypes/struct/mmap in web app"
+        "rationale": "Novel dependencies: outlier_module.py uses numpy/cffi/msgpack in web app"
       },
       {
         "id": "dia_001",
@@ -356,9 +356,9 @@
     },
     "system_misalignment": {
       "injected": 1,
-      "detected": 0,
-      "recall": 0.0,
-      "finding_count": 0,
+      "detected": 1,
+      "recall": 1.0,
+      "finding_count": 1,
       "mutations": [
         {
           "id": "sms_001",
@@ -369,11 +369,13 @@
             "must_detect": true,
             "min_findings": 1
           },
-          "rationale": "Novel dependencies: outlier_module.py uses ctypes/struct/mmap in web app",
-          "description": "Novel dependencies: outlier_module.py uses ctypes/struct/mmap in web app"
+          "rationale": "Novel dependencies: outlier_module.py uses numpy/cffi/msgpack in web app",
+          "description": "Novel dependencies: outlier_module.py uses numpy/cffi/msgpack in web app"
         }
       ],
-      "finding_titles": []
+      "finding_titles": [
+        "Novel dependencies in src/myapp/"
+      ]
     },
     "doc_impl_drift": {
       "injected": 3,
@@ -523,8 +525,8 @@
     }
   },
   "total_injected": 17,
-  "total_detected": 15,
-  "overall_recall": 0.8823529411764706,
+  "total_detected": 16,
+  "overall_recall": 0.9411764705882353,
   "drift_output": {
     "analysis_status": {
       "affected_components": [],
@@ -534,13 +536,13 @@
       "is_fully_reliable": true,
       "status": "complete"
     },
-    "analyzed_at": "2026-04-07T10:09:08.592366+00:00",
+    "analyzed_at": "2026-04-07T11:37:13.594351+00:00",
     "baseline": null,
     "compact_summary": {
       "critical_count": 0,
       "duplicate_findings_removed": 0,
-      "findings_deduplicated": 38,
-      "findings_total": 38,
+      "findings_deduplicated": 39,
+      "findings_total": 39,
       "fix_first_count": 10,
       "high_count": 22
     },
@@ -550,7 +552,7 @@
     "finding_context_policy": {
       "counts": {
         "library": 10,
-        "production": 28
+        "production": 29
       },
       "excluded_from_fix_first": 10,
       "include_non_operational_in_fix_first": false,
@@ -966,13 +968,54 @@
       {
         "ai_attributed": false,
         "deferred": false,
+        "description": "Recently introduced 3 package(s) not previously used in this module: cffi, msgpack, numpy\n  - src\\myapp\\outlier_module.py:1 imports 'numpy'\n  - src\\myapp\\outlier_module.py:2 imports 'cffi'\n  - src\\myapp\\outlier_module.py:3 imports 'msgpack'",
+        "end_line": null,
+        "file": "src/myapp",
+        "finding_context": "production",
+        "fix": "Verify whether cffi, msgpack, numpy was intentionally introduced. If yes, add it to drift configuration under allowed_imports. If not, remove the dependency.",
+        "impact": 0.06,
+        "impact_rank": 11,
+        "metadata": {
+          "finding_context": "production",
+          "import_count": 3,
+          "novel_imports": [
+            "cffi",
+            "msgpack",
+            "numpy"
+          ],
+          "novel_packages": [
+            "cffi",
+            "msgpack",
+            "numpy"
+          ]
+        },
+        "related_files": [],
+        "remediation": {
+          "description": "Recently introduced dependencies (cffi, msgpack, numpy) diverge from this module's established import patterns. Verify these are intentional. If not, move the dependent code to a more appropriate module.",
+          "effort": "low",
+          "impact": "medium",
+          "title": "Review novel dependencies in src\\myapp"
+        },
+        "rule_id": "system_misalignment",
+        "score": 0.75,
+        "score_contribution": 0.0678,
+        "severity": "medium",
+        "signal": "system_misalignment",
+        "signal_abbrev": "SMS",
+        "start_line": 1,
+        "symbol": null,
+        "title": "Novel dependencies in src/myapp/"
+      },
+      {
+        "ai_attributed": false,
+        "deferred": false,
         "description": "Complexity: 10, LOC: 20. No docstring. No corresponding test found. No return type annotation.",
         "end_line": 65,
         "file": "src/myapp/processors/data_pipeline.py",
         "finding_context": "production",
         "fix": "Function enrich_payload (complexity 10): add Docstring, Tests, Return-Type.",
         "impact": 0.0405,
-        "impact_rank": 11,
+        "impact_rank": 12,
         "metadata": {
           "complexity": 10,
           "explanation_score": 0.0,
@@ -1009,7 +1052,7 @@
         "finding_context": "production",
         "fix": "Function transform_records (complexity 9): add Docstring, Tests, Return-Type.",
         "impact": 0.0376,
-        "impact_rank": 12,
+        "impact_rank": 13,
         "metadata": {
           "complexity": 9,
           "explanation_score": 0.0,
@@ -1046,7 +1089,7 @@
         "finding_context": "production",
         "fix": "Function aggregate_metrics (complexity 8): add Docstring, Tests, Return-Type.",
         "impact": 0.0324,
-        "impact_rank": 13,
+        "impact_rank": 14,
         "metadata": {
           "complexity": 8,
           "explanation_score": 0.0,
@@ -1083,7 +1126,7 @@
         "finding_context": "production",
         "fix": "Add guard clauses to 3/3 unguarded functions in src/myapp/processors/ (mean complexity 18.0): isinstance checks, None guards, or assert statements.",
         "impact": 0.027,
-        "impact_rank": 14,
+        "impact_rank": 15,
         "metadata": {
           "finding_context": "production",
           "guarded_count": 0,
@@ -1112,7 +1155,7 @@
         "finding_context": "production",
         "fix": "Add negative tests to tests/api/ (6 test functions, only 0 negative assertions): use pytest.raises for expected exceptions, test edge cases (empty, None, invalid input).",
         "impact": 0.024,
-        "impact_rank": 15,
+        "impact_rank": 16,
         "metadata": {
           "boundary_functions": 0,
           "finding_context": "production",
@@ -1142,7 +1185,7 @@
         "finding_context": "production",
         "fix": "Reduce nesting in 'enrich_payload' (depth 6, threshold 4): use early returns, extract nested blocks into helpers, or invert conditions.",
         "impact": 0.018,
-        "impact_rank": 16,
+        "impact_rank": 17,
         "metadata": {
           "finding_context": "production",
           "function_name": "enrich_payload",
@@ -1170,7 +1213,7 @@
         "finding_context": "production",
         "fix": "Reduce nesting in 'transform_records' (depth 5, threshold 4): use early returns, extract nested blocks into helpers, or invert conditions.",
         "impact": 0.0135,
-        "impact_rank": 17,
+        "impact_rank": 18,
         "metadata": {
           "finding_context": "production",
           "function_name": "transform_records",
@@ -1198,7 +1241,7 @@
         "finding_context": "production",
         "fix": "Remove 'handlers/' from README.md or create the directory.",
         "impact": 0.012,
-        "impact_rank": 18,
+        "impact_rank": 19,
         "metadata": {
           "finding_context": "production",
           "library_context_candidate": false,
@@ -1225,7 +1268,7 @@
         "finding_context": "production",
         "fix": "Remove 'middleware/' from README.md or create the directory.",
         "impact": 0.012,
-        "impact_rank": 19,
+        "impact_rank": 20,
         "metadata": {
           "finding_context": "production",
           "library_context_candidate": false,
@@ -1252,7 +1295,7 @@
         "finding_context": "production",
         "fix": "Remove 'models/' from README.md or create the directory.",
         "impact": 0.012,
-        "impact_rank": 20,
+        "impact_rank": 21,
         "metadata": {
           "finding_context": "production",
           "library_context_candidate": false,
@@ -1279,7 +1322,7 @@
         "finding_context": "production",
         "fix": "Remove 'plugins/' from README.md or create the directory.",
         "impact": 0.012,
-        "impact_rank": 21,
+        "impact_rank": 22,
         "metadata": {
           "finding_context": "production",
           "library_context_candidate": false,
@@ -1306,7 +1349,7 @@
         "finding_context": "production",
         "fix": "Remove 'utils/' from README.md or create the directory.",
         "impact": 0.012,
-        "impact_rank": 22,
+        "impact_rank": 23,
         "metadata": {
           "finding_context": "production",
           "library_context_candidate": false,
@@ -1333,7 +1376,7 @@
         "finding_context": "production",
         "fix": "Remove 'views/' from README.md or create the directory.",
         "impact": 0.012,
-        "impact_rank": 23,
+        "impact_rank": 24,
         "metadata": {
           "finding_context": "production",
           "library_context_candidate": false,
@@ -1360,7 +1403,7 @@
         "finding_context": "production",
         "fix": "Reduce cognitive complexity of 'calculate_pricing' (currently 57, threshold 15): extract nested logic into helper functions, replace nested conditionals with guard clauses, simplify boolean expressions.",
         "impact": 0.0,
-        "impact_rank": 24,
+        "impact_rank": 25,
         "metadata": {
           "body_lines": 36,
           "cognitive_complexity": 57,
@@ -1389,7 +1432,7 @@
         "finding_context": "production",
         "fix": "Reduce cognitive complexity of 'transform_dataset' (currently 113, threshold 15): extract nested logic into helper functions, replace nested conditionals with guard clauses, simplify boolean expressions.",
         "impact": 0.0,
-        "impact_rank": 25,
+        "impact_rank": 26,
         "metadata": {
           "body_lines": 54,
           "cognitive_complexity": 113,
@@ -1418,7 +1461,7 @@
         "finding_context": "production",
         "fix": "Reduce cognitive complexity of 'transform_records' (currently 24, threshold 15): extract nested logic into helper functions, replace nested conditionals with guard clauses, simplify boolean expressions.",
         "impact": 0.0,
-        "impact_rank": 26,
+        "impact_rank": 27,
         "metadata": {
           "body_lines": 23,
           "cognitive_complexity": 24,
@@ -1447,7 +1490,7 @@
         "finding_context": "production",
         "fix": "Reduce cognitive complexity of 'enrich_payload' (currently 28, threshold 15): extract nested logic into helper functions, replace nested conditionals with guard clauses, simplify boolean expressions.",
         "impact": 0.0,
-        "impact_rank": 27,
+        "impact_rank": 28,
         "metadata": {
           "body_lines": 20,
           "cognitive_complexity": 28,
@@ -1476,7 +1519,7 @@
         "finding_context": "library",
         "fix": "Review and remove 2 unused exports in complex_logic.py: calculate_pricing, transform_dataset. If they are framework entry-points or dynamically loaded, mark with # drift:ignore or add to exclude patterns.",
         "impact": 0.0,
-        "impact_rank": 28,
+        "impact_rank": 29,
         "metadata": {
           "dead_count": 2,
           "dead_ratio": 1.0,
@@ -1517,7 +1560,7 @@
         "finding_context": "library",
         "fix": "Review and remove 2 unused exports in aws_s3.py: upload_file, download_file. If they are framework entry-points or dynamically loaded, mark with # drift:ignore or add to exclude patterns.",
         "impact": 0.0,
-        "impact_rank": 29,
+        "impact_rank": 30,
         "metadata": {
           "dead_count": 2,
           "dead_ratio": 1.0,
@@ -1558,7 +1601,7 @@
         "finding_context": "library",
         "fix": "Review and remove 2 unused exports in google_api.py: fetch_calendar, sync_contacts. If they are framework entry-points or dynamically loaded, mark with # drift:ignore or add to exclude patterns.",
         "impact": 0.0,
-        "impact_rank": 30,
+        "impact_rank": 31,
         "metadata": {
           "dead_count": 2,
           "dead_ratio": 1.0,
@@ -1599,7 +1642,7 @@
         "finding_context": "library",
         "fix": "Review and remove 2 unused exports in slack_api.py: send_message, list_channels. If they are framework entry-points or dynamically loaded, mark with # drift:ignore or add to exclude patterns.",
         "impact": 0.0,
-        "impact_rank": 31,
+        "impact_rank": 32,
         "metadata": {
           "dead_count": 2,
           "dead_ratio": 1.0,
@@ -1640,7 +1683,7 @@
         "finding_context": "library",
         "fix": "Review and remove 2 unused exports in stripe_api.py: charge_card, refund. If they are framework entry-points or dynamically loaded, mark with # drift:ignore or add to exclude patterns.",
         "impact": 0.0,
-        "impact_rank": 32,
+        "impact_rank": 33,
         "metadata": {
           "dead_count": 2,
           "dead_ratio": 1.0,
@@ -1681,7 +1724,7 @@
         "finding_context": "library",
         "fix": "Review and remove 2 unused exports in hotspot.py: unstable_function, also_changes. If they are framework entry-points or dynamically loaded, mark with # drift:ignore or add to exclude patterns.",
         "impact": 0.0,
-        "impact_rank": 33,
+        "impact_rank": 34,
         "metadata": {
           "dead_count": 2,
           "dead_ratio": 1.0,
@@ -1722,7 +1765,7 @@
         "finding_context": "library",
         "fix": "Review and remove 3 unused exports in user.py: get_user, get_user_or_raise, get_user_result. If they are framework entry-points or dynamically loaded, mark with # drift:ignore or add to exclude patterns.",
         "impact": 0.0,
-        "impact_rank": 34,
+        "impact_rank": 35,
         "metadata": {
           "dead_count": 3,
           "dead_ratio": 1.0,
@@ -1768,7 +1811,7 @@
         "finding_context": "library",
         "fix": "Review and remove 3 unused exports in data_pipeline.py: transform_records, aggregate_metrics, enrich_payload. If they are framework entry-points or dynamically loaded, mark with # drift:ignore or add to exclude patterns.",
         "impact": 0.0,
-        "impact_rank": 35,
+        "impact_rank": 36,
         "metadata": {
           "dead_count": 3,
           "dead_ratio": 1.0,
@@ -1814,7 +1857,7 @@
         "finding_context": "library",
         "fix": "Review and remove 2 unused exports in service_a.py: process_order, validate_input. If they are framework entry-points or dynamically loaded, mark with # drift:ignore or add to exclude patterns.",
         "impact": 0.0,
-        "impact_rank": 36,
+        "impact_rank": 37,
         "metadata": {
           "dead_count": 2,
           "dead_ratio": 1.0,
@@ -1855,7 +1898,7 @@
         "finding_context": "library",
         "fix": "Review and remove 2 unused exports in service_b.py: process_order, validate_input. If they are framework entry-points or dynamically loaded, mark with # drift:ignore or add to exclude patterns.",
         "impact": 0.0,
-        "impact_rank": 37,
+        "impact_rank": 38,
         "metadata": {
           "dead_count": 2,
           "dead_ratio": 1.0,
@@ -1890,13 +1933,13 @@
       {
         "ai_attributed": false,
         "deferred": false,
-        "description": "Change frequency: 2.3/week (2.5\u03c3 above mean).",
+        "description": "Change frequency: 2.3/week (2.7\u03c3 above mean).",
         "end_line": null,
         "file": "src/myapp/hotspot.py",
         "finding_context": "production",
         "fix": "10 commits in 30 days \u2014 consider splitting the file.",
         "impact": 0.0,
-        "impact_rank": 38,
+        "impact_rank": 39,
         "metadata": {
           "ai_ratio": 0.0,
           "author_z": 0.0,
@@ -1904,7 +1947,7 @@
           "defect_correlated": 0,
           "defect_z": 0.0,
           "finding_context": "production",
-          "freq_z": 2.47,
+          "freq_z": 2.65,
           "unique_authors": 1
         },
         "related_files": [],
@@ -1915,7 +1958,7 @@
           "title": "Stabilize src\\myapp\\hotspot.py"
         },
         "rule_id": "temporal_volatility",
-        "score": 0.275,
+        "score": 0.295,
         "score_contribution": 0.0,
         "severity": "info",
         "signal": "temporal_volatility",
@@ -2078,11 +2121,26 @@
       },
       {
         "duplicate_count": 1,
+        "file": "src/myapp",
+        "finding_context": "production",
+        "impact": 0.06,
+        "next_step": "Review novel dependencies in src\\myapp",
+        "rank": 11,
+        "rule_id": "system_misalignment",
+        "score_contribution": 0.0678,
+        "severity": "medium",
+        "signal": "system_misalignment",
+        "signal_abbrev": "SMS",
+        "start_line": 1,
+        "title": "Novel dependencies in src/myapp/"
+      },
+      {
+        "duplicate_count": 1,
         "file": "src/myapp/processors/data_pipeline.py",
         "finding_context": "production",
         "impact": 0.0405,
         "next_step": "Document 'enrich_payload'",
-        "rank": 11,
+        "rank": 12,
         "rule_id": "explainability_deficit",
         "score_contribution": 0.0458,
         "severity": "low",
@@ -2097,7 +2155,7 @@
         "finding_context": "production",
         "impact": 0.0376,
         "next_step": "Document 'transform_records'",
-        "rank": 12,
+        "rank": 13,
         "rule_id": "explainability_deficit",
         "score_contribution": 0.0425,
         "severity": "low",
@@ -2112,7 +2170,7 @@
         "finding_context": "production",
         "impact": 0.0324,
         "next_step": "Document 'aggregate_metrics'",
-        "rank": 13,
+        "rank": 14,
         "rule_id": "explainability_deficit",
         "score_contribution": 0.0366,
         "severity": "low",
@@ -2127,7 +2185,7 @@
         "finding_context": "production",
         "impact": 0.027,
         "next_step": "Add guard clauses to 3/3 unguarded functions in src/myapp/processors/ (mean complexity 18.0): isinstance checks, None guards, or assert statements.",
-        "rank": 14,
+        "rank": 15,
         "rule_id": "guard_clause_deficit",
         "score_contribution": 0.0305,
         "severity": "high",
@@ -2142,7 +2200,7 @@
         "finding_context": "production",
         "impact": 0.024,
         "next_step": "Add negative tests to tests/api/ (6 test functions, only 0 negative assertions): use pytest.raises for expected exceptions, test edge cases (empty, None, invalid input).",
-        "rank": 15,
+        "rank": 16,
         "rule_id": "test_polarity_deficit",
         "score_contribution": 0.0271,
         "severity": "medium",
@@ -2157,7 +2215,7 @@
         "finding_context": "production",
         "impact": 0.018,
         "next_step": "Reduce nesting in 'enrich_payload' (depth 6, threshold 4): use early returns, extract nested blocks into helpers, or invert conditions.",
-        "rank": 16,
+        "rank": 17,
         "rule_id": "deep_nesting",
         "score_contribution": 0.0203,
         "severity": "high",
@@ -2172,7 +2230,7 @@
         "finding_context": "production",
         "impact": 0.0135,
         "next_step": "Reduce nesting in 'transform_records' (depth 5, threshold 4): use early returns, extract nested blocks into helpers, or invert conditions.",
-        "rank": 17,
+        "rank": 18,
         "rule_id": "deep_nesting",
         "score_contribution": 0.0153,
         "severity": "medium",
@@ -2187,7 +2245,7 @@
         "finding_context": "production",
         "impact": 0.012,
         "next_step": "Remove 'handlers/' from README.md or create the directory.",
-        "rank": 18,
+        "rank": 19,
         "rule_id": "doc_impl_drift",
         "score_contribution": 0.0136,
         "severity": "low",
@@ -2202,7 +2260,7 @@
         "finding_context": "production",
         "impact": 0.012,
         "next_step": "Remove 'middleware/' from README.md or create the directory.",
-        "rank": 19,
+        "rank": 20,
         "rule_id": "doc_impl_drift",
         "score_contribution": 0.0136,
         "severity": "low",
@@ -2217,7 +2275,7 @@
         "finding_context": "production",
         "impact": 0.012,
         "next_step": "Remove 'models/' from README.md or create the directory.",
-        "rank": 20,
+        "rank": 21,
         "rule_id": "doc_impl_drift",
         "score_contribution": 0.0136,
         "severity": "low",
@@ -2232,7 +2290,7 @@
         "finding_context": "production",
         "impact": 0.012,
         "next_step": "Remove 'plugins/' from README.md or create the directory.",
-        "rank": 21,
+        "rank": 22,
         "rule_id": "doc_impl_drift",
         "score_contribution": 0.0136,
         "severity": "low",
@@ -2247,7 +2305,7 @@
         "finding_context": "production",
         "impact": 0.012,
         "next_step": "Remove 'utils/' from README.md or create the directory.",
-        "rank": 22,
+        "rank": 23,
         "rule_id": "doc_impl_drift",
         "score_contribution": 0.0136,
         "severity": "low",
@@ -2262,7 +2320,7 @@
         "finding_context": "production",
         "impact": 0.012,
         "next_step": "Remove 'views/' from README.md or create the directory.",
-        "rank": 23,
+        "rank": 24,
         "rule_id": "doc_impl_drift",
         "score_contribution": 0.0136,
         "severity": "low",
@@ -2277,7 +2335,7 @@
         "finding_context": "production",
         "impact": 0.0,
         "next_step": "Reduce cognitive complexity of 'calculate_pricing' (currently 57, threshold 15): extract nested logic into helper functions, replace nested conditionals with guard clauses, simplify boolean expressions.",
-        "rank": 24,
+        "rank": 25,
         "rule_id": "cognitive_complexity",
         "score_contribution": 0.0,
         "severity": "high",
@@ -2292,7 +2350,7 @@
         "finding_context": "production",
         "impact": 0.0,
         "next_step": "Reduce cognitive complexity of 'transform_dataset' (currently 113, threshold 15): extract nested logic into helper functions, replace nested conditionals with guard clauses, simplify boolean expressions.",
-        "rank": 25,
+        "rank": 26,
         "rule_id": "cognitive_complexity",
         "score_contribution": 0.0,
         "severity": "high",
@@ -2307,7 +2365,7 @@
         "finding_context": "production",
         "impact": 0.0,
         "next_step": "Reduce cognitive complexity of 'transform_records' (currently 24, threshold 15): extract nested logic into helper functions, replace nested conditionals with guard clauses, simplify boolean expressions.",
-        "rank": 26,
+        "rank": 27,
         "rule_id": "cognitive_complexity",
         "score_contribution": 0.0,
         "severity": "medium",
@@ -2322,7 +2380,7 @@
         "finding_context": "production",
         "impact": 0.0,
         "next_step": "Reduce cognitive complexity of 'enrich_payload' (currently 28, threshold 15): extract nested logic into helper functions, replace nested conditionals with guard clauses, simplify boolean expressions.",
-        "rank": 27,
+        "rank": 28,
         "rule_id": "cognitive_complexity",
         "score_contribution": 0.0,
         "severity": "high",
@@ -2337,7 +2395,7 @@
         "finding_context": "library",
         "impact": 0.0,
         "next_step": "Review and remove 2 unused exports in complex_logic.py: calculate_pricing, transform_dataset. If they are framework entry-points or dynamically loaded, mark with # drift:ignore or add to exclude patterns.",
-        "rank": 28,
+        "rank": 29,
         "rule_id": "dead_code_accumulation",
         "score_contribution": 0.0,
         "severity": "high",
@@ -2352,7 +2410,7 @@
         "finding_context": "library",
         "impact": 0.0,
         "next_step": "Review and remove 2 unused exports in aws_s3.py: upload_file, download_file. If they are framework entry-points or dynamically loaded, mark with # drift:ignore or add to exclude patterns.",
-        "rank": 29,
+        "rank": 30,
         "rule_id": "dead_code_accumulation",
         "score_contribution": 0.0,
         "severity": "high",
@@ -2367,7 +2425,7 @@
         "finding_context": "library",
         "impact": 0.0,
         "next_step": "Review and remove 2 unused exports in google_api.py: fetch_calendar, sync_contacts. If they are framework entry-points or dynamically loaded, mark with # drift:ignore or add to exclude patterns.",
-        "rank": 30,
+        "rank": 31,
         "rule_id": "dead_code_accumulation",
         "score_contribution": 0.0,
         "severity": "high",
@@ -2382,7 +2440,7 @@
         "finding_context": "library",
         "impact": 0.0,
         "next_step": "Review and remove 2 unused exports in slack_api.py: send_message, list_channels. If they are framework entry-points or dynamically loaded, mark with # drift:ignore or add to exclude patterns.",
-        "rank": 31,
+        "rank": 32,
         "rule_id": "dead_code_accumulation",
         "score_contribution": 0.0,
         "severity": "high",
@@ -2397,7 +2455,7 @@
         "finding_context": "library",
         "impact": 0.0,
         "next_step": "Review and remove 2 unused exports in stripe_api.py: charge_card, refund. If they are framework entry-points or dynamically loaded, mark with # drift:ignore or add to exclude patterns.",
-        "rank": 32,
+        "rank": 33,
         "rule_id": "dead_code_accumulation",
         "score_contribution": 0.0,
         "severity": "high",
@@ -2412,7 +2470,7 @@
         "finding_context": "library",
         "impact": 0.0,
         "next_step": "Review and remove 2 unused exports in hotspot.py: unstable_function, also_changes. If they are framework entry-points or dynamically loaded, mark with # drift:ignore or add to exclude patterns.",
-        "rank": 33,
+        "rank": 34,
         "rule_id": "dead_code_accumulation",
         "score_contribution": 0.0,
         "severity": "high",
@@ -2427,7 +2485,7 @@
         "finding_context": "library",
         "impact": 0.0,
         "next_step": "Review and remove 3 unused exports in user.py: get_user, get_user_or_raise, get_user_result. If they are framework entry-points or dynamically loaded, mark with # drift:ignore or add to exclude patterns.",
-        "rank": 34,
+        "rank": 35,
         "rule_id": "dead_code_accumulation",
         "score_contribution": 0.0,
         "severity": "high",
@@ -2442,7 +2500,7 @@
         "finding_context": "library",
         "impact": 0.0,
         "next_step": "Review and remove 3 unused exports in data_pipeline.py: transform_records, aggregate_metrics, enrich_payload. If they are framework entry-points or dynamically loaded, mark with # drift:ignore or add to exclude patterns.",
-        "rank": 35,
+        "rank": 36,
         "rule_id": "dead_code_accumulation",
         "score_contribution": 0.0,
         "severity": "high",
@@ -2457,7 +2515,7 @@
         "finding_context": "library",
         "impact": 0.0,
         "next_step": "Review and remove 2 unused exports in service_a.py: process_order, validate_input. If they are framework entry-points or dynamically loaded, mark with # drift:ignore or add to exclude patterns.",
-        "rank": 36,
+        "rank": 37,
         "rule_id": "dead_code_accumulation",
         "score_contribution": 0.0,
         "severity": "high",
@@ -2472,7 +2530,7 @@
         "finding_context": "library",
         "impact": 0.0,
         "next_step": "Review and remove 2 unused exports in service_b.py: process_order, validate_input. If they are framework entry-points or dynamically loaded, mark with # drift:ignore or add to exclude patterns.",
-        "rank": 37,
+        "rank": 38,
         "rule_id": "dead_code_accumulation",
         "score_contribution": 0.0,
         "severity": "high",
@@ -2487,7 +2545,7 @@
         "finding_context": "production",
         "impact": 0.0,
         "next_step": "Stabilize src\\myapp\\hotspot.py",
-        "rank": 38,
+        "rank": 39,
         "rule_id": "temporal_volatility",
         "score_contribution": 0.0,
         "severity": "info",
@@ -2644,26 +2702,26 @@
       },
       {
         "expected_benefit": "medium",
-        "file": "tests/api",
+        "file": "src/myapp",
         "finding_context": "production",
-        "impact": 0.024,
-        "next_step": "Add negative tests to tests/api/ (6 test functions, only 0 negative assertions): use pytest.raises for expected exceptions, test edge cases (empty, None, invalid input).",
+        "impact": 0.06,
+        "next_step": "Review novel dependencies in src\\myapp",
         "priority_class": "structural_risk",
         "rank": 10,
-        "rule_id": "test_polarity_deficit",
-        "score_contribution": 0.0271,
+        "rule_id": "system_misalignment",
+        "score_contribution": 0.0678,
         "severity": "medium",
-        "signal": "test_polarity_deficit",
-        "signal_abbrev": "TPD",
+        "signal": "system_misalignment",
+        "signal_abbrev": "SMS",
         "start_line": 1,
-        "title": "Happy-path-only test suite in tests/api/"
+        "title": "Novel dependencies in src/myapp/"
       }
     ],
     "modules": [
       {
         "ai_ratio": 0.0,
-        "drift_score": 0.485,
-        "finding_count": 12,
+        "drift_score": 0.413,
+        "finding_count": 13,
         "path": "src/myapp",
         "severity": "medium",
         "signal_scores": {
@@ -2671,7 +2729,8 @@
           "dead_code_accumulation": 0.5638,
           "explainability_deficit": 0.4467,
           "mutant_duplicate": 0.5107,
-          "temporal_volatility": 0.0795
+          "system_misalignment": 0.2168,
+          "temporal_volatility": 0.0853
         }
       },
       {
@@ -3071,7 +3130,7 @@
         "source_signal": "dead_code_accumulation"
       }
     ],
-    "repo": "C:/Users/mickg/AppData/Local/Temp/drift_mutation_djuwfkhq/synthetic_repo",
+    "repo": "C:/Users/mickg/AppData/Local/Temp/drift_mutation_k0h_2k6l/synthetic_repo",
     "schema_version": "1.0",
     "severity": "low",
     "signal_abbrev_map": {
@@ -3102,7 +3161,7 @@
     "summary": {
       "ai_attributed_ratio": 0.0,
       "ai_tools_detected": [],
-      "analysis_duration_seconds": 0.23,
+      "analysis_duration_seconds": 0.22,
       "total_files": 25,
       "total_functions": 31
     },

@@ -442,13 +442,13 @@ def test_co_change_finding_without_import():
     """Co-changed files without an import edge produce a hidden coupling finding."""
     prs = [
         _pr("services/auth.py", []),
-        _pr("services/billing.py", []),
+        _pr("handlers/billing.py", []),
     ]
     signal = ArchitectureViolationSignal()
     signal._commits = [
-        _commit(["services/auth.py", "services/billing.py"]),
-        _commit(["services/auth.py", "services/billing.py"]),
-        _commit(["services/auth.py", "services/billing.py"]),
+        _commit(["services/auth.py", "handlers/billing.py"]),
+        _commit(["services/auth.py", "handlers/billing.py"]),
+        _commit(["services/auth.py", "handlers/billing.py"]),
     ]
     findings = signal.analyze(prs, {}, None)
 
@@ -476,6 +476,93 @@ def test_co_change_suppressed_when_import_exists():
 
     hidden = [f for f in findings if "Hidden coupling" in f.title]
     assert len(hidden) == 0
+
+
+def test_co_change_same_directory_suppressed():
+    """Sister files in the same package directory are NOT flagged (MCS-1)."""
+    prs = [
+        _pr("signals/foo.py", []),
+        _pr("signals/bar.py", []),
+    ]
+    signal = ArchitectureViolationSignal()
+    signal._commits = [
+        _commit(["signals/foo.py", "signals/bar.py"]),
+        _commit(["signals/foo.py", "signals/bar.py"]),
+        _commit(["signals/foo.py", "signals/bar.py"]),
+        _commit(["signals/foo.py", "signals/bar.py"]),
+        _commit(["signals/foo.py", "signals/bar.py"]),
+        _commit(["signals/foo.py", "signals/bar.py"]),
+    ]
+    findings = signal.analyze(prs, {}, None)
+
+    hidden = [f for f in findings if "Hidden coupling" in f.title]
+    assert len(hidden) == 0, f"Expected no same-dir findings, got: {hidden}"
+
+
+def test_co_change_root_level_not_suppressed():
+    """Root-level files (no package dir) are still flagged — guard protects flat repos."""
+    prs = [
+        _pr("foo.py", []),
+        _pr("bar.py", []),
+    ]
+    signal = ArchitectureViolationSignal()
+    signal._commits = [
+        _commit(["foo.py", "bar.py"]),
+        _commit(["foo.py", "bar.py"]),
+        _commit(["foo.py", "bar.py"]),
+        _commit(["foo.py", "bar.py"]),
+        _commit(["foo.py", "bar.py"]),
+        _commit(["foo.py", "bar.py"]),
+    ]
+    findings = signal.analyze(prs, {}, None)
+
+    hidden = [f for f in findings if "Hidden coupling" in f.title]
+    assert len(hidden) >= 1, "Root-level co-change should still produce a finding"
+
+
+def test_co_change_test_source_pair_suppressed():
+    """Test-source co-evolution is not flagged as hidden coupling (MCS-2)."""
+    prs = [
+        _pr("src/config.py", []),
+        _pr("tests/test_config.py", []),
+    ]
+    signal = ArchitectureViolationSignal()
+    signal._commits = [
+        _commit(["src/config.py", "tests/test_config.py"]),
+        _commit(["src/config.py", "tests/test_config.py"]),
+        _commit(["src/config.py", "tests/test_config.py"]),
+        _commit(["src/config.py", "tests/test_config.py"]),
+        _commit(["src/config.py", "tests/test_config.py"]),
+        _commit(["src/config.py", "tests/test_config.py"]),
+        _commit(["src/config.py", "tests/test_config.py"]),
+        _commit(["src/config.py", "tests/test_config.py"]),
+    ]
+    findings = signal.analyze(prs, {}, None)
+
+    hidden = [f for f in findings if "Hidden coupling" in f.title]
+    assert len(hidden) == 0, f"Test-source pair should be suppressed, got: {hidden}"
+
+
+def test_co_change_bulk_commits_discounted():
+    """Bulk commits (many files) are discounted in confidence calculation (MCS-3)."""
+    # 6 commits with 15 files each — under the hard >20 cutoff but should
+    # still be discounted.  a.py and b.py appear in every commit.
+    other_files = [f"mod{i}.py" for i in range(13)]
+    commits = [_commit(["a.py", "b.py"] + other_files) for _ in range(6)]
+    pairs = build_co_change_pairs(commits, min_co_changes=1, min_confidence=0.3)
+    ab_pairs = [p for p in pairs if {p.file_a, p.file_b} == {"a.py", "b.py"}]
+    # With discount, 6 commits × weight ~0.07 each = ~0.43 weighted count
+    # which should be below min_co_changes=3 default, or confidence too low.
+    # Using min_co_changes=1 to isolate the confidence check.
+    assert len(ab_pairs) == 0 or ab_pairs[0].confidence < 0.3, (
+        f"Bulk commits should be discounted: {ab_pairs}"
+    )
+
+    # Counter-test: surgical commits preserve detection
+    surgical = [_commit(["a.py", "b.py"]) for _ in range(4)]
+    pairs2 = build_co_change_pairs(surgical, min_co_changes=3, min_confidence=0.3)
+    ab_pairs2 = [p for p in pairs2 if {p.file_a, p.file_b} == {"a.py", "b.py"}]
+    assert len(ab_pairs2) >= 1, "Surgical commits should still produce co-change pairs"
 
 
 # ── Missing-pattern coverage: explicit detections ─────────────────────────

@@ -4,7 +4,7 @@ This roadmap communicates what the project needs most right now,
 what is accessible for new contributors, and what is explicitly
 deprioritized. It is updated with each release.
 
-Last updated: v2.5.1 (2026-04-06)
+Last updated: v2.5.3 (2026-04-07)
 
 ---
 

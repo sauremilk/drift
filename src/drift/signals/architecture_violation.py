@@ -18,7 +18,7 @@ from __future__ import annotations
 
 import fnmatch
 import logging
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 from typing import TYPE_CHECKING, Any
 
 import networkx as nx
@@ -417,7 +417,7 @@ class ArchitectureViolationSignal(BaseSignal):
         # --- Check co-change coupling (hidden logical dependencies) ---
         commits = self.commits
         if commits:
-            known = {pr.file_path.as_posix() for pr in parse_results}
+            known = {pr.file_path.as_posix() for pr in filtered_prs}
             findings.extend(self._check_co_change(graph, commits, known))
 
         # --- Deduplicate findings by canonical semantic key ---
@@ -1041,6 +1041,14 @@ class ArchitectureViolationSignal(BaseSignal):
                 or graph.has_edge(pair.file_b, pair.file_a)
             )
             if has_edge:
+                continue
+
+            # Suppress same-directory co-evolution (sisters in a package).
+            # Root-level files (parent == ".") are NOT suppressed to
+            # preserve detection for flat-root repos.
+            dir_a = str(PurePosixPath(pair.file_a).parent)
+            dir_b = str(PurePosixPath(pair.file_b).parent)
+            if dir_a == dir_b and dir_a != ".":
                 continue
 
             score = min(1.0, round(pair.confidence * 0.7, 2))

@@ -67,6 +67,7 @@ Issues gehen an `mick-gsk/drift`. Details: `.github/prompts/field-tests/README.m
 
 ## Skills
 
+- **`drift-agent-prompt-authoring`** — Drift-Prompts unter `.github/prompts/` und `field-tests/` strukturiert schreiben oder verbessern
 - **`drift-release`** — Vollständiger Release-Workflow
 - **`drift-pr-review`** — PR-Review gemäß Drift Policy
 - **`drift-security-triage`** — Security-Report-Triage

@@ -10,7 +10,7 @@
 [![codecov](https://codecov.io/gh/mick-gsk/drift/branch/main/graph/badge.svg)](https://codecov.io/gh/mick-gsk/drift)
 [![License](https://img.shields.io/github/license/mick-gsk/drift)](LICENSE)
 
-[docs](https://mick-gsk.github.io/drift/) · [full study](docs/STUDY.md) · [trust & limitations](docs-site/trust-evidence.md) · [FAQ](docs-site/faq.md)
+[docs](https://mick-gsk.github.io/drift/) · [benchmarking](docs-site/benchmarking.md) · [full study](docs/STUDY.md) · [trust & limitations](docs-site/trust-evidence.md) · [FAQ](docs-site/faq.md)
 
 </div>
 
@@ -47,6 +47,8 @@ drift analyze --repo .
 <div align="center">
   <img src="demos/demo.gif" alt="drift analyze terminal demo" width="720">
 </div>
+
+If you want the shortest path from headline claim to raw evidence, start with [Benchmarking and Trust](docs-site/benchmarking.md), then use the [Full Study](docs/STUDY.md) for methodology and [benchmark_results/README.md](benchmark_results/README.md) for checked-in artifacts.
 
 ---
 
@@ -118,6 +120,8 @@ More: [Quick Start](docs-site/getting-started/quickstart.md) · [Example Finding
 | **pre-commit** | `repo: https://github.com/mick-gsk/drift` | Git hooks |
 
 Full installation guide: [Installation](docs-site/getting-started/installation.md)
+
+Public evaluation path: [Benchmarking and Trust](docs-site/benchmarking.md) · [Full Study](docs/STUDY.md) · [Artifact Index](benchmark_results/README.md)
 
 ## AI-assisted workflows
 

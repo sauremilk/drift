@@ -9,7 +9,7 @@ Order = recommended priority.
 - Package: `drift-analyzer`
 - Command: `drift`
 - Version: v2.5.1
-- Safe signal claim: 14 scoring signals (auto-calibrated at runtime) + 8 report-only signals (including TypeScript architecture, security, and complexity) = 22 total detectors.
+- Safe signal claim: 15 scoring signals (auto-calibrated at runtime) + 8 report-only signals (including TypeScript architecture, security, and complexity) = 23 total detectors.
 - Safe CLI claim: 18 commands — `analyze`, `init`, `scan`, `diff`, `baseline`, `mcp`, `export-context`, `copilot-context`, `timeline`, `trend`, `patterns`, `badge`, `check`, `config`, `explain`, `fix-plan`, `self`, `validate`.
 - Safe rollout claim: `drift init --profile vibe-coding` for zero-config start, then baseline + incremental adoption.
 - Execution assets: see `docs/distribution/README.md` for awesome submissions, article draft, IDE MVP spec, and week-1 runbook.
@@ -37,7 +37,7 @@ near-identical functions accumulate with subtle differences.
 
 Drift doesn't detect bugs. It detects the loss of design intent.
 
-14 scoring signals cover pattern fragmentation, architecture violations,
+15 scoring signals cover pattern fragmentation, architecture violations,
 mutant duplicates, explainability deficit, temporal volatility, system
 misalignment, doc-impl drift, naming contracts, guard clauses, cohesion,
 coupling, and more. 8 additional report-only signals cover TypeScript
@@ -83,7 +83,7 @@ I built drift – deterministic architectural drift detection for AI-accelerated
 TL;DR: `pip install -q drift-analyzer && drift init --profile vibe-coding && drift analyze --repo .`
 
 Copilot and Cursor write code that solves local tasks correctly but weakens
-global design. Drift detects that architectural drift with 14 scoring signals
+global design. Drift detects that architectural drift with 15 scoring signals
 covering pattern, architecture, consistency, and contract dimensions — plus
 8 report-only signals.
 
@@ -185,7 +185,7 @@ These aren't bugs. Linters won't flag them. They compound silently until the
 codebase resists change.
 
 I built drift, a static analyzer focused specifically on this problem. It runs
-14 scoring signals covering pattern fragmentation, layer violations,
+15 scoring signals covering pattern fragmentation, layer violations,
 near-duplicates, explainability gaps, naming contracts, cohesion, coupling,
 exception contracts, and more — plus 8 report-only detectors for TypeScript
 architecture, security (missing auth, hardcoded secrets, insecure defaults) and complexity.
@@ -324,7 +324,7 @@ This isn't "bad code." It's code that grew without coherent design pressure.
 
 ## The 23 detectors
 
-Drift runs 14 scoring signals plus 8 report-only detectors.
+Drift runs 15 scoring signals plus 8 report-only detectors.
 
 ### Core signals (ablation-validated)
 

@@ -33,6 +33,10 @@ Für eine umfassende Drift-Bewertung diese Prompts in dieser Reihenfolge ausfüh
 | PR bewerten und Merge-Entscheidung treffen | **PR-Orchestrator** |
 | Neue Version veröffentlichen | **release** |
 
+## Relevanter Skill für Prompt-Authoring
+
+Für neue oder überarbeitete Prompt-Dateien verwende den Skill `drift-agent-prompt-authoring` unter `.github/skills/drift-agent-prompt-authoring/SKILL.md`.
+
 ## Field-Test-Prompts (externe Repos)
 
 Prompts unter `field-tests/` testen drift in **beliebigen Repositories** — nicht nur im Drift-Repo.
@@ -67,6 +71,7 @@ Alle Prompts nutzen gemeinsame Referenz-Dateien unter `_partials/`:
   │   ├── drift-release-automation.instructions.md ← PSR-Workflow (DE)
   │   └── drift-release-mandatory.instructions.md  ← PSR-Pflicht (EN)
   ├── .github/skills/
+  │   ├── drift-agent-prompt-authoring/SKILL.md ← Prompt-Authoring für `.github/prompts/`
   │   ├── drift-pr-review/SKILL.md        ← PR-Review-Checklist → verwendet von PR-Orchestrator
   │   ├── drift-release/SKILL.md          ← Release-Workflow → verwendet von release.prompt.md
   │   └── drift-security-triage/SKILL.md  ← Security-Triage (kein Prompt)

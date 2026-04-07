@@ -144,8 +144,19 @@ def _get_mistune():
         return None
 
 
-_FALLBACK_DIR_RE = re.compile(r"(?<!\w)(\w[\w\-]*)/" r"(?!\S*://)")
 _VERSION_SEGMENT_RE = re.compile(r"^(?:v\d+(?:[._-]\d+)*)$")
+
+# ---------------------------------------------------------------------------
+# URL stripping (P3: remove URLs before dir-ref extraction to avoid
+# extracting path segments from GitHub/registry links in plain text)
+# ---------------------------------------------------------------------------
+
+_URL_RE = re.compile(r"https?://\S+")
+
+
+def _strip_urls(text: str) -> str:
+    """Remove URLs from text to prevent extracting URL path segments."""
+    return _URL_RE.sub("", text)
 _DIRECTORY_CONTEXT_KEYWORDS: tuple[str, ...] = (
     "directory",
     "directories",
@@ -216,7 +227,9 @@ def _extract_contextual_dir_refs(
 ) -> set[str]:
     """Extract directory refs while filtering prose slash-tokens without context."""
     refs: set[str] = set()
-    for match in _PROSE_DIR_RE.finditer(raw_text):
+    # P3: strip URLs first so GitHub/registry path segments aren't extracted
+    cleaned_text = _strip_urls(raw_text)
+    for match in _PROSE_DIR_RE.finditer(cleaned_text):
         ref = match.group("ref")
         wrapped = bool(match.group("tick"))
         if _is_noise_dir_reference(ref):
@@ -224,7 +237,7 @@ def _extract_contextual_dir_refs(
         if (
             allow_without_context
             or wrapped
-            or _has_directory_context(raw_text, match.start(), match.end())
+            or _has_directory_context(cleaned_text, match.start(), match.end())
         ):
             refs.add(ref)
     return refs
@@ -268,7 +281,7 @@ def _extract_dir_refs_from_ast(
     return refs
 
 
-_PROSE_DIR_RE = re.compile(r"(?P<tick>`)?(?P<ref>\w[\w\-]*)/(?P=tick)?")
+_PROSE_DIR_RE = re.compile(r"(?P<tick>`)?(?P<ref>\w[\w\-]*)/(?!\w)(?P=tick)?")
 
 
 def _collect_sibling_text(children: list[dict[str, Any]]) -> str:
@@ -386,7 +399,8 @@ def _ref_exists_in_repo(
         container = repo_path / prefix
         if container.is_dir() and (container / ref).is_dir():
             return True
-    return False
+    # P6: check with dotfile prefix (e.g. drift-cache → .drift-cache)
+    return (repo_path / f".{ref}").is_dir()
 
 
 # ---------------------------------------------------------------------------
@@ -431,6 +445,24 @@ class DocImplDriftSignal(BaseSignal):
     3. Top-level source directories with no README mention.
     4. (Optional, with embeddings) Semantic claim validation.
     """
+
+    # -----------------------------------------------------------------------
+    # P1: Auxiliary directories — conventional project dirs that don't need
+    # explicit README documentation (tests, scripts, benchmarks, etc.)
+    # -----------------------------------------------------------------------
+    _AUXILIARY_DIRS: frozenset[str] = frozenset({
+        "tests", "test",
+        "scripts", "script",
+        "benchmarks", "benchmark",
+        "tools", "tool",
+        "examples", "example",
+        "samples", "sample",
+        "demos", "demo",
+        "fixtures",
+        "docs", "doc",
+        # Build / CI artifacts and working directories
+        "artifacts", "work_artifacts",
+    })
 
     incremental_scope = "file_local"
 
@@ -525,6 +557,9 @@ class DocImplDriftSignal(BaseSignal):
         if source_dirs:
             readme_lower = readme_text.lower()
             for src_dir in sorted(source_dirs):
+                # P1: skip conventional auxiliary directories
+                if src_dir.lower() in self._AUXILIARY_DIRS:
+                    continue
                 if src_dir.lower() not in readme_lower:
                     findings.append(
                         Finding(

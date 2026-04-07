@@ -6,6 +6,7 @@ dist/
 build/
 .drift-cache/
 .venv/
+.venv-*/
 .env
 .pypirc
 *.db
@@ -49,3 +50,8 @@ reddit.com-Ist der vollständig agentenbasierte Workflow tatsächlich nur Unsinn
 agent-framework.pdf
 pdf_extract*.txt
 _fix_encoding.py
+.tmp_runs.json
+.tmp_branch_runs.json
+pytest_out.txt
+pytest_output.txt
+/CLAUDE.md

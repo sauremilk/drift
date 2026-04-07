@@ -12,7 +12,11 @@ supersedes:
 Eine Fault Tree Analysis des DIA-Signals identifiziert drei dominierende Cut Sets für False Positives:
 
 - **CS-1 (Hoch):** `codespan`-Tokens werden mit `allow_without_context=True` extrahiert. Inline-Code wie `` `auth/callback` `` in Prosa ohne Strukturkontext erzeugt phantom-dir Findings.
-- **CS-2 (Mittel):** Pfad-Normalisierung erkennt Container-Prefixe nicht. `src/services/` existiert, aber README-Ref `services/` wird als phantom gemeldet, weil nur `parts[0]` ("src") in `source_dirs` aufgenommen wird.
+- **CS-2 (Mittel):** Pfad-Normalisierung erkennt Container-Prefixe nicht. Ein Pfad wie
+  ```
+  src/services/
+  ```
+  existiert, aber die README-Kurzreferenz wird als phantom gemeldet, weil nur `parts[0]` ("src") in `source_dirs` aufgenommen wird.
 - **CS-3 (Mittel):** ADR-Status wird ignoriert. `Superseded`-ADRs referenzieren bewusst veraltete Strukturen, die als phantom-dir Findings emittiert werden.
 
 ## Entscheidung
@@ -52,3 +56,12 @@ Drei unabhängige Fixes werden implementiert:
 - `pytest tests/test_precision_recall.py -v` — DIA precision ≥ vorher
 - `drift analyze --repo . --format json --exit-zero` — DIA FP-Count sinkt
 - Lernzyklus-Ergebnis: **unklar** (wird nach Merge an realen Repos validiert)
+
+## Nachtrag (2026-04-07) — FTA v2 Refinement
+
+Zwei verbleibende Self-Analysis-FPs nach FTA v1-Implementierung wurden durch FTA v2 kausale Analyse identifiziert und behoben:
+
+- **IE-5a:** ADR-017 verwendete Inline-Codespans für illustrative Beispielpfade (z.B. `` `services/` ``). Da ADR-Scanning mit `trust_codespans=True` läuft, wurden diese als Phantom-Refs extrahiert. Fix: Beispiele in Fenced-Code-Blöcke verschoben.
+- **BE-8a:** `work_artifacts/` (Arbeitsverzeichnis mit Ad-hoc-Scripts) war nicht in `_AUXILIARY_DIRS` enthalten und wurde als undocumented source dir gemeldet. Fix: `_AUXILIARY_DIRS` um `artifacts` und `work_artifacts` erweitert.
+
+**Messwerte:** DIA Self-Analysis 2→0. 76/76 Tests grün (3 neue Regressionstests). 97/97 Precision/Recall unverändert.

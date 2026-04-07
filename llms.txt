@@ -61,7 +61,7 @@ Command: drift analyze --repo .
 
 ## Optional
 
-- [Full Benchmark Study](https://github.com/mick-gsk/drift/blob/main/docs/STUDY.md): 97.3% precision on 263 ground-truth-labeled findings across 15 repositories
+- [Full Benchmark Study](https://github.com/mick-gsk/drift/blob/main/docs/STUDY.md): 97.3% precision (strict, v0.5 model) on 263 ground-truth-labeled findings across 15 repositories — not revalidated for the current v2.5.x 23-signal model
 - [Changelog](https://github.com/mick-gsk/drift/blob/main/CHANGELOG.md): version history and signal improvements
 - [Case Studies](https://mick-gsk.github.io/drift/case-studies/): FastAPI, Pydantic, Django
 - [GitHub Action](https://github.com/mick-gsk/drift/blob/main/action.yml): CI integration with SARIF upload

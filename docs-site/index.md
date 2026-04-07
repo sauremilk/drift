@@ -43,7 +43,7 @@ Current public benchmark claim: 77% strict precision / 95% lenient on the histor
 
 The drift score reported per repository is a composite coherence metric (higher = more erosion). Individual finding scores measure detection confidence. The precision claim describes historical accuracy across the benchmark corpus — it is not a per-repo guarantee.
 
-The current study corpus covers 15 real-world repositories and the current composite model uses 14 scoring signals, with TVS held report-only pending re-validation. The broader corpus supports case studies and ongoing validation, but it is not a revalidated headline precision claim for the current model.
+The current study corpus covers 15 real-world repositories and the current composite model uses 15 scoring signals, with TVS at weight 0.0 pending re-validation. The broader corpus supports case studies and ongoing validation, but it is not a revalidated headline precision claim for the current model.
 
 Package metadata currently uses the Beta classifier. Rollout guidance is still conservative because the core Python path is stronger than optional or experimental surfaces such as TypeScript support and embeddings-based features.
 

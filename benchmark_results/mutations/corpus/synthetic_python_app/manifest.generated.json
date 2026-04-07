@@ -111,7 +111,7 @@
         "must_detect": true,
         "min_findings": 1
       },
-      "rationale": "Novel dependencies: outlier_module.py uses ctypes/struct/mmap in web app"
+      "rationale": "Novel dependencies: outlier_module.py uses numpy/cffi/msgpack in web app"
     },
     {
       "id": "dia_001",

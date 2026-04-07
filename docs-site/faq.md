@@ -20,7 +20,7 @@ Avoid using drift as a first-day hard gate on tiny repositories or when the real
 
 The conservative public benchmark claim on this site is 77% strict precision / 95% lenient on the historical v0.5 six-signal baseline (286 findings, 5 repositories, score-weighted sample, single-rater classification with 51 disputed cases).
 
-Precision has not yet been revalidated for the current 14-signal composite model, so treat that number as a historical reference point, not as a blanket claim for every signal or every repository.
+Precision has not yet been revalidated for the current 15-signal composite model, so treat that number as a historical reference point, not as a blanket claim for every signal or every repository.
 
 See [Trust and Evidence](trust-evidence.md), [Benchmarking and Trust](benchmarking.md), and [STUDY.md](https://github.com/mick-gsk/drift/blob/main/docs/STUDY.md).
 
@@ -72,9 +72,9 @@ Drift is a deterministic static analyzer for architectural erosion and cross-fil
 
 ## What does drift detect?
 
-Drift detects 23 signal families across structural, architectural, temporal, and security-by-default dimensions. 14 signals are currently scoring-active in the composite score: pattern fragmentation (PFS), architecture violations (AVS), mutant duplicates (MDS), explainability deficit (EDS), system misalignment (SMS), DIA, BEM, TPD, GCD, NBV, BAT, ECM, COD, and CCC.
+Drift detects 23 signal families across structural, architectural, temporal, and security-by-default dimensions. 15 signals are currently scoring-active in the composite score: pattern fragmentation (PFS), architecture violations (AVS), mutant duplicates (MDS), temporal volatility (TVS), explainability deficit (EDS), system misalignment (SMS), DIA, BEM, TPD, GCD, NBV, BAT, ECM, COD, and CCC.
 
-9 additional signals currently run in report-only mode pending validation or re-validation: TVS, TSA, CXS, FOE, CIR, DCA, MAZ, ISD, and HSC.
+8 additional signals currently run in report-only mode pending validation or re-validation: TSA, CXS, FOE, CIR, DCA, MAZ, ISD, and HSC.
 
 See [Signal Reference](algorithms/signals.md).
 

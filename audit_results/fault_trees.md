@@ -1,6 +1,191 @@
 # Fault Tree Analysis
 
-## 2026-04-07 - DIA false-positive reduction (FTA-based, 3 cut sets)
+## 2026-04-07 - SMS FTA v1: sms_001 recall = 0 (2 independent SPOFs)
+
+### Top Event (TE-0)
+`SystemMisalignmentSignal.analyze()` liefert `[]` für Mutation `sms_001` im `_mutation_benchmark.py`-Lauf (synthetisches Python-Web-App-Repo), obwohl `outlier_module.py` domain-fremde Imports in einen HTTP-Handler-Kontext einschleust und `must_detect=true` gilt.
+Evidence: `"detected": 0`, `"recall": 0.0` in `benchmark_results/mutation_benchmark.json` (vor Fix, 2026-04-07).
+Systemgrenze: `SystemMisalignmentSignal.analyze()` von Eingabe `parse_results`/`file_histories` bis Rückgabewert `[]`.
+
+### FT-1: TE-0 ← OR-Gate (2 unabhängige Äste)
+
+#### Ast A: 10%-Guard bricht Analyse ab (AND-Gate)
+Bedingung A1: `established_count / len(parse_results) < 0.10`
+- A1a: Alle Baseline-Dateien teilen Initial-Commit-Timestamp „heute“ → kein Datei-last_modified < cutoff (14-Tage-Fenster).
+  - BE-A1a-T: Benchmark-Skript schreibt alle Dateien vor `git init` in denselben Commit ohne explizite Datumssetzung.
+  - BE-A1a-P: Keine Datum-Spreizung für Baseline-Dateien im Corpus-Setup vorgesehen.
+  - BE-A1a-H: Guard-Threshold 0.10 für shallow-clone-Schutz konzipiert, nicht für synthetische Repos ohne temporale Streuung.
+- A1b: ~25 Python-Dateien insgesamt (`len(parse_results)` groß).
+Bedingung A2: `recency_days = 14` (Standardwert, kein thresholds-Override).
+**MCS-2 (SPOF):** `{ established_count = 0 } ∧ { len(parse_results) > 10 }` → Guard feuert, `return []`.
+
+#### Ast B: `_find_novel_imports()` gibt leere Liste zurück (AND über alle 7 Imports)
+Alle 7 Imports in `outlier_module.py` (`ast`, `dis`, `ctypes`, `struct`, `mmap`, `multiprocessing`, `xml.etree.ElementTree`) ∈ `_STDLIB_MODULES` → `_is_stdlib_import()` = True → skip.
+- BE-B1-T: `_STDLIB_MODULES` ist bewusst vollständig — verhindert FP, macht stdlib-Injection unsichtbar.
+- BE-B1-P: Fixture beschreibt „Novel dependencies“, injiziert aber ausschließlich stdlib — konzeptuell falsche Kategorie.
+- BE-B1-H: Fixture-Autor verstand „novel“ als „domain-unüblich“; Signal definiert „novel“ als „nicht im Third-Party-Baseline“ — Begriffskonflikt undokumentiert.
+**MCS-1 (SPOF):** Alle Imports stdlib → leere Novel-Liste → `[]`.
+
+### Common Cause Failure
+Die Fixture-Generierung legt alle Baseline-Dateien ohne explizites Datum an: aktiviert gleichzeitig Ast A (`established_count = 0`) und stellt sicher, das Ast B nicht durch nachträglichen recency-Check korrigiert werden kann. Dieselbe Design-Entscheidung im Corpus-Builder triggert beide Fehlerkanäle.
+
+### Minimal Cut Sets
+| MCS | Bedingung | SPOF | Behoben durch |
+|-----|-----------|------|---------------|
+| MCS-1 | Alle 7 Imports ∈ `_STDLIB_MODULES` | Ja | Fixture: Third-Party-Imports (`numpy`, `cffi`, `msgpack`) |
+| MCS-2 | `established_count = 0` bei großem `parse_results` | Ja | Initial-Commits auf Feb 2026 zurückdatiert |
+
+### Verification
+- Mutation benchmark post-fix: `sms_001` detected = 1, recall = 100%, Gesamt-Recall 16/17 = 94%.
+- 2056/2056 Test-Suite grün nach Fix.
+- Fix in `scripts/_mutation_benchmark.py` (kein Signal-Code geändert).
+
+---
+
+## 2026-04-07 - AVS FTA v1: co-change precision failure (3 primary MCS, 1 latent MCS)
+
+### Top Event (TE)
+`avs_co_change` emittiert ein `Finding[architecture_violation]` für ein Datei-Paar `(file_a, file_b)` innerhalb der Drift-Analysemaschine, obwohl kein strukturelles Koppelungsproblem besteht — beobachtbar als Disputed/FP-Label in der Ground-Truth-Auswertung, ausgelöst wenn `_check_co_change` auf Repos mit Flat-Package-Struktur, Test-Source-Ko-Evolution oder Bulk-Commit-Mustern angewendet wird.
+Evidence: 10/10 Disputed-Fälle in `drift_self`-Stichprobe, `precision_strict = 0.3`, n=20, 2026-03-25.
+Scope: Nur `avs_co_change` (rule_id). Sub-Checks `avs_circular_dep` und `avs_blast_radius` produzieren in der Stichprobe ausschließlich TPs.
+
+### FT-1: avs_co_change = False/Disputed positive (OR-Gate)
+Gate: OR — jeder der drei Äste reicht allein aus.
+
+#### IE-1: Same-Package-Ko-Evolution (AND-Gate)
+Beide Bedingungen müssen gleichzeitig gelten.
+- IE-1a [Technical]: `build_co_change_pairs` liefert Paar mit `co_change_count ≥ threshold` und `confidence > 0.2` für Geschwisterdateien im selben Paketverzeichnis.
+  - BE-1a-T: `_check_co_change` enthält keine Guard-Condition `os.path.dirname(file_a) != os.path.dirname(file_b)` — fehlende Guard auf Code-Ebene (`architecture_violation.py:1029-1063`).
+  - BE-1a-P: Kalibrierung erfolgte auf MVC-Repos mit expliziten Layer-Directories; Flat-Package-Tools nicht als Validierungsfall getestet.
+  - BE-1a-H: AVS-Anforderung "hidden logical dependencies not visible in the import graph" schließt sister-module co-evolution nicht aus — Ambiguität bei Formulierung der Signal-Semantik.
+- IE-1b [Technical]: `graph.has_edge(file_a, file_b) = False`, weil Geschwister-Signaldateien keine direkte Import-Abhängigkeit benötigen (Kopplung via `@register_signal`-Registry, nicht via Import).
+  - BE-1b-T: `@register_signal`-Dekorator bindert Klasse über globale Map ohne Import-Edge; `build_import_graph` folgt keine Dekorator-Calls.
+  - BE-1b-P: Einziger Suppressor in `_check_co_change` ist direkter Import-Edge; kein Proxy-Coupling-Check (Registry, shared base class) vorhanden.
+  - BE-1b-H: Design-Annahme "kein Import-Edge → hidden coupling" war für Legacy-MVC valide, wurde für Plugin/Registry-Pattern vor Deployment nicht getestet.
+
+#### IE-2: Test-Source-Filtering-Inkonsistenz (AND-Gate)
+- IE-2a [Technical]: `known_files` enthält Testdateien, weil es aus ungefilterten `parse_results` gebaut wird: `known = {pr.file_path.as_posix() for pr in parse_results}` (Common Cause CC-1).
+  - BE-2a-T: Einzelne inkonsistente Variable-Zuweisung in `analyze()` — `parse_results` statt `filtered_prs` für `known`; der Graph wird korrekt aus `filtered_prs` gebaut, `known` nicht.
+  - BE-2a-P: Kein Test prüft, dass `avs_co_change` für `(tests/test_foo.py, src/foo.py)` mit hoher Co-Change-Frequenz kein Finding emittiert.
+  - BE-2a-H: Der Scope der `filtered_prs`-Entscheidung (Testdateien aus Graph-Analyse) wurde nicht als relevant für den `has_edge`-Suppressor dokumentiert; Engineer verwendete `parse_results` ohne Downstream-Konsequenz zu erkennen.
+- IE-2b [Technical]: `graph` enthält keine Testdateien → `has_edge` für Test-Source-Kante strukturell immer False; Suppressor ist blind für Test-Source-Paare.
+
+#### IE-3: Bulk-Commit-Inflation (AND-Gate)
+- IE-3a [Technical]: Commit berührt ≥ N Dateien gleichzeitig (Release-Commit, FMEA-Sweep, Score-Update).
+  - BE-3a-T: `build_co_change_pairs` hat keine Commit-Größen-Normalisierung; ein Commit mit 30 Dateien zählt gleich wie einer mit 2.
+  - BE-3a-P: Drift selbst produziert regelmäßige "all-signals-sweep"-Commits, die alle Signaldateien gemeinsam berühren — systematische Inflation in der Selbstanalyse.
+  - BE-3a-H: Confidence-Metrik wurde für Branching-Workflow (ein Issue → wenige Dateien) konzipiert; Trunk-based Development mit Sweep-Commits nicht als Kalibrierungsfall berücksichtigt.
+- IE-3b [Technical]: `confidence`-Formel gewichtet nach Commit-Anzahl, nicht nach Commit-Größe — kein Diskontierungsfaktor für Bulk-Commits in `CoChangePair.confidence`.
+
+### FT-2: Mitigation trade-off risk (FN potential)
+- Top event: Gegenmaßnahmen für FT-1 können legitime Hidden-Coupling-Findings unterdrücken.
+- Branch A (MCS-1 Fix: same-directory guard): Echte Cross-Boundary-Paare in Repos, die alle Module im selben Root-Directory halten (seltenes Anti-Pattern), werden unterdrückt. Risiko: sehr niedrig — strukturell saubere Repos haben Layer-Directories.
+- Branch B (MCS-2 Fix: test-file filter auf `known`): Echtes Test-Source-Coupling (z.B. ein Test, der ein Modul über reflection steuert) wird nicht mehr als co_change gemeldet. Risiko: negligible — solche Fälle sind in Import-Graph-Analyse bereits sichtbar.
+- Branch C (MCS-3 Fix: Commit-Größen-Diskontierung): Legitimes Co-Change-Pattern in großen Commits wird nicht erkannt wenn der Schwellwert zu aggressiv ist. Risiko: mittel — erfordert sorgfältige Kalibrierung des Diskontierungsfaktors.
+
+### Common Causes
+| ID | Ursache | Betroffene MCS |
+|----|---------|----------------|
+| CC-1 | `known_files` und `filtered_prs` divergieren durch inkonsistente Filter-Anwendung in `analyze()` | MCS-1, MCS-2 |
+| CC-2 | `_check_co_change` kennt keinen Package/Namespace-Kontext für Dateipaare | MCS-1, MCS-3 |
+
+### Minimal Cut Sets
+| MCS | Basis-Ereignisse | Wahrscheinlichkeit | Evidenz | FP-Reduktion |
+|-----|------------------|--------------------|---------|--------------|
+| MCS-1 | BE-1a-T: same-directory pair, kein guard | Hoch | 7/10 Disputed: beide in `signals/` | −7 |
+| MCS-2 | BE-2a-T: test-file in `known_files`, nicht im graph | Mittel | `config.py ↔ test_config.py` Disputed | −1 |
+| MCS-3 | BE-3a-T + BE-3b: bulk-commit ohne Diskontierung | Mittel | Drift sweep-commits | −2 (geschätzt) |
+| MCS-4 (latent) | `_infer_layer(models.py) = 2` + models.py cross-cuttend importiert + kein omnilayer-match | Niedrig | Kein Disputed bisher (avs_upward_import) | TBD |
+
+SPOF-Diagnose: MCS-1 und MCS-2 werden jeweils durch eine einzige fehlende Code-Bedingung ausgelöst.
+
+### Barriers (implemented 2026-04-07, ADR-018)
+
+| MCS | Barrier | Implementation | Test |
+|-----|---------|----------------|------|
+| MCS-1 | Same-directory guard in `_check_co_change` | `PurePosixPath(pair.file_a).parent == PurePosixPath(pair.file_b).parent and parent != "."` → `continue` | `test_co_change_same_directory_suppressed` + `test_co_change_root_level_not_suppressed` (FN guard) |
+| MCS-2 | `known` built from `filtered_prs` instead of `parse_results` | `known = {pr.file_path.as_posix() for pr in filtered_prs}` in `analyze()` | `test_co_change_test_source_pair_suppressed` |
+| MCS-3 | Commit-size discount in `build_co_change_pairs` | `weight = 1.0 / max(1, len(files) - 1)`; pair_counts/file_commit_counts accumulate float weights | `test_co_change_bulk_commits_discounted` |
+
+**Post-fix RPNs:** MCS-1: 144→24, MCS-2: 60→10, MCS-3: 120→30. MCS-4 unchanged (48, latent).
+
+### Operationelle Tests (pro MCS)
+- MCS-1: Fixture `signals/foo_signal.py` + `signals/bar_signal.py` mit `@register_signal`, Mock-History 6 Co-Changes, kein Import-Edge → `avs_co_change` darf kein Finding emittieren.
+- MCS-2: Fixture `tests/test_cfg.py` + `src/cfg.py`, Mock-History 8 Co-Changes → kein `avs_co_change`-Finding.
+- MCS-3: Mock-Commits mit 20 Dateien pro Commit, `file_a` und `file_b` immer gemeinsam → confidence nach Diskontierung < 0.2.
+- MCS-4: `commands/cli.py` importiert `models/config.py` in einer CLI-Architektur → kein `avs_upward_import`, wenn `models` in Omnilayer-Whitelist.
+
+---
+
+## 2026-04-07 - DIA FTA v2: deep false-positive reduction (6 MCS, 16 basis events)
+
+### FT-1: DIA Finding = False Positive (Top Event)
+- Top event: DIA emits a finding for a directory reference that does not represent a real architecture problem.
+- Gate: OR (any of IE-1 … IE-7 sufficient)
+
+#### IE-1: Regex extracts non-directory slash token (Common Cause CC-1: `_PROSE_DIR_RE` flat iterator)
+- BE-1: Language keyword compound `try/except`, `match/case` — regex matches `word/` without checking continuation.
+- BE-2: Prose slash-as-separator `parent/tree` — slash used as concept separator, not path separator.
+- BE-3: Multi-segment path decomposition `src/drift/output/csv_output.py` — each intermediate `word/` extracted as separate ref.
+- BE-4: URL owner/repo in non-link text `mick-gsk/drift` — GitHub handle extracted as dir ref.
+- **FIX (P5):** Negative lookahead `(?!\w)` on `_PROSE_DIR_RE` — blocks all four sub-causes.
+
+#### IE-2: URL path segments escape blacklist
+- BE-5: URL appears as plain text (not markdown link) — regex applied to URL path segments.
+- BE-6: URL trailing slash `https://github.com/some-org/` → `some-org` extracted.
+- **FIX (P3):** `_strip_urls()` removes URLs before regex application.
+
+#### IE-3: Dotfile path stripping
+- BE-7: `.drift-cache/history.json` → leading dot stripped → `drift-cache/` extracted → existence check fails (`.drift-cache` not checked).
+- **FIX (P6):** `_ref_exists_in_repo()` also checks `repo_path / f".{ref}"`.
+
+#### IE-4: Auxiliary directory not documented (Common Cause CC-2)
+- BE-8: `tests/`, `scripts/`, `benchmarks/` etc. contain .py files → `_source_directories()` includes them → README doesn't mention them → undocumented-dir finding emitted.
+- BE-8a (added 2026-04-08): `work_artifacts/`, `artifacts/` — CI/build artifact and working directories with ad-hoc .py scripts.
+- **FIX (P1):** `_AUXILIARY_DIRS` frozenset skips conventional project directories. Extended 2026-04-08 with `artifacts`, `work_artifacts`.
+
+#### IE-5: Codespan without context (addressed in FTA v1)
+- BE-9: Inline codespan consumed with `allow_without_context=True` — REST path or example code.
+- FIX (CS-1 from FTA v1): Sibling-context keyword gate.
+
+#### IE-5a (added 2026-04-08): ADR illustrative example in codespan
+- BE-9a: ADR *about* DIA uses illustrative path refs (e.g. `services/`) in inline codespans as examples. ADR scanning's `trust_codespans=True` extracts them as phantom refs.
+- **FIX:** Move illustrative examples to fenced code blocks. DIA's AST walker already skips `block_code` tokens.
+
+#### IE-6: Directory under different prefix (addressed in FTA v1)
+- BE-10: `src/services/` exists but root-anchored check fails.
+- FIX (CS-2 from FTA v1): Container-prefix existence check.
+
+#### IE-7: ADR historically correct but stale (addressed in FTA v1)
+- BE-11: ADR describes pre-refactoring state; paths no longer exist.
+- FIX (CS-3 from FTA v1): ADR status parsing + skip.
+
+### FT-2: Mitigation trade-off risk (FN potential)
+- Top event: FP-reduction mitigations may suppress legitimate true positives.
+- Branch A (P5): Negative lookahead `(?!\w)` only extracts terminal path segments — may miss structure refs in `src/drift/` style paths. Risk: low — terminal segment is always the meaningful claim.
+- Branch B (P3): URL stripping may accidentally remove non-URL text matching `https?://\S+`. Risk: negligible — no legitimate dir ref starts with `http`.
+- Branch C (P6): Dotfile prefix check may match coincidental `.{name}` dirs. Risk: very low — dotfile naming convention is intentional.
+- Branch D (P1): Auxiliary dir exclusion may hide genuinely undocumented custom dirs. Risk: low — only well-known convention names excluded.
+- Mutation benchmark verification: DIA recall 3/3 = 100% (no FN regression).
+
+### Common Causes
+| ID | Cause | Affected MCS | Fix |
+|---|---|---|---|
+| CC-1 | `_PROSE_DIR_RE` flat iterator (no continuation check) | MCS-1, MCS-2, MCS-4, MCS-5 | P5: `(?!\w)` negative lookahead |
+| CC-2 | Missing undocumented-dir convention filter | MCS-1 | P1: `_AUXILIARY_DIRS` |
+| CC-3 | ADR `trust_codespans=True` bypass | MCS-3, MCS-6 | Addressed in FTA v1 (CS-1 + CS-3) |
+
+### Minimal Cut Sets
+| MCS | Basis Events | Probability | Fix | FP Reduction |
+|---|---|---|---|---|
+| MCS-1 | BE-8 (auxiliary dirs) | High | P1: `_AUXILIARY_DIRS` | −4 (ground truth) |
+| MCS-2 | BE-4 + BE-5 (URL in plain text) | Medium | P3: `_strip_urls()` + P5 | −2 |
+| MCS-3 | BE-1 (keyword compounds via codespan) | Medium | P5: `(?!\w)` | −2 |
+| MCS-4 | BE-2 (prose slash-separator) | Medium | P5: `(?!\w)` | −1 |
+| MCS-5 | BE-7 (dotfile path) | Low | P5 + P6 | −1 |
+| MCS-6 | BE-3 (multi-segment decomposition) | Medium | P5: `(?!\w)` | −1 |
+
+## 2026-04-07 - DIA FTA v1: initial false-positive reduction (3 cut sets)
 
 ### FT-1: DIA Finding = False Positive (Top Event)
 - Top event: DIA emits a finding for a directory reference that does not represent a real architecture problem.

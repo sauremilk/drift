@@ -29,7 +29,7 @@ This is not a bug scanner. It is a coherence scanner.
 
 ### Repo 1: fastapi/fastapi
 
-- Finding highlight: 499 near-duplicate test functions (MDS)
+- Finding highlight: [499 near-duplicate test functions](https://mick-gsk.github.io/drift/case-studies/fastapi/) (MDS signal, confidence 0.85)
 - Interpretation: duplication drift at scale, likely copy-modify patterns
 - Actionable next step: consolidate with parameterized fixtures and shared test helpers
 
@@ -41,21 +41,28 @@ This is not a bug scanner. It is a coherence scanner.
 
 ### Repo 3: pydantic/pydantic
 
-- Finding highlight: 117 underdocumented high-complexity internal functions (EDS)
+- Finding highlight: [117 underdocumented high-complexity internal functions](https://mick-gsk.github.io/drift/case-studies/pydantic/) (EDS signal)
 - Interpretation: maintainability risk concentrates in internal complexity hot spots
 - Actionable next step: document top complexity functions first for highest leverage
 
 ### Repo 4: paramiko/paramiko
 
+<!-- EVIDENCE GAP: No benchmark data or case study exists for paramiko.
+     Before publication, either:
+     1. Run drift analyze on paramiko and store evidence, or
+     2. Replace with a repo from the 15-repo corpus (e.g., Celery, Rich, Sanic) -->
+
 - Finding highlight: a large transport module and circular dependency hotspots
 - Interpretation: long-lived protocol libraries accumulate architecture stress in stable core files
 - Actionable next step: split refactor candidates by blast radius and start with low-risk duplicate extraction
 
-### Repo 5: drift (self-analysis)
+### Disclosure: drift self-analysis
 
-- Finding highlight: stable short-term trend with visible sensitivity to focused refactors
+As a transparency note — I also run drift on its own codebase:
+
+- Finding highlight: score of 0.514 (MEDIUM), 80 findings, stable short-term trend with visible sensitivity to focused refactors
 - Interpretation: deterministic signals are usable in day-to-day CI if tuned to report-only first
-- Actionable next step: adopt report-only rollout, then gate only high-severity findings
+- This is dogfooding, not external proof. The four repos above are the independent evidence.
 
 ## What surprised me most
 
@@ -83,27 +90,22 @@ Then tighten only after calibration:
     upload-sarif: "true"
 ```
 
-## Reproducibility
+For pre-commit style checks, you can also use `drift diff --staged-only`.
+
+## Try it yourself
 
 ```bash
 pip install drift-analyzer
-
 drift analyze --repo .
 ```
 
-For pre-commit style checks:
-
-```bash
-drift diff --staged-only
-```
+Want to evaluate the evidence first? [Start here](https://mick-gsk.github.io/drift/start-here/) — three paths depending on whether you want to try it, check the evidence, or plan a team rollout.
 
 ## Closing
 
 AI-assisted velocity is real. Architectural drift is also real.
 
 The teams that benefit most are not the ones with perfect code. They are the ones that detect coherence erosion early and fix it while changes are still small.
-
-If you want, I can publish the exact command matrix and scoring profile used for the five-repo run in a follow-up post.
 
 ## Channel Adaption Notes
 

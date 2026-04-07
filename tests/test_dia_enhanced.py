@@ -607,3 +607,225 @@ class TestAdrStatusParsing:
 
         adr_findings = [f for f in findings if "ADR" in f.title]
         assert len(adr_findings) == 0
+
+
+# ---------------------------------------------------------------------------
+# P5 regression: slash-continuation negative lookahead (?!\w)
+# ---------------------------------------------------------------------------
+
+
+class TestSlashContinuationGuard:
+    """P5: word/ followed by another word char should NOT be extracted."""
+
+    def test_try_except_not_extracted(self):
+        md = "Use `try/except` for error handling."
+        refs = _extract_dir_refs_from_ast(md, trust_codespans=True)
+        assert "try" not in refs
+
+    def test_match_case_not_extracted(self):
+        md = "Python 3.10 introduces `match/case` syntax."
+        refs = _extract_dir_refs_from_ast(md, trust_codespans=True)
+        assert "match" not in refs
+
+    def test_parent_tree_not_extracted(self):
+        md = "Navigate the parent/tree references carefully."
+        refs = _extract_dir_refs_from_ast(md)
+        assert "parent" not in refs
+
+    def test_multisegment_path_extracts_terminal_only(self):
+        """src/drift/output/csv_output.py → nothing extracted (all segments have continuations)."""
+        md = "See `src/drift/output/csv_output.py` for the module."
+        refs = _extract_dir_refs_from_ast(md, trust_codespans=True)
+        assert "src" not in refs
+        assert "drift" not in refs
+        assert "output" not in refs
+
+    def test_trailing_slash_still_extracted(self):
+        """A terminal segment like `output/` (with trailing slash) IS extracted."""
+        md = "The `output/` directory has formatters."
+        refs = _extract_dir_refs_from_ast(md)
+        assert "output" in refs
+
+    def test_standalone_dir_ref_still_works(self):
+        md = "The `controllers/` directory handles HTTP."
+        refs = _extract_dir_refs_from_ast(md)
+        assert "controllers" in refs
+
+    def test_multisegment_trailing_slash_extracts_last(self):
+        """src/drift/output/ → only output is extracted (trailing slash)."""
+        md = "The `src/drift/output/` directory has formatters."
+        refs = _extract_dir_refs_from_ast(md)
+        assert "output" in refs
+        assert "src" not in refs
+        assert "drift" not in refs
+
+
+# ---------------------------------------------------------------------------
+# P3 regression: URL stripping before regex
+# ---------------------------------------------------------------------------
+
+
+class TestUrlStripGuard:
+    """P3: URLs in plain text should not produce dir-ref extractions."""
+
+    def test_github_url_not_extracted(self):
+        md = "Visit https://github.com/mick-gsk/drift for more info."
+        refs = _extract_dir_refs_from_ast(md)
+        assert "mick-gsk" not in refs
+        assert "drift" not in refs
+
+    def test_github_url_with_trailing_slash(self):
+        md = "See https://github.com/some-org/ for the org page."
+        refs = _extract_dir_refs_from_ast(md)
+        assert "some-org" not in refs
+
+    def test_non_url_text_still_extracted(self):
+        md = "The `services/` directory handles business logic."
+        refs = _extract_dir_refs_from_ast(md)
+        assert "services" in refs
+
+
+# ---------------------------------------------------------------------------
+# P6 regression: dotfile prefix existence check
+# ---------------------------------------------------------------------------
+
+
+class TestDotfilePrefixExistence:
+    """P6: .drift-cache/ should match ref 'drift-cache' via dotfile prefix."""
+
+    def test_dotfile_prefix_found(self, tmp_path):
+        repo = tmp_path / "repo"
+        repo.mkdir()
+        (repo / ".drift-cache").mkdir()
+        assert _ref_exists_in_repo(repo, "drift-cache", set()) is True
+
+    def test_dotfile_prefix_not_found(self, tmp_path):
+        repo = tmp_path / "repo"
+        repo.mkdir()
+        assert _ref_exists_in_repo(repo, "drift-cache", set()) is False
+
+    def test_dotfile_must_be_dir(self, tmp_path):
+        """Only directories count — a file named .drift-cache should not match."""
+        repo = tmp_path / "repo"
+        repo.mkdir()
+        (repo / ".drift-cache").write_text("not a dir")
+        assert _ref_exists_in_repo(repo, "drift-cache", set()) is False
+
+
+# ---------------------------------------------------------------------------
+# P1 regression: auxiliary directory exclusion
+# ---------------------------------------------------------------------------
+
+
+class TestAuxiliaryDirExclusion:
+    """P1: conventional project dirs should not produce undocumented-dir findings."""
+
+    def test_tests_dir_not_flagged(self, tmp_path):
+        from drift.config import DriftConfig
+        from drift.ingestion.ast_parser import parse_file
+        from drift.ingestion.file_discovery import discover_files
+        from drift.signals.doc_impl_drift import DocImplDriftSignal
+
+        repo = tmp_path / "repo"
+        repo.mkdir()
+        (repo / "README.md").write_text("# Project\n\n`src/` directory has code.\n")
+        (repo / "src").mkdir()
+        (repo / "src" / "main.py").write_text("x = 1\n")
+        (repo / "tests").mkdir()
+        (repo / "tests" / "test_main.py").write_text("def test_x(): pass\n")
+        (repo / "scripts").mkdir()
+        (repo / "scripts" / "deploy.py").write_text("x = 1\n")
+        (repo / "benchmarks").mkdir()
+        (repo / "benchmarks" / "bench.py").write_text("x = 1\n")
+
+        cfg = DriftConfig(include=["**/*.py"], exclude=["**/__pycache__/**"])
+        files = discover_files(repo, cfg.include, cfg.exclude)
+        parse_results = [parse_file(f.path, repo, f.language) for f in files]
+
+        signal = DocImplDriftSignal(repo_path=repo)
+        findings = signal.analyze(parse_results, {}, cfg)
+
+        undoc = {
+            f.metadata.get("undocumented_dir") for f in findings
+            if f.metadata.get("undocumented_dir")
+        }
+        assert "tests" not in undoc
+        assert "scripts" not in undoc
+        assert "benchmarks" not in undoc
+
+    def test_nonaux_dir_still_flagged(self, tmp_path):
+        from drift.config import DriftConfig
+        from drift.ingestion.ast_parser import parse_file
+        from drift.ingestion.file_discovery import discover_files
+        from drift.signals.doc_impl_drift import DocImplDriftSignal
+
+        repo = tmp_path / "repo"
+        repo.mkdir()
+        (repo / "README.md").write_text("# Project\n\nJust a readme.\n")
+        (repo / "services").mkdir()
+        (repo / "services" / "api.py").write_text("x = 1\n")
+
+        cfg = DriftConfig(include=["**/*.py"], exclude=["**/__pycache__/**"])
+        files = discover_files(repo, cfg.include, cfg.exclude)
+        parse_results = [parse_file(f.path, repo, f.language) for f in files]
+
+        signal = DocImplDriftSignal(repo_path=repo)
+        findings = signal.analyze(parse_results, {}, cfg)
+
+        undoc = {
+            f.metadata.get("undocumented_dir") for f in findings
+            if f.metadata.get("undocumented_dir")
+        }
+        assert "services" in undoc
+
+    def test_artifacts_dir_not_flagged(self, tmp_path):
+        """work_artifacts and artifacts dirs are conventional auxiliary dirs."""
+        from drift.config import DriftConfig
+        from drift.ingestion.ast_parser import parse_file
+        from drift.ingestion.file_discovery import discover_files
+        from drift.signals.doc_impl_drift import DocImplDriftSignal
+
+        repo = tmp_path / "repo"
+        repo.mkdir()
+        (repo / "README.md").write_text("# Project\n\n`src/` has code.\n")
+        (repo / "src").mkdir()
+        (repo / "src" / "main.py").write_text("x = 1\n")
+        (repo / "work_artifacts").mkdir()
+        (repo / "work_artifacts" / "probe.py").write_text("x = 1\n")
+        (repo / "artifacts").mkdir()
+        (repo / "artifacts" / "helper.py").write_text("x = 1\n")
+
+        cfg = DriftConfig(include=["**/*.py"], exclude=["**/__pycache__/**"])
+        files = discover_files(repo, cfg.include, cfg.exclude)
+        parse_results = [parse_file(f.path, repo, f.language) for f in files]
+
+        signal = DocImplDriftSignal(repo_path=repo)
+        findings = signal.analyze(parse_results, {}, cfg)
+
+        undoc = {
+            f.metadata.get("undocumented_dir") for f in findings
+            if f.metadata.get("undocumented_dir")
+        }
+        assert "work_artifacts" not in undoc
+        assert "artifacts" not in undoc
+
+
+class TestAdrFencedCodeBlockSkipped:
+    """Illustrative dir refs inside fenced code blocks in ADRs must not be extracted."""
+
+    def test_fenced_block_services_not_extracted(self):
+        md = (
+            "# ADR-017\n\n"
+            "- **CS-2:** Pfad-Normalisierung erkennt Container-Prefixe nicht:\n"
+            "  ```\n"
+            "  src/services/\n"
+            "  ```\n"
+            "  weil nur parts[0] in source_dirs aufgenommen wird.\n"
+        )
+        refs = _extract_dir_refs_from_ast(md, trust_codespans=True)
+        assert "services" not in refs
+
+    def test_inline_codespan_still_extracted(self):
+        md = "The `services/` directory has handlers.\n"
+        refs = _extract_dir_refs_from_ast(md, trust_codespans=True)
+        assert "services" in refs

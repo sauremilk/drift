@@ -16,7 +16,6 @@
 .vscode
 CHANGELOG.md
 CITATION.cff
-CLAUDE.md
 CODE_OF_CONDUCT.md
 conda.recipe
 .dockerignore
