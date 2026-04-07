@@ -24,6 +24,12 @@ Use this skill for repository-safe commit and push workflows in Drift.
 4. **Run validation before commit and again before push when relevant.**
 5. **Do not bypass hooks by default.** Environment-variable bypasses are emergency-only and must be justified.
 
+## Step 0: Run The Drift Policy Gate
+
+Before preparing a commit or push, run the mandatory admissibility gate for the underlying task. If the task is not admissible, stop instead of committing polished but policy-invalid work.
+
+Use the gate format from `.github/instructions/drift-policy.instructions.md`.
+
 ## Step 1: Classify The Change
 
 Choose the commit type from the actual impact:
@@ -36,7 +42,7 @@ Choose the commit type from the actual impact:
 - `chore:` for maintenance work
 - `BREAKING:` or a `BREAKING CHANGE:` footer for incompatible changes
 
-If the change touches signals, scoring, output formats, or architecture boundaries, stop and verify whether an ADR and risk-audit updates are required before committing.
+If the change touches signals, scoring, output formats, or architecture boundaries, an ADR under `decisions/` is required before implementation unless the change is only a bug fix or pure refactoring. Stop and satisfy that requirement before committing.
 
 ## Step 2: Inspect The Working Tree
 
@@ -55,15 +61,18 @@ Check for unrelated files and leave them out of the commit.
 Apply the repository gates before pushing, and usually before committing if they affect the same logical change:
 
 - `src/drift/signals/`, `src/drift/ingestion/`, or `src/drift/output/` changed:
-  update at least one required audit artifact in `audit_results/`, and keep all four audit files present.
+  update the correct audit artifacts in `audit_results/`, and keep all four audit files present.
+  - Signal added or materially changed: update `fmea_matrix.md`, `fault_trees.md`, and `risk_register.md`
+  - Input or output path / trust boundary changed: update `stride_threat_model.md` and `risk_register.md`
+  - Precision or recall changed by more than 5 percentage points: update `fmea_matrix.md` and `risk_register.md`
 - `feat:` commit planned:
-  include tests, a versioned evidence file in `benchmark_results/`, and update `docs/STUDY.md` if it exists.
+  include tests, at least one empirical artifact in `benchmark_results/` or `audit_results/`, a versioned evidence file in `benchmark_results/`, and update `docs/STUDY.md` if it exists.
 - `feat:` or `fix:` commit planned:
   include a `CHANGELOG.md` update in the same push.
 - `pyproject.toml` changed:
   ensure `uv.lock` is updated too.
 - New public function under `src/drift/`:
-  add a docstring in the same diff.
+  add a docstring in the same diff if it is a lowercase `def` without a leading underscore.
 
 ## Step 4: Run Validation
 
@@ -120,6 +129,8 @@ Useful checks:
 git diff --name-only origin/main HEAD
 git log --oneline origin/main..HEAD
 ```
+
+Emergency bypasses exist for individual gates, for example `DRIFT_SKIP_CHANGELOG=1`, `DRIFT_SKIP_DOCSTRING=1`, `DRIFT_SKIP_RISK_AUDIT=1`, `DRIFT_SKIP_VERSION_BUMP=1`, and `DRIFT_SKIP_LOCKFILE=1`. Use them only with explicit maintainer approval and a documented reason.
 
 ## Step 7: Push Only With Approval
 
