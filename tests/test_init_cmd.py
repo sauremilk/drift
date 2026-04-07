@@ -164,7 +164,13 @@ class TestInitCommand:
         assert claude_path.exists()
         data = json.loads(claude_path.read_text())
         assert "drift" in data["mcpServers"]
-        assert data["mcpServers"]["drift"]["args"] == ["mcp", "--serve"]
+        command = data["mcpServers"]["drift"]["command"]
+        args = data["mcpServers"]["drift"]["args"]
+
+        if command == "drift":
+            assert args == ["mcp", "--serve"]
+        else:
+            assert args == ["-m", "drift", "mcp", "--serve"]
 
     def test_init_claude_dry_run_lists_snippet(self, tmp_path: Path) -> None:
         runner = CliRunner()
