@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "drift-analyzer"
-version = "2.6.1"
+version = "2.6.2"
 description = "Deterministic architectural drift detection for AI-accelerated Python repositories through cross-file coherence analysis"
 readme = "README.md"
 license = "MIT"
