@@ -438,6 +438,7 @@ async def drift_diff(
         response_detail: "concise" or "detailed".
         signals: Comma-separated signal abbreviations to include.
         exclude_signals: Comma-separated signal abbreviations to exclude.
+        response_profile: Response profile (planner, coder, verifier, merge_readiness).
         session_id: Optional session ID for stateful workflows.
     """
 

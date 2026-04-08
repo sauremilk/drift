@@ -9,6 +9,8 @@
 
 ### Fixed
 
+- Add missing `response_profile` docstring entry in `drift_diff` MCP tool, fixing `test_catalog_parameters_have_descriptions` CI failure.
+- Exclude `.drift-baseline.json` from `detect-secrets` scan — fingerprint hex strings are analysis hashes, not secrets.
 - Deduplicate `include` glob patterns in `file_discovery.py` to prevent the same file from being processed and appended multiple times when it matches several include patterns; use lazy `glob()` iterator and reuse `relative_to()` result to reduce redundant I/O.
 - Pass `active_signals` directly to `create_signals()` for early pre-instantiation filtering; add `_SIGNAL_TYPE_VALUE_CACHE` in `signals/base.py` to avoid repeated probe instantiation on the signal-type lookup hot path.
 - Add short-lived in-process git history cache (TTL 120 s, 16-entry LRU) in `fetch_git_history()` to skip redundant `git log` parsing across rapid consecutive scans with unchanged commit history.
