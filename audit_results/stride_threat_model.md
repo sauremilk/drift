@@ -1,5 +1,19 @@
 # STRIDE Threat Model
 
+## 2026-04-09 - ADR-029: Preflight diagnosis and markdown report export
+
+- Scope: Additiver Output-Pfad fuer vorstrukturierte Preflight-Diagnosen und den Markdown-Report-Export (`src/drift/preflight.py`, `src/drift/output/markdown_report.py`) inklusive zugehoeriger Agent-Hinweisaufbereitung.
+- Input path changes: Nein (nutzt bestehende Analyseeingaben).
+- Output path changes: Ja (zusatzlicher menschenlesbarer Report-Kanal).
+- External interface changes: Additiv; bestehende JSON/CLI-Ausgaben bleiben unveraendert.
+- STRIDE review:
+	- S (Spoofing): Keine neue Identitaets- oder Authentisierungsgrenze.
+	- T (Tampering): Niedriges Risiko; Report-Inhalte werden deterministisch aus bestehenden Findings aufgebaut.
+	- R (Repudiation): Verbesserte Nachvollziehbarkeit durch explizite Diagnose-/Naechste-Schritte-Sektionen im Report.
+	- I (Information Disclosure): Kein neuer Datentyp; der Report repraesentiert vorhandene Analyseinformationen in anderer Form.
+	- D (Denial of Service): Geringer Overhead durch zusaetzliches Rendering im Vergleich zur bestehenden Analysepipeline.
+	- E (Elevation of Privilege): Keine Privileggrenze geaendert.
+
 ## 2026-04-08 - ADR-026: A2A Agent Card and HTTP Serve Endpoint
 
 - Scope: New optional HTTP server (`drift serve`) exposing `GET /.well-known/agent-card.json` (A2A v1.0 Agent Card) and `POST /a2a/v1` (JSON-RPC 2.0 skill dispatch). Backed by FastAPI + uvicorn as optional dependencies (`pip install drift-analyzer[serve]`). 8 core analysis skills exposed: scan, diff, explain, fix_plan, validate, nudge, brief, negative_context. No signal, scoring, or ingestion changes.

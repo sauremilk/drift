@@ -1,5 +1,19 @@
 # Risk Register
 
+## 2026-04-09 - ADR-029: Preflight-Diagnose und Markdown-Report-Export
+
+- Risk ID: RISK-OUTPUT-2026-04-09-029
+- Component: `src/drift/preflight.py`, `src/drift/output/markdown_report.py`, `src/drift/finding_rendering.py`
+- Type: Neuer Output-Pfad (additiv, non-breaking)
+- Description: Die Analyseausgabe wird um einen strukturierten Preflight-Diagnosepfad und einen Markdown-Report erweitert. Ziel ist bessere Handlungsfaehigkeit fuer Review- und Agent-Workflows ohne Aenderung bestehender JSON-Schemas.
+- Trigger: Aufrufe, die den neuen Markdown-/Preflight-Ausgabepfad aktivieren.
+- Impact: Niedrig bis mittel. Falsche oder missverstaendliche Zusammenfassungen koennen die Priorisierung von Folgemaassnahmen beeinflussen, ohne den zugrunde liegenden Finding-Datensatz zu veraendern.
+- Mitigation:
+  - Additiver Kanal; bestehende JSON- und CLI-Standardausgaben bleiben erhalten
+  - Deterministische Ableitung aus vorhandenen Findings und Metadaten
+  - Testabdeckung fuer Rendering, Tool-Metadaten und semantische Advisory-Regeln
+- Residual risk: Niedrig. Hauptrestrisiko liegt in Darstellungsinterpretation, nicht in der Kernanalyse oder Score-Berechnung.
+
 ## 2026-04-08 - ADR-027: Finding-Status fuer Suppression-Transparenz
 
 - Risk ID: RISK-OUTPUT-2026-04-08-027

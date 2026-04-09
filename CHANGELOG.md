@@ -9,6 +9,7 @@
 
 ### Fixed
 
+- Enforce optional strict orchestration guards in MCP session workflows to avoid unsafe autonomous tool-chain progression when strict mode is enabled.
 - Add missing `response_profile` docstring entry in `drift_diff` MCP tool, fixing `test_catalog_parameters_have_descriptions` CI failure.
 - Exclude `.drift-baseline.json` from `detect-secrets` scan — fingerprint hex strings are analysis hashes, not secrets.
 - Deduplicate `include` glob patterns in `file_discovery.py` to prevent the same file from being processed and appended multiple times when it matches several include patterns; use lazy `glob()` iterator and reuse `relative_to()` result to reduce redundant I/O.
