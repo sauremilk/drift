@@ -110,7 +110,7 @@ _SIGNAL_ABBREVS: dict[str, str] = {
     "ts_architecture": "TSA",
     "missing_authorization": "MAZ",
     "insecure_default": "ISD",
-    "hardcoded_secret": "HSC",
+    "hardcoded_secret": "HSC",  # pragma: allowlist secret
 }
 
 
