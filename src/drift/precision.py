@@ -180,39 +180,48 @@ class PrecisionRecallReport:
     """Computes and formats P/R/F1 per signal type."""
 
     def __init__(self) -> None:
+        """Initialize per-signal confusion-matrix counters."""
         self.tp: dict[SignalType, int] = defaultdict(int)
         self.fp: dict[SignalType, int] = defaultdict(int)
         self.fn: dict[SignalType, int] = defaultdict(int)
         self.tn: dict[SignalType, int] = defaultdict(int)
 
     def record_tp(self, signal: SignalType, fixture: str, desc: str) -> None:
+        """Record a true positive observation for a signal."""
         self.tp[signal] += 1
 
     def record_fp(self, signal: SignalType, fixture: str, desc: str) -> None:
+        """Record a false positive observation for a signal."""
         self.fp[signal] += 1
 
     def record_fn(self, signal: SignalType, fixture: str, desc: str) -> None:
+        """Record a false negative observation for a signal."""
         self.fn[signal] += 1
 
     def record_tn(self, signal: SignalType, fixture: str, desc: str) -> None:
+        """Record a true negative observation for a signal."""
         self.tn[signal] += 1
 
     def precision(self, signal: SignalType) -> float:
+        """Return precision for one signal."""
         tp = self.tp[signal]
         fp = self.fp[signal]
         return tp / (tp + fp) if (tp + fp) > 0 else 1.0
 
     def recall(self, signal: SignalType) -> float:
+        """Return recall for one signal."""
         tp = self.tp[signal]
         fn = self.fn[signal]
         return tp / (tp + fn) if (tp + fn) > 0 else 1.0
 
     def f1(self, signal: SignalType) -> float:
+        """Return F1 score for one signal."""
         p = self.precision(signal)
         r = self.recall(signal)
         return 2 * p * r / (p + r) if (p + r) > 0 else 0.0
 
     def aggregate_f1(self) -> float:
+        """Return macro-average F1 across observed signals."""
         signals = set(self.tp) | set(self.fp) | set(self.fn)
         if not signals:
             return 0.0
@@ -254,6 +263,7 @@ class PrecisionRecallReport:
         return json.dumps(self.to_dict(), indent=2)
 
     def summary(self) -> str:
+        """Return a human-readable multiline precision/recall report."""
         lines = ["Signal Precision/Recall Report", "=" * 60]
         signals = sorted(
             set(self.tp) | set(self.fp) | set(self.fn),
