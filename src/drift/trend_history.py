@@ -114,7 +114,7 @@ def apply_trend_and_persist_snapshot(
         {
             "timestamp": analysis.analyzed_at.isoformat(),
             "drift_score": analysis.drift_score,
-            "signal_scores": {s.value: v for s, v in signal_scores.items()},
+            "signal_scores": {s: v for s, v in signal_scores.items()},
             "total_files": analysis.total_files,
             "total_findings": len(analysis.findings),
             "scope": scope,

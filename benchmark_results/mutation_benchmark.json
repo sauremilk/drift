@@ -537,7 +537,7 @@
       "is_fully_reliable": true,
       "status": "complete"
     },
-    "analyzed_at": "2026-04-07T12:23:12.597458+00:00",
+    "analyzed_at": "2026-04-09T09:24:34.343707+00:00",
     "baseline": null,
     "compact_summary": {
       "critical_count": 0,
@@ -545,7 +545,8 @@
       "findings_deduplicated": 40,
       "findings_total": 40,
       "fix_first_count": 10,
-      "high_count": 22
+      "high_count": 22,
+      "suppressed_total": 0
     },
     "context_tagged_count": 0,
     "drift_score": 0.244,
@@ -611,6 +612,9 @@
         "signal": "mutant_duplicate",
         "signal_abbrev": "MDS",
         "start_line": 1,
+        "status": "active",
+        "status_reason": null,
+        "status_set_by": null,
         "symbol": null,
         "title": "Exact duplicates (2\u00d7): process_order"
       },
@@ -659,6 +663,9 @@
         "signal": "mutant_duplicate",
         "signal_abbrev": "MDS",
         "start_line": 8,
+        "status": "active",
+        "status_reason": null,
+        "status_set_by": null,
         "symbol": null,
         "title": "Exact duplicates (2\u00d7): validate_input"
       },
@@ -697,6 +704,9 @@
         "signal": "mutant_duplicate",
         "signal_abbrev": "MDS",
         "start_line": 10,
+        "status": "active",
+        "status_reason": null,
+        "status_set_by": null,
         "symbol": null,
         "title": "Near-duplicate (100%): download_file \u2194 send_message"
       },
@@ -735,6 +745,9 @@
         "signal": "mutant_duplicate",
         "signal_abbrev": "MDS",
         "start_line": 1,
+        "status": "active",
+        "status_reason": null,
+        "status_set_by": null,
         "symbol": null,
         "title": "Near-duplicate (100%): fetch_user_data \u2194 get_customer_info"
       },
@@ -778,6 +791,9 @@
         "signal": "pattern_fragmentation",
         "signal_abbrev": "PFS",
         "start_line": 1,
+        "status": "active",
+        "status_reason": null,
+        "status_set_by": null,
         "symbol": null,
         "title": "return_pattern: 2 variants in src/myapp/models/"
       },
@@ -813,6 +829,9 @@
         "signal": "broad_exception_monoculture",
         "signal_abbrev": "BEM",
         "start_line": 1,
+        "status": "active",
+        "status_reason": null,
+        "status_set_by": null,
         "symbol": null,
         "title": "Broad exception monoculture in src/myapp/connectors/"
       },
@@ -850,6 +869,9 @@
         "signal": "explainability_deficit",
         "signal_abbrev": "EDS",
         "start_line": 39,
+        "status": "active",
+        "status_reason": null,
+        "status_set_by": null,
         "symbol": null,
         "title": "Unexplained complexity: transform_dataset"
       },
@@ -895,6 +917,9 @@
         "signal": "pattern_fragmentation",
         "signal_abbrev": "PFS",
         "start_line": 1,
+        "status": "active",
+        "status_reason": null,
+        "status_set_by": null,
         "symbol": null,
         "title": "error_handling: 2 variants in src/myapp/handlers/"
       },
@@ -932,6 +957,9 @@
         "signal": "explainability_deficit",
         "signal_abbrev": "EDS",
         "start_line": 1,
+        "status": "active",
+        "status_reason": null,
+        "status_set_by": null,
         "symbol": null,
         "title": "Unexplained complexity: calculate_pricing"
       },
@@ -969,6 +997,9 @@
         "signal": "architecture_violation",
         "signal_abbrev": "AVS",
         "start_line": 1,
+        "status": "active",
+        "status_reason": null,
+        "status_set_by": null,
         "symbol": null,
         "title": "Upward layer import: enriched.py \u2192 auth.py"
       },
@@ -1006,6 +1037,9 @@
         "signal": "architecture_violation",
         "signal_abbrev": "AVS",
         "start_line": 2,
+        "status": "active",
+        "status_reason": null,
+        "status_set_by": null,
         "symbol": null,
         "title": "Upward layer import: enriched.py \u2192 orders.py"
       },
@@ -1016,7 +1050,7 @@
         "end_line": null,
         "file": "src/myapp",
         "finding_context": "production",
-        "fix": "Verify whether cffi, msgpack, numpy was intentionally introduced. If yes, add it to drift configuration under allowed_imports. If not, remove the dependency.",
+        "fix": "Verify whether cffi, msgpack, numpy was intentionally introduced in src/myapp/. If yes, add it to drift configuration under allowed_imports. If not, remove the dependency.",
         "impact": 0.06,
         "impact_rank": 12,
         "metadata": {
@@ -1047,6 +1081,9 @@
         "signal": "system_misalignment",
         "signal_abbrev": "SMS",
         "start_line": 1,
+        "status": "active",
+        "status_reason": null,
+        "status_set_by": null,
         "symbol": null,
         "title": "Novel dependencies in src/myapp/"
       },
@@ -1084,6 +1121,9 @@
         "signal": "explainability_deficit",
         "signal_abbrev": "EDS",
         "start_line": 46,
+        "status": "active",
+        "status_reason": null,
+        "status_set_by": null,
         "symbol": null,
         "title": "Unexplained complexity: enrich_payload"
       },
@@ -1121,6 +1161,9 @@
         "signal": "explainability_deficit",
         "signal_abbrev": "EDS",
         "start_line": 1,
+        "status": "active",
+        "status_reason": null,
+        "status_set_by": null,
         "symbol": null,
         "title": "Unexplained complexity: transform_records"
       },
@@ -1158,6 +1201,9 @@
         "signal": "explainability_deficit",
         "signal_abbrev": "EDS",
         "start_line": 25,
+        "status": "active",
+        "status_reason": null,
+        "status_set_by": null,
         "symbol": null,
         "title": "Unexplained complexity: aggregate_metrics"
       },
@@ -1187,6 +1233,9 @@
         "signal": "guard_clause_deficit",
         "signal_abbrev": "GCD",
         "start_line": 1,
+        "status": "active",
+        "status_reason": null,
+        "status_set_by": null,
         "symbol": null,
         "title": "Guard clause deficit in src/myapp/processors/"
       },
@@ -1217,6 +1266,9 @@
         "signal": "test_polarity_deficit",
         "signal_abbrev": "TPD",
         "start_line": 1,
+        "status": "active",
+        "status_reason": null,
+        "status_set_by": null,
         "symbol": null,
         "title": "Happy-path-only test suite in tests/api/"
       },
@@ -1245,6 +1297,9 @@
         "signal": "guard_clause_deficit",
         "signal_abbrev": "GCD",
         "start_line": 46,
+        "status": "active",
+        "status_reason": null,
+        "status_set_by": null,
         "symbol": null,
         "title": "Deep nesting in enrich_payload()"
       },
@@ -1273,6 +1328,9 @@
         "signal": "guard_clause_deficit",
         "signal_abbrev": "GCD",
         "start_line": 1,
+        "status": "active",
+        "status_reason": null,
+        "status_set_by": null,
         "symbol": null,
         "title": "Deep nesting in transform_records()"
       },
@@ -1300,6 +1358,9 @@
         "signal": "doc_impl_drift",
         "signal_abbrev": "DIA",
         "start_line": 1,
+        "status": "active",
+        "status_reason": null,
+        "status_set_by": null,
         "symbol": null,
         "title": "README references missing directory: handlers/"
       },
@@ -1327,6 +1388,9 @@
         "signal": "doc_impl_drift",
         "signal_abbrev": "DIA",
         "start_line": 1,
+        "status": "active",
+        "status_reason": null,
+        "status_set_by": null,
         "symbol": null,
         "title": "README references missing directory: middleware/"
       },
@@ -1354,6 +1418,9 @@
         "signal": "doc_impl_drift",
         "signal_abbrev": "DIA",
         "start_line": 1,
+        "status": "active",
+        "status_reason": null,
+        "status_set_by": null,
         "symbol": null,
         "title": "README references missing directory: models/"
       },
@@ -1381,6 +1448,9 @@
         "signal": "doc_impl_drift",
         "signal_abbrev": "DIA",
         "start_line": 1,
+        "status": "active",
+        "status_reason": null,
+        "status_set_by": null,
         "symbol": null,
         "title": "README references missing directory: plugins/"
       },
@@ -1408,6 +1478,9 @@
         "signal": "doc_impl_drift",
         "signal_abbrev": "DIA",
         "start_line": 1,
+        "status": "active",
+        "status_reason": null,
+        "status_set_by": null,
         "symbol": null,
         "title": "README references missing directory: utils/"
       },
@@ -1435,6 +1508,9 @@
         "signal": "doc_impl_drift",
         "signal_abbrev": "DIA",
         "start_line": 1,
+        "status": "active",
+        "status_reason": null,
+        "status_set_by": null,
         "symbol": null,
         "title": "README references missing directory: views/"
       },
@@ -1464,6 +1540,9 @@
         "signal": "cognitive_complexity",
         "signal_abbrev": "CXS",
         "start_line": 1,
+        "status": "active",
+        "status_reason": null,
+        "status_set_by": null,
         "symbol": null,
         "title": "High cognitive complexity in calculate_pricing()"
       },
@@ -1493,6 +1572,9 @@
         "signal": "cognitive_complexity",
         "signal_abbrev": "CXS",
         "start_line": 39,
+        "status": "active",
+        "status_reason": null,
+        "status_set_by": null,
         "symbol": null,
         "title": "High cognitive complexity in transform_dataset()"
       },
@@ -1522,6 +1604,9 @@
         "signal": "cognitive_complexity",
         "signal_abbrev": "CXS",
         "start_line": 1,
+        "status": "active",
+        "status_reason": null,
+        "status_set_by": null,
         "symbol": null,
         "title": "High cognitive complexity in transform_records()"
       },
@@ -1551,6 +1636,9 @@
         "signal": "cognitive_complexity",
         "signal_abbrev": "CXS",
         "start_line": 46,
+        "status": "active",
+        "status_reason": null,
+        "status_set_by": null,
         "symbol": null,
         "title": "High cognitive complexity in enrich_payload()"
       },
@@ -1592,6 +1680,9 @@
         "signal": "dead_code_accumulation",
         "signal_abbrev": "DCA",
         "start_line": 1,
+        "status": "active",
+        "status_reason": null,
+        "status_set_by": null,
         "symbol": null,
         "title": "2 potentially unused exports in complex_logic.py"
       },
@@ -1633,6 +1724,9 @@
         "signal": "dead_code_accumulation",
         "signal_abbrev": "DCA",
         "start_line": 4,
+        "status": "active",
+        "status_reason": null,
+        "status_set_by": null,
         "symbol": null,
         "title": "2 potentially unused exports in aws_s3.py"
       },
@@ -1674,6 +1768,9 @@
         "signal": "dead_code_accumulation",
         "signal_abbrev": "DCA",
         "start_line": 4,
+        "status": "active",
+        "status_reason": null,
+        "status_set_by": null,
         "symbol": null,
         "title": "2 potentially unused exports in google_api.py"
       },
@@ -1715,6 +1812,9 @@
         "signal": "dead_code_accumulation",
         "signal_abbrev": "DCA",
         "start_line": 4,
+        "status": "active",
+        "status_reason": null,
+        "status_set_by": null,
         "symbol": null,
         "title": "2 potentially unused exports in slack_api.py"
       },
@@ -1756,6 +1856,9 @@
         "signal": "dead_code_accumulation",
         "signal_abbrev": "DCA",
         "start_line": 4,
+        "status": "active",
+        "status_reason": null,
+        "status_set_by": null,
         "symbol": null,
         "title": "2 potentially unused exports in stripe_api.py"
       },
@@ -1797,6 +1900,9 @@
         "signal": "dead_code_accumulation",
         "signal_abbrev": "DCA",
         "start_line": 12,
+        "status": "active",
+        "status_reason": null,
+        "status_set_by": null,
         "symbol": null,
         "title": "2 potentially unused exports in hotspot.py"
       },
@@ -1843,6 +1949,9 @@
         "signal": "dead_code_accumulation",
         "signal_abbrev": "DCA",
         "start_line": 1,
+        "status": "active",
+        "status_reason": null,
+        "status_set_by": null,
         "symbol": null,
         "title": "3 potentially unused exports in user.py"
       },
@@ -1889,6 +1998,9 @@
         "signal": "dead_code_accumulation",
         "signal_abbrev": "DCA",
         "start_line": 1,
+        "status": "active",
+        "status_reason": null,
+        "status_set_by": null,
         "symbol": null,
         "title": "3 potentially unused exports in data_pipeline.py"
       },
@@ -1930,6 +2042,9 @@
         "signal": "dead_code_accumulation",
         "signal_abbrev": "DCA",
         "start_line": 1,
+        "status": "active",
+        "status_reason": null,
+        "status_set_by": null,
         "symbol": null,
         "title": "2 potentially unused exports in service_a.py"
       },
@@ -1971,6 +2086,9 @@
         "signal": "dead_code_accumulation",
         "signal_abbrev": "DCA",
         "start_line": 1,
+        "status": "active",
+        "status_reason": null,
+        "status_set_by": null,
         "symbol": null,
         "title": "2 potentially unused exports in service_b.py"
       },
@@ -1981,7 +2099,7 @@
         "end_line": null,
         "file": "src/myapp/hotspot.py",
         "finding_context": "production",
-        "fix": "10 commits in 30 days \u2014 consider splitting the file.",
+        "fix": "10 commits in 30 days \u2014 split the file into smaller modules.",
         "impact": 0.0,
         "impact_rank": 40,
         "metadata": {
@@ -2008,6 +2126,9 @@
         "signal": "temporal_volatility",
         "signal_abbrev": "TVS",
         "start_line": 1,
+        "status": "active",
+        "status_reason": null,
+        "status_set_by": null,
         "symbol": null,
         "title": "High volatility: src/myapp/hotspot.py"
       }
@@ -2026,6 +2147,7 @@
         "signal": "mutant_duplicate",
         "signal_abbrev": "MDS",
         "start_line": 1,
+        "status": "active",
         "title": "Exact duplicates (2\u00d7): process_order"
       },
       {
@@ -2041,6 +2163,7 @@
         "signal": "mutant_duplicate",
         "signal_abbrev": "MDS",
         "start_line": 8,
+        "status": "active",
         "title": "Exact duplicates (2\u00d7): validate_input"
       },
       {
@@ -2056,6 +2179,7 @@
         "signal": "mutant_duplicate",
         "signal_abbrev": "MDS",
         "start_line": 10,
+        "status": "active",
         "title": "Near-duplicate (100%): download_file \u2194 send_message"
       },
       {
@@ -2071,6 +2195,7 @@
         "signal": "mutant_duplicate",
         "signal_abbrev": "MDS",
         "start_line": 1,
+        "status": "active",
         "title": "Near-duplicate (100%): fetch_user_data \u2194 get_customer_info"
       },
       {
@@ -2086,6 +2211,7 @@
         "signal": "pattern_fragmentation",
         "signal_abbrev": "PFS",
         "start_line": 1,
+        "status": "active",
         "title": "return_pattern: 2 variants in src/myapp/models/"
       },
       {
@@ -2101,6 +2227,7 @@
         "signal": "broad_exception_monoculture",
         "signal_abbrev": "BEM",
         "start_line": 1,
+        "status": "active",
         "title": "Broad exception monoculture in src/myapp/connectors/"
       },
       {
@@ -2116,6 +2243,7 @@
         "signal": "explainability_deficit",
         "signal_abbrev": "EDS",
         "start_line": 39,
+        "status": "active",
         "title": "Unexplained complexity: transform_dataset"
       },
       {
@@ -2131,6 +2259,7 @@
         "signal": "pattern_fragmentation",
         "signal_abbrev": "PFS",
         "start_line": 1,
+        "status": "active",
         "title": "error_handling: 2 variants in src/myapp/handlers/"
       },
       {
@@ -2146,6 +2275,7 @@
         "signal": "explainability_deficit",
         "signal_abbrev": "EDS",
         "start_line": 1,
+        "status": "active",
         "title": "Unexplained complexity: calculate_pricing"
       },
       {
@@ -2161,6 +2291,7 @@
         "signal": "architecture_violation",
         "signal_abbrev": "AVS",
         "start_line": 1,
+        "status": "active",
         "title": "Upward layer import: enriched.py \u2192 auth.py"
       },
       {
@@ -2176,6 +2307,7 @@
         "signal": "architecture_violation",
         "signal_abbrev": "AVS",
         "start_line": 2,
+        "status": "active",
         "title": "Upward layer import: enriched.py \u2192 orders.py"
       },
       {
@@ -2191,6 +2323,7 @@
         "signal": "system_misalignment",
         "signal_abbrev": "SMS",
         "start_line": 1,
+        "status": "active",
         "title": "Novel dependencies in src/myapp/"
       },
       {
@@ -2206,6 +2339,7 @@
         "signal": "explainability_deficit",
         "signal_abbrev": "EDS",
         "start_line": 46,
+        "status": "active",
         "title": "Unexplained complexity: enrich_payload"
       },
       {
@@ -2221,6 +2355,7 @@
         "signal": "explainability_deficit",
         "signal_abbrev": "EDS",
         "start_line": 1,
+        "status": "active",
         "title": "Unexplained complexity: transform_records"
       },
       {
@@ -2236,6 +2371,7 @@
         "signal": "explainability_deficit",
         "signal_abbrev": "EDS",
         "start_line": 25,
+        "status": "active",
         "title": "Unexplained complexity: aggregate_metrics"
       },
       {
@@ -2251,6 +2387,7 @@
         "signal": "guard_clause_deficit",
         "signal_abbrev": "GCD",
         "start_line": 1,
+        "status": "active",
         "title": "Guard clause deficit in src/myapp/processors/"
       },
       {
@@ -2266,6 +2403,7 @@
         "signal": "test_polarity_deficit",
         "signal_abbrev": "TPD",
         "start_line": 1,
+        "status": "active",
         "title": "Happy-path-only test suite in tests/api/"
       },
       {
@@ -2281,6 +2419,7 @@
         "signal": "guard_clause_deficit",
         "signal_abbrev": "GCD",
         "start_line": 46,
+        "status": "active",
         "title": "Deep nesting in enrich_payload()"
       },
       {
@@ -2296,6 +2435,7 @@
         "signal": "guard_clause_deficit",
         "signal_abbrev": "GCD",
         "start_line": 1,
+        "status": "active",
         "title": "Deep nesting in transform_records()"
       },
       {
@@ -2311,6 +2451,7 @@
         "signal": "doc_impl_drift",
         "signal_abbrev": "DIA",
         "start_line": 1,
+        "status": "active",
         "title": "README references missing directory: handlers/"
       },
       {
@@ -2326,6 +2467,7 @@
         "signal": "doc_impl_drift",
         "signal_abbrev": "DIA",
         "start_line": 1,
+        "status": "active",
         "title": "README references missing directory: middleware/"
       },
       {
@@ -2341,6 +2483,7 @@
         "signal": "doc_impl_drift",
         "signal_abbrev": "DIA",
         "start_line": 1,
+        "status": "active",
         "title": "README references missing directory: models/"
       },
       {
@@ -2356,6 +2499,7 @@
         "signal": "doc_impl_drift",
         "signal_abbrev": "DIA",
         "start_line": 1,
+        "status": "active",
         "title": "README references missing directory: plugins/"
       },
       {
@@ -2371,6 +2515,7 @@
         "signal": "doc_impl_drift",
         "signal_abbrev": "DIA",
         "start_line": 1,
+        "status": "active",
         "title": "README references missing directory: utils/"
       },
       {
@@ -2386,6 +2531,7 @@
         "signal": "doc_impl_drift",
         "signal_abbrev": "DIA",
         "start_line": 1,
+        "status": "active",
         "title": "README references missing directory: views/"
       },
       {
@@ -2401,6 +2547,7 @@
         "signal": "cognitive_complexity",
         "signal_abbrev": "CXS",
         "start_line": 1,
+        "status": "active",
         "title": "High cognitive complexity in calculate_pricing()"
       },
       {
@@ -2416,6 +2563,7 @@
         "signal": "cognitive_complexity",
         "signal_abbrev": "CXS",
         "start_line": 39,
+        "status": "active",
         "title": "High cognitive complexity in transform_dataset()"
       },
       {
@@ -2431,6 +2579,7 @@
         "signal": "cognitive_complexity",
         "signal_abbrev": "CXS",
         "start_line": 1,
+        "status": "active",
         "title": "High cognitive complexity in transform_records()"
       },
       {
@@ -2446,6 +2595,7 @@
         "signal": "cognitive_complexity",
         "signal_abbrev": "CXS",
         "start_line": 46,
+        "status": "active",
         "title": "High cognitive complexity in enrich_payload()"
       },
       {
@@ -2461,6 +2611,7 @@
         "signal": "dead_code_accumulation",
         "signal_abbrev": "DCA",
         "start_line": 1,
+        "status": "active",
         "title": "2 potentially unused exports in complex_logic.py"
       },
       {
@@ -2476,6 +2627,7 @@
         "signal": "dead_code_accumulation",
         "signal_abbrev": "DCA",
         "start_line": 4,
+        "status": "active",
         "title": "2 potentially unused exports in aws_s3.py"
       },
       {
@@ -2491,6 +2643,7 @@
         "signal": "dead_code_accumulation",
         "signal_abbrev": "DCA",
         "start_line": 4,
+        "status": "active",
         "title": "2 potentially unused exports in google_api.py"
       },
       {
@@ -2506,6 +2659,7 @@
         "signal": "dead_code_accumulation",
         "signal_abbrev": "DCA",
         "start_line": 4,
+        "status": "active",
         "title": "2 potentially unused exports in slack_api.py"
       },
       {
@@ -2521,6 +2675,7 @@
         "signal": "dead_code_accumulation",
         "signal_abbrev": "DCA",
         "start_line": 4,
+        "status": "active",
         "title": "2 potentially unused exports in stripe_api.py"
       },
       {
@@ -2536,6 +2691,7 @@
         "signal": "dead_code_accumulation",
         "signal_abbrev": "DCA",
         "start_line": 12,
+        "status": "active",
         "title": "2 potentially unused exports in hotspot.py"
       },
       {
@@ -2551,6 +2707,7 @@
         "signal": "dead_code_accumulation",
         "signal_abbrev": "DCA",
         "start_line": 1,
+        "status": "active",
         "title": "3 potentially unused exports in user.py"
       },
       {
@@ -2566,6 +2723,7 @@
         "signal": "dead_code_accumulation",
         "signal_abbrev": "DCA",
         "start_line": 1,
+        "status": "active",
         "title": "3 potentially unused exports in data_pipeline.py"
       },
       {
@@ -2581,6 +2739,7 @@
         "signal": "dead_code_accumulation",
         "signal_abbrev": "DCA",
         "start_line": 1,
+        "status": "active",
         "title": "2 potentially unused exports in service_a.py"
       },
       {
@@ -2596,6 +2755,7 @@
         "signal": "dead_code_accumulation",
         "signal_abbrev": "DCA",
         "start_line": 1,
+        "status": "active",
         "title": "2 potentially unused exports in service_b.py"
       },
       {
@@ -2611,9 +2771,11 @@
         "signal": "temporal_volatility",
         "signal_abbrev": "TVS",
         "start_line": 1,
+        "status": "active",
         "title": "High volatility: src/myapp/hotspot.py"
       }
     ],
+    "findings_suppressed": [],
     "fix_first": [
       {
         "expected_benefit": "high",
@@ -3190,8 +3352,8 @@
         "source_signal": "dead_code_accumulation"
       }
     ],
-    "repo": "C:/Users/mickg/AppData/Local/Temp/drift_mutation_veu5pj3q/synthetic_repo",
-    "schema_version": "1.0",
+    "repo": "C:/Users/mickg/AppData/Local/Temp/drift_mutation_gpvp4isc/synthetic_repo",
+    "schema_version": "1.1",
     "severity": "low",
     "signal_abbrev_map": {
       "AVS": "architecture_violation",
@@ -3221,7 +3383,7 @@
     "summary": {
       "ai_attributed_ratio": 0.0,
       "ai_tools_detected": [],
-      "analysis_duration_seconds": 0.23,
+      "analysis_duration_seconds": 0.25,
       "total_files": 25,
       "total_functions": 31
     },
@@ -3234,6 +3396,6 @@
       "recent_scores": [],
       "transition_ratio": 0.0
     },
-    "version": "2.5.3"
+    "version": "2.6.2"
   }
 }

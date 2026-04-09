@@ -156,6 +156,33 @@ Notes:
 
 This sequence improves reliability and keeps agent actions policy-aligned.
 
+### Optimized Fix-Loop (Session-Based)
+
+For multi-finding fix workflows, use sessions to eliminate redundant scans:
+
+```
+# 1. Single call replaces validate + brief + scan + fix_plan
+drift_session_start(path=".", autopilot=true)
+
+# 2. Fix first task, then check with nudge (fast, ~0.2s)
+drift_nudge(session_id="<sid>", changed_files="src/foo.py")
+
+# 3. Get next task (always max_tasks=1 to keep responses small)
+drift_fix_plan(session_id="<sid>", max_tasks=1)
+
+# 4. After all tasks: verify once
+drift_diff(session_id="<sid>", uncommitted=true)
+```
+
+Key rules:
+- Always pass `session_id` to every subsequent tool call
+- Use `nudge` (not `scan`) as inner-loop feedback after each edit
+- Use `max_tasks=1` in fix_plan to reduce response size
+- Follow `agent_instruction` and `next_tool_call` fields in responses
+- Run `drift_diff` only as final verification, not after every edit
+
+See `.github/prompts/drift-fix-loop.prompt.md` for the detailed workflow.
+
 ## False Positive Reduction Playbook
 
 1. Confirm repository scope and excludes

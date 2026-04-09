@@ -1169,11 +1169,11 @@ def _gen_fallback(finding: Finding) -> list[NegativeContext]:
         severity=finding.severity,
         scope=_scope_from_finding(finding),
         description=finding.description,
-        forbidden_pattern=f"# Drift signal: {finding.signal_type.value}\n# {finding.title}",
+        forbidden_pattern=f"# Drift signal: {finding.signal_type}\n# {finding.title}",
         canonical_alternative=finding.fix or "See drift_explain for remediation guidance",
         affected_files=_affected(finding),
         confidence=0.5,
-        rationale=f"Drift signal '{finding.signal_type.value}' detected.",
+        rationale=f"Drift signal '{finding.signal_type}' detected.",
         metadata={"fallback_policy": policy},
     )]
 

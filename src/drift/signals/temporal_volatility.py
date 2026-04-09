@@ -66,6 +66,13 @@ class TemporalVolatilitySignal(BaseSignal):
 
         histories = list(file_histories.values())
 
+        if not histories or all(h.total_commits == 0 for h in histories):
+            self.emit_warning(
+                "[TVS] No git history available — signal skipped. "
+                "Run from a git repository with commit history for meaningful results."
+            )
+            return []
+
         # Compute baseline statistics
         freq_values = [h.change_frequency_30d for h in histories]
         author_values = [float(h.unique_authors) for h in histories]

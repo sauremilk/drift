@@ -1,0 +1,534 @@
+{
+  "_metadata": {
+    "drift_version": "2.6.2",
+    "generated_at": "2026-04-09T09:24:47.279748+00:00",
+    "artifact_type": "precision_recall_baseline",
+    "purpose": "KPI Roadmap v2.7 \u2014 belastbare Baseline auf aktuellem 15-Signal-Modell",
+    "fixture_count": 110,
+    "methodology": "Automated evaluation of all ground-truth fixtures in tests/fixtures/ground_truth.py via drift.precision.evaluate_fixtures(). Per-signal and aggregate P/R/F1 computed. This replaces the historical v0.5 baseline (6 scoring signals) with a current-model evaluation (15 scoring-active signals)."
+  },
+  "precision_recall": {
+    "signals": {
+      "architecture_violation": {
+        "tp": 3,
+        "tn": 4,
+        "fp": 0,
+        "fn": 0,
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0
+      },
+      "broad_exception_monoculture": {
+        "tp": 2,
+        "tn": 7,
+        "fp": 0,
+        "fn": 0,
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0
+      },
+      "bypass_accumulation": {
+        "tp": 3,
+        "tn": 6,
+        "fp": 0,
+        "fn": 0,
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0
+      },
+      "co_change_coupling": {
+        "tp": 1,
+        "tn": 2,
+        "fp": 0,
+        "fn": 0,
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0
+      },
+      "cohesion_deficit": {
+        "tp": 2,
+        "tn": 3,
+        "fp": 0,
+        "fn": 0,
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0
+      },
+      "doc_impl_drift": {
+        "tp": 4,
+        "tn": 6,
+        "fp": 0,
+        "fn": 0,
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0
+      },
+      "exception_contract_drift": {
+        "tp": 0,
+        "tn": 1,
+        "fp": 0,
+        "fn": 0,
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0
+      },
+      "explainability_deficit": {
+        "tp": 4,
+        "tn": 6,
+        "fp": 0,
+        "fn": 0,
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0
+      },
+      "guard_clause_deficit": {
+        "tp": 3,
+        "tn": 6,
+        "fp": 0,
+        "fn": 0,
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0
+      },
+      "hardcoded_secret": {
+        "tp": 0,
+        "tn": 1,
+        "fp": 0,
+        "fn": 0,
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0
+      },
+      "missing_authorization": {
+        "tp": 0,
+        "tn": 1,
+        "fp": 0,
+        "fn": 0,
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0
+      },
+      "mutant_duplicate": {
+        "tp": 4,
+        "tn": 4,
+        "fp": 0,
+        "fn": 0,
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0
+      },
+      "naming_contract_violation": {
+        "tp": 6,
+        "tn": 6,
+        "fp": 0,
+        "fn": 0,
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0
+      },
+      "pattern_fragmentation": {
+        "tp": 5,
+        "tn": 3,
+        "fp": 0,
+        "fn": 0,
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0
+      },
+      "system_misalignment": {
+        "tp": 3,
+        "tn": 2,
+        "fp": 0,
+        "fn": 0,
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0
+      },
+      "temporal_volatility": {
+        "tp": 2,
+        "tn": 3,
+        "fp": 0,
+        "fn": 0,
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0
+      },
+      "test_polarity_deficit": {
+        "tp": 3,
+        "tn": 4,
+        "fp": 0,
+        "fn": 0,
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0
+      }
+    },
+    "aggregate_f1": 1.0,
+    "total_fixtures": 110
+  },
+  "fixture_coverage": {
+    "per_signal": {
+      "pattern_fragmentation": {
+        "total_fixtures": 8,
+        "tp_expectations": 5,
+        "tn_expectations": 3,
+        "meets_minimum_5": true,
+        "scoring_active": true,
+        "weight": 0.16
+      },
+      "architecture_violation": {
+        "total_fixtures": 7,
+        "tp_expectations": 3,
+        "tn_expectations": 4,
+        "meets_minimum_5": true,
+        "scoring_active": true,
+        "weight": 0.16
+      },
+      "mutant_duplicate": {
+        "total_fixtures": 8,
+        "tp_expectations": 4,
+        "tn_expectations": 4,
+        "meets_minimum_5": true,
+        "scoring_active": true,
+        "weight": 0.13
+      },
+      "explainability_deficit": {
+        "total_fixtures": 10,
+        "tp_expectations": 4,
+        "tn_expectations": 6,
+        "meets_minimum_5": true,
+        "scoring_active": true,
+        "weight": 0.09
+      },
+      "doc_impl_drift": {
+        "total_fixtures": 10,
+        "tp_expectations": 4,
+        "tn_expectations": 6,
+        "meets_minimum_5": true,
+        "scoring_active": true,
+        "weight": 0.04
+      },
+      "temporal_volatility": {
+        "total_fixtures": 5,
+        "tp_expectations": 2,
+        "tn_expectations": 3,
+        "meets_minimum_5": true,
+        "scoring_active": false,
+        "weight": 0.0
+      },
+      "system_misalignment": {
+        "total_fixtures": 5,
+        "tp_expectations": 3,
+        "tn_expectations": 2,
+        "meets_minimum_5": true,
+        "scoring_active": true,
+        "weight": 0.08
+      },
+      "broad_exception_monoculture": {
+        "total_fixtures": 9,
+        "tp_expectations": 2,
+        "tn_expectations": 7,
+        "meets_minimum_5": true,
+        "scoring_active": true,
+        "weight": 0.04
+      },
+      "test_polarity_deficit": {
+        "total_fixtures": 7,
+        "tp_expectations": 3,
+        "tn_expectations": 4,
+        "meets_minimum_5": true,
+        "scoring_active": true,
+        "weight": 0.04
+      },
+      "guard_clause_deficit": {
+        "total_fixtures": 9,
+        "tp_expectations": 3,
+        "tn_expectations": 6,
+        "meets_minimum_5": true,
+        "scoring_active": true,
+        "weight": 0.03
+      },
+      "cohesion_deficit": {
+        "total_fixtures": 5,
+        "tp_expectations": 2,
+        "tn_expectations": 3,
+        "meets_minimum_5": true,
+        "scoring_active": true,
+        "weight": 0.01
+      },
+      "naming_contract_violation": {
+        "total_fixtures": 12,
+        "tp_expectations": 6,
+        "tn_expectations": 6,
+        "meets_minimum_5": true,
+        "scoring_active": true,
+        "weight": 0.04
+      },
+      "bypass_accumulation": {
+        "total_fixtures": 9,
+        "tp_expectations": 3,
+        "tn_expectations": 6,
+        "meets_minimum_5": true,
+        "scoring_active": true,
+        "weight": 0.03
+      },
+      "exception_contract_drift": {
+        "total_fixtures": 1,
+        "tp_expectations": 0,
+        "tn_expectations": 1,
+        "meets_minimum_5": false,
+        "scoring_active": true,
+        "weight": 0.03
+      },
+      "co_change_coupling": {
+        "total_fixtures": 3,
+        "tp_expectations": 1,
+        "tn_expectations": 2,
+        "meets_minimum_5": false,
+        "scoring_active": true,
+        "weight": 0.005
+      },
+      "ts_architecture": {
+        "total_fixtures": 0,
+        "tp_expectations": 0,
+        "tn_expectations": 0,
+        "meets_minimum_5": false,
+        "scoring_active": false,
+        "weight": 0.0
+      },
+      "cognitive_complexity": {
+        "total_fixtures": 0,
+        "tp_expectations": 0,
+        "tn_expectations": 0,
+        "meets_minimum_5": false,
+        "scoring_active": false,
+        "weight": 0.0
+      },
+      "fan_out_explosion": {
+        "total_fixtures": 0,
+        "tp_expectations": 0,
+        "tn_expectations": 0,
+        "meets_minimum_5": false,
+        "scoring_active": false,
+        "weight": 0.0
+      },
+      "circular_import": {
+        "total_fixtures": 0,
+        "tp_expectations": 0,
+        "tn_expectations": 0,
+        "meets_minimum_5": false,
+        "scoring_active": false,
+        "weight": 0.0
+      },
+      "dead_code_accumulation": {
+        "total_fixtures": 0,
+        "tp_expectations": 0,
+        "tn_expectations": 0,
+        "meets_minimum_5": false,
+        "scoring_active": false,
+        "weight": 0.0
+      },
+      "missing_authorization": {
+        "total_fixtures": 1,
+        "tp_expectations": 0,
+        "tn_expectations": 1,
+        "meets_minimum_5": false,
+        "scoring_active": false,
+        "weight": 0.0
+      },
+      "insecure_default": {
+        "total_fixtures": 0,
+        "tp_expectations": 0,
+        "tn_expectations": 0,
+        "meets_minimum_5": false,
+        "scoring_active": false,
+        "weight": 0.0
+      },
+      "hardcoded_secret": {
+        "total_fixtures": 1,
+        "tp_expectations": 0,
+        "tn_expectations": 1,
+        "meets_minimum_5": false,
+        "scoring_active": false,
+        "weight": 0.0
+      }
+    },
+    "summary": {
+      "total_signals": 23,
+      "scoring_active_count": 14,
+      "report_only_count": 9,
+      "scoring_signals_with_min5_fixtures": 12,
+      "scoring_signals_below_min5": [
+        "co_change_coupling",
+        "exception_contract_drift"
+      ],
+      "total_fixtures": 110
+    }
+  },
+  "mutation_benchmark_gaps": {
+    "mutation_benchmark_recall": 1.0,
+    "total_injected": 17,
+    "total_detected": 17,
+    "signals_covered": [
+      "architecture_violation",
+      "broad_exception_monoculture",
+      "doc_impl_drift",
+      "explainability_deficit",
+      "guard_clause_deficit",
+      "mutant_duplicate",
+      "pattern_fragmentation",
+      "system_misalignment",
+      "temporal_volatility",
+      "test_polarity_deficit"
+    ],
+    "scoring_signals_missing_mutations": [
+      "bypass_accumulation",
+      "co_change_coupling",
+      "cohesion_deficit",
+      "exception_contract_drift",
+      "naming_contract_violation"
+    ],
+    "coverage_ratio": "10/14 scoring-active"
+  },
+  "ci_gate_recommendations": {
+    "per_signal": {
+      "architecture_violation": {
+        "current_precision": 1.0,
+        "current_recall": 1.0,
+        "current_f1": 1.0,
+        "observations_tp_fp": 3,
+        "recommended_precision_gate": 0.98,
+        "note": "Baseline - 2pp"
+      },
+      "broad_exception_monoculture": {
+        "current_precision": 1.0,
+        "current_recall": 1.0,
+        "current_f1": 1.0,
+        "observations_tp_fp": 2,
+        "recommended_precision_gate": null,
+        "note": "Insufficient observations (<3)"
+      },
+      "bypass_accumulation": {
+        "current_precision": 1.0,
+        "current_recall": 1.0,
+        "current_f1": 1.0,
+        "observations_tp_fp": 3,
+        "recommended_precision_gate": 0.98,
+        "note": "Baseline - 2pp"
+      },
+      "co_change_coupling": {
+        "current_precision": 1.0,
+        "current_recall": 1.0,
+        "current_f1": 1.0,
+        "observations_tp_fp": 1,
+        "recommended_precision_gate": null,
+        "note": "Insufficient observations (<3)"
+      },
+      "cohesion_deficit": {
+        "current_precision": 1.0,
+        "current_recall": 1.0,
+        "current_f1": 1.0,
+        "observations_tp_fp": 2,
+        "recommended_precision_gate": null,
+        "note": "Insufficient observations (<3)"
+      },
+      "doc_impl_drift": {
+        "current_precision": 1.0,
+        "current_recall": 1.0,
+        "current_f1": 1.0,
+        "observations_tp_fp": 4,
+        "recommended_precision_gate": 0.98,
+        "note": "Baseline - 2pp"
+      },
+      "exception_contract_drift": {
+        "current_precision": 1.0,
+        "current_recall": 1.0,
+        "current_f1": 1.0,
+        "observations_tp_fp": 0,
+        "recommended_precision_gate": null,
+        "note": "Insufficient observations (<3)"
+      },
+      "explainability_deficit": {
+        "current_precision": 1.0,
+        "current_recall": 1.0,
+        "current_f1": 1.0,
+        "observations_tp_fp": 4,
+        "recommended_precision_gate": 0.98,
+        "note": "Baseline - 2pp"
+      },
+      "guard_clause_deficit": {
+        "current_precision": 1.0,
+        "current_recall": 1.0,
+        "current_f1": 1.0,
+        "observations_tp_fp": 3,
+        "recommended_precision_gate": 0.98,
+        "note": "Baseline - 2pp"
+      },
+      "hardcoded_secret": {
+        "current_precision": 1.0,
+        "current_recall": 1.0,
+        "current_f1": 1.0,
+        "observations_tp_fp": 0,
+        "recommended_precision_gate": null,
+        "note": "Insufficient observations (<3)"
+      },
+      "missing_authorization": {
+        "current_precision": 1.0,
+        "current_recall": 1.0,
+        "current_f1": 1.0,
+        "observations_tp_fp": 0,
+        "recommended_precision_gate": null,
+        "note": "Insufficient observations (<3)"
+      },
+      "mutant_duplicate": {
+        "current_precision": 1.0,
+        "current_recall": 1.0,
+        "current_f1": 1.0,
+        "observations_tp_fp": 4,
+        "recommended_precision_gate": 0.98,
+        "note": "Baseline - 2pp"
+      },
+      "naming_contract_violation": {
+        "current_precision": 1.0,
+        "current_recall": 1.0,
+        "current_f1": 1.0,
+        "observations_tp_fp": 6,
+        "recommended_precision_gate": 0.98,
+        "note": "Baseline - 2pp"
+      },
+      "pattern_fragmentation": {
+        "current_precision": 1.0,
+        "current_recall": 1.0,
+        "current_f1": 1.0,
+        "observations_tp_fp": 5,
+        "recommended_precision_gate": 0.98,
+        "note": "Baseline - 2pp"
+      },
+      "system_misalignment": {
+        "current_precision": 1.0,
+        "current_recall": 1.0,
+        "current_f1": 1.0,
+        "observations_tp_fp": 3,
+        "recommended_precision_gate": 0.98,
+        "note": "Baseline - 2pp"
+      },
+      "temporal_volatility": {
+        "current_precision": 1.0,
+        "current_recall": 1.0,
+        "current_f1": 1.0,
+        "observations_tp_fp": 2,
+        "recommended_precision_gate": null,
+        "note": "Insufficient observations (<3)"
+      },
+      "test_polarity_deficit": {
+        "current_precision": 1.0,
+        "current_recall": 1.0,
+        "current_f1": 1.0,
+        "observations_tp_fp": 3,
+        "recommended_precision_gate": 0.98,
+        "note": "Baseline - 2pp"
+      }
+    },
+    "aggregate_f1_gate": 0.98
+  }
+}

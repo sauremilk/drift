@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import json
 import logging as _logging
+import threading
 from collections import Counter
 from collections.abc import Callable
 from math import ceil
@@ -85,7 +86,52 @@ def _emit_api_telemetry(
 
 _log = _logging.getLogger("drift")
 
+_CONFIG_CACHE_LOCK = threading.RLock()
+_CONFIG_CACHE: dict[tuple[str, str | None], tuple[int | None, Any]] = {}
+
 _DIVERSE_MIN_TOP_IMPACT_SHARE = 0.4
+
+
+def _config_mtime_ns(config_path: Path | None) -> int | None:
+    """Return config mtime for cache invalidation, or None when unavailable."""
+    if config_path is None:
+        return None
+    try:
+        return config_path.stat().st_mtime_ns
+    except OSError:
+        return None
+
+
+def _load_config_cached(
+    repo_path: Path,
+    config_file: Path | None = None,
+) -> Any:
+    """Load DriftConfig with a tiny in-process cache keyed by path+mtime."""
+    from drift.config import DriftConfig
+
+    resolved_repo = repo_path.resolve()
+    resolved_config = (
+        config_file.resolve()
+        if config_file is not None
+        else DriftConfig._find_config_file(resolved_repo)
+    )
+    key = (
+        resolved_repo.as_posix(),
+        resolved_config.as_posix() if resolved_config is not None else None,
+    )
+    mtime_ns = _config_mtime_ns(resolved_config)
+
+    with _CONFIG_CACHE_LOCK:
+        cached = _CONFIG_CACHE.get(key)
+        if cached is not None and cached[0] == mtime_ns:
+            return cached[1]
+
+    cfg = DriftConfig.load(resolved_repo, resolved_config)
+
+    with _CONFIG_CACHE_LOCK:
+        _CONFIG_CACHE[key] = (mtime_ns, cfg)
+
+    return cfg
 
 
 def _diverse_top_impact_quota(max_findings: int) -> int:
@@ -169,7 +215,7 @@ def scan(
         Optional callback ``(phase, current, total)`` for structured progress.
     """
     from drift.analyzer import analyze_repo
-    from drift.config import DriftConfig, apply_signal_filter, resolve_signal_names
+    from drift.config import apply_signal_filter, resolve_signal_names
     from drift.telemetry import timed_call
 
     repo_path = Path(path).resolve()
@@ -188,7 +234,7 @@ def scan(
     }
 
     try:
-        cfg = DriftConfig.load(repo_path)
+        cfg = _load_config_cached(repo_path)
         cfg_warnings = _warn_config_issues(cfg)
 
         if max_per_signal is not None and max_per_signal < 1:
@@ -273,7 +319,7 @@ def _diverse_findings(findings: list, max_findings: int) -> list:
         findings,
         key=lambda f: (
             -f.impact,
-            f.signal_type.value,
+            f.signal_type,
             f.file_path.as_posix() if f.file_path else "",
             f.start_line or 0,
         ),
@@ -286,7 +332,7 @@ def _diverse_findings(findings: list, max_findings: int) -> list:
     top_impact_quota = _diverse_top_impact_quota(max_findings)
     result: list = by_score[:top_impact_quota]
     selected_ids: set[int] = {id(f) for f in result}
-    seen_signals: set[str] = {f.signal_type.value for f in result}
+    seen_signals: set[str] = {f.signal_type for f in result}
 
     # Phase 2: one representative per yet-unseen signal.
     for f in by_score:
@@ -294,7 +340,7 @@ def _diverse_findings(findings: list, max_findings: int) -> list:
             break
         if id(f) in selected_ids:
             continue
-        sig = f.signal_type.value
+        sig = f.signal_type
         if sig not in seen_signals and f.score >= 0.5:
             seen_signals.add(sig)
             result.append(f)
@@ -388,7 +434,7 @@ def _format_scan_response(
         findings_for_prioritization,
         key=lambda f: (
             -f.impact,
-            f.signal_type.value,
+            f.signal_type,
             f.file_path.as_posix() if f.file_path else "",
             f.start_line or 0,
         ),
@@ -743,7 +789,6 @@ def diff(
         ``"concise"`` or ``"detailed"``.
     """
     from drift.analyzer import analyze_diff as _analyze_diff
-    from drift.config import DriftConfig
     from drift.telemetry import timed_call
 
     repo_path = Path(path).resolve()
@@ -762,7 +807,7 @@ def diff(
     }
 
     try:
-        cfg = DriftConfig.load(repo_path)
+        cfg = _load_config_cached(repo_path)
         _warn_config_issues(cfg)
 
         if uncommitted and staged_only:
@@ -1041,6 +1086,12 @@ def diff(
                 "group or next fix_plan task. Use drift_nudge between edits "
                 "for fast feedback."
             )
+        elif len(scoped_new) > 0:
+            _agent_hint = (
+                "New findings exist but are within acceptance threshold. "
+                "Review the new_findings list before proceeding to ensure "
+                "they are acceptable."
+            )
         else:
             _agent_hint = (
                 "No drift change detected. Safe to proceed to the next task."
@@ -1222,9 +1273,7 @@ def _repo_examples_for_signal(
     """
     try:
         from drift.analyzer import analyze_repo
-        from drift.config import DriftConfig
-
-        cfg = DriftConfig.load(repo_root)
+        cfg = _load_config_cached(repo_root)
         analysis = analyze_repo(repo_root, config=cfg)
         sig_type = resolve_signal(signal_abbr)
         if sig_type is None:
@@ -1262,7 +1311,10 @@ def explain(
         performed and the top findings for the signal are included as
         ``repo_examples`` in the response.
     """
-    from drift.commands.explain import _SIGNAL_INFO
+    import importlib
+
+    explain_mod = importlib.import_module("drift.commands.explain")
+    _SIGNAL_INFO = cast(dict[str, dict[str, Any]], getattr(explain_mod, "_SIGNAL_INFO", {}))
     from drift.telemetry import timed_call
 
     elapsed_ms = timed_call()
@@ -1537,7 +1589,7 @@ def fix_plan(
             )
             return result
 
-        cfg = DriftConfig.load(repo_path)
+        cfg = _load_config_cached(repo_path)
         if not hasattr(cfg, "finding_context"):
             cfg = DriftConfig()
         cfg_warnings = _warn_config_issues(cfg)
@@ -1630,7 +1682,7 @@ def fix_plan(
             if not getattr(finding, "deferred", False):
                 continue
             fp = finding.file_path.as_posix() if finding.file_path else None
-            deferred_task_keys.add((finding.signal_type.value, fp, finding.title))
+            deferred_task_keys.add((finding.signal_type, fp, finding.title))
 
         excluded_deferred = 0
         if not include_deferred and deferred_task_keys:
@@ -1638,7 +1690,7 @@ def fix_plan(
             tasks = [
                 t
                 for t in tasks
-                if (t.signal_type.value, t.file_path, t.title) not in deferred_task_keys
+                if (t.signal_type, t.file_path, t.title) not in deferred_task_keys
             ]
             excluded_deferred = before - len(tasks)
             if excluded_deferred > 0:
@@ -1668,7 +1720,7 @@ def fix_plan(
                             f"{len(tasks)} task(s)."
                         )
                     else:
-                        available_rule_ids = sorted({t.signal_type.value for t in tasks})
+                        available_rule_ids = sorted({t.signal_type for t in tasks})
                         available_task_ids = [t.id for t in tasks]
                         tasks = []
                         finding_id_diagnostic = "finding_id_no_match"
@@ -1690,7 +1742,7 @@ def fix_plan(
                             },
                         }
                 else:
-                    available_rule_ids = sorted({t.signal_type.value for t in tasks})
+                    available_rule_ids = sorted({t.signal_type for t in tasks})
                     available_task_ids = [t.id for t in tasks]
                     tasks = []
                     finding_id_diagnostic = "finding_id_no_match"
@@ -1930,7 +1982,7 @@ def validate(
         try:
             from drift.config import DriftConfig
 
-            cfg = DriftConfig.load(repo_path, Path(config_file) if config_file else None)
+            cfg = _load_config_cached(repo_path, Path(config_file) if config_file else None)
             cfg_path = DriftConfig._find_config_file(repo_path)
             config_source = str(cfg_path) if cfg_path else "defaults"
 
@@ -2017,7 +2069,7 @@ def validate(
                 from drift.baseline import baseline_diff as _bl_diff
                 from drift.config import DriftConfig
 
-                _cfg = DriftConfig.load(repo_path)
+                _cfg = _load_config_cached(repo_path)
                 _analysis = analyze_repo(repo_path, config=_cfg)
                 new_findings, known_findings = _bl_diff(
                     _analysis.findings, bl_fingerprints
@@ -2189,7 +2241,6 @@ def nudge(
     """
     import time as _time
 
-    from drift.config import DriftConfig
     from drift.incremental import BaselineSnapshot, IncrementalSignalRunner
     from drift.ingestion.ast_parser import parse_file
     from drift.ingestion.file_discovery import discover_files
@@ -2225,7 +2276,7 @@ def nudge(
         return int((_time.monotonic() - start_ms) * 1_000)
 
     try:
-        cfg = DriftConfig.load(repo_path)
+        cfg = _load_config_cached(repo_path)
         _warn_config_issues(cfg)
 
         # -- Auto-detect changed files if not provided ----------------------
@@ -2566,7 +2617,6 @@ def negative_context(
         Negative context response with anti-pattern items and agent instruction.
     """
     from drift.analyzer import analyze_repo
-    from drift.config import DriftConfig
     from drift.negative_context import (
         findings_to_negative_context,
         negative_context_to_dict,
@@ -2584,7 +2634,7 @@ def negative_context(
     }
 
     try:
-        cfg = DriftConfig.load(repo_path)
+        cfg = _load_config_cached(repo_path)
         _warn_config_issues(cfg)
         if disable_embeddings:
             cfg.embeddings_enabled = False
@@ -2677,7 +2727,7 @@ def _compute_scope_risk(
     for f in findings:
         abbrev = signal_abbrev(f.signal_type)
         has_weights = hasattr(config, "weights")
-        weight = float(getattr(config.weights, f.signal_type.value, 1.0)) if has_weights else 1.0
+        weight = float(getattr(config.weights, f.signal_type, 1.0)) if has_weights else 1.0
         relevance = _BRIEF_RELEVANCE.get(abbrev, 0.0)
         if relevance == 0.0:
             continue
@@ -2795,7 +2845,7 @@ def brief(
         Include fixture/generated/migration/docs findings.
     """
     from drift.analyzer import analyze_repo
-    from drift.config import DriftConfig, apply_signal_filter, resolve_signal_names
+    from drift.config import apply_signal_filter, resolve_signal_names
     from drift.guardrails import generate_guardrails, guardrails_to_prompt_block
     from drift.models import Severity
     from drift.scope_resolver import expand_scope_imports, resolve_scope
@@ -2813,7 +2863,7 @@ def brief(
     }
 
     try:
-        cfg = DriftConfig.load(repo_path)
+        cfg = _load_config_cached(repo_path)
         _warn_config_issues(cfg)
 
         # --- Scope resolution ------------------------------------------------

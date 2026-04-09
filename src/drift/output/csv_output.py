@@ -13,7 +13,7 @@ def _finding_sort_key(finding: Finding) -> tuple[float, str, str, int, int]:
     """Stable ordering key for deterministic CSV output."""
     return (
         -float(finding.impact),
-        finding.signal_type.value,
+        finding.signal_type,
         finding.file_path.as_posix() if finding.file_path else "",
         int(finding.start_line or 0),
         int(finding.end_line or 0),

@@ -6,7 +6,7 @@ import datetime
 import json
 from pathlib import Path
 
-from drift.models import Finding, ModuleScore, RepoAnalysis, Severity, SignalType
+from drift.models import Finding, FindingStatus, ModuleScore, RepoAnalysis, Severity, SignalType
 from drift.output.json_output import analysis_to_json, findings_to_sarif
 
 
@@ -68,6 +68,8 @@ def test_analysis_to_json_contains_expected_structure() -> None:
     assert payload["modules"][0]["path"] == "src/app"
     assert payload["findings"][0]["signal"] == "system_misalignment"
     assert payload["findings"][0]["finding_context"] == "production"
+    assert payload["findings"][0]["status"] == "active"
+    assert payload["findings"][0]["status_set_by"] is None
     assert payload["findings"][0]["file"] == "src/app/service.py"
     assert payload["findings"][0]["remediation"] is not None
     assert payload["findings"][0]["remediation"]["effort"] in {"low", "medium", "high"}
@@ -75,6 +77,7 @@ def test_analysis_to_json_contains_expected_structure() -> None:
     assert payload["findings_compact"]
     assert payload["findings_compact"][0]["duplicate_count"] == 1
     assert payload["compact_summary"]["findings_total"] == 1
+    assert payload["compact_summary"]["suppressed_total"] == 0
     assert payload["compact_summary"]["findings_deduplicated"] == 1
     assert payload["compact_summary"]["duplicate_findings_removed"] == 0
     assert isinstance(payload["fix_first"], list)
@@ -82,6 +85,26 @@ def test_analysis_to_json_contains_expected_structure() -> None:
     assert payload["fix_first"][0]["rank"] == 1
     assert payload["fix_first"][0]["finding_context"] == "production"
     assert "finding_context_policy" in payload
+    assert payload["findings_suppressed"] == []
+
+
+def test_analysis_to_json_exposes_suppressed_findings_separately() -> None:
+    analysis = _sample_analysis()
+    suppressed = _sample_finding()
+    suppressed.title = "Suppressed finding"
+    suppressed.status_set_by = "inline_comment"
+    suppressed.status_reason = "Suppressed by drift:ignore comment"
+    suppressed.status = FindingStatus.SUPPRESSED
+    analysis.suppressed_findings = [suppressed]
+    analysis.suppressed_count = 1
+
+    payload = json.loads(analysis_to_json(analysis))
+
+    assert payload["suppressed_count"] == 1
+    assert payload["compact_summary"]["suppressed_total"] == 1
+    assert len(payload["findings_suppressed"]) == 1
+    assert payload["findings_suppressed"][0]["status"] == "suppressed"
+    assert payload["findings_suppressed"][0]["status_set_by"] == "inline_comment"
 
 
 def test_findings_to_sarif_deduplicates_rules_and_sets_levels() -> None:

@@ -23,6 +23,12 @@ class Severity(StrEnum):
     INFO = "info"
 
 
+class FindingStatus(StrEnum):
+    ACTIVE = "active"
+    SUPPRESSED = "suppressed"
+    RESOLVED = "resolved"
+
+
 class SignalType(StrEnum):
     PATTERN_FRAGMENTATION = "pattern_fragmentation"
     ARCHITECTURE_VIOLATION = "architecture_violation"
@@ -201,7 +207,7 @@ def severity_for_score(score: float) -> Severity:
 class Finding:
     """A single detected issue."""
 
-    signal_type: SignalType
+    signal_type: str  # SignalType value for core signals, arbitrary str for plugins
     severity: Severity
     score: float
     title: str
@@ -217,16 +223,28 @@ class Finding:
     impact: float = 0.0
     score_contribution: float = 0.0
     deferred: bool = False
+    status: FindingStatus = FindingStatus.ACTIVE
+    status_set_by: str | None = None
+    status_reason: str | None = None
     metadata: dict[str, Any] = field(default_factory=dict)
     rule_id: str | None = None
 
     def __post_init__(self) -> None:
         if self.rule_id is None:
-            self.rule_id = self.signal_type.value
+            self.rule_id = str(self.signal_type)
         # Ensure machine-readable location is always populated when a file
         # is known — agents cannot parse file paths from free-text fields.
         if self.file_path is not None and self.start_line is None:
             self.start_line = 1
+
+
+@dataclass
+class AnalyzerWarning:
+    """A non-finding diagnostic emitted by a signal."""
+
+    signal_type: str
+    message: str
+    skipped: bool = True
 
 
 @dataclass
@@ -235,7 +253,7 @@ class ModuleScore:
 
     path: Path
     drift_score: float
-    signal_scores: dict[SignalType, float] = field(default_factory=dict)
+    signal_scores: dict[str, float] = field(default_factory=dict)
     findings: list[Finding] = field(default_factory=list)
     file_count: int = 0
     function_count: int = 0
@@ -267,6 +285,7 @@ class RepoAnalysis:
     drift_score: float
     module_scores: list[ModuleScore] = field(default_factory=list)
     findings: list[Finding] = field(default_factory=list)
+    suppressed_findings: list[Finding] = field(default_factory=list)
     pattern_catalog: dict[PatternCategory, list[PatternInstance]] = field(default_factory=dict)
     total_files: int = 0
     total_functions: int = 0

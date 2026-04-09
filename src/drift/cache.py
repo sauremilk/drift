@@ -365,7 +365,7 @@ class SignalCache:
 def _ser_finding(f: Finding) -> dict[str, Any]:
     """Serialize a Finding to a JSON-safe dictionary."""
     return {
-        "signal_type": f.signal_type.value if f.signal_type else None,
+        "signal_type": f.signal_type if f.signal_type else None,
         "severity": f.severity.value if f.severity else None,
         "score": f.score,
         "title": f.title,

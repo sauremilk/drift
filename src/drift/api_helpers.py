@@ -63,7 +63,7 @@ _ABBREV_TO_SIGNAL: dict[str, SignalType] = {
     "HSC": SignalType.HARDCODED_SECRET,
 }
 
-_SIGNAL_TO_ABBREV: dict[str, str] = {v.value: k for k, v in _ABBREV_TO_SIGNAL.items()}
+_SIGNAL_TO_ABBREV: dict[str, str] = {str(v): k for k, v in _ABBREV_TO_SIGNAL.items()}
 
 VALID_SIGNAL_IDS = sorted(_ABBREV_TO_SIGNAL.keys())
 
@@ -71,7 +71,7 @@ VALID_SIGNAL_IDS = sorted(_ABBREV_TO_SIGNAL.keys())
 def signal_abbrev_map() -> dict[str, str]:
     """Return stable abbreviation -> canonical signal_type mapping."""
     return {
-        abbrev: signal_type.value
+        abbrev: str(signal_type)
         for abbrev, signal_type in sorted(_ABBREV_TO_SIGNAL.items())
     }
 
@@ -87,9 +87,9 @@ def resolve_signal(name: str) -> SignalType | None:
         return None
 
 
-def signal_abbrev(signal_type: SignalType) -> str:
+def signal_abbrev(signal_type: str) -> str:
     """Return the short abbreviation for a signal type."""
-    return _SIGNAL_TO_ABBREV.get(signal_type.value, signal_type.value[:3].upper())
+    return _SIGNAL_TO_ABBREV.get(str(signal_type), str(signal_type)[:3].upper())
 
 
 def signal_scope_label(
@@ -260,7 +260,7 @@ def _finding_concise(f: Any) -> dict[str, Any]:
         "signal": signal,
         "signal_abbrev": signal,
         "signal_id": signal,
-        "signal_type": f.signal_type.value,
+        "signal_type": f.signal_type,
         "rule_id": f.rule_id,
         "severity": severity,
         "severity_rank": severity_rank(severity),
@@ -289,7 +289,7 @@ def _finding_detailed(f: Any, *, rank: int | None = None) -> dict[str, Any]:
         "signal": signal,
         "signal_abbrev": signal,
         "signal_id": signal,
-        "signal_type": f.signal_type.value,
+        "signal_type": f.signal_type,
         "rule_id": f.rule_id,
         "severity": severity,
         "severity_rank": severity_rank(severity),
@@ -335,7 +335,7 @@ def _signal_weight(abbrev: str, config: Any) -> float:
     sig_type = _ABBREV_TO_SIGNAL.get(abbrev)
     if sig_type is None or not hasattr(config, "weights"):
         return 1.0
-    return float(getattr(config.weights, sig_type.value, 1.0))
+    return float(getattr(config.weights, str(sig_type), 1.0))
 
 
 def _top_signals(
@@ -399,7 +399,7 @@ def _fix_first_concise(analysis: RepoAnalysis, max_items: int = 5) -> list[dict[
     unique: list = []
     for f in prioritized:
         fp = f.file_path.as_posix() if f.file_path else ""
-        key = (fp, f.signal_type.value)
+        key = (fp, f.signal_type)
         if key not in seen_file_signal:
             seen_file_signal.add(key)
             unique.append(f)
@@ -414,7 +414,7 @@ def _fix_first_concise(analysis: RepoAnalysis, max_items: int = 5) -> list[dict[
                 "signal": signal,
                 "signal_abbrev": signal,
                 "signal_id": signal,
-                "signal_type": f.signal_type.value,
+                "signal_type": f.signal_type,
                 "severity": severity,
                 "severity_rank": severity_rank(severity),
                 "title": f.title,

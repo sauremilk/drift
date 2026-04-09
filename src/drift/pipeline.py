@@ -130,6 +130,7 @@ class ScoredFindings:
     module_scores: list
     suppressed_count: int
     context_tagged_count: int
+    suppressed_findings: list[Finding] = field(default_factory=list)
 
 
 @dataclass(slots=True)
@@ -704,6 +705,7 @@ class ScoringPhase:
             module_scores=module_scores,
             suppressed_count=suppressed_count,
             context_tagged_count=context_tagged_count,
+            suppressed_findings=suppressed_findings,
         )
 
 
@@ -743,6 +745,7 @@ class ResultAssemblyPhase:
             drift_score=artifacts.scored.repo_score,
             module_scores=artifacts.scored.module_scores,
             findings=artifacts.scored.findings,
+            suppressed_findings=artifacts.scored.suppressed_findings,
             pattern_catalog=pattern_catalog,
             total_files=len(files),
             total_functions=total_funcs,

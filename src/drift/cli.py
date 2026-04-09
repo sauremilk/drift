@@ -135,6 +135,8 @@ def _configure_logging(verbose: bool = False) -> None:
 class SuggestingGroup(click.Group):
     """Click Group that adds did-you-mean hints for unknown subcommands."""
 
+    _CORE_COMMANDS = ("analyze", "fix-plan", "check")
+
     def get_command(self, ctx: click.Context, cmd_name: str) -> click.Command | None:
         command = super().get_command(ctx, cmd_name)
         if command is not None:
@@ -148,12 +150,55 @@ class SuggestingGroup(click.Group):
             )
         return None
 
+    def format_commands(self, ctx: click.Context, formatter: click.HelpFormatter) -> None:
+        """Render curated command sections for faster onboarding."""
+        commands: list[tuple[str, click.Command]] = []
+        for subcommand in self.list_commands(ctx):
+            cmd = self.get_command(ctx, subcommand)
+            if cmd is None or cmd.hidden:
+                continue
+            commands.append((subcommand, cmd))
+
+        if not commands:
+            return
+
+        limit = formatter.width - 6 - max(len(name) for name, _ in commands)
+        command_map = {name: cmd for name, cmd in commands}
+
+        core_rows = [
+            (name, command_map[name].get_short_help_str(limit))
+            for name in self._CORE_COMMANDS
+            if name in command_map
+        ]
+
+        advanced_rows = [
+            (name, cmd.get_short_help_str(limit))
+            for name, cmd in commands
+            if name not in self._CORE_COMMANDS
+        ]
+
+        if core_rows:
+            with formatter.section("Start Here (80% Path)"):
+                formatter.write_dl(core_rows)
+
+        if advanced_rows:
+            with formatter.section("Advanced Commands"):
+                formatter.write_dl(advanced_rows)
+
 
 @click.group(cls=SuggestingGroup)
 @click.version_option(version=__version__, prog_name="drift")
 @click.option("-v", "--verbose", is_flag=True, default=False, help="Enable debug logging.")
 def main(verbose: bool = False) -> None:
-    """Drift — Detect architectural erosion from AI-generated code."""
+    """Drift — Detect architectural erosion from AI-generated code.
+
+    Guided first run:
+      1) drift analyze --repo .
+      2) drift fix-plan --repo .
+      3) drift check --fail-on none
+
+    Run 'drift start' for a concise onboarding walkthrough.
+    """
     _configure_logging(verbose)
 
 
@@ -172,9 +217,11 @@ from drift.commands.fix_plan import fix_plan
 from drift.commands.init_cmd import init
 from drift.commands.mcp import mcp
 from drift.commands.patterns import patterns
+from drift.commands.precision_cmd import precision
 from drift.commands.scan import scan
 from drift.commands.self_analyze import self_analyze
 from drift.commands.serve import serve
+from drift.commands.start import start
 from drift.commands.timeline import timeline
 from drift.commands.trend import trend
 from drift.commands.validate_cmd import validate
@@ -192,8 +239,10 @@ main.add_command(export_context)
 main.add_command(fix_plan)
 main.add_command(mcp)
 main.add_command(patterns)
+main.add_command(precision)
 main.add_command(scan)
 main.add_command(serve)
+main.add_command(start)
 main.add_command(timeline)
 main.add_command(trend)
 main.add_command(validate)
@@ -223,9 +272,13 @@ def safe_main() -> None:
                     message,
                     exit_code,
                     detail=message,
-                    hint="Run 'drift --help' or 'drift <command> --help' for usage.",
+                    hint=(
+                        "Run 'drift start' for the guided path or "
+                        "'drift --help' / 'drift <command> --help' for usage."
+                    ),
                     suggested_action_override=(
-                        "Run 'drift --help' or 'drift <command> --help' for usage."
+                        "Run 'drift start' for the guided path or "
+                        "'drift --help' / 'drift <command> --help' for usage."
                     ),
                 ),
             )

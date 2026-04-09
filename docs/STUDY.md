@@ -1,5 +1,7 @@
 # STUDY.md — Evaluating Architectural Drift Detection in Real-World Python Projects
 
+> **Baseline update (2026-04-09, v2.7 KPI Roadmap):** First full-model precision/recall baseline on the current 15-signal scoring model (14 scoring-active + TVS at weight 0.0). Ground-truth fixture suite expanded to 110 fixtures covering 16 signal types (was: 105 fixtures, 13 signals). **New coverage:** CCC (Co-Change Coupling) — TP/TN fixtures using injected CommitInfo data; COD (Cohesion Deficit) — boundary TN added (now ≥5 fixtures); ECM (Exception Contract Drift) — TN fixture (TP deferred: requires git-backed integration fixture). **Result:** All 16 evaluated signals at P=1.00 R=1.00 F1=1.00 on ground-truth fixtures; macro-average F1=1.00. Mutation benchmark: 17/17 = 100% recall (10/14 scoring signals covered). CI aggregate F1 gate raised from 0.50 → 0.60. CCC added to per-signal precision gates at 0.50. **Limitations:** Fixture P/R measures in-vitro signal correctness, not real-world precision on diverse codebases. Oracle-based precision (§3) remains at v0.5 baseline. Known gaps: ECM has 0 TP fixtures; CCC/ECM/COD/BAT/NBV missing mutation patterns. Evidence: `benchmark_results/v2.7.0_precision_recall_baseline.json`.
+
 > **Versioning note (2026-04-05):** The package version in this repository is drift v2.5.4. Most quantitative benchmark artifacts referenced in this document were generated with drift v0.5.0 unless a later dated section states otherwise. The current production model exposes 23 configured signals, of which 15 are scoring-active and 8 remain report-only pending broader validation. This file therefore documents a historical evidence baseline and must not be read as a full description of the current live signal model. As of v2.5.0 the `scan` API and CLI command expose a `strategy` parameter (`diverse` / `top-severity`) that controls finding selection.
 
 > **Feature update (2026-04-07, v2.5.4):** AVS `avs_co_change` precision hardening via FTA-driven three-MCS fix (ADR-018): self-analysis avs_co_change findings 20→0 (score 0.522→0.501, total findings 345→330). (1) Same-directory guard suppresses sister-file co-evolution in package directories; root-level pairs preserved. (2) `known_files` built from `filtered_prs` (consistent with import graph) eliminates test-source FPs. (3) Commit-size discount `1/(n-1)` in `build_co_change_pairs` reduces bulk/sweep-commit inflation. Mutation benchmark: AVS recall 100% (2/2), overall 94% (16/17). 5 regression tests added. Evidence: `benchmark_results/v2.5.4_avs_co_change_precision_hardening_feature_evidence.json`.
@@ -48,10 +50,11 @@
 
 ## Executive Summary
 
-### Public Claims Safe To Repeat As Of 2026-03-30
+### Public Claims Safe To Repeat As Of 2026-04-09
 
 - The package version in this repository is drift v2.5.4. The core benchmark corpus summarized below is the v0.5.0 evidence baseline.
 - The v0.5 baseline composite score used 6 scoring signals. The current model exposes 23 configured signals, with 15 scoring-active and 8 report-only pending broader validation; quantitative precision/recall claims in this study apply only to the historical 6-signal model and have not been revalidated for the current live model.
+- **v2.7 ground-truth baseline (2026-04-09):** 110 fixtures across 16 signal types yield P=1.00 R=1.00 F1=1.00 (macro) on the current 15-signal model. This measures in-vitro fixture correctness, not real-world oracle precision. Evidence: `benchmark_results/v2.7.0_precision_recall_baseline.json`.
 - The current study corpus still covers 15 real-world repositories.
 - All analysis is deterministic; no LLM is used in the detector pipeline.
 
@@ -94,7 +97,7 @@ $$S_i = \frac{\sum f_{ij}}{n_i} \cdot \min\!\left(1,\; \frac{\ln(1 + n_i)}{\ln(1
 
 DIA, BEM, TPD, and GCD are included in the analysis output but contribute 0.0 to the composite score. They are Phase 2 signals with known precision limitations (see §3.1 for DIA; see [ADR-007](adr/007-consistency-proxy-signals.md) for BEM/TPD/GCD).
 
-**Current codebase note (v2.5.4):** The live model exposes 23 configured signals, of which 15 are scoring-active and 8 remain report-only pending broader validation. The table above documents the v0.5 baseline only. Precision and recall claims in this study have not been revalidated for the current live model.
+**Current codebase note (v2.7 baseline):** The live model exposes 23 configured signals, of which 14 are scoring-active (TVS weight reduced to 0.0) and 9 remain report-only. Ground-truth fixture evaluation (110 fixtures, 16 signal types) yields P=1.00 / R=1.00 / F1=1.00 macro-average. 10/14 scoring-active signals have mutation coverage (17/17 = 100% recall). The table above documents the v0.5 baseline only. See `benchmark_results/v2.7.0_precision_recall_baseline.json` for the full current-model baseline.
 
 ### 1.2 Repository Selection
 

@@ -765,29 +765,6 @@
     color: var(--md-default-fg-color--light);
     margin-bottom: 1.75rem;
   }
-  .drift-prove-cmd {
-    display: inline-flex;
-    align-items: center;
-    font-family: var(--drift-mono);
-    font-size: 0.84rem;
-    background: var(--drift-dark);
-    color: #c9d1d9;
-    border: 1px solid rgba(0, 150, 136, 0.2);
-    border-radius: 4px;
-    padding: 0.65rem 1.25rem;
-    max-width: 100%;
-    overflow-x: auto;
-    white-space: nowrap;
-    margin-bottom: 0.35rem;
-  }
-  [data-md-color-scheme="default"] .drift-prove-cmd {
-    background: #0d1117;
-  }
-  .drift-prove-hint {
-    font-size: 0.72rem;
-    color: var(--md-default-fg-color--lightest);
-    margin-bottom: 1.5rem;
-  }
   .drift-prove-checks {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
@@ -825,12 +802,10 @@
   @media (max-width: 480px) {
     .drift-prove { padding: 2rem 1.25rem; }
     .drift-prove h2 { font-size: 1.2rem; }
-    .drift-prove-cmd { font-size: 0.74rem; padding: 0.5rem 0.9rem; }
     .drift-prove-check { font-size: 0.78rem; }
   }
   @media (max-width: 360px) {
     .drift-prove { padding: 1.75rem 1rem; }
-    .drift-prove-cmd { font-size: 0.68rem; }
   }
 </style>
 
@@ -902,18 +877,20 @@
 <section class="drift-prove">
   <div class="drift-section-label">prove it yourself</div>
   <h2>Don't trust our benchmarks.<br>Run it on your code.</h2>
-  <p class="drift-prove-desc">No config. No sign-up. Your repo, your results.</p>
+  <p class="drift-prove-desc">Enter a public GitHub repo. Analysis runs in your browser &mdash; nothing leaves this page.</p>
 
-  <div class="drift-prove-cmd"><span class="drift-dollar">$</span> uvx drift-analyzer analyze --repo . --format json --compact &gt; drift-results.json</div>
-  <p class="drift-prove-hint">zero-install · runs locally · nothing uploaded</p>
-
-  <div class="drift-prove-drop" data-max-findings="3" data-results-target="drift-prove-home-results">
-    <span class="drift-prove-drop-icon">&#128462;</span>
-    Drop <strong>drift-results.json</strong> here<br>
-    <button data-prove-paste>paste from clipboard</button> · <label>browse<input type="file" accept=".json" data-prove-file></label>
+  <form class="drift-prove-form" data-max-findings="3" data-results-target="drift-prove-home-results">
+    <div class="drift-prove-url-row">
+      <input type="text" class="drift-prove-url" placeholder="https://github.com/owner/repo" required>
+      <button type="submit" class="drift-prove-btn">Analyze</button>
+    </div>
+  </form>
+  <div class="drift-prove-progress" hidden>
+    <span class="drift-prove-spinner"></span>
+    <span class="drift-prove-status">Preparing&hellip;</span>
   </div>
   <div id="drift-prove-home-results" class="drift-prove-results" hidden></div>
-  <p class="drift-prove-privacy">&#128274; Your data never leaves your browser. This viewer runs entirely client-side.</p>
+  <p class="drift-prove-privacy">&#128274; Code is fetched via GitHub&rsquo;s public API and analyzed in your browser. Nothing is sent to any server.</p>
 
   <div class="drift-prove-checks">
     <div class="drift-prove-check">
@@ -922,7 +899,7 @@
     </div>
     <div class="drift-prove-check">
       <strong>The duplicate you didn't notice</strong>
-      AI agents generate per-file solutions. Look for MDS findings — are those functions really different?
+      AI agents generate per-file solutions. Look for MDS findings &mdash; are those functions really different?
     </div>
     <div class="drift-prove-check">
       <strong>The import that shouldn't be there</strong>
@@ -931,8 +908,8 @@
   </div>
 
   <p class="drift-prove-close">
-    <strong>If drift found something you can confirm — that's the proof.</strong><br>
-    <a href="prove-it/" class="drift-text-link">Full walkthrough with detailed viewer →</a>
+    <strong>If drift found something you can confirm &mdash; that's the proof.</strong><br>
+    <a href="prove-it/" class="drift-text-link">Full walkthrough &rarr;</a>
   </p>
 </section>
 

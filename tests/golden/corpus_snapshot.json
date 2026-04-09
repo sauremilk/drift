@@ -14,7 +14,8 @@
     "findings_deduplicated": 64,
     "findings_total": 64,
     "fix_first_count": 10,
-    "high_count": 47
+    "high_count": 47,
+    "suppressed_total": 0
   },
   "context_tagged_count": 0,
   "drift_score": 0.373,
@@ -80,6 +81,9 @@
       "signal": "mutant_duplicate",
       "signal_abbrev": "MDS",
       "start_line": 4,
+      "status": "active",
+      "status_reason": null,
+      "status_set_by": null,
       "symbol": null,
       "title": "Exact duplicates (2×): process_order"
     },
@@ -128,6 +132,9 @@
       "signal": "mutant_duplicate",
       "signal_abbrev": "MDS",
       "start_line": 12,
+      "status": "active",
+      "status_reason": null,
+      "status_set_by": null,
       "symbol": null,
       "title": "Exact duplicates (2×): validate_input"
     },
@@ -166,6 +173,9 @@
       "signal": "mutant_duplicate",
       "signal_abbrev": "MDS",
       "start_line": 8,
+      "status": "active",
+      "status_reason": null,
+      "status_set_by": null,
       "symbol": null,
       "title": "Near-duplicate (100%): connect_postgres ↔ connect_redis"
     },
@@ -204,6 +214,9 @@
       "signal": "mutant_duplicate",
       "signal_abbrev": "MDS",
       "start_line": 8,
+      "status": "active",
+      "status_reason": null,
+      "status_set_by": null,
       "symbol": null,
       "title": "Near-duplicate (100%): connect_postgres ↔ connect_mongodb"
     },
@@ -242,6 +255,9 @@
       "signal": "mutant_duplicate",
       "signal_abbrev": "MDS",
       "start_line": 8,
+      "status": "active",
+      "status_reason": null,
+      "status_set_by": null,
       "symbol": null,
       "title": "Near-duplicate (100%): connect_postgres ↔ connect_elasticsearch"
     },
@@ -280,6 +296,9 @@
       "signal": "mutant_duplicate",
       "signal_abbrev": "MDS",
       "start_line": 8,
+      "status": "active",
+      "status_reason": null,
+      "status_set_by": null,
       "symbol": null,
       "title": "Near-duplicate (100%): connect_postgres ↔ connect_rabbitmq"
     },
@@ -318,6 +337,9 @@
       "signal": "mutant_duplicate",
       "signal_abbrev": "MDS",
       "start_line": 8,
+      "status": "active",
+      "status_reason": null,
+      "status_set_by": null,
       "symbol": null,
       "title": "Near-duplicate (100%): connect_postgres ↔ connect_kafka"
     },
@@ -356,6 +378,9 @@
       "signal": "mutant_duplicate",
       "signal_abbrev": "MDS",
       "start_line": 8,
+      "status": "active",
+      "status_reason": null,
+      "status_set_by": null,
       "symbol": null,
       "title": "Near-duplicate (100%): connect_postgres ↔ connect_memcached"
     },
@@ -394,6 +419,9 @@
       "signal": "mutant_duplicate",
       "signal_abbrev": "MDS",
       "start_line": 8,
+      "status": "active",
+      "status_reason": null,
+      "status_set_by": null,
       "symbol": null,
       "title": "Near-duplicate (100%): connect_postgres ↔ connect_dynamodb"
     },
@@ -432,6 +460,9 @@
       "signal": "mutant_duplicate",
       "signal_abbrev": "MDS",
       "start_line": 17,
+      "status": "active",
+      "status_reason": null,
+      "status_set_by": null,
       "symbol": null,
       "title": "Near-duplicate (100%): connect_redis ↔ connect_mongodb"
     },
@@ -470,6 +501,9 @@
       "signal": "mutant_duplicate",
       "signal_abbrev": "MDS",
       "start_line": 17,
+      "status": "active",
+      "status_reason": null,
+      "status_set_by": null,
       "symbol": null,
       "title": "Near-duplicate (100%): connect_redis ↔ connect_elasticsearch"
     },
@@ -508,6 +542,9 @@
       "signal": "mutant_duplicate",
       "signal_abbrev": "MDS",
       "start_line": 17,
+      "status": "active",
+      "status_reason": null,
+      "status_set_by": null,
       "symbol": null,
       "title": "Near-duplicate (100%): connect_redis ↔ connect_rabbitmq"
     },
@@ -546,6 +583,9 @@
       "signal": "mutant_duplicate",
       "signal_abbrev": "MDS",
       "start_line": 17,
+      "status": "active",
+      "status_reason": null,
+      "status_set_by": null,
       "symbol": null,
       "title": "Near-duplicate (100%): connect_redis ↔ connect_kafka"
     },
@@ -584,6 +624,9 @@
       "signal": "mutant_duplicate",
       "signal_abbrev": "MDS",
       "start_line": 17,
+      "status": "active",
+      "status_reason": null,
+      "status_set_by": null,
       "symbol": null,
       "title": "Near-duplicate (100%): connect_redis ↔ connect_memcached"
     },
@@ -622,6 +665,9 @@
       "signal": "mutant_duplicate",
       "signal_abbrev": "MDS",
       "start_line": 17,
+      "status": "active",
+      "status_reason": null,
+      "status_set_by": null,
       "symbol": null,
       "title": "Near-duplicate (100%): connect_redis ↔ connect_dynamodb"
     },
@@ -660,6 +706,9 @@
       "signal": "mutant_duplicate",
       "signal_abbrev": "MDS",
       "start_line": 26,
+      "status": "active",
+      "status_reason": null,
+      "status_set_by": null,
       "symbol": null,
       "title": "Near-duplicate (100%): connect_mongodb ↔ connect_elasticsearch"
     },
@@ -698,6 +747,9 @@
       "signal": "mutant_duplicate",
       "signal_abbrev": "MDS",
       "start_line": 26,
+      "status": "active",
+      "status_reason": null,
+      "status_set_by": null,
       "symbol": null,
       "title": "Near-duplicate (100%): connect_mongodb ↔ connect_rabbitmq"
     },
@@ -736,6 +788,9 @@
       "signal": "mutant_duplicate",
       "signal_abbrev": "MDS",
       "start_line": 26,
+      "status": "active",
+      "status_reason": null,
+      "status_set_by": null,
       "symbol": null,
       "title": "Near-duplicate (100%): connect_mongodb ↔ connect_kafka"
     },
@@ -774,6 +829,9 @@
       "signal": "mutant_duplicate",
       "signal_abbrev": "MDS",
       "start_line": 26,
+      "status": "active",
+      "status_reason": null,
+      "status_set_by": null,
       "symbol": null,
       "title": "Near-duplicate (100%): connect_mongodb ↔ connect_memcached"
     },
@@ -812,6 +870,9 @@
       "signal": "mutant_duplicate",
       "signal_abbrev": "MDS",
       "start_line": 26,
+      "status": "active",
+      "status_reason": null,
+      "status_set_by": null,
       "symbol": null,
       "title": "Near-duplicate (100%): connect_mongodb ↔ connect_dynamodb"
     },
@@ -850,6 +911,9 @@
       "signal": "mutant_duplicate",
       "signal_abbrev": "MDS",
       "start_line": 35,
+      "status": "active",
+      "status_reason": null,
+      "status_set_by": null,
       "symbol": null,
       "title": "Near-duplicate (100%): connect_elasticsearch ↔ connect_rabbitmq"
     },
@@ -888,6 +952,9 @@
       "signal": "mutant_duplicate",
       "signal_abbrev": "MDS",
       "start_line": 35,
+      "status": "active",
+      "status_reason": null,
+      "status_set_by": null,
       "symbol": null,
       "title": "Near-duplicate (100%): connect_elasticsearch ↔ connect_kafka"
     },
@@ -926,6 +993,9 @@
       "signal": "mutant_duplicate",
       "signal_abbrev": "MDS",
       "start_line": 35,
+      "status": "active",
+      "status_reason": null,
+      "status_set_by": null,
       "symbol": null,
       "title": "Near-duplicate (100%): connect_elasticsearch ↔ connect_memcached"
     },
@@ -964,6 +1034,9 @@
       "signal": "mutant_duplicate",
       "signal_abbrev": "MDS",
       "start_line": 35,
+      "status": "active",
+      "status_reason": null,
+      "status_set_by": null,
       "symbol": null,
       "title": "Near-duplicate (100%): connect_elasticsearch ↔ connect_dynamodb"
     },
@@ -1002,6 +1075,9 @@
       "signal": "mutant_duplicate",
       "signal_abbrev": "MDS",
       "start_line": 44,
+      "status": "active",
+      "status_reason": null,
+      "status_set_by": null,
       "symbol": null,
       "title": "Near-duplicate (100%): connect_rabbitmq ↔ connect_kafka"
     },
@@ -1040,6 +1116,9 @@
       "signal": "mutant_duplicate",
       "signal_abbrev": "MDS",
       "start_line": 44,
+      "status": "active",
+      "status_reason": null,
+      "status_set_by": null,
       "symbol": null,
       "title": "Near-duplicate (100%): connect_rabbitmq ↔ connect_memcached"
     },
@@ -1078,6 +1157,9 @@
       "signal": "mutant_duplicate",
       "signal_abbrev": "MDS",
       "start_line": 44,
+      "status": "active",
+      "status_reason": null,
+      "status_set_by": null,
       "symbol": null,
       "title": "Near-duplicate (100%): connect_rabbitmq ↔ connect_dynamodb"
     },
@@ -1116,6 +1198,9 @@
       "signal": "mutant_duplicate",
       "signal_abbrev": "MDS",
       "start_line": 53,
+      "status": "active",
+      "status_reason": null,
+      "status_set_by": null,
       "symbol": null,
       "title": "Near-duplicate (100%): connect_kafka ↔ connect_memcached"
     },
@@ -1154,6 +1239,9 @@
       "signal": "mutant_duplicate",
       "signal_abbrev": "MDS",
       "start_line": 53,
+      "status": "active",
+      "status_reason": null,
+      "status_set_by": null,
       "symbol": null,
       "title": "Near-duplicate (100%): connect_kafka ↔ connect_dynamodb"
     },
@@ -1192,6 +1280,9 @@
       "signal": "mutant_duplicate",
       "signal_abbrev": "MDS",
       "start_line": 62,
+      "status": "active",
+      "status_reason": null,
+      "status_set_by": null,
       "symbol": null,
       "title": "Near-duplicate (100%): connect_memcached ↔ connect_dynamodb"
     },
@@ -1230,6 +1321,9 @@
       "signal": "mutant_duplicate",
       "signal_abbrev": "MDS",
       "start_line": 4,
+      "status": "active",
+      "status_reason": null,
+      "status_set_by": null,
       "symbol": null,
       "title": "Near-duplicate (100%): fetch_user_data ↔ get_customer_info"
     },
@@ -1273,6 +1367,9 @@
       "signal": "pattern_fragmentation",
       "signal_abbrev": "PFS",
       "start_line": 1,
+      "status": "active",
+      "status_reason": null,
+      "status_set_by": null,
       "symbol": null,
       "title": "return_pattern: 2 variants in src/myapp/models/"
     },
@@ -1310,6 +1407,9 @@
       "signal": "explainability_deficit",
       "signal_abbrev": "EDS",
       "start_line": 4,
+      "status": "active",
+      "status_reason": null,
+      "status_set_by": null,
       "symbol": null,
       "title": "Unexplained complexity: transform_dataset"
     },
@@ -1347,6 +1447,9 @@
       "signal": "explainability_deficit",
       "signal_abbrev": "EDS",
       "start_line": 4,
+      "status": "active",
+      "status_reason": null,
+      "status_set_by": null,
       "symbol": null,
       "title": "Unexplained complexity: calculate_pricing"
     },
@@ -1384,6 +1487,9 @@
       "signal": "architecture_violation",
       "signal_abbrev": "AVS",
       "start_line": 3,
+      "status": "active",
+      "status_reason": null,
+      "status_set_by": null,
       "symbol": null,
       "title": "Upward layer import: enriched.py → auth.py"
     },
@@ -1421,6 +1527,9 @@
       "signal": "architecture_violation",
       "signal_abbrev": "AVS",
       "start_line": 4,
+      "status": "active",
+      "status_reason": null,
+      "status_set_by": null,
       "symbol": null,
       "title": "Upward layer import: enriched.py → orders.py"
     },
@@ -1458,6 +1567,9 @@
       "signal": "explainability_deficit",
       "signal_abbrev": "EDS",
       "start_line": 4,
+      "status": "active",
+      "status_reason": null,
+      "status_set_by": null,
       "symbol": null,
       "title": "Unexplained complexity: process_registration"
     },
@@ -1487,6 +1599,9 @@
       "signal": "guard_clause_deficit",
       "signal_abbrev": "GCD",
       "start_line": 1,
+      "status": "active",
+      "status_reason": null,
+      "status_set_by": null,
       "symbol": null,
       "title": "Guard clause deficit in src/myapp/processors/"
     },
@@ -1517,6 +1632,9 @@
       "signal": "naming_contract_violation",
       "signal_abbrev": "NBV",
       "start_line": 38,
+      "status": "active",
+      "status_reason": null,
+      "status_set_by": null,
       "symbol": null,
       "title": "Naming contract violation: Inventory.check_stock()"
     },
@@ -1547,6 +1665,9 @@
       "signal": "naming_contract_violation",
       "signal_abbrev": "NBV",
       "start_line": 4,
+      "status": "active",
+      "status_reason": null,
+      "status_set_by": null,
       "symbol": null,
       "title": "Naming contract violation: validate_user_profile()"
     },
@@ -1577,6 +1698,9 @@
       "signal": "naming_contract_violation",
       "signal_abbrev": "NBV",
       "start_line": 11,
+      "status": "active",
+      "status_reason": null,
+      "status_set_by": null,
       "symbol": null,
       "title": "Naming contract violation: ensure_database_connection()"
     },
@@ -1607,6 +1731,9 @@
       "signal": "test_polarity_deficit",
       "signal_abbrev": "TPD",
       "start_line": 1,
+      "status": "active",
+      "status_reason": null,
+      "status_set_by": null,
       "symbol": null,
       "title": "Happy-path-only test suite in tests/"
     },
@@ -1635,6 +1762,9 @@
       "signal": "guard_clause_deficit",
       "signal_abbrev": "GCD",
       "start_line": 4,
+      "status": "active",
+      "status_reason": null,
+      "status_set_by": null,
       "symbol": null,
       "title": "Deep nesting in transform_dataset()"
     },
@@ -1663,6 +1793,9 @@
       "signal": "guard_clause_deficit",
       "signal_abbrev": "GCD",
       "start_line": 4,
+      "status": "active",
+      "status_reason": null,
+      "status_set_by": null,
       "symbol": null,
       "title": "Deep nesting in process_registration()"
     },
@@ -1691,6 +1824,9 @@
       "signal": "guard_clause_deficit",
       "signal_abbrev": "GCD",
       "start_line": 4,
+      "status": "active",
+      "status_reason": null,
+      "status_set_by": null,
       "symbol": null,
       "title": "Deep nesting in calculate_pricing()"
     },
@@ -1718,6 +1854,9 @@
       "signal": "doc_impl_drift",
       "signal_abbrev": "DIA",
       "start_line": 1,
+      "status": "active",
+      "status_reason": null,
+      "status_set_by": null,
       "symbol": null,
       "title": "README references missing directory: connectors/"
     },
@@ -1745,6 +1884,9 @@
       "signal": "doc_impl_drift",
       "signal_abbrev": "DIA",
       "start_line": 1,
+      "status": "active",
+      "status_reason": null,
+      "status_set_by": null,
       "symbol": null,
       "title": "README references missing directory: handlers/"
     },
@@ -1772,6 +1914,9 @@
       "signal": "doc_impl_drift",
       "signal_abbrev": "DIA",
       "start_line": 1,
+      "status": "active",
+      "status_reason": null,
+      "status_set_by": null,
       "symbol": null,
       "title": "README references missing directory: middleware/"
     },
@@ -1799,6 +1944,9 @@
       "signal": "doc_impl_drift",
       "signal_abbrev": "DIA",
       "start_line": 1,
+      "status": "active",
+      "status_reason": null,
+      "status_set_by": null,
       "symbol": null,
       "title": "README references missing directory: models/"
     },
@@ -1826,6 +1974,9 @@
       "signal": "doc_impl_drift",
       "signal_abbrev": "DIA",
       "start_line": 1,
+      "status": "active",
+      "status_reason": null,
+      "status_set_by": null,
       "symbol": null,
       "title": "README references missing directory: utils/"
     },
@@ -1853,6 +2004,9 @@
       "signal": "doc_impl_drift",
       "signal_abbrev": "DIA",
       "start_line": 1,
+      "status": "active",
+      "status_reason": null,
+      "status_set_by": null,
       "symbol": null,
       "title": "README references missing directory: views/"
     },
@@ -1882,6 +2036,9 @@
       "signal": "cognitive_complexity",
       "signal_abbrev": "CXS",
       "start_line": 4,
+      "status": "active",
+      "status_reason": null,
+      "status_set_by": null,
       "symbol": null,
       "title": "High cognitive complexity in calculate_pricing()"
     },
@@ -1911,6 +2068,9 @@
       "signal": "cognitive_complexity",
       "signal_abbrev": "CXS",
       "start_line": 4,
+      "status": "active",
+      "status_reason": null,
+      "status_set_by": null,
       "symbol": null,
       "title": "High cognitive complexity in transform_dataset()"
     },
@@ -1940,6 +2100,9 @@
       "signal": "cognitive_complexity",
       "signal_abbrev": "CXS",
       "start_line": 4,
+      "status": "active",
+      "status_reason": null,
+      "status_set_by": null,
       "symbol": null,
       "title": "High cognitive complexity in process_registration()"
     },
@@ -2011,6 +2174,9 @@
       "signal": "dead_code_accumulation",
       "signal_abbrev": "DCA",
       "start_line": 8,
+      "status": "active",
+      "status_reason": null,
+      "status_set_by": null,
       "symbol": null,
       "title": "8 potentially unused exports in db.py"
     },
@@ -2052,6 +2218,9 @@
       "signal": "dead_code_accumulation",
       "signal_abbrev": "DCA",
       "start_line": 4,
+      "status": "active",
+      "status_reason": null,
+      "status_set_by": null,
       "symbol": null,
       "title": "2 potentially unused exports in orders.py"
     },
@@ -2093,6 +2262,9 @@
       "signal": "dead_code_accumulation",
       "signal_abbrev": "DCA",
       "start_line": 4,
+      "status": "active",
+      "status_reason": null,
+      "status_set_by": null,
       "symbol": null,
       "title": "2 potentially unused exports in payments.py"
     },
@@ -2169,6 +2341,9 @@
       "signal": "dead_code_accumulation",
       "signal_abbrev": "DCA",
       "start_line": 7,
+      "status": "active",
+      "status_reason": null,
+      "status_set_by": null,
       "symbol": null,
       "title": "9 potentially unused exports in core.py"
     },
@@ -2210,6 +2385,9 @@
       "signal": "dead_code_accumulation",
       "signal_abbrev": "DCA",
       "start_line": 10,
+      "status": "active",
+      "status_reason": null,
+      "status_set_by": null,
       "symbol": null,
       "title": "2 potentially unused exports in enriched.py"
     },
@@ -2256,6 +2434,9 @@
       "signal": "dead_code_accumulation",
       "signal_abbrev": "DCA",
       "start_line": 8,
+      "status": "active",
+      "status_reason": null,
+      "status_set_by": null,
       "symbol": null,
       "title": "3 potentially unused exports in outlier_module.py"
     },
@@ -2297,6 +2478,9 @@
       "signal": "dead_code_accumulation",
       "signal_abbrev": "DCA",
       "start_line": 4,
+      "status": "active",
+      "status_reason": null,
+      "status_set_by": null,
       "symbol": null,
       "title": "2 potentially unused exports in service_a.py"
     },
@@ -2338,6 +2522,9 @@
       "signal": "dead_code_accumulation",
       "signal_abbrev": "DCA",
       "start_line": 4,
+      "status": "active",
+      "status_reason": null,
+      "status_set_by": null,
       "symbol": null,
       "title": "2 potentially unused exports in service_b.py"
     },
@@ -2379,6 +2566,9 @@
       "signal": "dead_code_accumulation",
       "signal_abbrev": "DCA",
       "start_line": 4,
+      "status": "active",
+      "status_reason": null,
+      "status_set_by": null,
       "symbol": null,
       "title": "2 potentially unused exports in formatting.py"
     },
@@ -2420,6 +2610,9 @@
       "signal": "dead_code_accumulation",
       "signal_abbrev": "DCA",
       "start_line": 4,
+      "status": "active",
+      "status_reason": null,
+      "status_set_by": null,
       "symbol": null,
       "title": "2 potentially unused exports in naming.py"
     }
@@ -2438,6 +2631,7 @@
       "signal": "mutant_duplicate",
       "signal_abbrev": "MDS",
       "start_line": 4,
+      "status": "active",
       "title": "Exact duplicates (2×): process_order"
     },
     {
@@ -2453,6 +2647,7 @@
       "signal": "mutant_duplicate",
       "signal_abbrev": "MDS",
       "start_line": 12,
+      "status": "active",
       "title": "Exact duplicates (2×): validate_input"
     },
     {
@@ -2468,6 +2663,7 @@
       "signal": "mutant_duplicate",
       "signal_abbrev": "MDS",
       "start_line": 8,
+      "status": "active",
       "title": "Near-duplicate (100%): connect_postgres ↔ connect_redis"
     },
     {
@@ -2483,6 +2679,7 @@
       "signal": "mutant_duplicate",
       "signal_abbrev": "MDS",
       "start_line": 8,
+      "status": "active",
       "title": "Near-duplicate (100%): connect_postgres ↔ connect_mongodb"
     },
     {
@@ -2498,6 +2695,7 @@
       "signal": "mutant_duplicate",
       "signal_abbrev": "MDS",
       "start_line": 8,
+      "status": "active",
       "title": "Near-duplicate (100%): connect_postgres ↔ connect_elasticsearch"
     },
     {
@@ -2513,6 +2711,7 @@
       "signal": "mutant_duplicate",
       "signal_abbrev": "MDS",
       "start_line": 8,
+      "status": "active",
       "title": "Near-duplicate (100%): connect_postgres ↔ connect_rabbitmq"
     },
     {
@@ -2528,6 +2727,7 @@
       "signal": "mutant_duplicate",
       "signal_abbrev": "MDS",
       "start_line": 8,
+      "status": "active",
       "title": "Near-duplicate (100%): connect_postgres ↔ connect_kafka"
     },
     {
@@ -2543,6 +2743,7 @@
       "signal": "mutant_duplicate",
       "signal_abbrev": "MDS",
       "start_line": 8,
+      "status": "active",
       "title": "Near-duplicate (100%): connect_postgres ↔ connect_memcached"
     },
     {
@@ -2558,6 +2759,7 @@
       "signal": "mutant_duplicate",
       "signal_abbrev": "MDS",
       "start_line": 8,
+      "status": "active",
       "title": "Near-duplicate (100%): connect_postgres ↔ connect_dynamodb"
     },
     {
@@ -2573,6 +2775,7 @@
       "signal": "mutant_duplicate",
       "signal_abbrev": "MDS",
       "start_line": 17,
+      "status": "active",
       "title": "Near-duplicate (100%): connect_redis ↔ connect_mongodb"
     },
     {
@@ -2588,6 +2791,7 @@
       "signal": "mutant_duplicate",
       "signal_abbrev": "MDS",
       "start_line": 17,
+      "status": "active",
       "title": "Near-duplicate (100%): connect_redis ↔ connect_elasticsearch"
     },
     {
@@ -2603,6 +2807,7 @@
       "signal": "mutant_duplicate",
       "signal_abbrev": "MDS",
       "start_line": 17,
+      "status": "active",
       "title": "Near-duplicate (100%): connect_redis ↔ connect_rabbitmq"
     },
     {
@@ -2618,6 +2823,7 @@
       "signal": "mutant_duplicate",
       "signal_abbrev": "MDS",
       "start_line": 17,
+      "status": "active",
       "title": "Near-duplicate (100%): connect_redis ↔ connect_kafka"
     },
     {
@@ -2633,6 +2839,7 @@
       "signal": "mutant_duplicate",
       "signal_abbrev": "MDS",
       "start_line": 17,
+      "status": "active",
       "title": "Near-duplicate (100%): connect_redis ↔ connect_memcached"
     },
     {
@@ -2648,6 +2855,7 @@
       "signal": "mutant_duplicate",
       "signal_abbrev": "MDS",
       "start_line": 17,
+      "status": "active",
       "title": "Near-duplicate (100%): connect_redis ↔ connect_dynamodb"
     },
     {
@@ -2663,6 +2871,7 @@
       "signal": "mutant_duplicate",
       "signal_abbrev": "MDS",
       "start_line": 26,
+      "status": "active",
       "title": "Near-duplicate (100%): connect_mongodb ↔ connect_elasticsearch"
     },
     {
@@ -2678,6 +2887,7 @@
       "signal": "mutant_duplicate",
       "signal_abbrev": "MDS",
       "start_line": 26,
+      "status": "active",
       "title": "Near-duplicate (100%): connect_mongodb ↔ connect_rabbitmq"
     },
     {
@@ -2693,6 +2903,7 @@
       "signal": "mutant_duplicate",
       "signal_abbrev": "MDS",
       "start_line": 26,
+      "status": "active",
       "title": "Near-duplicate (100%): connect_mongodb ↔ connect_kafka"
     },
     {
@@ -2708,6 +2919,7 @@
       "signal": "mutant_duplicate",
       "signal_abbrev": "MDS",
       "start_line": 26,
+      "status": "active",
       "title": "Near-duplicate (100%): connect_mongodb ↔ connect_memcached"
     },
     {
@@ -2723,6 +2935,7 @@
       "signal": "mutant_duplicate",
       "signal_abbrev": "MDS",
       "start_line": 26,
+      "status": "active",
       "title": "Near-duplicate (100%): connect_mongodb ↔ connect_dynamodb"
     },
     {
@@ -2738,6 +2951,7 @@
       "signal": "mutant_duplicate",
       "signal_abbrev": "MDS",
       "start_line": 35,
+      "status": "active",
       "title": "Near-duplicate (100%): connect_elasticsearch ↔ connect_rabbitmq"
     },
     {
@@ -2753,6 +2967,7 @@
       "signal": "mutant_duplicate",
       "signal_abbrev": "MDS",
       "start_line": 35,
+      "status": "active",
       "title": "Near-duplicate (100%): connect_elasticsearch ↔ connect_kafka"
     },
     {
@@ -2768,6 +2983,7 @@
       "signal": "mutant_duplicate",
       "signal_abbrev": "MDS",
       "start_line": 35,
+      "status": "active",
       "title": "Near-duplicate (100%): connect_elasticsearch ↔ connect_memcached"
     },
     {
@@ -2783,6 +2999,7 @@
       "signal": "mutant_duplicate",
       "signal_abbrev": "MDS",
       "start_line": 35,
+      "status": "active",
       "title": "Near-duplicate (100%): connect_elasticsearch ↔ connect_dynamodb"
     },
     {
@@ -2798,6 +3015,7 @@
       "signal": "mutant_duplicate",
       "signal_abbrev": "MDS",
       "start_line": 44,
+      "status": "active",
       "title": "Near-duplicate (100%): connect_rabbitmq ↔ connect_kafka"
     },
     {
@@ -2813,6 +3031,7 @@
       "signal": "mutant_duplicate",
       "signal_abbrev": "MDS",
       "start_line": 44,
+      "status": "active",
       "title": "Near-duplicate (100%): connect_rabbitmq ↔ connect_memcached"
     },
     {
@@ -2828,6 +3047,7 @@
       "signal": "mutant_duplicate",
       "signal_abbrev": "MDS",
       "start_line": 44,
+      "status": "active",
       "title": "Near-duplicate (100%): connect_rabbitmq ↔ connect_dynamodb"
     },
     {
@@ -2843,6 +3063,7 @@
       "signal": "mutant_duplicate",
       "signal_abbrev": "MDS",
       "start_line": 53,
+      "status": "active",
       "title": "Near-duplicate (100%): connect_kafka ↔ connect_memcached"
     },
     {
@@ -2858,6 +3079,7 @@
       "signal": "mutant_duplicate",
       "signal_abbrev": "MDS",
       "start_line": 53,
+      "status": "active",
       "title": "Near-duplicate (100%): connect_kafka ↔ connect_dynamodb"
     },
     {
@@ -2873,6 +3095,7 @@
       "signal": "mutant_duplicate",
       "signal_abbrev": "MDS",
       "start_line": 62,
+      "status": "active",
       "title": "Near-duplicate (100%): connect_memcached ↔ connect_dynamodb"
     },
     {
@@ -2888,6 +3111,7 @@
       "signal": "mutant_duplicate",
       "signal_abbrev": "MDS",
       "start_line": 4,
+      "status": "active",
       "title": "Near-duplicate (100%): fetch_user_data ↔ get_customer_info"
     },
     {
@@ -2903,6 +3127,7 @@
       "signal": "pattern_fragmentation",
       "signal_abbrev": "PFS",
       "start_line": 1,
+      "status": "active",
       "title": "return_pattern: 2 variants in src/myapp/models/"
     },
     {
@@ -2918,6 +3143,7 @@
       "signal": "explainability_deficit",
       "signal_abbrev": "EDS",
       "start_line": 4,
+      "status": "active",
       "title": "Unexplained complexity: transform_dataset"
     },
     {
@@ -2933,6 +3159,7 @@
       "signal": "explainability_deficit",
       "signal_abbrev": "EDS",
       "start_line": 4,
+      "status": "active",
       "title": "Unexplained complexity: calculate_pricing"
     },
     {
@@ -2948,6 +3175,7 @@
       "signal": "architecture_violation",
       "signal_abbrev": "AVS",
       "start_line": 3,
+      "status": "active",
       "title": "Upward layer import: enriched.py → auth.py"
     },
     {
@@ -2963,6 +3191,7 @@
       "signal": "architecture_violation",
       "signal_abbrev": "AVS",
       "start_line": 4,
+      "status": "active",
       "title": "Upward layer import: enriched.py → orders.py"
     },
     {
@@ -2978,6 +3207,7 @@
       "signal": "explainability_deficit",
       "signal_abbrev": "EDS",
       "start_line": 4,
+      "status": "active",
       "title": "Unexplained complexity: process_registration"
     },
     {
@@ -2993,6 +3223,7 @@
       "signal": "guard_clause_deficit",
       "signal_abbrev": "GCD",
       "start_line": 1,
+      "status": "active",
       "title": "Guard clause deficit in src/myapp/processors/"
     },
     {
@@ -3008,6 +3239,7 @@
       "signal": "naming_contract_violation",
       "signal_abbrev": "NBV",
       "start_line": 38,
+      "status": "active",
       "title": "Naming contract violation: Inventory.check_stock()"
     },
     {
@@ -3023,6 +3255,7 @@
       "signal": "naming_contract_violation",
       "signal_abbrev": "NBV",
       "start_line": 4,
+      "status": "active",
       "title": "Naming contract violation: validate_user_profile()"
     },
     {
@@ -3038,6 +3271,7 @@
       "signal": "naming_contract_violation",
       "signal_abbrev": "NBV",
       "start_line": 11,
+      "status": "active",
       "title": "Naming contract violation: ensure_database_connection()"
     },
     {
@@ -3053,6 +3287,7 @@
       "signal": "test_polarity_deficit",
       "signal_abbrev": "TPD",
       "start_line": 1,
+      "status": "active",
       "title": "Happy-path-only test suite in tests/"
     },
     {
@@ -3068,6 +3303,7 @@
       "signal": "guard_clause_deficit",
       "signal_abbrev": "GCD",
       "start_line": 4,
+      "status": "active",
       "title": "Deep nesting in transform_dataset()"
     },
     {
@@ -3083,6 +3319,7 @@
       "signal": "guard_clause_deficit",
       "signal_abbrev": "GCD",
       "start_line": 4,
+      "status": "active",
       "title": "Deep nesting in process_registration()"
     },
     {
@@ -3098,6 +3335,7 @@
       "signal": "guard_clause_deficit",
       "signal_abbrev": "GCD",
       "start_line": 4,
+      "status": "active",
       "title": "Deep nesting in calculate_pricing()"
     },
     {
@@ -3113,6 +3351,7 @@
       "signal": "doc_impl_drift",
       "signal_abbrev": "DIA",
       "start_line": 1,
+      "status": "active",
       "title": "README references missing directory: connectors/"
     },
     {
@@ -3128,6 +3367,7 @@
       "signal": "doc_impl_drift",
       "signal_abbrev": "DIA",
       "start_line": 1,
+      "status": "active",
       "title": "README references missing directory: handlers/"
     },
     {
@@ -3143,6 +3383,7 @@
       "signal": "doc_impl_drift",
       "signal_abbrev": "DIA",
       "start_line": 1,
+      "status": "active",
       "title": "README references missing directory: middleware/"
     },
     {
@@ -3158,6 +3399,7 @@
       "signal": "doc_impl_drift",
       "signal_abbrev": "DIA",
       "start_line": 1,
+      "status": "active",
       "title": "README references missing directory: models/"
     },
     {
@@ -3173,6 +3415,7 @@
       "signal": "doc_impl_drift",
       "signal_abbrev": "DIA",
       "start_line": 1,
+      "status": "active",
       "title": "README references missing directory: utils/"
     },
     {
@@ -3188,6 +3431,7 @@
       "signal": "doc_impl_drift",
       "signal_abbrev": "DIA",
       "start_line": 1,
+      "status": "active",
       "title": "README references missing directory: views/"
     },
     {
@@ -3203,6 +3447,7 @@
       "signal": "cognitive_complexity",
       "signal_abbrev": "CXS",
       "start_line": 4,
+      "status": "active",
       "title": "High cognitive complexity in calculate_pricing()"
     },
     {
@@ -3218,6 +3463,7 @@
       "signal": "cognitive_complexity",
       "signal_abbrev": "CXS",
       "start_line": 4,
+      "status": "active",
       "title": "High cognitive complexity in transform_dataset()"
     },
     {
@@ -3233,6 +3479,7 @@
       "signal": "cognitive_complexity",
       "signal_abbrev": "CXS",
       "start_line": 4,
+      "status": "active",
       "title": "High cognitive complexity in process_registration()"
     },
     {
@@ -3248,6 +3495,7 @@
       "signal": "dead_code_accumulation",
       "signal_abbrev": "DCA",
       "start_line": 8,
+      "status": "active",
       "title": "8 potentially unused exports in db.py"
     },
     {
@@ -3263,6 +3511,7 @@
       "signal": "dead_code_accumulation",
       "signal_abbrev": "DCA",
       "start_line": 4,
+      "status": "active",
       "title": "2 potentially unused exports in orders.py"
     },
     {
@@ -3278,6 +3527,7 @@
       "signal": "dead_code_accumulation",
       "signal_abbrev": "DCA",
       "start_line": 4,
+      "status": "active",
       "title": "2 potentially unused exports in payments.py"
     },
     {
@@ -3293,6 +3543,7 @@
       "signal": "dead_code_accumulation",
       "signal_abbrev": "DCA",
       "start_line": 7,
+      "status": "active",
       "title": "9 potentially unused exports in core.py"
     },
     {
@@ -3308,6 +3559,7 @@
       "signal": "dead_code_accumulation",
       "signal_abbrev": "DCA",
       "start_line": 10,
+      "status": "active",
       "title": "2 potentially unused exports in enriched.py"
     },
     {
@@ -3323,6 +3575,7 @@
       "signal": "dead_code_accumulation",
       "signal_abbrev": "DCA",
       "start_line": 8,
+      "status": "active",
       "title": "3 potentially unused exports in outlier_module.py"
     },
     {
@@ -3338,6 +3591,7 @@
       "signal": "dead_code_accumulation",
       "signal_abbrev": "DCA",
       "start_line": 4,
+      "status": "active",
       "title": "2 potentially unused exports in service_a.py"
     },
     {
@@ -3353,6 +3607,7 @@
       "signal": "dead_code_accumulation",
       "signal_abbrev": "DCA",
       "start_line": 4,
+      "status": "active",
       "title": "2 potentially unused exports in service_b.py"
     },
     {
@@ -3368,6 +3623,7 @@
       "signal": "dead_code_accumulation",
       "signal_abbrev": "DCA",
       "start_line": 4,
+      "status": "active",
       "title": "2 potentially unused exports in formatting.py"
     },
     {
@@ -3383,9 +3639,11 @@
       "signal": "dead_code_accumulation",
       "signal_abbrev": "DCA",
       "start_line": 4,
+      "status": "active",
       "title": "2 potentially unused exports in naming.py"
     }
   ],
+  "findings_suppressed": [],
   "fix_first": [
     {
       "expected_benefit": "high",
@@ -3962,7 +4220,7 @@
       "source_signal": "mutant_duplicate"
     }
   ],
-  "schema_version": "1.0",
+  "schema_version": "1.1",
   "severity": "low",
   "signal_abbrev_map": {
     "AVS": "architecture_violation",

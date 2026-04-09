@@ -200,6 +200,59 @@ Signals must be:
 - **LLM-free** — the core pipeline uses only AST analysis and statistics
 - **Fast** — target < 500ms per 1 000 functions
 
+## Adding ground-truth fixtures
+
+Every signal must have ground-truth fixtures in `tests/fixtures/ground_truth.py`.
+These fixtures drive automated precision/recall measurement via `drift precision`.
+
+### Fixture kinds
+
+| Kind | Purpose | `should_detect` |
+|------|---------|-----------------|
+| `POSITIVE` | Clear true-positive — signal must fire | `True` |
+| `NEGATIVE` | Clear true-negative — signal must not fire | `False` |
+| `BOUNDARY` | Near detection threshold — tests edge behavior | either |
+| `CONFOUNDER` | Looks like a TP but isn't — tests false-positive suppression | `False` |
+
+### Minimum coverage per signal
+
+| Kind | Required |
+|------|----------|
+| Positive (TP) | ≥ 2 |
+| Negative (TN) | ≥ 2 |
+| Boundary | ≥ 1 |
+| Confounder | ≥ 1 |
+
+No signal should ship without at least one TN fixture to prevent FP regressions.
+
+### Workflow
+
+1. Define a `GroundTruthFixture` in the signal's section of `ground_truth.py`
+2. Add it to the `ALL_FIXTURES` list (or the `ALL_FIXTURES.extend(...)` block)
+3. Run `drift precision --signal YOUR_SIGNAL` to verify detection
+4. Run `pytest tests/test_precision_recall.py -k your_fixture_name` to validate
+
+### Using `FileHistoryOverride`
+
+Signals that depend on git history (TVS, SMS) need explicit history data.
+Use `file_history_overrides` on the fixture:
+
+```python
+GroundTruthFixture(
+    name="tvs_example",
+    files={"app/hot.py": "def f(): pass"},
+    expected=[...],
+    file_history_overrides={
+        "app/hot.py": FileHistoryOverride(
+            total_commits=80,
+            change_frequency_30d=25.0,
+        ),
+    },
+)
+```
+
+Fields not set in the override use sensible defaults (see `precision.py:run_fixture`).
+
 ## Code conventions
 
 - Python 3.11+, type annotations everywhere

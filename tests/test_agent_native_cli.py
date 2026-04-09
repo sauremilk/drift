@@ -34,6 +34,22 @@ def test_fix_plan_help() -> None:
     assert "--progress" in result.output
 
 
+def test_start_help() -> None:
+    runner = CliRunner()
+    result = runner.invoke(main, ["start", "--help"])
+    assert result.exit_code == 0
+    assert "recommended first-use journey: analyze -> fix-plan -> check" in result.output
+
+
+def test_start_output_contains_three_command_journey() -> None:
+    runner = CliRunner()
+    result = runner.invoke(main, ["start"])
+    assert result.exit_code == 0
+    assert "drift analyze --repo ." in result.output
+    assert "drift fix-plan --repo . --max-tasks 5" in result.output
+    assert "drift check --fail-on none" in result.output
+
+
 def test_validate_outputs_json(tmp_path: Path) -> None:
     runner = CliRunner()
     result = runner.invoke(main, ["validate", "--repo", str(tmp_path)])

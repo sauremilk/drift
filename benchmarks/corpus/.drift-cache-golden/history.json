@@ -1,18 +1,18 @@
 [
   {
-    "timestamp": "2026-04-08T09:15:24.768305+00:00",
+    "timestamp": "2026-04-09T09:27:30.251368+00:00",
     "drift_score": 0.373,
     "signal_scores": {
-      "pattern_fragmentation": 0.1445,
       "architecture_violation": 0.1145,
-      "mutant_duplicate": 0.8532,
-      "explainability_deficit": 0.4673,
-      "doc_impl_drift": 0.2435,
-      "test_polarity_deficit": 0.1734,
-      "guard_clause_deficit": 0.4698,
-      "naming_contract_violation": 0.3469,
       "cognitive_complexity": 0.5357,
-      "dead_code_accumulation": 0.8146
+      "dead_code_accumulation": 0.8146,
+      "doc_impl_drift": 0.2435,
+      "explainability_deficit": 0.4673,
+      "guard_clause_deficit": 0.4698,
+      "mutant_duplicate": 0.8532,
+      "naming_contract_violation": 0.3469,
+      "pattern_fragmentation": 0.1445,
+      "test_polarity_deficit": 0.1734
     },
     "total_files": 26,
     "total_findings": 64,

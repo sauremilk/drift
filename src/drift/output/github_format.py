@@ -28,7 +28,7 @@ def findings_to_github_annotations(analysis: RepoAnalysis) -> str:
         file = f.file_path.as_posix() if f.file_path else "unknown"
         line = f.start_line or 1
         end_line = f.end_line or line
-        title = f"{f.signal_type.value}: {f.title}"
+        title = f"{f.signal_type}: {f.title}"
         msg = f.description
         if f.fix:
             msg += f" Fix: {f.fix}"

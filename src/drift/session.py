@@ -172,6 +172,12 @@ class DriftSession:
     tool_calls: int = 0
     metrics: OrchestrationMetrics = field(default_factory=OrchestrationMetrics)
 
+    # -- Timing instrumentation (WP-4) --------------------------------------
+    _last_call_begin: float | None = field(default=None, init=False, repr=False)
+    _last_touch_ts: float | None = field(default=None, init=False, repr=False)
+    _total_tool_ms: float = field(default=0.0, init=False, repr=False)
+    _total_inter_call_ms: float = field(default=0.0, init=False, repr=False)
+
     # -- queries -------------------------------------------------------------
 
     def is_valid(self) -> bool:
@@ -180,8 +186,24 @@ class DriftSession:
 
     def touch(self) -> None:
         """Update last activity timestamp and increment tool call counter."""
-        self.last_activity = time.time()
+        now = time.time()
+        # Record tool execution time: now (end) - begin_call time
+        if self._last_call_begin is not None:
+            tool_ms = (now - self._last_call_begin) * 1000
+            self._total_tool_ms += tool_ms
+        self._last_call_begin = None
+        self._last_touch_ts = now
+        self.last_activity = now
         self.tool_calls += 1
+
+    def begin_call(self) -> None:
+        """Record the start of a tool call for timing decomposition."""
+        now = time.time()
+        # Gap between end of previous call and start of this call = agent time
+        if self._last_touch_ts is not None:
+            gap_ms = (now - self._last_touch_ts) * 1000
+            self._total_inter_call_ms += gap_ms
+        self._last_call_begin = now
 
     def tasks_remaining(self) -> int:
         """Return the number of pending tasks (excluding completed and failed)."""
@@ -259,6 +281,19 @@ class DriftSession:
             result["tasks_completed"] = len(self.completed_task_ids)
             result["tasks_remaining"] = self.tasks_remaining()
         result["orchestration_metrics"] = self.metrics.to_dict()
+        # Timing decomposition (WP-4)
+        if self._total_tool_ms > 0 or self._total_inter_call_ms > 0:
+            total_wall_ms = (now - self.created_at) * 1000
+            result["timing"] = {
+                "total_tool_ms": round(self._total_tool_ms, 1),
+                "total_inter_call_ms": round(self._total_inter_call_ms, 1),
+                "total_wall_ms": round(total_wall_ms, 1),
+                "tool_pct": (
+                    round(self._total_tool_ms / total_wall_ms * 100, 1)
+                    if total_wall_ms > 0
+                    else 0.0
+                ),
+            }
         return result
 
     # -- Task-queue leasing --------------------------------------------------

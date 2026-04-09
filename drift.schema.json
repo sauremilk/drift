@@ -8,7 +8,7 @@
           "additionalProperties": {
             "type": "string"
           },
-          "description": "Keyword \u2192 path mapping for scope resolution. Example: {payment: src/billing/, auth: src/auth/}",
+          "description": "Keyword → path mapping for scope resolution. Example: {payment: src/billing/, auth: src/auth/}",
           "title": "Scope Aliases",
           "type": "object"
         }
@@ -198,6 +198,22 @@
       "title": "PathOverride",
       "type": "object"
     },
+    "PluginConfig": {
+      "additionalProperties": false,
+      "description": "Configuration for Drift plugins.\n\nPlugins are discovered via Python entry_points (see drift.plugins).\nThis configuration section allows selectively disabling specific plugins.\n\nExample drift.yaml::\n\n    plugins:\n      disabled:\n        - my_broken_plugin",
+      "properties": {
+        "disabled": {
+          "description": "List of plugin entry-point names to skip at discovery time.",
+          "items": {
+            "type": "string"
+          },
+          "title": "Disabled",
+          "type": "array"
+        }
+      },
+      "title": "PluginConfig",
+      "type": "object"
+    },
     "PolicyConfig": {
       "additionalProperties": false,
       "description": "Policy configuration for enforcement rules.",
@@ -245,8 +261,8 @@
       "type": "object"
     },
     "SignalWeights": {
-      "additionalProperties": false,
-      "description": "Weights for each detection signal in composite scoring.\n\nWeights are normalised internally \u2014 they don't need to sum to 1.0,\nbut a warning is emitted if they deviate significantly.\n\nSignals can be run in report-only mode by assigning weight 0.0.\nThis keeps detection visible while removing score impact until\nprecision/recall is sufficiently validated.",
+      "additionalProperties": true,
+      "description": "Weights for each detection signal in composite scoring.\n\nWeights are normalised internally — they don't need to sum to 1.0,\nbut a warning is emitted if they deviate significantly.\n\nSignals can be run in report-only mode by assigning weight 0.0.\nThis keeps detection visible while removing score impact until\nprecision/recall is sufficiently validated.",
       "properties": {
         "pattern_fragmentation": {
           "default": 0.16,
@@ -632,6 +648,9 @@
     },
     "brief": {
       "$ref": "#/$defs/BriefConfig"
+    },
+    "plugins": {
+      "$ref": "#/$defs/PluginConfig"
     }
   },
   "title": "DriftConfig",

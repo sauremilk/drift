@@ -148,7 +148,7 @@ def _direction_for_delta(delta: float) -> Literal["improving", "stable", "degrad
 def _finding_key(f: Finding) -> str:
     """Deterministic identity key for a finding (signal + file + location)."""
     fp = f.file_path.as_posix() if f.file_path else ""
-    return f"{f.signal_type.value}::{fp}::{f.start_line}::{f.title}"
+    return f"{f.signal_type}::{fp}::{f.start_line}::{f.title}"
 
 
 # ---------------------------------------------------------------------------
@@ -473,7 +473,7 @@ class IncrementalSignalRunner:
 
         carried_findings: list[Finding] = []
         for f in self._baseline_findings:
-            if f.signal_type.value in file_local_st_values:
+            if f.signal_type in file_local_st_values:
                 # File-local findings for unchanged files — keep them
                 fp = f.file_path.as_posix() if f.file_path else ""
                 if fp not in changed_files:
@@ -484,9 +484,9 @@ class IncrementalSignalRunner:
 
         cross_file_signal_names: list[str] = sorted(
             {
-                f.signal_type.value
+                f.signal_type
                 for f in carried_findings
-                if f.signal_type.value not in file_local_st_values
+                if f.signal_type not in file_local_st_values
             },
         )
 

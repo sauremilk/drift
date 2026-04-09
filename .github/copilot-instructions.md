@@ -193,6 +193,27 @@ python scripts/release_automation.py --full-release
 
 ---
 
+## MCP Fix-Loop — Optimierter Workflow für Finding-Behebung
+
+Wenn ein Agent Drift-Findings über MCP-Tools beheben soll, **muss** dieser Ablauf verwendet werden:
+
+1. **`drift_session_start(path=".", autopilot=true)`** — ein Aufruf statt vier (bündelt validate + brief + scan + fix_plan)
+2. **`drift_nudge(session_id=..., changed_files=...)`** — nach jeder Dateiänderung als schneller Inner-Loop (~0.2 s statt ~3 s für scan)
+3. **`drift_fix_plan(session_id=..., max_tasks=1)`** — nächsten Task holen (immer `max_tasks=1`)
+4. **`drift_diff(session_id=..., uncommitted=true)`** — nur einmal am Ende als Abschluss-Verifikation
+
+**Verboten im Fix-Loop:**
+- `drift_scan` nach jeder Dateiänderung (zu teuer, nutze `nudge`)
+- `session_start` ohne `autopilot=true` (verschenkt 4 Roundtrips)
+- `fix_plan` ohne `max_tasks=1` (unnötig große Responses)
+- Tool-Aufrufe ohne `session_id` (verliert Kontext)
+
+**Immer:** `agent_instruction` und `next_tool_call` aus Responses befolgen.
+
+Vollständiger Workflow: `.github/prompts/drift-fix-loop.prompt.md`
+
+---
+
 ## Schlussbestimmung
 
 Diese Policy ist verbindlich (Policy §18).

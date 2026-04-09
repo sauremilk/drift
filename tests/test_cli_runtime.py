@@ -134,6 +134,20 @@ def test_runtime_unknown_subcommand_adds_did_you_mean_hint() -> None:
     assert "did you mean 'analyze'" in result.output
 
 
+def test_root_help_shows_curated_sections_and_core_path() -> None:
+    runner = CliRunner()
+    result = runner.invoke(cli.main, ["--help"])
+
+    assert result.exit_code == 0
+    output = result.output
+    assert "Start Here (80% Path):" in output
+    assert "Advanced Commands:" in output
+    assert "analyze" in output
+    assert "fix-plan" in output
+    assert "check" in output
+    assert output.index("Start Here (80% Path):") < output.index("Advanced Commands:")
+
+
 def test_safe_main_drift_error_emits_json_payload_when_enabled(
     monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:

@@ -25,7 +25,8 @@ from drift.models import (
 
 # Generated from SignalType enum — adding a new SignalType auto-registers
 # its weight key without a manual dict entry.
-_SIGNAL_WEIGHT_KEYS: dict[SignalType, str] = {sig: sig.value for sig in SignalType}
+# For plugin signals (str, not SignalType), the key IS the value.
+_SIGNAL_WEIGHT_KEYS: dict[str, str] = {str(sig): str(sig) for sig in SignalType}
 
 
 # Re-export for backwards compat; canonical implementation in models.py
@@ -53,8 +54,8 @@ def assign_impact_scores(findings: list[Finding], weights: SignalWeights) -> Non
     total_weight = sum(weight_dict.values())
 
     for f in findings:
-        key = _SIGNAL_WEIGHT_KEYS.get(f.signal_type)
-        w = weight_dict.get(key, 0.1) if key else 0.1
+        key = _SIGNAL_WEIGHT_KEYS.get(f.signal_type, f.signal_type)
+        w = weight_dict.get(key, 0.1)
         breadth = 1 + math.log(1 + len(f.related_files))
         f.impact = round(w * f.score * breadth, 4)
 
@@ -112,14 +113,14 @@ def apply_path_overrides(
             continue
 
         # Exclude signal?
-        if f.signal_type.value in override.exclude_signals:
+        if f.signal_type in override.exclude_signals:
             continue
 
         # Re-weight if override provides custom weights
         if override.weights is not None:
             wd = override.weights.as_dict()
-            key = _SIGNAL_WEIGHT_KEYS.get(f.signal_type)
-            w = wd.get(key, 0.1) if key else 0.1
+            key = _SIGNAL_WEIGHT_KEYS.get(f.signal_type, f.signal_type)
+            w = wd.get(key, 0.1)
             breadth = 1 + math.log(1 + len(f.related_files))
             f.impact = round(w * f.score * breadth, 4)
 
@@ -133,7 +134,7 @@ def compute_signal_scores(
     *,
     dampening_k: int = _DAMPENING_K,
     min_findings: int = 0,
-) -> dict[SignalType, float]:
+) -> dict[str, float]:
     """Compute per-signal aggregate scores with count-dampened aggregation.
 
     Complexity: O(n) where n = total findings.
@@ -150,12 +151,14 @@ def compute_signal_scores(
         dampening_k: count-dampening constant (default 10; small repos use 20).
         min_findings: per-signal minimum finding count to score (below → 0).
     """
-    by_signal: dict[SignalType, list[float]] = defaultdict(list)
+    by_signal: dict[str, list[float]] = defaultdict(list)
     for f in findings:
         by_signal[f.signal_type].append(f.score)
 
-    scores: dict[SignalType, float] = {}
-    for sig in SignalType:
+    scores: dict[str, float] = {}
+    # Iterate all known core signals plus any plugin signals in findings
+    all_signal_ids = {str(sig) for sig in SignalType} | set(by_signal.keys())
+    for sig in sorted(all_signal_ids):
         values = by_signal.get(sig, [])
         if values and len(values) >= max(1, min_findings):
             mean = sum(values) / len(values)
@@ -166,7 +169,7 @@ def compute_signal_scores(
 
 
 def composite_score(
-    signal_scores: dict[SignalType, float],
+    signal_scores: dict[str, float],
     weights: SignalWeights,
 ) -> float:
     """Compute weighted composite drift score."""
@@ -175,9 +178,7 @@ def composite_score(
     weighted_sum = 0.0
 
     for sig, score in signal_scores.items():
-        key = _SIGNAL_WEIGHT_KEYS.get(sig)
-        if key is None:
-            continue
+        key = _SIGNAL_WEIGHT_KEYS.get(sig, sig)
         w = weight_dict.get(key, 0.0)
         weighted_sum += score * w
         total_weight += w
@@ -303,9 +304,8 @@ def auto_calibrate_weights(
     # Count findings per weight key
     counts: dict[str, int] = defaultdict(int)
     for f in findings:
-        key = _SIGNAL_WEIGHT_KEYS.get(f.signal_type)
-        if key:
-            counts[key] += 1
+        key = _SIGNAL_WEIGHT_KEYS.get(f.signal_type, f.signal_type)
+        counts[key] += 1
 
     total = sum(counts.values())
     if total == 0:

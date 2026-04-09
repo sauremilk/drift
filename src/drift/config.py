@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import importlib.util
 from pathlib import Path
 from typing import Any
 
@@ -152,7 +153,7 @@ class SignalWeights(BaseModel):
     precision/recall is sufficiently validated.
     """
 
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="allow")  # Plugin signals add custom weight fields
 
     # Core signals (ablation-validated)
     pattern_fragmentation: float = 0.16
@@ -271,14 +272,34 @@ class BriefConfig(BaseModel):
 def _default_includes() -> list[str]:
     """Return default include patterns, auto-extending for TypeScript when available."""
     patterns = ["**/*.py"]
-    try:
-        from drift.ingestion.ts_parser import tree_sitter_available
-
-        if tree_sitter_available():
-            patterns.extend(["**/*.ts", "**/*.tsx", "**/*.js", "**/*.jsx"])
-    except ImportError:
-        pass
+    # Avoid depending on ingestion module internals while still enabling
+    # TS/JS includes when optional parser dependencies are installed.
+    has_tree_sitter = importlib.util.find_spec("tree_sitter") is not None
+    has_ts_grammar = importlib.util.find_spec("tree_sitter_typescript") is not None
+    if has_tree_sitter and has_ts_grammar:
+        patterns.extend(["**/*.ts", "**/*.tsx", "**/*.js", "**/*.jsx"])
     return patterns
+
+
+class PluginConfig(BaseModel):
+    """Configuration for Drift plugins.
+
+    Plugins are discovered via Python entry_points (see drift.plugins).
+    This configuration section allows selectively disabling specific plugins.
+
+    Example drift.yaml::
+
+        plugins:
+          disabled:
+            - my_broken_plugin
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    disabled: list[str] = Field(
+        default_factory=list,
+        description="List of plugin entry-point names to skip at discovery time.",
+    )
 
 
 class DriftConfig(BaseModel):
@@ -328,6 +349,7 @@ class DriftConfig(BaseModel):
     deferred: list[DeferredArea] = Field(default_factory=list)
     finding_context: FindingContextPolicy = Field(default_factory=FindingContextPolicy)
     brief: BriefConfig = Field(default_factory=BriefConfig)
+    plugins: PluginConfig = Field(default_factory=PluginConfig)
 
     @staticmethod
     def _find_config_file(repo_path: Path) -> Path | None:
@@ -458,31 +480,43 @@ def build_config_json_schema() -> dict[str, Any]:
 # Signal abbreviation map & CLI filter helpers
 # ---------------------------------------------------------------------------
 
-SIGNAL_ABBREV: dict[str, str] = {
-    "PFS": "pattern_fragmentation",
-    "AVS": "architecture_violation",
-    "MDS": "mutant_duplicate",
-    "EDS": "explainability_deficit",
-    "TVS": "temporal_volatility",
-    "SMS": "system_misalignment",
-    "DIA": "doc_impl_drift",
-    "BEM": "broad_exception_monoculture",
-    "TPD": "test_polarity_deficit",
-    "GCD": "guard_clause_deficit",
-    "COD": "cohesion_deficit",
-    "NBV": "naming_contract_violation",
-    "BAT": "bypass_accumulation",
-    "ECM": "exception_contract_drift",
-    "CCC": "co_change_coupling",
-    "TSA": "ts_architecture",
-    "CXS": "cognitive_complexity",
-    "FOE": "fan_out_explosion",
-    "CIR": "circular_import",
-    "DCA": "dead_code_accumulation",
-    "MAZ": "missing_authorization",
-    "ISD": "insecure_default",
-    "HSC": "hardcoded_secret",
-}
+def _build_signal_abbrev() -> dict[str, str]:
+    """Build abbrev→signal_id map from the central registry, with static fallback."""
+    try:
+        from drift.signal_registry import get_abbrev_map
+
+        return get_abbrev_map()
+    except ImportError:
+        pass
+    # Static fallback for environments where signals haven't been imported yet
+    return {
+        "PFS": "pattern_fragmentation",
+        "AVS": "architecture_violation",
+        "MDS": "mutant_duplicate",
+        "EDS": "explainability_deficit",
+        "TVS": "temporal_volatility",
+        "SMS": "system_misalignment",
+        "DIA": "doc_impl_drift",
+        "BEM": "broad_exception_monoculture",
+        "TPD": "test_polarity_deficit",
+        "GCD": "guard_clause_deficit",
+        "COD": "cohesion_deficit",
+        "NBV": "naming_contract_violation",
+        "BAT": "bypass_accumulation",
+        "ECM": "exception_contract_drift",
+        "CCC": "co_change_coupling",
+        "TSA": "ts_architecture",
+        "CXS": "cognitive_complexity",
+        "FOE": "fan_out_explosion",
+        "CIR": "circular_import",
+        "DCA": "dead_code_accumulation",
+        "MAZ": "missing_authorization",
+        "ISD": "insecure_default",
+        "HSC": "hardcoded_secret",
+    }
+
+
+SIGNAL_ABBREV: dict[str, str] = _build_signal_abbrev()
 
 
 def resolve_signal_names(raw: str) -> list[str]:

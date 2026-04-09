@@ -127,6 +127,9 @@ class TestFilterFindings:
         active, suppressed = filter_findings(findings, suppressions)
         assert len(active) == 0
         assert len(suppressed) == 1
+        assert suppressed[0].status.value == "suppressed"
+        assert suppressed[0].status_set_by == "inline_comment"
+        assert suppressed[0].status_reason is not None
 
     def test_non_matching_signal_passes(self) -> None:
         findings = [
@@ -137,6 +140,7 @@ class TestFilterFindings:
         active, suppressed = filter_findings(findings, suppressions)
         assert len(active) == 1
         assert len(suppressed) == 0
+        assert active[0].status.value == "active"
 
     def test_finding_without_file_passes(self) -> None:
         f = _make_finding()

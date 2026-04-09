@@ -273,7 +273,7 @@ class TestFixTextPresence:
         missing_fix = [f for f in medium_plus if not f.fix]
         assert not missing_fix, (
             f"{len(missing_fix)}/{len(medium_plus)} MEDIUM+ findings lack fix text:\n"
-            + "\n".join(f"  [{f.signal_type.value}] {f.title}" for f in missing_fix[:10])
+            + "\n".join(f"  [{f.signal_type}] {f.title}" for f in missing_fix[:10])
         )
 
     def test_self_analysis_fix_coverage(self, self_analysis_findings: list[Finding]) -> None:
@@ -305,7 +305,7 @@ class TestFixTextActionability:
             is_ok, issues = _is_actionable(f.fix)
             if not is_ok:
                 failures.append(
-                    f"  [{f.signal_type.value}] {f.title}\n"
+                    f"  [{f.signal_type}] {f.title}\n"
                     f"    Fix: {f.fix[:100]}\n"
                     f"    Issues: {', '.join(issues)}"
                 )
@@ -344,7 +344,7 @@ class TestFixTextActionability:
                 continue
             sentences = [s.strip() for s in f.fix.split(".") if s.strip()]
             if sentences and all(VAGUE_ONLY.match(s) for s in sentences):
-                vague_fixes.append(f"  [{f.signal_type.value}] Fix: {f.fix}")
+                vague_fixes.append(f"  [{f.signal_type}] Fix: {f.fix}")
 
         assert not vague_fixes, (
             f"{len(vague_fixes)} fix text(s) are purely vague:\n"
@@ -368,7 +368,7 @@ class TestFixTextSpecificity:
             has_specificity = any(p.search(f.fix) for p in SPECIFICITY_PATTERNS)
             if not has_specificity:
                 generic.append(
-                    f"  [{f.signal_type.value}] {f.title}\n"
+                    f"  [{f.signal_type}] {f.title}\n"
                     f"    Fix: {f.fix[:120]}"
                 )
 

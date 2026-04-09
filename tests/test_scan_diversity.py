@@ -85,7 +85,7 @@ class TestDiverseFindings:
             findings,
             key=lambda f: (
                 -f.impact,
-                f.signal_type.value,
+                f.signal_type,
                 f.file_path.as_posix() if f.file_path else "",
                 f.start_line or 0,
             ),
@@ -1232,6 +1232,105 @@ class TestAgentInstruction:
         result = diff(Path("."), uncommitted=True)
         assert "agent_instruction" in result
         assert isinstance(result["agent_instruction"], str)
+
+    def test_diff_agent_hint_new_findings_within_threshold(self, monkeypatch):
+        """WP-1: When accept_change=true but new findings exist (low sev,
+        no delta), agent_instruction warns about new findings."""
+        import drift.analyzer as analyzer_module
+        import drift.api as api_module
+        from drift.config import DriftConfig
+
+        # Low-severity finding that won't trigger blocking_reasons
+        fake_finding = SimpleNamespace(
+            signal_type=SignalType.PATTERN_FRAGMENTATION,
+            severity=Severity.LOW,
+            score=0.3,
+            impact=0.1,
+            title="PFS finding",
+            description="desc",
+            fix="fix",
+            file_path=Path("src/a.py"),
+            start_line=1,
+            end_line=5,
+            symbol="func",
+            related_files=[],
+            rule_id="R1",
+            score_contribution=0.01,
+            metadata={},
+        )
+        analysis = SimpleNamespace(
+            findings=[fake_finding],
+            drift_score=0.0,  # same as previous → delta=0 → no blocking
+            severity=Severity.LOW,
+            total_files=10,
+            total_functions=50,
+            ai_attributed_ratio=0.1,
+            trend=SimpleNamespace(
+                direction="stable",
+                previous_score=0.0,
+                delta=0.0,
+            ),
+            is_degraded=False,
+        )
+        monkeypatch.setattr(
+            DriftConfig, "load",
+            staticmethod(lambda *a, **kw: object()),
+        )
+        monkeypatch.setattr(
+            analyzer_module, "analyze_diff",
+            lambda *a, **kw: analysis,
+        )
+        monkeypatch.setattr(
+            api_module, "_emit_api_telemetry",
+            lambda **kw: None,
+        )
+
+        from drift.api import diff
+
+        result = diff(Path("."), uncommitted=True)
+        hint = result["agent_instruction"]
+        assert "New findings exist" in hint
+        assert "threshold" in hint.lower()
+
+    def test_diff_agent_hint_no_findings_safe(self, monkeypatch):
+        """WP-1: When accept_change=true AND no new findings, hint says safe."""
+        import drift.analyzer as analyzer_module
+        import drift.api as api_module
+        from drift.config import DriftConfig
+
+        analysis = SimpleNamespace(
+            findings=[],
+            drift_score=0.0,
+            severity=Severity.LOW,
+            total_files=10,
+            total_functions=50,
+            ai_attributed_ratio=0.1,
+            trend=SimpleNamespace(
+                direction="stable",
+                previous_score=0.0,
+                delta=0.0,
+            ),
+            is_degraded=False,
+        )
+        monkeypatch.setattr(
+            DriftConfig, "load",
+            staticmethod(lambda *a, **kw: object()),
+        )
+        monkeypatch.setattr(
+            analyzer_module, "analyze_diff",
+            lambda *a, **kw: analysis,
+        )
+        monkeypatch.setattr(
+            api_module, "_emit_api_telemetry",
+            lambda **kw: None,
+        )
+
+        from drift.api import diff
+
+        result = diff(Path("."), uncommitted=True)
+        hint = result["agent_instruction"]
+        assert "No drift change detected" in hint
+        assert "Safe to proceed" in hint
 
 
 class TestFixPlanFindingIdDiagnostics:

@@ -436,7 +436,7 @@ class ArchitectureViolationSignal(BaseSignal):
         file_path = finding.file_path.as_posix() if finding.file_path else ""
         start_line = str(int(finding.start_line or 0))
         end_line = str(int(finding.end_line or 0))
-        rule_id = finding.rule_id or self.signal_type.value
+        rule_id = finding.rule_id or str(self.signal_type)
         title = (finding.title or "").strip()
 
         # Policy-boundary and inferred-upward checks can report the same

@@ -28,8 +28,10 @@ def valid_config(tmp_path: Path) -> Path:
 
 @pytest.fixture()
 def invalid_config(tmp_path: Path) -> Path:
+    # Use an unknown top-level key rather than an unknown weight key,
+    # because the Plugin API now accepts unknown weight keys as plugin weights.
     cfg = tmp_path / "drift.yaml"
-    cfg.write_text("weights:\n  unknown_signal: 0.5\n", encoding="utf-8")
+    cfg.write_text("totally_invalid_top_level_key: true\n", encoding="utf-8")
     return tmp_path
 
 

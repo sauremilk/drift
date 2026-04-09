@@ -45,9 +45,9 @@ _SIGNAL_PREFIX = {
 
 def _task_id(finding: Finding) -> str:
     """Generate a deterministic, human-readable task ID."""
-    prefix = _SIGNAL_PREFIX.get(finding.signal_type, finding.signal_type.value[:3])
+    prefix = _SIGNAL_PREFIX.get(finding.signal_type, finding.signal_type[:3])
     fp = finding.file_path.as_posix() if finding.file_path else ""
-    blob = f"{finding.signal_type.value}:{fp}:{finding.title}"
+    blob = f"{finding.signal_type}:{fp}:{finding.title}"
     short_hash = hashlib.sha256(blob.encode()).hexdigest()[:10]
     return f"{prefix}-{short_hash}"
 
@@ -56,7 +56,7 @@ def _finding_fingerprint(finding: Finding) -> str:
     """Return a stable key for correlating findings and recommendations."""
     file_path = finding.file_path.as_posix() if finding.file_path else ""
     start_line = finding.start_line if finding.start_line is not None else -1
-    return f"{finding.signal_type.value}:{file_path}:{start_line}:{finding.title}"
+    return f"{finding.signal_type}:{file_path}:{start_line}:{finding.title}"
 
 
 # ---------------------------------------------------------------------------
@@ -731,7 +731,7 @@ def _finding_to_task(
         complexity = "medium"
 
     # Repair maturity from signal matrix
-    maturity_entry = REPAIR_MATURITY.get(finding.signal_type.value, {})
+    maturity_entry = REPAIR_MATURITY.get(finding.signal_type, {})
     maturity = str(maturity_entry.get("maturity", "experimental"))
 
     task = AgentTask(
@@ -844,7 +844,7 @@ def _fix_template_class(task: AgentTask) -> str:
 
     Tasks sharing the same key can be fixed with the same code pattern.
     """
-    signal = task.signal_type.value
+    signal = task.signal_type
 
     # Signals where every finding uses the same fix template
     if signal in _UNIFORM_TEMPLATE_SIGNALS:
@@ -899,7 +899,7 @@ def _inject_batch_metadata(tasks: list[AgentTask]) -> None:
 def _task_to_dict(t: AgentTask) -> dict[str, Any]:
     return {
         "id": t.id,
-        "signal_type": t.signal_type.value,
+        "signal_type": t.signal_type,
         "severity": t.severity.value,
         "priority": t.priority,
         "title": t.title,

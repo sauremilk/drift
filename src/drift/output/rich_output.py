@@ -369,7 +369,7 @@ def render_findings(
             findings,
             key=lambda f: (
                 -f.score,
-                f.signal_type.value,
+                f.signal_type,
                 f.file_path.as_posix() if f.file_path else "",
                 f.start_line or 0,
             ),
@@ -380,7 +380,7 @@ def render_findings(
             findings,
             key=lambda f: (
                 -(f.impact if f.impact > 0 else f.score),
-                f.signal_type.value,
+                f.signal_type,
                 f.file_path.as_posix() if f.file_path else "",
                 f.start_line or 0,
             ),

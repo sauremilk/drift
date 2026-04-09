@@ -399,5 +399,5 @@ class TestExternalRepos:
         if highs:
             print("\n  Top HIGH/CRITICAL findings (manual FP review):")
             for f in sorted(highs, key=lambda x: -x.score)[:5]:
-                print(f"    [{f.signal_type.value}] {f.title}")
+                print(f"    [{f.signal_type}] {f.title}")
                 print(f"      {f.file_path}:{f.start_line} score={f.score:.2f}")

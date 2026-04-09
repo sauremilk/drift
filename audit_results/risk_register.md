@@ -1,5 +1,19 @@
 # Risk Register
 
+## 2026-04-08 - ADR-027: Finding-Status fuer Suppression-Transparenz
+
+- Risk ID: RISK-OUTPUT-2026-04-08-027
+- Component: `src/drift/models.py`, `src/drift/suppression.py`, `src/drift/pipeline.py`, `src/drift/output/json_output.py`
+- Type: Output schema extension + lifecycle transparency (additive, non-breaking)
+- Description: Inline-Suppressions werden nicht mehr nur gezaehlt, sondern als expliziter Finding-Status (`suppressed`) modelliert und separat im JSON ausgegeben (`findings_suppressed`). Ziel ist die Trennung von real behobenen und nur unterdrueckten Findings.
+- Trigger: `drift analyze`/`drift check` JSON-Ausgabe bei vorhandenen `drift:ignore` Kommentaren.
+- Impact: Additiv. Bestehende `findings`-Consumer bleiben funktionsfaehig; neue Felder verbessern Audierbarkeit und reduzieren False-Negative-Wahrnehmung.
+- Mitigation:
+  - Statusfelder sind optional und additive (`schema_version` 1.1)
+  - Primarliste `findings` bleibt unveraendert fuer Rueckwaertskompatibilitaet
+  - Regressionstests fuer Suppression-Markierung und JSON-Serialisierung
+- Residual risk: Niedrig. Consumer, die strikt auf exakte Payload-Groesse optimieren, sehen mehr Felder und sollten ggf. kompaktes Format verwenden.
+
 ## 2026-04-08 - ADR-026: A2A Agent Card and HTTP Serve Endpoint
 
 - Risk ID: RISK-SERVE-2026-04-08-026a

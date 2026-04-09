@@ -6,7 +6,7 @@ import re
 from collections.abc import Mapping
 from pathlib import Path
 
-from drift.models import FileInfo, Finding
+from drift.models import FileInfo, Finding, FindingStatus
 
 # Matches Python-style comments:  # drift:ignore  or  # drift:ignore[AVS,PFS]
 _PY_PATTERN = re.compile(r"#\s*drift:ignore(?:\[([A-Z_,]+)\])?")
@@ -100,13 +100,17 @@ def filter_findings(
             entry = suppressions.get(key)
             if entry is None and key not in suppressions:
                 continue
-            if entry is None or f.signal_type.value in entry:
+            if entry is None or f.signal_type in entry:
                 is_suppressed = True
                 break
 
         if is_suppressed:
+            f.status = FindingStatus.SUPPRESSED
+            f.status_set_by = "inline_comment"
+            f.status_reason = "Suppressed by drift:ignore comment"
             suppressed.append(f)
         else:
+            f.status = FindingStatus.ACTIVE
             active.append(f)
 
     return active, suppressed

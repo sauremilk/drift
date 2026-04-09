@@ -143,6 +143,7 @@ markers = [
     "slow: marks expensive tests excluded by default unless --run-slow or an explicit -m expression is used",
     "contract: SARIF/JSON output schema contract tests",
     "performance: runtime budget and performance regression tests",
+    "ground_truth: ground-truth precision/recall evaluation fixtures",
 ]
 
 [tool.coverage.run]
@@ -254,3 +255,4 @@ exclude = [
     "**/work_artifacts/**",
     "**/hooks/**",
 ]
+

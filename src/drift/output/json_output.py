@@ -15,7 +15,7 @@ from drift.recommendations import generate_recommendation
 
 # JSON schema version — increment on breaking output changes.
 # Major: incompatible field removals/renames.  Minor: additive new fields.
-SCHEMA_VERSION = "1.0"
+SCHEMA_VERSION = "1.1"
 
 
 _ARCHITECTURE_BOUNDARY_SIGNALS = {
@@ -50,7 +50,7 @@ def _finding_dedupe_key(f: Finding) -> tuple[str, str, int, int, str]:
     start_line = int(f.start_line or 0)
     end_line = int(f.end_line or 0)
     title = (f.title or "").strip().lower()
-    rule_id = f.rule_id or f.signal_type.value
+    rule_id = f.rule_id or f.signal_type
     return (rule_id, file_path, start_line, end_line, title)
 
 
@@ -116,7 +116,7 @@ def _fix_first_list(ranked_findings: list[Finding], max_items: int = 10) -> list
             _SEVERITY_RANK[f.severity],
             -float(f.impact),
             -float(f.score_contribution),
-            f.signal_type.value,
+            f.signal_type,
             f.file_path.as_posix() if f.file_path else "",
             int(f.start_line or 0),
         ),
@@ -128,7 +128,7 @@ def _fix_first_list(ranked_findings: list[Finding], max_items: int = 10) -> list
             {
                 "rank": idx,
                 "priority_class": _priority_class(f),
-                "signal": f.signal_type.value,
+                "signal": f.signal_type,
                 "signal_abbrev": signal_abbrev(f.signal_type),
                 "rule_id": f.rule_id,
                 "severity": f.severity.value,
@@ -150,7 +150,7 @@ def _finding_sort_key(f: Finding) -> tuple[float, str, str, int, int]:
     """Stable ordering key for machine-readable finding output."""
     return (
         -float(f.impact),
-        f.signal_type.value,
+        f.signal_type,
         f.file_path.as_posix() if f.file_path else "",
         int(f.start_line or 0),
         int(f.end_line or 0),
@@ -160,7 +160,7 @@ def _finding_sort_key(f: Finding) -> tuple[float, str, str, int, int]:
 def _finding_to_dict(f: Finding, *, impact_rank: int | None = None) -> dict[str, Any]:
     rec = generate_recommendation(f)
     d: dict[str, Any] = {
-        "signal": f.signal_type.value,
+        "signal": f.signal_type,
         "signal_abbrev": signal_abbrev(f.signal_type),
         "rule_id": f.rule_id,
         "severity": f.severity.value,
@@ -179,6 +179,9 @@ def _finding_to_dict(f: Finding, *, impact_rank: int | None = None) -> dict[str,
         "related_files": [rf.as_posix() for rf in f.related_files],
         "ai_attributed": f.ai_attributed,
         "deferred": f.deferred,
+        "status": f.status.value,
+        "status_set_by": f.status_set_by,
+        "status_reason": f.status_reason,
         "metadata": f.metadata,
         "remediation": {
             "title": rec.title,
@@ -195,7 +198,7 @@ def _module_to_dict(m: ModuleScore) -> dict[str, Any]:
         "path": m.path.as_posix(),
         "drift_score": m.drift_score,
         "severity": m.severity.value,
-        "signal_scores": {s.value: v for s, v in m.signal_scores.items()},
+        "signal_scores": {s: v for s, v in m.signal_scores.items()},
         "finding_count": len(m.findings),
         "ai_ratio": m.ai_ratio,
     }
@@ -210,10 +213,11 @@ def _finding_compact_dict(
     """Compact finding shape optimized for agent/CI prioritization."""
     return {
         "rank": rank,
-        "signal": finding.signal_type.value,
+        "signal": finding.signal_type,
         "signal_abbrev": signal_abbrev(finding.signal_type),
         "rule_id": finding.rule_id,
         "severity": finding.severity.value,
+        "status": finding.status.value,
         "finding_context": classify_finding_context(finding, DriftConfig()),
         "impact": finding.impact,
         "score_contribution": finding.score_contribution,
@@ -248,6 +252,7 @@ def analysis_to_json(
     impact_ranks: dict[int, int] = {id(f): rank for rank, f in enumerate(ranked, 1)}
 
     deduped_findings, duplicate_counts = _dedupe_findings(ranked)
+    suppressed_ranked = sorted(analysis.suppressed_findings, key=_finding_sort_key)
     cfg = DriftConfig()
     prioritized_fix_first, excluded_fix_first, context_counts = split_findings_by_context(
         deduped_findings,
@@ -295,6 +300,7 @@ def analysis_to_json(
             "findings_total": len(ranked),
             "findings_deduplicated": len(deduped_findings),
             "duplicate_findings_removed": len(ranked) - len(deduped_findings),
+            "suppressed_total": len(suppressed_ranked),
             "critical_count": sum(1 for f in deduped_findings if f.severity == Severity.CRITICAL),
             "high_count": sum(1 for f in deduped_findings if f.severity == Severity.HIGH),
             "fix_first_count": len(fix_first),
@@ -327,6 +333,10 @@ def analysis_to_json(
             _finding_to_dict(f, impact_rank=impact_ranks.get(id(f)))
             for f in ranked
         ]
+        data["findings_suppressed"] = [
+            _finding_to_dict(f)
+            for f in suppressed_ranked
+        ]
 
     return json.dumps(data, indent=indent, default=str, sort_keys=True)
 
@@ -338,12 +348,12 @@ def findings_to_sarif(analysis: RepoAnalysis) -> str:
 
     rule_ids: dict[str, int] = {}
     for f in sorted(analysis.findings, key=_finding_sort_key):
-        rule_key = f.rule_id or f.signal_type.value
+        rule_key = f.rule_id or f.signal_type
         if rule_key not in rule_ids:
             rule_ids[rule_key] = len(rules)
             rule_obj: dict[str, object] = {
                 "id": rule_key,
-                "shortDescription": {"text": f.signal_type.value},
+                "shortDescription": {"text": f.signal_type},
                 "defaultConfiguration": {
                     "level": "error"
                     if f.severity in (Severity.CRITICAL, Severity.HIGH)

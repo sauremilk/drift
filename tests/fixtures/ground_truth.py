@@ -13,12 +13,13 @@ Fixtures are classified by *kind* using :class:`FixtureKind`:
 
 from __future__ import annotations
 
+import datetime as _dt
 import enum
 import textwrap
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from drift.models import SignalType
+from drift.models import CommitInfo, SignalType
 
 
 class FixtureKind(enum.StrEnum):
@@ -61,6 +62,7 @@ class GroundTruthFixture:
     kind: FixtureKind | None = None
     expected: list[ExpectedFinding] = field(default_factory=list)
     file_history_overrides: dict[str, FileHistoryOverride] = field(default_factory=dict)
+    commits: list[CommitInfo] = field(default_factory=list)
 
     def materialize(self, root: Path) -> Path:
         """Write all files to disk under *root* and return the fixture dir."""
@@ -3993,6 +3995,529 @@ NBV_TN_TRY_COMPARISON_HELPER = GroundTruthFixture(
 )
 
 
+# ── New confounders + boundary/negative fixtures (drift precision infrastructure) ─────
+
+
+NBV_REPOSITORY_PATTERN_TN = GroundTruthFixture(
+    name="nbv_repository_pattern_tn",
+    description="get_user() → Optional[User] in Repository class — naming OK, should NOT fire NBV",
+    kind=FixtureKind.CONFOUNDER,
+    files={
+        "repos/__init__.py": "",
+        "repos/user_repo.py": """\
+            from typing import Optional
+
+            class UserRepository:
+                def get_user(self, user_id: int) -> Optional[dict]:
+                    \"\"\"Fetch a user by ID, return None if not found.\"\"\"
+                    if user_id <= 0:
+                        return None
+                    return {"id": user_id, "name": "Alice"}
+
+                def get_user_by_email(self, email: str) -> Optional[dict]:
+                    if "@" not in email:
+                        return None
+                    return {"email": email, "name": "Bob"}
+        """,
+    },
+    expected=[
+        ExpectedFinding(
+            signal_type=SignalType.NAMING_CONTRACT_VIOLATION,
+            file_path="repos/user_repo.py",
+            should_detect=False,
+            description=(
+                "get_user returns Optional — repository pattern, not a naming violation"
+            ),
+        ),
+    ],
+)
+
+
+TVS_NEW_FILE_TN = GroundTruthFixture(
+    name="tvs_new_file_tn",
+    description="Brand-new file with zero commit history among stable peers → NOT an outlier",
+    kind=FixtureKind.CONFOUNDER,
+    files={
+        "app/__init__.py": "",
+        "app/stable_a.py": """\
+            def func_a():
+                return 1
+        """,
+        "app/stable_b.py": """\
+            def func_b():
+                return 2
+        """,
+        "app/stable_c.py": """\
+            def func_c():
+                return 3
+        """,
+        "app/stable_d.py": """\
+            def func_d():
+                return 4
+        """,
+        "app/brand_new.py": """\
+            def new_func():
+                return "hello"
+        """,
+    },
+    expected=[
+        ExpectedFinding(
+            signal_type=SignalType.TEMPORAL_VOLATILITY,
+            file_path="app/brand_new.py",
+            should_detect=False,
+            description="Brand-new file with 0 commits — not a churn outlier",
+        ),
+    ],
+    file_history_overrides={
+        "app/brand_new.py": FileHistoryOverride(
+            total_commits=0,
+            unique_authors=0,
+            change_frequency_30d=0.0,
+            defect_correlated_commits=0,
+        ),
+    },
+)
+
+
+EDS_PROPERTY_TN = GroundTruthFixture(
+    name="eds_property_tn",
+    description="@property without docstring in a class that has a class docstring → NOT EDS",
+    kind=FixtureKind.CONFOUNDER,
+    files={
+        "domain/__init__.py": "",
+        "domain/account.py": """\
+            class Account:
+                \"\"\"Represents a user account with balance tracking.\"\"\"
+
+                def __init__(self, owner: str, balance: float = 0.0):
+                    self._owner = owner
+                    self._balance = balance
+                    self._transactions: list = []
+
+                @property
+                def owner(self):
+                    return self._owner
+
+                @property
+                def balance(self):
+                    return self._balance
+
+                @property
+                def transaction_count(self):
+                    return len(self._transactions)
+
+                def deposit(self, amount: float) -> None:
+                    \"\"\"Add funds to the account.\"\"\"
+                    if amount <= 0:
+                        raise ValueError("Deposit must be positive")
+                    self._balance += amount
+                    self._transactions.append(("deposit", amount))
+        """,
+    },
+    expected=[
+        ExpectedFinding(
+            signal_type=SignalType.EXPLAINABILITY_DEFICIT,
+            file_path="domain/account.py",
+            should_detect=False,
+            description="@property methods without docstrings — class docstring suffices",
+        ),
+    ],
+)
+
+
+DIA_INLINE_CODE_TN = GroundTruthFixture(
+    name="dia_inline_code_tn",
+    description="README with directory-like paths only inside fenced code blocks → NOT DIA",
+    kind=FixtureKind.CONFOUNDER,
+    files={
+        "README.md": """\
+            # MyProject
+
+            ## Usage
+
+            ```bash
+            curl http://localhost:8000/api/users/
+            curl http://localhost:8000/api/orders/
+            ls migrations/
+            ```
+
+            ## Installation
+
+            Run `pip install myproject` to get started.
+        """,
+        "src/__init__.py": "",
+        "src/app.py": """\
+            def create_app():
+                return {"name": "myproject"}
+        """,
+    },
+    expected=[
+        ExpectedFinding(
+            signal_type=SignalType.DOC_IMPL_DRIFT,
+            file_path="README.md",
+            should_detect=False,
+            description="Directory-like paths inside code blocks — not real dir references",
+        ),
+    ],
+)
+
+
+AVS_TEST_MOCK_TN = GroundTruthFixture(
+    name="avs_test_mock_tn",
+    description="Test file imports from higher layer for mocking → should NOT fire AVS",
+    kind=FixtureKind.CONFOUNDER,
+    files={
+        "api/__init__.py": "",
+        "api/views.py": """\
+            from services.user_service import get_user
+
+            def user_detail(user_id):
+                return get_user(user_id)
+        """,
+        "services/__init__.py": "",
+        "services/user_service.py": """\
+            def get_user(user_id):
+                return {"id": user_id}
+        """,
+        "tests/__init__.py": "",
+        "tests/test_views.py": """\
+            from api.views import user_detail
+            from services.user_service import get_user
+
+            def test_user_detail():
+                result = user_detail(1)
+                assert result["id"] == 1
+        """,
+    },
+    expected=[
+        ExpectedFinding(
+            signal_type=SignalType.ARCHITECTURE_VIOLATION,
+            file_path="tests/test_views.py",
+            should_detect=False,
+            description="Test files importing across layers for mocking — not a violation",
+        ),
+    ],
+)
+
+
+MDS_BOUNDARY_TN = GroundTruthFixture(
+    name="mds_boundary_tn",
+    description="Same control-flow skeleton but different semantics → NOT a duplicate",
+    kind=FixtureKind.BOUNDARY,
+    files={
+        "utils/__init__.py": "",
+        "utils/validator.py": """\
+            def validate_email(value: str) -> bool:
+                if not value:
+                    return False
+                if "@" not in value:
+                    return False
+                parts = value.split("@")
+                if len(parts) != 2:
+                    return False
+                return len(parts[1]) > 2
+
+            def validate_phone(value: str) -> bool:
+                if not value:
+                    return False
+                if not value.startswith("+"):
+                    return False
+                digits = value[1:]
+                if len(digits) < 7:
+                    return False
+                return digits.isdigit()
+        """,
+    },
+    expected=[
+        ExpectedFinding(
+            signal_type=SignalType.MUTANT_DUPLICATE,
+            file_path="utils/validator.py",
+            should_detect=False,
+            description=(
+                "Same if-return-if-return skeleton but email vs phone — "
+                "different semantics, not a mutant duplicate"
+            ),
+        ),
+    ],
+)
+
+
+NBV_BOUNDARY_TN = GroundTruthFixture(
+    name="nbv_boundary_tn",
+    description="validate_* returning False for invalid input — contract met via return",
+    kind=FixtureKind.BOUNDARY,
+    files={
+        "core/__init__.py": "",
+        "core/checks.py": """\
+            def validate_age(age: int) -> bool:
+                \"\"\"Return False if age is out of range.\"\"\"
+                if age < 0:
+                    return False
+                if age > 150:
+                    return False
+                return True
+
+            def validate_name(name: str) -> bool:
+                \"\"\"Return False if name is empty or too long.\"\"\"
+                if not name or not name.strip():
+                    return False
+                if len(name) > 200:
+                    return False
+                return True
+        """,
+    },
+    expected=[
+        ExpectedFinding(
+            signal_type=SignalType.NAMING_CONTRACT_VIOLATION,
+            file_path="core/checks.py",
+            should_detect=False,
+            description="validate_* with return False on invalid input — contract satisfied",
+        ),
+    ],
+)
+
+
+EDS_INIT_MEDIUM_TN = GroundTruthFixture(
+    name="eds_init_medium_tn",
+    description="__init__ with 3-4 params, CC≈4, no docstring → NOT EDS (__init__ suppressed)",
+    kind=FixtureKind.NEGATIVE,
+    files={
+        "services/__init__.py": "",
+        "services/connection.py": """\
+            class ConnectionPool:
+                def __init__(self, host, port, max_connections=10, timeout=30):
+                    self.host = host
+                    self.port = port
+                    self.max_connections = max_connections
+                    self.timeout = timeout
+                    self._pool = []
+                    if max_connections <= 0:
+                        raise ValueError("max_connections must be positive")
+                    if timeout <= 0:
+                        raise ValueError("timeout must be positive")
+                    for _ in range(min(3, max_connections)):
+                        self._pool.append(self._create_conn())
+
+                def _create_conn(self):
+                    return {"host": self.host, "port": self.port}
+        """,
+    },
+    expected=[
+        ExpectedFinding(
+            signal_type=SignalType.EXPLAINABILITY_DEFICIT,
+            file_path="services/connection.py",
+            should_detect=False,
+            description="__init__ with moderate complexity but no docstring — EDS suppressed",
+        ),
+    ],
+)
+
+
+# ── Cohesion Deficit (COD) boundary TN — threshold edge ──
+
+COD_BOUNDARY_TN = GroundTruthFixture(
+    name="cod_boundary_tn",
+    description="File with exactly 4 functions all sharing 'config' domain → cohesive, no fire",
+    kind=FixtureKind.BOUNDARY,
+    files={
+        "settings/__init__.py": "",
+        "settings/config_loader.py": """\
+            def load_config(path: str) -> dict:
+                with open(path) as f:
+                    return eval(f.read())
+
+            def validate_config(config: dict) -> bool:
+                required = {"host", "port", "debug"}
+                return required.issubset(config.keys())
+
+            def merge_config(base: dict, override: dict) -> dict:
+                merged = dict(base)
+                merged.update(override)
+                return merged
+
+            def serialize_config(config: dict) -> str:
+                return str(config)
+        """,
+    },
+    expected=[
+        ExpectedFinding(
+            signal_type=SignalType.COHESION_DEFICIT,
+            file_path="settings/config_loader.py",
+            should_detect=False,
+            description="4 func at min_units threshold, all config-related — cohesive",
+        ),
+    ],
+)
+
+
+# ── Co-Change Coupling (CCC) ─────────────────────────────────────────────
+
+CCC_TRUE_POSITIVE = GroundTruthFixture(
+    name="ccc_tp",
+    description="Two unrelated files that co-change repeatedly without imports → should fire CCC",
+    files={
+        "billing/__init__.py": "",
+        "billing/invoice.py": """\
+            def create_invoice(customer_id: int, amount: float) -> dict:
+                return {"customer": customer_id, "amount": amount}
+
+            def format_invoice(invoice: dict) -> str:
+                return f"Invoice: ${invoice['amount']}"
+        """,
+        "notifications/__init__.py": "",
+        "notifications/email.py": """\
+            def send_email(recipient: str, subject: str, body: str) -> bool:
+                print(f"To: {recipient}, Subject: {subject}")
+                return True
+
+            def format_email_body(template: str, data: dict) -> str:
+                return template.format(**data)
+        """,
+    },
+    commits=[
+        CommitInfo(
+            hash=f"abc{i:04d}",
+            author="dev",
+            email="dev@example.com",
+            timestamp=_dt.datetime(2026, 1, 1 + i, tzinfo=_dt.UTC),
+            message=f"feat: update billing and notifications #{i}",
+            files_changed=["billing/invoice.py", "notifications/email.py"],
+        )
+        for i in range(12)
+    ],
+    expected=[
+        ExpectedFinding(
+            signal_type=SignalType.CO_CHANGE_COUPLING,
+            file_path="billing/invoice.py",
+            should_detect=True,
+            description="Hidden co-change coupling between billing and notifications",
+        ),
+    ],
+)
+
+CCC_TRUE_NEGATIVE = GroundTruthFixture(
+    name="ccc_tn",
+    description="Two files that co-change but have explicit imports → should NOT fire CCC",
+    files={
+        "core/__init__.py": "",
+        "core/models.py": """\
+            class User:
+                def __init__(self, name: str, email: str):
+                    self.name = name
+                    self.email = email
+        """,
+        "core/serializers.py": """\
+            from core.models import User
+
+            def serialize_user(user) -> dict:
+                return {"name": user.name, "email": user.email}
+        """,
+    },
+    commits=[
+        CommitInfo(
+            hash=f"def{i:04d}",
+            author="dev",
+            email="dev@example.com",
+            timestamp=_dt.datetime(2026, 2, 1 + i, tzinfo=_dt.UTC),
+            message=f"fix: update models and serializers #{i}",
+            files_changed=["core/models.py", "core/serializers.py"],
+        )
+        for i in range(12)
+    ],
+    expected=[
+        ExpectedFinding(
+            signal_type=SignalType.CO_CHANGE_COUPLING,
+            file_path="core/models.py",
+            should_detect=False,
+            description="Co-change pair has explicit import dependency — not hidden coupling",
+        ),
+    ],
+)
+
+CCC_CONFOUNDER_TN = GroundTruthFixture(
+    name="ccc_confounder_few_commits_tn",
+    description="Two unrelated files but too few commits → should NOT fire CCC",
+    kind=FixtureKind.CONFOUNDER,
+    files={
+        "a/__init__.py": "",
+        "a/foo.py": """\
+            def foo():
+                return 1
+        """,
+        "b/__init__.py": "",
+        "b/bar.py": """\
+            def bar():
+                return 2
+        """,
+    },
+    commits=[
+        CommitInfo(
+            hash=f"few{i:04d}",
+            author="dev",
+            email="dev@example.com",
+            timestamp=_dt.datetime(2026, 3, 1 + i, tzinfo=_dt.UTC),
+            message=f"chore: minor tweak #{i}",
+            files_changed=["a/foo.py", "b/bar.py"],
+        )
+        for i in range(3)
+    ],
+    expected=[
+        ExpectedFinding(
+            signal_type=SignalType.CO_CHANGE_COUPLING,
+            file_path="a/foo.py",
+            should_detect=False,
+            description="Below minimum history threshold — too few commits to identify coupling",
+        ),
+    ],
+)
+
+
+# ── Exception Contract Drift (ECM) — TN only ─────────────────────────────
+# ECM requires actual git history (git show HEAD~N); only TN fixtures
+# are feasible without a real git repo. TP coverage requires a git-backed
+# integration test (see benchmark_results/ for oracle-based evidence).
+
+ECM_TRUE_NEGATIVE = GroundTruthFixture(
+    name="ecm_tn_stable_contract",
+    description="Stable function with documented exceptions → should NOT fire ECM (no git)",
+    kind=FixtureKind.NEGATIVE,
+    files={
+        "services/__init__.py": "",
+        "services/payment.py": """\
+            class PaymentError(Exception):
+                pass
+
+            class InsufficientFundsError(PaymentError):
+                pass
+
+            def process_payment(amount: float, card_token: str) -> dict:
+                \"\"\"Process a payment.
+
+                Raises:
+                    InsufficientFundsError: If the balance is too low.
+                    PaymentError: For other payment failures.
+                \"\"\"
+                if amount <= 0:
+                    raise PaymentError("Amount must be positive")
+                if not card_token:
+                    raise PaymentError("Card token required")
+                return {"status": "ok", "amount": amount}
+        """,
+    },
+    file_history_overrides={
+        "services/payment.py": FileHistoryOverride(total_commits=20),
+    },
+    expected=[
+        ExpectedFinding(
+            signal_type=SignalType.EXCEPTION_CONTRACT_DRIFT,
+            file_path="services/payment.py",
+            should_detect=False,
+            description="Stable exception contract with documented raises — no git diff available",
+        ),
+    ],
+)
+
+
 # Append NBV + BAT fixtures to ALL_FIXTURES
 ALL_FIXTURES.extend([
     NBV_VALIDATE_TP,
@@ -4046,6 +4571,21 @@ ALL_FIXTURES.extend([
     MAZ_TN_CLI_SERVING_PATH,
     HSC_TN_ML_TOKENIZER_CONSTANTS,
     NBV_TN_TRY_COMPARISON_HELPER,
+    # ── New confounders + boundary/negative fixtures (drift precision) ──
+    NBV_REPOSITORY_PATTERN_TN,
+    TVS_NEW_FILE_TN,
+    EDS_PROPERTY_TN,
+    DIA_INLINE_CODE_TN,
+    AVS_TEST_MOCK_TN,
+    MDS_BOUNDARY_TN,
+    NBV_BOUNDARY_TN,
+    EDS_INIT_MEDIUM_TN,
+    # ── CCC/COD/ECM coverage fixtures (v2.7 baseline) ──
+    COD_BOUNDARY_TN,
+    CCC_TRUE_POSITIVE,
+    CCC_TRUE_NEGATIVE,
+    CCC_CONFOUNDER_TN,
+    ECM_TRUE_NEGATIVE,
 ])
 
 

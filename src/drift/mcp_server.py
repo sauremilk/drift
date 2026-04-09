@@ -26,6 +26,7 @@ from __future__ import annotations
 
 import asyncio
 import contextlib
+import functools
 import inspect
 import io
 import json
@@ -155,22 +156,29 @@ _BASE_INSTRUCTIONS = (
     "batch or before committing)\n"
     "Every response includes an 'agent_instruction' field — follow it.\n\n"
     "FIX-LOOP PROTOCOL (when fixing multiple findings):\n"
-    "0. BASELINE WARM-UP: Call drift_validate, then drift_scan once to "
-    "establish the nudge baseline — this avoids a costly first-nudge "
-    "delay later. Keep the scan result as your session snapshot.\n"
-    "1. SESSION START: Call drift_fix_plan(max_tasks=20) to see full scope. "
-    "Then run 'drift baseline save' to create a checkpoint.\n"
-    "2. BATCH AWARENESS: Tasks with batch_eligible=true share a fix pattern. "
+    "0. SESSION START: Call drift_session_start(path=\".\", autopilot=true) "
+    "— this single call runs validate → brief → scan → fix_plan and "
+    "returns combined results, saving 4 round-trips.\n"
+    "1. TASK LOOP: Take the first task from the fix_plan result. Fix it. "
+    "Call drift_nudge(session_id=sid, changed_files=\"path/to/file.py\") "
+    "for fast feedback (~0.2s). If direction=degrading, revert and retry.\n"
+    "2. NEXT TASK: Call drift_fix_plan(session_id=sid, max_tasks=1) to get "
+    "the next task. Repeat step 1.\n"
+    "3. BATCH AWARENESS: Tasks with batch_eligible=true share a fix pattern. "
     "Apply the fix to ALL affected_files_for_pattern listed, not just the "
     "first. Use drift_nudge between edits for quick direction checks.\n"
-    "3. VERIFICATION: After completing a batch, call "
-    "drift_diff(uncommitted=True, baseline_file='.drift-baseline.json') "
-    "to verify resolution. Check resolved_count_by_rule for batch efficiency.\n"
-    "4. SESSION RESUME: After interruption, call "
-    "drift_diff(baseline_file='.drift-baseline.json') "
-    "to see remaining work without re-scanning.\n"
-    "5. COMPLETED: When drift_diff shows 0 new findings vs baseline, "
-    "session is done.\n\n"
+    "4. VERIFICATION: After all tasks are done, call "
+    "drift_diff(session_id=sid, uncommitted=True) once to verify.\n"
+    "5. COMPLETED: When drift_diff shows 0 new findings, session is done.\n\n"
+    "CRITICAL RULES:\n"
+    "- Always use autopilot=true in session_start (saves 4 round-trips)\n"
+    "- Always pass session_id to every tool call\n"
+    "- In the fix loop, use max_tasks=1 for each subsequent task request. "
+    "For the initial overview, follow the max_tasks value from the scan "
+    "agent_instruction (autopilot handles this automatically).\n"
+    "- Use drift_nudge (not drift_scan) after each file edit\n"
+    "- Use drift_diff only once at the end, not after every edit\n"
+    "- Follow agent_instruction and next_tool_call from every response\n\n"
     "BATCH REPAIR MODE:\n"
     "When fixing drift findings, apply the same fix pattern across "
     "multiple files in one iteration for batch_eligible tasks.\n"
@@ -179,14 +187,12 @@ _BASE_INSTRUCTIONS = (
     "Verify the batch with a single drift_diff call, not per-file. "
     "If any file in the batch fails verification, revert that file only.\n\n"
     "SESSION WORKFLOW (recommended for multi-step tasks):\n"
-    "1. drift_session_start(path=\"/repo\") → session_id\n"
-    "2. drift_scan(session_id=sid) → baseline warm-up (cached in session)\n"
-    "3. drift_brief(session_id=sid, task=\"...\") → guardrails cached\n"
-    "4. drift_fix_plan(session_id=sid) → tasks queued in session\n"
-    "5. [batch fix loop with drift_nudge(session_id=sid)]\n"
-    "6. drift_session_status(session_id=sid) → progress overview\n"
-    "7. drift_diff(session_id=sid, uncommitted=True) → verify\n"
-    "8. drift_session_end(session_id=sid) → summary + cleanup\n"
+    "1. drift_session_start(path=\".\", autopilot=true) → session_id "
+    "(runs validate+brief+scan+fix_plan automatically)\n"
+    "2. [fix loop: edit file → drift_nudge(session_id=sid) → check direction]\n"
+    "3. drift_fix_plan(session_id=sid, max_tasks=1) → next task\n"
+    "4. drift_diff(session_id=sid, uncommitted=True) → final verify\n"
+    "5. drift_session_end(session_id=sid) → summary + cleanup\n"
     "Benefits: scope defaults carry across calls, scan results feed into "
     "fix_plan, guardrails persist, progress is tracked automatically."
 )
@@ -674,6 +680,23 @@ async def drift_validate(
     )
     if session:
         session.touch()
+        # Inject session-based progress when score history is available
+        if session.score_at_start is not None and session.last_scan_score is not None:
+            try:
+                parsed = json.loads(raw)
+                parsed["session_progress"] = {
+                    "score_at_start": session.score_at_start,
+                    "last_scan_score": session.last_scan_score,
+                    "score_delta": round(
+                        session.last_scan_score - session.score_at_start, 2
+                    ),
+                    "tasks_total": len(session.selected_tasks or []),
+                    "tasks_completed": len(session.completed_task_ids),
+                    "tasks_remaining": session.tasks_remaining(),
+                }
+                raw = json.dumps(parsed, indent=2)
+            except (json.JSONDecodeError, TypeError):
+                pass  # non-JSON response, skip enrichment
     return _enrich_response_with_session(raw, session)
 
 
@@ -1034,7 +1057,10 @@ def _resolve_session(session_id: str | None) -> Any:
         return None
     from drift.session import SessionManager
 
-    return SessionManager.instance().get(session_id)
+    session = SessionManager.instance().get(session_id)
+    if session is not None:
+        session.begin_call()
+    return session
 
 
 def _session_defaults(session: Any, kwargs: dict[str, Any]) -> dict[str, Any]:
@@ -1930,6 +1956,7 @@ def _field_description_from_annotation(annotation: Any) -> str | None:
     return None
 
 
+@functools.lru_cache(maxsize=1)
 def get_tool_catalog() -> list[dict[str, Any]]:
     """Return MCP tool metadata for local inspection via CLI."""
     import typing

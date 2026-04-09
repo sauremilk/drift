@@ -108,6 +108,48 @@ class TestDriftSession:
         assert summary["score_end"] == 38.0
         assert summary["score_delta"] == -12.0
 
+    def test_begin_call_and_touch_timing(self):
+        """WP-4: begin_call + touch track tool and inter-call timing."""
+        s = DriftSession(session_id="abc", repo_path="/tmp/repo")
+        # Simulate first tool call
+        s.begin_call()
+        time.sleep(0.02)
+        s.touch()
+        # _total_tool_ms should be > 0 now
+        assert s._total_tool_ms > 10  # at least 10ms
+        # _total_inter_call_ms should still be ~0 (no previous call)
+        assert s._total_inter_call_ms == 0.0
+
+        # Simulate agent thinking for a bit, then second tool call
+        time.sleep(0.02)
+        s.begin_call()
+        # inter_call gap should now be recorded
+        assert s._total_inter_call_ms > 10  # at least 10ms gap
+        time.sleep(0.02)
+        s.touch()
+        # Both totals should be positive now
+        assert s._total_tool_ms > 20
+        assert s.tool_calls == 2
+
+    def test_end_summary_includes_timing(self):
+        """WP-4: end_summary includes timing breakdown when calls recorded."""
+        s = DriftSession(session_id="abc", repo_path="/tmp/repo")
+        s.begin_call()
+        time.sleep(0.01)
+        s.touch()
+        time.sleep(0.01)
+        s.begin_call()
+        time.sleep(0.01)
+        s.touch()
+
+        summary = s.end_summary()
+        assert "timing" in summary
+        timing = summary["timing"]
+        assert timing["total_tool_ms"] > 0
+        assert timing["total_inter_call_ms"] > 0
+        assert timing["total_wall_ms"] > 0
+        assert 0 <= timing["tool_pct"] <= 100
+
     def test_to_dict_from_dict_roundtrip(self):
         s = DriftSession(
             session_id="abc",

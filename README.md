@@ -90,8 +90,8 @@ Comparison reflects primary design scope per [STUDY.md §9](docs/STUDY.md).
 
 ```bash
 drift analyze --repo .          # see your top findings
-drift explain PFS               # learn what a signal means
 drift fix-plan --repo .         # get actionable repair tasks
+drift check --fail-on none      # add report-only CI discipline
 ```
 
 Add to CI (start report-only):

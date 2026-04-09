@@ -29,7 +29,7 @@ def finding_fingerprint(f: Finding) -> str:
     identity (signal, file, line range, title) has not changed.
     """
     parts = [
-        f.signal_type.value,
+        f.signal_type,
         f.file_path.as_posix() if f.file_path else "",
         str(f.start_line or 0),
         str(f.end_line or 0),
@@ -52,7 +52,7 @@ def save_baseline(analysis: RepoAnalysis, path: Path) -> None:
     for f in analysis.findings:
         entries.append({
             "fingerprint": finding_fingerprint(f),
-            "signal": f.signal_type.value,
+            "signal": f.signal_type,
             "severity": f.severity.value,
             "file": f.file_path.as_posix() if f.file_path else None,
             "start_line": f.start_line,
