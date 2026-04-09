@@ -1245,6 +1245,55 @@ def _update_session_from_diff(session: Any, result: dict[str, Any]) -> None:
     session.touch()
 
 
+def _update_session_from_verification_result(session: Any, result: dict[str, Any]) -> None:
+    """Record outcome-centric verification KPIs in session metrics.
+
+    Duplicate payloads are ignored to keep counters deterministic when callers
+    retry with identical verification data.
+    """
+    if session is None or not isinstance(result, dict):
+        return
+
+    changed_files = result.get("changed_files")
+    changed_file_count = result.get("changed_file_count")
+    if changed_file_count is None and isinstance(changed_files, list):
+        changed_file_count = len(changed_files)
+
+    payload_fingerprint = json.dumps(
+        {
+            "changed_files": (
+                sorted(changed_files)
+                if isinstance(changed_files, list)
+                else changed_files
+            ),
+            "changed_file_count": changed_file_count,
+            "changed_loc": result.get("changed_loc", result.get("loc_changed", 0)),
+            "resolved_count": result.get("resolved_count", 0),
+            "new_finding_count": result.get("new_finding_count", 0),
+        },
+        sort_keys=True,
+        default=str,
+    )
+
+    seen = getattr(session, "_seen_verification_payload_hashes", None)
+    if isinstance(seen, set):
+        if payload_fingerprint in seen:
+            return
+        seen.add(payload_fingerprint)
+
+    metrics = getattr(session, "metrics", None)
+    if metrics is None or not hasattr(metrics, "record_verification"):
+        return
+
+    metrics.record_verification(
+        changed_file_count=int(changed_file_count or 0),
+        loc_changed=int(result.get("changed_loc", result.get("loc_changed", 0)) or 0),
+        resolved_count=int(result.get("resolved_count", 0) or 0),
+        new_finding_count=int(result.get("new_finding_count", 0) or 0),
+    )
+    session.touch()
+
+
 def _session_called_tools(session: Any) -> set[str]:
     """Return tools already executed or inferable from session state."""
     if session is None:

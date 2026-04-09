@@ -29,6 +29,12 @@ logger = logging.getLogger("drift")
 
 _SCHEMA_VERSION = "1.0"
 _DEFAULT_TTL_SECONDS = 1800  # 30 minutes
+_DEFAULT_EFFECTIVENESS_THRESHOLDS: dict[str, float] = {
+    "low_effect_resolved_per_changed_file": 0.25,
+    "low_effect_resolved_per_100_loc_changed": 0.5,
+    "high_churn_min_changed_files": 5,
+    "high_churn_min_loc_changed": 200,
+}
 
 
 @dataclass
@@ -58,6 +64,35 @@ class OrchestrationMetrics:
     nudge_degrading: int = 0
     nudge_stable: int = 0
     verification_failures: int = 0
+
+    # -- Quality proxy counters ---------------------------------------------
+    total_findings_seen: int = 0
+    findings_suppressed: int = 0
+    findings_acted_on: int = 0
+
+    # -- Outcome-centric effectiveness KPIs --------------------------------
+    verification_runs: int = 0
+    changed_files_total: int = 0
+    loc_changed_total: int = 0
+    resolved_findings_total: int = 0
+    new_findings_total: int = 0
+    relocated_findings_total: int = 0
+
+    def record_verification(
+        self,
+        *,
+        changed_file_count: int,
+        loc_changed: int,
+        resolved_count: int,
+        new_finding_count: int,
+    ) -> None:
+        """Record a verification run for outcome-centric effectiveness tracking."""
+        self.verification_runs += 1
+        self.changed_files_total += max(0, changed_file_count)
+        self.loc_changed_total += max(0, loc_changed)
+        self.resolved_findings_total += max(0, resolved_count)
+        self.new_findings_total += max(0, new_finding_count)
+        self.relocated_findings_total += max(0, min(resolved_count, new_finding_count))
 
     def to_dict(self) -> dict[str, Any]:
         """Serialise metrics to a dict."""
@@ -94,6 +129,54 @@ class OrchestrationMetrics:
             "nudge_degrading": self.nudge_degrading,
             "nudge_stable": self.nudge_stable,
             "verification_failures": self.verification_failures,
+            "total_findings_seen": self.total_findings_seen,
+            "findings_suppressed": self.findings_suppressed,
+            "findings_acted_on": self.findings_acted_on,
+            "suppression_ratio": round(
+                (self.findings_suppressed / self.total_findings_seen)
+                if self.total_findings_seen > 0
+                else 0.0,
+                4,
+            ),
+            "action_ratio": round(
+                (
+                    self.findings_acted_on
+                    / max(self.total_findings_seen - self.findings_suppressed, 1)
+                )
+                if self.total_findings_seen > 0
+                else 0.0,
+                4,
+            ),
+            "verification_runs": self.verification_runs,
+            "changed_files_total": self.changed_files_total,
+            "loc_changed_total": self.loc_changed_total,
+            "resolved_findings_total": self.resolved_findings_total,
+            "new_findings_total": self.new_findings_total,
+            "relocated_findings_total": self.relocated_findings_total,
+            "resolved_findings_per_changed_file": round(
+                self.resolved_findings_total / self.changed_files_total
+                if self.changed_files_total > 0
+                else 0.0,
+                4,
+            ),
+            "resolved_findings_per_100_loc_changed": round(
+                (self.resolved_findings_total * 100.0) / self.loc_changed_total
+                if self.loc_changed_total > 0
+                else 0.0,
+                4,
+            ),
+            "relocated_findings_ratio": round(
+                self.relocated_findings_total / self.resolved_findings_total
+                if self.resolved_findings_total > 0
+                else 0.0,
+                4,
+            ),
+            "verification_density": round(
+                self.verification_runs / self.changed_files_total
+                if self.changed_files_total > 0
+                else 0.0,
+                4,
+            ),
             "discarded_work_ratio": round(discarded_ratio, 4),
             "plan_reuse_ratio": round(plan_reuse, 4),
         }
@@ -120,6 +203,15 @@ class OrchestrationMetrics:
             nudge_degrading=data.get("nudge_degrading", 0),
             nudge_stable=data.get("nudge_stable", 0),
             verification_failures=data.get("verification_failures", 0),
+            total_findings_seen=data.get("total_findings_seen", 0),
+            findings_suppressed=data.get("findings_suppressed", 0),
+            findings_acted_on=data.get("findings_acted_on", 0),
+            verification_runs=data.get("verification_runs", 0),
+            changed_files_total=data.get("changed_files_total", 0),
+            loc_changed_total=data.get("loc_changed_total", 0),
+            resolved_findings_total=data.get("resolved_findings_total", 0),
+            new_findings_total=data.get("new_findings_total", 0),
+            relocated_findings_total=data.get("relocated_findings_total", 0),
         )
 
 
@@ -177,6 +269,17 @@ class DriftSession:
     _last_touch_ts: float | None = field(default=None, init=False, repr=False)
     _total_tool_ms: float = field(default=0.0, init=False, repr=False)
     _total_inter_call_ms: float = field(default=0.0, init=False, repr=False)
+    _seen_verification_payload_hashes: set[str] = field(
+        default_factory=set, init=False, repr=False
+    )
+
+    # -- Agent effectiveness / workflow state -------------------------------
+    phase: str = "init"
+    trace: list[dict[str, Any]] = field(default_factory=list)
+    run_history: list[dict[str, Any]] = field(default_factory=list)
+    effectiveness_thresholds: dict[str, float] = field(
+        default_factory=lambda: dict(_DEFAULT_EFFECTIVENESS_THRESHOLDS)
+    )
 
     # -- queries -------------------------------------------------------------
 
@@ -227,6 +330,75 @@ class DriftSession:
             parts.append(f"path={self.target_path}")
         return "; ".join(parts) if parts else "all"
 
+    def advance_phase(self, new_phase: str) -> str:
+        """Advance to a new workflow phase and return the previous phase."""
+        old = self.phase
+        self.phase = new_phase
+        return old
+
+    def record_trace(self, tool: str, advisory: str = "") -> None:
+        """Append one trace entry for chronological workflow diagnostics."""
+        self.trace.append(
+            {
+                "tool": tool,
+                "ts": time.time(),
+                "phase": self.phase,
+                "advisory": advisory,
+                "tool_calls_so_far": self.tool_calls,
+            }
+        )
+
+    def snapshot_run(self, score: float, finding_count: int) -> None:
+        """Record a score/finding snapshot for trend-aware session guidance."""
+        self.run_history.append(
+            {
+                "score": score,
+                "finding_count": finding_count,
+                "ts": time.time(),
+                "tool_calls_at": self.tool_calls,
+            }
+        )
+
+    def _effectiveness_warnings(self) -> list[dict[str, Any]]:
+        """Return deterministic warning objects from effectiveness KPIs."""
+        m = self.metrics
+        thresholds = {
+            **_DEFAULT_EFFECTIVENESS_THRESHOLDS,
+            **(self.effectiveness_thresholds or {}),
+        }
+        resolved_per_file = (
+            m.resolved_findings_total / m.changed_files_total
+            if m.changed_files_total > 0
+            else 0.0
+        )
+        resolved_per_100_loc = (
+            (m.resolved_findings_total * 100.0) / m.loc_changed_total
+            if m.loc_changed_total > 0
+            else 0.0
+        )
+
+        warnings: list[dict[str, Any]] = []
+        if (
+            m.changed_files_total >= int(thresholds["high_churn_min_changed_files"])
+            and m.loc_changed_total >= int(thresholds["high_churn_min_loc_changed"])
+            and (
+                resolved_per_file
+                < float(thresholds["low_effect_resolved_per_changed_file"])
+                or resolved_per_100_loc
+                < float(thresholds["low_effect_resolved_per_100_loc_changed"])
+            )
+        ):
+            warnings.append(
+                {
+                    "code": "low_effect_high_churn",
+                    "message": (
+                        "Low resolved-finding yield despite high churn; narrow scope "
+                        "before continuing broad edits."
+                    ),
+                }
+            )
+        return warnings
+
     def summary(self) -> dict[str, Any]:
         """Return a compact session summary for status responses."""
         now = time.time()
@@ -235,6 +407,8 @@ class DriftSession:
             "valid": self.is_valid(),
             "repo_path": self.repo_path,
             "scope": self.scope_label(),
+            "phase": self.phase,
+            "trace_entries": len(self.trace),
             "created_at": self.created_at,
             "last_activity": self.last_activity,
             "ttl_remaining_seconds": max(
@@ -258,6 +432,8 @@ class DriftSession:
             "guardrails_active": self.guardrails is not None,
             "baseline_file": self.baseline_file,
             "score_at_start": self.score_at_start,
+            "orchestration_metrics": self.metrics.to_dict(),
+            "effectiveness_warnings": self._effectiveness_warnings(),
         }
 
     def end_summary(self) -> dict[str, Any]:
@@ -640,6 +816,10 @@ class DriftSession:
             "guardrails_prompt_block": self.guardrails_prompt_block,
             "tool_calls": self.tool_calls,
             "metrics": self.metrics.to_dict(),
+            "phase": self.phase,
+            "trace": self.trace,
+            "run_history": self.run_history,
+            "effectiveness_thresholds": self.effectiveness_thresholds,
         }
 
     @classmethod
@@ -676,6 +856,12 @@ class DriftSession:
             guardrails_prompt_block=data.get("guardrails_prompt_block"),
             tool_calls=data.get("tool_calls", 0),
             metrics=metrics,
+            phase=data.get("phase", "init"),
+            trace=data.get("trace", []),
+            run_history=data.get("run_history", []),
+            effectiveness_thresholds=data.get(
+                "effectiveness_thresholds", dict(_DEFAULT_EFFECTIVENESS_THRESHOLDS)
+            ),
         )
 
 

@@ -255,6 +255,17 @@ class FindingContextPolicy(BaseModel):
     default_context: str = "production"
 
 
+class AgentEffectivenessThresholds(BaseModel):
+    """Thresholds for deterministic low-effect/high-churn warnings."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    low_effect_resolved_per_changed_file: float = Field(default=0.25)
+    low_effect_resolved_per_100_loc_changed: float = Field(default=0.5)
+    high_churn_min_changed_files: int = Field(default=5)
+    high_churn_min_loc_changed: int = Field(default=200)
+
+
 class AgentObjective(BaseModel):
     """Declarative agent objective for drift.yaml.
 
@@ -292,6 +303,13 @@ class AgentObjective(BaseModel):
     success_criteria: list[str] = Field(
         default_factory=list,
         description="Conditions that define task completion (human-readable).",
+    )
+    effectiveness_thresholds: AgentEffectivenessThresholds = Field(
+        default_factory=AgentEffectivenessThresholds,
+        description=(
+            "Thresholds used for deterministic effectiveness warnings "
+            "(e.g. low_effect_high_churn)."
+        ),
     )
 
 
