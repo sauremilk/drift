@@ -1314,7 +1314,7 @@ def explain(
     import importlib
 
     explain_mod = importlib.import_module("drift.commands.explain")
-    _SIGNAL_INFO = cast(dict[str, dict[str, Any]], getattr(explain_mod, "_SIGNAL_INFO", {}))
+    signal_info = cast(dict[str, dict[str, Any]], getattr(explain_mod, "_SIGNAL_INFO", {}))
     from drift.telemetry import timed_call
 
     elapsed_ms = timed_call()
@@ -1323,8 +1323,8 @@ def explain(
     try:
         # Try as signal abbreviation first
         upper = topic.upper()
-        if upper in _SIGNAL_INFO:
-            info = _SIGNAL_INFO[upper]
+        if upper in signal_info:
+            info = signal_info[upper]
             result = _base_response(
                 type="signal",
                 signal=upper,
@@ -1356,7 +1356,7 @@ def explain(
         resolved = resolve_signal(topic)
         if resolved:
             abbr = signal_abbrev(resolved)
-            if abbr in _SIGNAL_INFO:
+            if abbr in signal_info:
                 result = explain(abbr, repo_path=repo_path)
                 _emit_api_telemetry(
                     tool_name="api.explain",
