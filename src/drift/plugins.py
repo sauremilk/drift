@@ -114,7 +114,7 @@ def discover_output_plugins() -> dict[str, object]:
 
 
 def discover_command_plugins() -> list[Command]:
-    """Discover CLI commands registered under 'drift.commands'.
+    """Discover and load CLI commands registered under 'drift.commands'.
 
     Each entry point must point to a ``click.BaseCommand`` instance
     exposed as a module-level ``command`` attribute.
