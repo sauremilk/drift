@@ -54,6 +54,7 @@ class SignalType(StrEnum):
     INSECURE_DEFAULT = "insecure_default"
     HARDCODED_SECRET = "hardcoded_secret"
     PHANTOM_REFERENCE = "phantom_reference"
+    TYPE_SAFETY_BYPASS = "type_safety_bypass"
 
 
 class PatternCategory(StrEnum):
@@ -66,6 +67,7 @@ class PatternCategory(StrEnum):
     AUTHENTICATION = "authentication"
     VALIDATION = "validation"
     RETURN_PATTERN = "return_pattern"
+    REACT_HOOK = "react_hook"
 
 
 # ---------------------------------------------------------------------------

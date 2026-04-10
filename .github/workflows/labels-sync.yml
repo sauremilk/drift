@@ -11,10 +11,15 @@ permissions:
   contents: read
   issues: write
 
+concurrency:
+  group: "labels-sync-${{ github.ref }}"
+  cancel-in-progress: true
+
 jobs:
   sync-labels:
     # NOTE: Uses GitHub-hosted Windows runner.
     runs-on: windows-latest
+    timeout-minutes: 5
     steps:
       - uses: actions/checkout@v4
 

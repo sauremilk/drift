@@ -18,10 +18,15 @@ on:
         required: false
         default: ""
 
+concurrency:
+  group: "package-kpis"
+  cancel-in-progress: true
+
 jobs:
   collect-kpis:
     # NOTE: Uses GitHub-hosted Windows runner.
     runs-on: windows-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
 

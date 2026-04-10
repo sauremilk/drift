@@ -75,7 +75,9 @@ class TestParsePorcelain:
         lines = _parse_porcelain(PORCELAIN_SAMPLE)
         first = lines[0]
         assert first.line_no == 42
-        assert first.commit_hash == "abc1234567890123456789012345678901234567"
+        assert (
+            first.commit_hash == "abc1234567890123456789012345678901234567"
+        )  # pragma: allowlist secret
         assert first.author == "Jane Doe"
         assert first.email == "jane@example.com"
         assert first.content == "def process(data):"
@@ -83,7 +85,9 @@ class TestParsePorcelain:
     def test_second_commit_fields(self) -> None:
         lines = _parse_porcelain(PORCELAIN_SAMPLE)
         last = lines[2]
-        assert last.commit_hash == "def5678901234567890123456789012345678901"
+        assert (
+            last.commit_hash == "def5678901234567890123456789012345678901"
+        )  # pragma: allowlist secret
         assert last.author == "Bob Smith"
         assert last.email == "bob@example.com"
 
@@ -105,9 +109,7 @@ class TestParsePorcelain:
 class TestBlameLines:
     @patch("drift.ingestion.git_blame.subprocess.run")
     def test_blame_returns_parsed_lines(self, mock_run: object) -> None:
-        mock_run.return_value = type(
-            "Result", (), {"returncode": 0, "stdout": PORCELAIN_SAMPLE}
-        )()
+        mock_run.return_value = type("Result", (), {"returncode": 0, "stdout": PORCELAIN_SAMPLE})()
         result = blame_lines(Path("/repo"), "src/module.py", 42, 44)
         assert len(result) == 3
         assert result[0].author == "Jane Doe"
@@ -183,9 +185,7 @@ class TestBlameFilesParallel:
             ("src/a.py", 15, 25),  # same file, should be merged
             ("src/b.py", 1, 5),
         ]
-        results = blame_files_parallel(
-            Path("/repo"), requests, max_workers=2
-        )
+        results = blame_files_parallel(Path("/repo"), requests, max_workers=2)
         # Should have called blame for 2 files (a.py merged, b.py)
         assert "src/a.py" in results
         assert "src/b.py" in results
@@ -258,7 +258,7 @@ class TestEnrichFindings:
     def _make_commits(self) -> list[CommitInfo]:
         return [
             CommitInfo(
-                hash="abc1234567890123456789012345678901234567",
+                hash="abc1234567890123456789012345678901234567",  # pragma: allowlist secret
                 author="Jane Doe",
                 email="jane@example.com",
                 timestamp=datetime.datetime(2024, 4, 9, tzinfo=datetime.UTC),
@@ -273,10 +273,20 @@ class TestEnrichFindings:
         from drift.attribution import enrich_findings
 
         bl = [
-            BlameLine(42, "abc1234567890123456789012345678901234567",
-                      "Jane Doe", "jane@example.com", datetime.date(2024, 4, 9)),
-            BlameLine(43, "abc1234567890123456789012345678901234567",
-                      "Jane Doe", "jane@example.com", datetime.date(2024, 4, 9)),
+            BlameLine(
+                42,
+                "abc1234567890123456789012345678901234567",  # pragma: allowlist secret
+                "Jane Doe",
+                "jane@example.com",
+                datetime.date(2024, 4, 9),
+            ),
+            BlameLine(
+                43,
+                "abc1234567890123456789012345678901234567",  # pragma: allowlist secret
+                "Jane Doe",
+                "jane@example.com",
+                datetime.date(2024, 4, 9),
+            ),
         ]
         mock_blame.return_value = {"src/module.py": bl}
 
@@ -286,7 +296,9 @@ class TestEnrichFindings:
 
         assert result[0].attribution is not None
         assert result[0].attribution.author == "Jane Doe"
-        assert result[0].attribution.commit_hash == "abc1234567890123456789012345678901234567"
+        assert (
+            result[0].attribution.commit_hash == "abc1234567890123456789012345678901234567"
+        )  # pragma: allowlist secret
         assert result[0].attribution.ai_attributed is True
         assert result[0].attribution.ai_confidence == 0.85
 
@@ -435,7 +447,7 @@ class TestRichAttribution:
             file_path=Path("src/module.py"),
             start_line=42,
             attribution=Attribution(
-                commit_hash="abc1234567890",
+                commit_hash="abc1234567890",  # pragma: allowlist secret
                 author="Jane Doe",
                 email="jane@example.com",
                 date=datetime.date(2024, 4, 9),

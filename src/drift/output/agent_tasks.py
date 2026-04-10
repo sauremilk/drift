@@ -595,6 +595,13 @@ def _success_criteria_for(finding: Finding) -> list[str]:
             *base,
         ]
 
+    if st == SignalType.TYPE_SAFETY_BYPASS:
+        return [
+            f"Type safety bypass count in {path_str} reduced below threshold",
+            "`drift scan` reports no type_safety_bypass finding for this file",
+            *base,
+        ]
+
     return base
 
 

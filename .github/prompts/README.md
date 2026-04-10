@@ -10,6 +10,7 @@
 | [drift-agent-workflow-test](drift-agent-workflow-test.prompt.md) | Vollständiger CLI-Coverage-Test über alle Kommandos | — | `drift-policy` | Komplette CLI-Oberfläche testen |
 | [drift-ai-integration](drift-ai-integration.prompt.md) | LLM-Kontext-Qualität: Export-Formate, MCP, Token-Effizienz | — | `drift-policy` | AI-Integrations-Tauglichkeit prüfen |
 | [drift-ci-gate](drift-ci-gate.prompt.md) | CI-Sicherheit: Exit-Codes, Idempotenz, Maschinen-Formate | — | `drift-policy`, `drift-push-gates` | CI-Pipeline-Tauglichkeit validieren |
+| [drift-fp-reduction](drift-fp-reduction.prompt.md) | FP-Reduktionsaudit: Thresholds, Negative Context, Guardrails, Suppression, Kalibrierung, Scoring | — | `drift-policy` | False Positives systematisch priorisieren und absichern |
 | [drift-onboarding](drift-onboarding.prompt.md) | Erstnutzer-Friktionstest: Init, Config, Time-to-Value | — | `drift-policy` | Onboarding-Qualität für neue User bewerten |
 | [drift-signal-quality](drift-signal-quality.prompt.md) | Signalkorrektheit: TP/FP/FN, Precision/Recall, Oracle-Abgleich | — | `drift-policy` | Signalqualität und -vertrauen messen |
 | [PR-Orchestrator](PR-Orchestrator.prompt.md) | Risikobasierte PR-Review-Entscheidung (APPROVE/MERGE/WAIT/...) | `drift-pr-review` | `drift-policy` | Pull Requests bewerten und entscheiden |

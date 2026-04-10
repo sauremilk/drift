@@ -24,6 +24,7 @@ jobs:
     name: Version format check
     # NOTE: Uses GitHub-hosted Windows runner.
     runs-on: windows-latest
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
         with:
@@ -76,6 +77,7 @@ jobs:
   test:
     # NOTE: Uses GitHub-hosted Windows runner.
     runs-on: windows-latest
+    timeout-minutes: 25
     needs: version-check
     env:
       AGENT_TOOLSDIRECTORY: ${{ github.workspace }}\\.python-toolcache
@@ -182,11 +184,23 @@ jobs:
 
       - name: Install dependencies
         # [win-only] PowerShell + local venv install path.
+        # Retry up to 3 times to handle transient PyPI/network failures.
         shell: powershell
         run: |
           & $env:PYTHON_BIN -m pip config set global.cache-dir $env:PIP_CACHE_DIR
           & $env:PYTHON_BIN -m pip install --upgrade pip
-          & $env:PYTHON_BIN -m pip install -e ".[dev]"
+          $maxRetries = 3
+          for ($i = 1; $i -le $maxRetries; $i++) {
+            & $env:PYTHON_BIN -m pip install -e ".[dev]"
+            if ($LASTEXITCODE -eq 0) { break }
+            if ($i -lt $maxRetries) {
+              Write-Warning "pip install failed (attempt $i/$maxRetries), retrying in $($i * 15)s..."
+              Start-Sleep -Seconds ($i * 15)
+            } else {
+              Write-Error "pip install failed after $maxRetries attempts"
+              exit 1
+            }
+          }
 
       - name: Lint with ruff
         # [win-only] PowerShell invocation on Windows runner.
@@ -353,6 +367,7 @@ jobs:
     name: Smoke PR (fast profile)
     if: github.event_name == 'pull_request'
     runs-on: windows-latest
+    timeout-minutes: 15
     needs: version-check
     steps:
       - uses: actions/checkout@v4
@@ -379,6 +394,7 @@ jobs:
     name: Smoke Nightly (full profile)
     if: github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.run_nightly_smoke == true)
     runs-on: windows-latest
+    timeout-minutes: 30
     needs: version-check
     steps:
       - uses: actions/checkout@v4

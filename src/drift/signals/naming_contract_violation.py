@@ -33,6 +33,7 @@ from drift.signals._utils import (
     is_library_finding_path,
     is_likely_library_repo,
     is_test_file,
+    ts_node_text,
     ts_parse_source,
     ts_walk,
 )
@@ -141,8 +142,7 @@ def _has_bool_return(tree: ast.Module, fn_info: FunctionInfo) -> bool:
         return False  # no explicit returns → not bool
 
     return all(
-        isinstance(r.value, ast.Constant) and isinstance(r.value.value, bool)
-        for r in returns
+        isinstance(r.value, ast.Constant) and isinstance(r.value.value, bool) for r in returns
     )
 
 
@@ -169,9 +169,7 @@ def _looks_like_comparison_semantics(tree: ast.Module, source: str) -> bool:
     """Return True if source/body looks like comparison/checking utility code."""
     if any(isinstance(node, ast.Compare) for node in ast.walk(tree)):
         return True
-    return bool(
-        re.search(r"\bis\s+None\b|\bisinstance\s*\(", source)
-    )
+    return bool(re.search(r"\bis\s+None\b|\bisinstance\s*\(", source))
 
 
 # Map checker names to functions (typed for mypy-safe dispatch)
@@ -210,9 +208,7 @@ def _ts_has_raise(root: Any, src: bytes) -> bool:
 def _ts_has_create_path(root: Any, src: bytes) -> bool:
     """Return True if there is branching (if/else) — heuristic for get-or-create."""
     for node in ts_walk(root):
-        if node.type == "if_statement" and any(
-            c.type == "else_clause" for c in node.children
-        ):
+        if node.type == "if_statement" and any(c.type == "else_clause" for c in node.children):
             return True
     return False
 
@@ -241,7 +237,9 @@ def _ts_has_try_except(root: Any, src: bytes) -> bool:
 
 
 def _read_function_source(
-    file_path: Path, fn: FunctionInfo, repo_path: Path | None = None,
+    file_path: Path,
+    fn: FunctionInfo,
+    repo_path: Path | None = None,
 ) -> str | None:
     """Read source lines for a single function."""
     try:
@@ -278,11 +276,7 @@ def _match_rule(
         # camelCase match: "validateFoo" matches "validate_" rule
         for p in prefixes:
             camel = _snake_to_camel_prefix(p)
-            if (
-                bare.startswith(camel)
-                and len(bare) > len(camel)
-                and bare[len(camel)].isupper()
-            ):
+            if bare.startswith(camel) and len(bare) > len(camel) and bare[len(camel)].isupper():
                 return p, description, checker_name
     return None
 
@@ -297,9 +291,7 @@ def _contract_suggestion(matched_prefix: str, fn_name: str) -> str:
     if matched_prefix == "ensure_":
         return "add at least one raise path that enforces the ensured precondition"
     if matched_prefix == "get_or_create_":
-        return (
-            "add an explicit conditional create path (lookup, then create in missing branch)"
-        )
+        return "add an explicit conditional create path (lookup, then create in missing branch)"
     if matched_prefix in {"is_", "has_"}:
         return "return a bool-compatible result (annotation and runtime returns)"
     if matched_prefix == "try_":
@@ -320,7 +312,10 @@ _TS_CHECKERS: dict[str, Callable[..., bool]] = {
 
 
 def _ts_check_rule(
-    source: str, language: str, fn: FunctionInfo, checker_name: str,
+    source: str,
+    language: str,
+    fn: FunctionInfo,
+    checker_name: str,
 ) -> bool:
     """Run a naming-contract checker against TS/JS source via tree-sitter."""
     result = ts_parse_source(source, language)
@@ -441,6 +436,398 @@ class NamingContractViolationSignal(BaseSignal):
                             "checker": checker_name,
                             "library_context_candidate": library_repo
                             and is_library_finding_path(pr.file_path),
+                        },
+                    )
+                )
+
+        # ── TS-specific naming convention checks ──────────────────────
+
+        # 1. Interface I-Prefix consistency (cross-file)
+        iface_names: list[tuple[str, Path, int]] = []
+        for pr in parse_results:
+            if pr.language not in _TS_LANGUAGES:
+                continue
+            if is_test_file(pr.file_path):
+                continue
+            for cls in pr.classes:
+                if cls.is_interface:
+                    iface_names.append((cls.name, cls.file_path, cls.start_line))
+
+        if len(iface_names) >= 4:
+            i_prefixed = [
+                n for n, _, _ in iface_names if n.startswith("I") and len(n) > 1 and n[1].isupper()
+            ]
+            prefixed_ratio_text = f"{len(i_prefixed)}/{len(iface_names)}"
+            ratio = len(i_prefixed) / len(iface_names)
+
+            if ratio > 0.5:
+                # I-prefix is dominant → flag outliers without I-prefix
+                for iname, fpath, line in iface_names:
+                    if not (iname.startswith("I") and len(iname) > 1 and iname[1].isupper()):
+                        findings.append(
+                            Finding(
+                                signal_type=self.signal_type,
+                                severity=Severity.LOW,
+                                score=0.3,
+                                title=f"Interface '{iname}' missing I-prefix",
+                                description=(
+                                    f"Interface '{iname}' at {fpath.as_posix()}:{line} "
+                                    f"does not use I-prefix, but {prefixed_ratio_text} "
+                                    f"interfaces in the codebase do. "
+                                    f"Inconsistent naming reduces discoverability."
+                                ),
+                                file_path=fpath,
+                                start_line=line,
+                                fix=(
+                                    f"Rename '{iname}' to 'I{iname}' "
+                                    "to match the dominant convention."
+                                ),
+                                metadata={"convention": "I-prefix", "ratio": round(ratio, 2)},
+                            )
+                        )
+            elif ratio < 0.2:
+                # No-prefix is dominant → flag outliers with I-prefix
+                for iname, fpath, line in iface_names:
+                    if iname.startswith("I") and len(iname) > 1 and iname[1].isupper():
+                        findings.append(
+                            Finding(
+                                signal_type=self.signal_type,
+                                severity=Severity.LOW,
+                                score=0.3,
+                                title=f"Interface '{iname}' uses I-prefix against convention",
+                                description=(
+                                    f"Interface '{iname}' at {fpath.as_posix()}:{line} "
+                                    f"uses I-prefix, but only {len(i_prefixed)}/{len(iface_names)} "
+                                    f"interfaces do. Inconsistent naming reduces readability."
+                                ),
+                                file_path=fpath,
+                                start_line=line,
+                                fix=(
+                                    f"Rename '{iname}' to '{iname[1:]}' "
+                                    "to match the dominant convention."
+                                ),
+                                metadata={"convention": "no-prefix", "ratio": round(ratio, 2)},
+                            )
+                        )
+
+        # 2. Enum member casing consistency (per-file)
+        for pr in parse_results:
+            if pr.language not in _TS_LANGUAGES:
+                continue
+            if is_test_file(pr.file_path):
+                continue
+
+            try:
+                source_text = pr.file_path.read_text(encoding="utf-8", errors="replace")
+            except OSError:
+                continue
+
+            parsed = ts_parse_source(source_text, pr.language)
+            if parsed is None:
+                continue
+            root, src_bytes = parsed
+
+            for node in ts_walk(root):
+                if node.type != "enum_declaration":
+                    continue
+
+                enum_name_node = node.child_by_field_name("name")
+                enum_name = (
+                    ts_node_text(enum_name_node, src_bytes) if enum_name_node else "anonymous"
+                )
+
+                members: list[str] = []
+                for child in ts_walk(node):
+                    if child.type == "enum_assignment":
+                        name_node = child.child_by_field_name("name")
+                        if name_node:
+                            members.append(ts_node_text(name_node, src_bytes))
+                    elif (
+                        child.type == "property_identifier"
+                        and child.parent
+                        and child.parent.type == "enum_body"
+                    ):
+                        members.append(ts_node_text(child, src_bytes))
+
+                if len(members) < 2:
+                    continue
+
+                screaming = sum(1 for m in members if re.match(r"^[A-Z][A-Z0-9_]+$", m))
+                pascal = sum(1 for m in members if re.match(r"^[A-Z][a-z]", m) and "_" not in m)
+
+                if screaming > 0 and pascal > 0:
+                    # Mixed casing
+                    dominant = "SCREAMING_SNAKE" if screaming >= pascal else "PascalCase"
+                    findings.append(
+                        Finding(
+                            signal_type=self.signal_type,
+                            severity=Severity.LOW,
+                            score=0.3,
+                            title=f"Enum '{enum_name}' has mixed member casing",
+                            description=(
+                                f"Enum '{enum_name}' in {pr.file_path.as_posix()} "
+                                f"mixes {screaming} SCREAMING_SNAKE and {pascal} PascalCase "
+                                f"members. Dominant style: {dominant}."
+                            ),
+                            file_path=pr.file_path,
+                            start_line=node.start_point[0] + 1,
+                            fix=(f"Standardise enum '{enum_name}' member casing to {dominant}."),
+                            metadata={
+                                "enum_name": enum_name,
+                                "screaming": screaming,
+                                "pascal": pascal,
+                            },
+                        )
+                    )
+
+        # 3. Generic parameter naming mix (per-file)
+        for pr in parse_results:
+            if pr.language not in _TS_LANGUAGES:
+                continue
+            if is_test_file(pr.file_path):
+                continue
+
+            try:
+                source_text = pr.file_path.read_text(encoding="utf-8", errors="replace")
+            except OSError:
+                continue
+
+            parsed = ts_parse_source(source_text, pr.language)
+            if parsed is None:
+                continue
+            root, src_bytes = parsed
+
+            single_letter: list[str] = []
+            verbose: list[str] = []
+
+            for node in ts_walk(root):
+                if node.type == "type_parameter":
+                    name_node = node.child_by_field_name("name")
+                    if name_node:
+                        pname = ts_node_text(name_node, src_bytes)
+                        if len(pname) == 1 and pname.isupper():
+                            single_letter.append(pname)
+                        elif len(pname) > 1:
+                            verbose.append(pname)
+
+            if single_letter and verbose:
+                findings.append(
+                    Finding(
+                        signal_type=self.signal_type,
+                        severity=Severity.LOW,
+                        score=0.3,
+                        title=f"Mixed generic parameter naming in {pr.file_path.name}",
+                        description=(
+                            f"{pr.file_path.as_posix()} mixes single-letter generics "
+                            f"({', '.join(sorted(set(single_letter)))}) with verbose names "
+                            f"({', '.join(sorted(set(verbose)))}). "
+                            f"Pick one convention per codebase."
+                        ),
+                        file_path=pr.file_path,
+                        start_line=1,
+                        fix=(
+                            "Standardise generic parameter names "
+                            "to either single-letter or descriptive style."
+                        ),
+                        metadata={
+                            "single_letter": sorted(set(single_letter)),
+                            "verbose": sorted(set(verbose)),
+                        },
+                    )
+                )
+
+        # ── TS-specific naming convention checks ──────────────────────
+
+        # 1. Interface I-Prefix consistency (cross-file)
+        iface_names: list[tuple[str, Path, int]] = []
+        for pr in parse_results:
+            if pr.language not in _TS_LANGUAGES:
+                continue
+            if is_test_file(pr.file_path):
+                continue
+            for cls in pr.classes:
+                if cls.is_interface:
+                    iface_names.append((cls.name, cls.file_path, cls.start_line))
+
+        if len(iface_names) >= 4:
+            i_prefixed = [
+                n for n, _, _ in iface_names if n.startswith("I") and len(n) > 1 and n[1].isupper()
+            ]
+            prefixed_ratio_text = f"{len(i_prefixed)}/{len(iface_names)}"
+            ratio = len(i_prefixed) / len(iface_names)
+
+            if ratio > 0.5:
+                # I-prefix is dominant → flag outliers without I-prefix
+                for iname, fpath, line in iface_names:
+                    if not (iname.startswith("I") and len(iname) > 1 and iname[1].isupper()):
+                        findings.append(
+                            Finding(
+                                signal_type=self.signal_type,
+                                severity=Severity.LOW,
+                                score=0.3,
+                                title=f"Interface '{iname}' missing I-prefix",
+                                description=(
+                                    f"Interface '{iname}' at {fpath.as_posix()}:{line} "
+                                    f"does not use I-prefix, but {prefixed_ratio_text} "
+                                    f"interfaces in the codebase do. "
+                                    f"Inconsistent naming reduces discoverability."
+                                ),
+                                file_path=fpath,
+                                start_line=line,
+                                fix=(
+                                    f"Rename '{iname}' to 'I{iname}' "
+                                    "to match the dominant convention."
+                                ),
+                                metadata={"convention": "I-prefix", "ratio": round(ratio, 2)},
+                            )
+                        )
+            elif ratio < 0.2:
+                # No-prefix is dominant → flag outliers with I-prefix
+                for iname, fpath, line in iface_names:
+                    if iname.startswith("I") and len(iname) > 1 and iname[1].isupper():
+                        findings.append(
+                            Finding(
+                                signal_type=self.signal_type,
+                                severity=Severity.LOW,
+                                score=0.3,
+                                title=f"Interface '{iname}' uses I-prefix against convention",
+                                description=(
+                                    f"Interface '{iname}' at {fpath.as_posix()}:{line} "
+                                    f"uses I-prefix, but only {len(i_prefixed)}/{len(iface_names)} "
+                                    f"interfaces do. Inconsistent naming reduces readability."
+                                ),
+                                file_path=fpath,
+                                start_line=line,
+                                fix=(
+                                    f"Rename '{iname}' to '{iname[1:]}' "
+                                    "to match the dominant convention."
+                                ),
+                                metadata={"convention": "no-prefix", "ratio": round(ratio, 2)},
+                            )
+                        )
+
+        # 2. Enum member casing consistency (per-file)
+        for pr in parse_results:
+            if pr.language not in _TS_LANGUAGES:
+                continue
+            if is_test_file(pr.file_path):
+                continue
+
+            try:
+                source_text = pr.file_path.read_text(encoding="utf-8", errors="replace")
+            except OSError:
+                continue
+
+            parsed = ts_parse_source(source_text, pr.language)
+            if parsed is None:
+                continue
+            root, src_bytes = parsed
+
+            for node in ts_walk(root):
+                if node.type != "enum_declaration":
+                    continue
+
+                enum_name_node = node.child_by_field_name("name")
+                enum_name = (
+                    ts_node_text(enum_name_node, src_bytes) if enum_name_node else "anonymous"
+                )
+
+                members: list[str] = []
+                for child in ts_walk(node):
+                    if child.type == "enum_assignment":
+                        name_node = child.child_by_field_name("name")
+                        if name_node:
+                            members.append(ts_node_text(name_node, src_bytes))
+                    elif (
+                        child.type == "property_identifier"
+                        and child.parent
+                        and child.parent.type == "enum_body"
+                    ):
+                        members.append(ts_node_text(child, src_bytes))
+
+                if len(members) < 2:
+                    continue
+
+                screaming = sum(1 for m in members if re.match(r"^[A-Z][A-Z0-9_]+$", m))
+                pascal = sum(1 for m in members if re.match(r"^[A-Z][a-z]", m) and "_" not in m)
+
+                if screaming > 0 and pascal > 0:
+                    # Mixed casing
+                    dominant = "SCREAMING_SNAKE" if screaming >= pascal else "PascalCase"
+                    findings.append(
+                        Finding(
+                            signal_type=self.signal_type,
+                            severity=Severity.LOW,
+                            score=0.3,
+                            title=f"Enum '{enum_name}' has mixed member casing",
+                            description=(
+                                f"Enum '{enum_name}' in {pr.file_path.as_posix()} "
+                                f"mixes {screaming} SCREAMING_SNAKE and {pascal} PascalCase "
+                                f"members. Dominant style: {dominant}."
+                            ),
+                            file_path=pr.file_path,
+                            start_line=node.start_point[0] + 1,
+                            fix=(f"Standardise enum '{enum_name}' member casing to {dominant}."),
+                            metadata={
+                                "enum_name": enum_name,
+                                "screaming": screaming,
+                                "pascal": pascal,
+                            },
+                        )
+                    )
+
+        # 3. Generic parameter naming mix (per-file)
+        for pr in parse_results:
+            if pr.language not in _TS_LANGUAGES:
+                continue
+            if is_test_file(pr.file_path):
+                continue
+
+            try:
+                source_text = pr.file_path.read_text(encoding="utf-8", errors="replace")
+            except OSError:
+                continue
+
+            parsed = ts_parse_source(source_text, pr.language)
+            if parsed is None:
+                continue
+            root, src_bytes = parsed
+
+            single_letter: list[str] = []
+            verbose: list[str] = []
+
+            for node in ts_walk(root):
+                if node.type == "type_parameter":
+                    name_node = node.child_by_field_name("name")
+                    if name_node:
+                        pname = ts_node_text(name_node, src_bytes)
+                        if len(pname) == 1 and pname.isupper():
+                            single_letter.append(pname)
+                        elif len(pname) > 1:
+                            verbose.append(pname)
+
+            if single_letter and verbose:
+                findings.append(
+                    Finding(
+                        signal_type=self.signal_type,
+                        severity=Severity.LOW,
+                        score=0.3,
+                        title=f"Mixed generic parameter naming in {pr.file_path.name}",
+                        description=(
+                            f"{pr.file_path.as_posix()} mixes single-letter generics "
+                            f"({', '.join(sorted(set(single_letter)))}) with verbose names "
+                            f"({', '.join(sorted(set(verbose)))}). "
+                            f"Pick one convention per codebase."
+                        ),
+                        file_path=pr.file_path,
+                        start_line=1,
+                        fix=(
+                            "Standardise generic parameter names "
+                            "to either single-letter or descriptive style."
+                        ),
+                        metadata={
+                            "single_letter": sorted(set(single_letter)),
+                            "verbose": sorted(set(verbose)),
                         },
                     )
                 )

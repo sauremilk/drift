@@ -19,6 +19,7 @@ jobs:
     # NOTE: Uses GitHub-hosted Windows runner.
     # Migration back to GitHub-hosted runners remains tracked in issue #90.
     runs-on: windows-latest
+    timeout-minutes: 10
     steps:
       - name: Checkout
         uses: actions/checkout@v4

@@ -14,12 +14,17 @@ permissions:
   contents: read
   security-events: write
 
+concurrency:
+  group: "codeql-${{ github.event.pull_request.number || github.ref }}"
+  cancel-in-progress: true
+
 jobs:
   analyze:
     name: Analyze (${{ matrix.language }})
     # NOTE: Uses GitHub-hosted Windows runner.
     # Migration back to GitHub-hosted runners remains tracked in issue #90.
     runs-on: windows-latest
+    timeout-minutes: 30
     strategy:
       fail-fast: false
       matrix:

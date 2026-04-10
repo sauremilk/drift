@@ -79,6 +79,9 @@ class TypeScriptArchitectureSignal(BaseSignal):
         # --- 4. UI-to-infra import ban ---
         findings.extend(self._run_ui_to_infra(repo_path, config))
 
+        # Extension point: consume REACT_HOOK patterns from ParseResult.patterns
+        # (HOOK_PLACEMENT_VIOLATION, MISSING_DEPENDENCY_ARRAY, STALE_CLOSURE)
+
         return findings
 
     # ------------------------------------------------------------------

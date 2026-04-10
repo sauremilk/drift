@@ -9,10 +9,15 @@ permissions:
   issues: write
   pull-requests: write
 
+concurrency:
+  group: "stale"
+  cancel-in-progress: true
+
 jobs:
   stale:
     # NOTE: Uses GitHub-hosted Windows runner.
     runs-on: windows-latest
+    timeout-minutes: 10
     steps:
       - uses: actions/stale@v9
         with:

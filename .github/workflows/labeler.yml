@@ -17,6 +17,7 @@ jobs:
     if: ${{ github.actor != 'dependabot[bot]' }}
     # NOTE: Uses GitHub-hosted Windows runner.
     runs-on: windows-latest
+    timeout-minutes: 5
     steps:
       - uses: actions/labeler@v5
         with:

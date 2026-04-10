@@ -76,6 +76,23 @@
       ],
       "group": "build",
       "problemMatcher": []
+    },
+    {
+      "label": "Drift: baseline (exit-zero)",
+      "type": "shell",
+      "command": "${workspaceFolder}\\.venv\\Scripts\\python.exe",
+      "args": [
+        "-m",
+        "drift",
+        "analyze",
+        "--repo",
+        ".",
+        "--format",
+        "json",
+        "--exit-zero"
+      ],
+      "group": "build",
+      "problemMatcher": []
     }
   ]
 }
