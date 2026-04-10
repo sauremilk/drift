@@ -1289,6 +1289,12 @@ from drift.mcp_orchestration import (  # noqa: E402
     _update_session_from_verification_result,  # noqa: F401
 )
 
+# Keep legacy re-exports visible to static analyzers and test imports.
+_MCP_SERVER_LEGACY_REEXPORTS = (
+    _effective_profile,
+    _update_session_from_verification_result,
+)
+
 # ---------------------------------------------------------------------------
 # MCP Tools — Session management (v3)
 # ---------------------------------------------------------------------------

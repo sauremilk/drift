@@ -75,9 +75,8 @@ class TestParsePorcelain:
         lines = _parse_porcelain(PORCELAIN_SAMPLE)
         first = lines[0]
         assert first.line_no == 42
-        assert (
-            first.commit_hash == "abc1234567890123456789012345678901234567"
-        )  # pragma: allowlist secret
+        expected_hash = "abc1234567890123456789012345678901234567"  # pragma: allowlist secret
+        assert first.commit_hash == expected_hash
         assert first.author == "Jane Doe"
         assert first.email == "jane@example.com"
         assert first.content == "def process(data):"
@@ -85,9 +84,8 @@ class TestParsePorcelain:
     def test_second_commit_fields(self) -> None:
         lines = _parse_porcelain(PORCELAIN_SAMPLE)
         last = lines[2]
-        assert (
-            last.commit_hash == "def5678901234567890123456789012345678901"
-        )  # pragma: allowlist secret
+        expected_hash = "def5678901234567890123456789012345678901"  # pragma: allowlist secret
+        assert last.commit_hash == expected_hash
         assert last.author == "Bob Smith"
         assert last.email == "bob@example.com"
 
@@ -296,9 +294,8 @@ class TestEnrichFindings:
 
         assert result[0].attribution is not None
         assert result[0].attribution.author == "Jane Doe"
-        assert (
-            result[0].attribution.commit_hash == "abc1234567890123456789012345678901234567"
-        )  # pragma: allowlist secret
+        expected_hash = "abc1234567890123456789012345678901234567"  # pragma: allowlist secret
+        assert result[0].attribution.commit_hash == expected_hash
         assert result[0].attribution.ai_attributed is True
         assert result[0].attribution.ai_confidence == 0.85
 
