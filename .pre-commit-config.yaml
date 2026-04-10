@@ -19,7 +19,7 @@ repos:
     rev: v1.5.0
     hooks:
       - id: detect-secrets
-        exclude: "(^|/)(tests/test_hardcoded_secret\\.py|tests/test_insecure_default\\.py|tests/golden/corpus_snapshot\\.json|src/drift/negative_context\\.py|\\.github/instructions/drift-release-automation\\.instructions\\.md|\\.drift-baseline\\.json)$"
+        exclude: "(^|/)(tests/test_hardcoded_secret\\.py|tests/test_insecure_default\\.py|tests/golden/corpus_snapshot\\.json|tests/golden/corpus_snapshot\\.sarif|tests/fixtures/ground_truth\\.py|src/drift/negative_context\\.py|\\.github/instructions/drift-release-automation\\.instructions\\.md|\\.drift-baseline\\.json)$"
         args:
           - --baseline
           - .secrets.baseline
