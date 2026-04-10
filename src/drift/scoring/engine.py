@@ -194,6 +194,28 @@ def composite_score(
     return round(min(1.0, weighted_sum / total_weight), 3)
 
 
+# Grade bands: 0 = clean, 1 = maximum drift (inverted: A = best)
+_GRADE_BANDS: tuple[tuple[float, str, str], ...] = (
+    (0.20, "A", "Excellent"),
+    (0.40, "B", "Good"),
+    (0.60, "C", "Moderate Drift"),
+    (0.80, "D", "Significant Drift"),
+    (1.01, "F", "Critical Drift"),
+)
+
+
+def score_to_grade(score: float) -> tuple[str, str]:
+    """Map a 0.0–1.0 drift score to a letter grade with description.
+
+    Returns a ``(grade, label)`` tuple, e.g. ``("B", "Good")``.
+    Lower scores are better — ``A`` means almost no drift.
+    """
+    for threshold, grade, label in _GRADE_BANDS:
+        if score < threshold:
+            return grade, label
+    return "F", "Critical Drift"
+
+
 def compute_module_scores(
     findings: list[Finding],
     weights: SignalWeights,

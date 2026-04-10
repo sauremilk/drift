@@ -65,6 +65,10 @@ def test_analysis_to_json_contains_expected_structure() -> None:
     assert payload["analysis_status"]["is_fully_reliable"] is True
     assert payload["summary"]["total_files"] == 12
     assert payload["summary"]["total_functions"] == 48
+    assert "first_run" in payload
+    assert "headline" in payload["first_run"]
+    assert "next_step" in payload["first_run"]
+    assert isinstance(payload["first_run"]["top_findings"], list)
     assert payload["modules"][0]["path"] == "src/app"
     assert payload["findings"][0]["signal"] == "system_misalignment"
     assert payload["findings"][0]["finding_context"] == "production"
@@ -304,3 +308,12 @@ def test_analysis_to_json_compact_omits_heavy_sections() -> None:
     assert "findings_compact" in payload
     assert "compact_summary" in payload
     assert "fix_first" in payload
+    assert "first_run" in payload
+
+
+def test_analysis_to_json_first_run_honors_language() -> None:
+    analysis = _sample_analysis()
+
+    payload = json.loads(analysis_to_json(analysis, language="de"))
+
+    assert payload["first_run"]["headline"].startswith("Starte")

@@ -82,6 +82,9 @@ outputs:
   severity:
     description: "Overall severity level."
     value: ${{ steps.drift-json.outputs.severity }}
+  grade:
+    description: "Letter grade (A–F) derived from the drift score."
+    value: ${{ steps.drift-json.outputs.grade }}
 
 runs:
   using: "composite"
@@ -156,6 +159,8 @@ runs:
         SCORE=$(python3 -c "import json; d=json.load(open('${JSON_FILE}')); print(f\"{d['drift_score']:.2f}\")")
         SEVERITY=$(python3 -c "import json; d=json.load(open('${JSON_FILE}')); print(d['severity'].upper())")
         COUNT=$(python3 -c "import json; d=json.load(open('${JSON_FILE}')); print(len(d['findings']))")
+        GRADE=$(python3 -c "import json; d=json.load(open('${JSON_FILE}')); print(d.get('grade', 'N/A'))")
+        GRADE_LABEL=$(python3 -c "import json; d=json.load(open('${JSON_FILE}')); print(d.get('grade_label', ''))")
         TREND_DELTA=$(python3 -c "
         import json
         d=json.load(open('${JSON_FILE}'))
@@ -226,7 +231,7 @@ runs:
           echo ""
           echo "| Metric | Value |"
           echo "|--------|-------|"
-          echo "| **Score** | \`${SCORE}\` |"
+          echo "| **Score** | \`${SCORE}\` (Grade **${GRADE}** — ${GRADE_LABEL}) |"
           echo "| **Trend** | ${TREND_DELTA} |"
           echo "| **Severity** | ${SEVERITY} |"
           echo "| **Findings** | ${COUNT} |"
@@ -247,6 +252,7 @@ runs:
         echo "drift-score=${SCORE}" >> "${GITHUB_OUTPUT}"
         echo "severity=${SEVERITY}" >> "${GITHUB_OUTPUT}"
         echo "finding-count=${COUNT}" >> "${GITHUB_OUTPUT}"
+        echo "grade=${GRADE}" >> "${GITHUB_OUTPUT}"
 
     # Post PR summary comment. Updates existing comment if one exists.
     - name: Post PR comment

@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from pathlib import PurePosixPath
+from pathlib import Path, PurePosixPath
 from typing import Any
 
 import pytest
@@ -47,12 +47,16 @@ class _FakeFinding:
     signal_type: str = "pattern_fragmentation"
     severity: _FakeSeverity = field(default_factory=lambda: _FakeSeverity("medium"))
     score: float = 0.5
-    file_path: PurePosixPath | None = None
+    impact: float = 0.5
+    file_path: Path | PurePosixPath | None = None
     start_line: int | None = None
     end_line: int | None = None
     title: str = "Test finding"
+    description: str = "Test description"
+    fix: str | None = "Shared first step"
     logical_location: _FakeLogicalLocation | None = None
     symbol: str | None = None
+    related_files: list[PurePosixPath] = field(default_factory=list)
     metadata: dict[str, Any] = field(default_factory=dict)
     rule_id: str = "PFS"
 
@@ -295,6 +299,56 @@ class TestFindingGuided:
         assert "rank" not in result
 
 
+class TestFirstRunSummary:
+    def test_select_priority_findings_prefers_architecture_boundary(self) -> None:
+        from drift.finding_rendering import select_priority_findings
+
+        architecture = _FakeFinding(
+            signal_type="architecture_violation",
+            severity=_FakeSeverity("medium"),
+            title="Layer violation",
+            impact=0.4,
+        )
+        style = _FakeFinding(
+            signal_type="naming_contract_violation",
+            severity=_FakeSeverity("high"),
+            title="Naming issue",
+            impact=0.8,
+        )
+        analysis = _FakeAnalysis(drift_score=0.5, findings=[style, architecture])
+
+        result = select_priority_findings(analysis, max_items=1)
+
+        assert len(result) == 1
+        assert result[0].signal_type == "architecture_violation"
+
+    def test_build_first_run_summary_returns_guidance(self) -> None:
+        from drift.finding_rendering import build_first_run_summary
+
+        finding = _FakeFinding(
+            signal_type="pattern_fragmentation",
+            file_path=Path("src/app/service.py"),
+            start_line=10,
+        )
+        analysis = _FakeAnalysis(drift_score=0.4, findings=[finding])
+
+        summary = build_first_run_summary(analysis, max_items=1, language="de")
+
+        assert "headline" in summary
+        assert "why_this_matters" in summary
+        assert "next_step" in summary
+        assert len(summary["top_findings"]) == 1
+        assert summary["top_findings"][0]["signal_type"] == "pattern_fragmentation"
+
+    def test_build_first_run_summary_empty_uses_default_next_step(self) -> None:
+        from drift.finding_rendering import build_first_run_summary
+
+        summary = build_first_run_summary(_FakeAnalysis(), language="en")
+
+        assert summary["top_findings"] == []
+        assert "drift check --fail-on none" in summary["next_step"]
+
+
 # ===========================================================================
 # Status command (Click CliRunner)
 # ===========================================================================
@@ -322,6 +376,26 @@ class TestStatusCommand:
         runner = CliRunner()
         result = runner.invoke(status, ["--repo", str(tmp_path), "--top", "1"])
         assert result.exit_code == 0
+
+    def test_status_json_payload_contains_guidance_fields(self) -> None:
+        from drift.commands.status import _build_json_payload
+
+        finding = _FakeFinding(file_path=Path("src/app.py"), start_line=7)
+        payload = _build_json_payload(
+            TrafficLight.YELLOW,
+            "Es gibt Stellen, die Aufmerksamkeit brauchen.",
+            False,
+            [finding],
+            _FakeAnalysis(findings=[finding]),
+            {"green_max": 0.35, "yellow_max": 0.65},
+            {
+                "why_this_matters": "Ein einzelner Fix ist der beste erste Schritt.",
+                "next_step": "Shared first step",
+            },
+        )
+
+        assert payload["why_this_matters"] == "Ein einzelner Fix ist der beste erste Schritt."
+        assert payload["next_step"] == "Shared first step"
 
 
 # ===========================================================================

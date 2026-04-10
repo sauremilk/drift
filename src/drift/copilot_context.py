@@ -298,6 +298,103 @@ def _wrap_markers(content: str) -> str:
 
 
 # ---------------------------------------------------------------------------
+# Multi-format generators (Cursor, Claude)
+# ---------------------------------------------------------------------------
+
+#: Valid target identifiers for ``--target``
+VALID_TARGETS: frozenset[str] = frozenset({"copilot", "cursor", "claude"})
+
+
+def generate_cursorrules(analysis: RepoAnalysis) -> str:
+    """Generate ``.cursorrules`` content from analysis results.
+
+    Cursor uses a flat rule-per-line format inside a ``.cursorrules``
+    file at the repository root.
+    """
+    actionable = _collect_actionable_findings(analysis)
+
+    lines: list[str] = []
+    lines.append("# Architectural constraints (drift-generated)")
+    lines.append(
+        f"# Drift score: {analysis.drift_score:.3f} ({analysis.severity.value})"
+    )
+    lines.append("")
+
+    if not actionable:
+        lines.append("# No significant architectural issues detected.")
+        return "\n".join(lines) + "\n"
+
+    for signal in sorted(actionable, key=lambda s: len(actionable[s]), reverse=True):
+        findings = actionable[signal]
+        abbr = signal_abbrev(signal)
+        for f in findings[:5]:
+            rule_text = f.fix or f.description or f.title
+            # Cursor rules are single-line directives
+            lines.append(f"# [{abbr}] {rule_text}")
+
+    lines.append("")
+    return "\n".join(lines) + "\n"
+
+
+def generate_claude_instructions(analysis: RepoAnalysis) -> str:
+    """Generate ``CLAUDE.md`` content from analysis results.
+
+    Claude Code uses a ``CLAUDE.md`` file at the repository root.
+    Format uses Markdown with a clear instruction section.
+    """
+    actionable = _collect_actionable_findings(analysis)
+
+    sections: list[str] = []
+    sections.append("# Architectural Constraints (drift-generated)\n")
+    sections.append(
+        f"Drift score: {analysis.drift_score:.3f} ({analysis.severity.value})\n"
+    )
+
+    if not actionable:
+        sections.append("No significant architectural issues detected.\n")
+        return "\n".join(sections)
+
+    sections.append("## Rules\n")
+    for signal in sorted(actionable, key=lambda s: len(actionable[s]), reverse=True):
+        findings = actionable[signal]
+        abbr = signal_abbrev(signal)
+        for f in findings[:5]:
+            rule_text = f.fix or f.description or f.title
+            sections.append(f"- **{abbr}**: {rule_text}")
+
+    if analysis.module_scores:
+        worst = max(analysis.module_scores, key=lambda m: m.drift_score)
+        sections.append("")
+        sections.append("## Hotspots\n")
+        sections.append(
+            f"- Most eroded module: `{worst.path.as_posix()}` "
+            f"(score: {worst.drift_score:.3f})"
+        )
+
+    sections.append("")
+    return "\n".join(sections) + "\n"
+
+
+def target_default_path(target: str, repo_path: Path) -> Path:
+    """Return the default output path for a given target format."""
+    if target == "cursor":
+        return repo_path / ".cursorrules"
+    if target == "claude":
+        return repo_path / "CLAUDE.md"
+    # copilot (default)
+    return repo_path / ".github" / "copilot-instructions.md"
+
+
+def generate_for_target(target: str, analysis: RepoAnalysis) -> str:
+    """Generate instructions for the specified target format."""
+    if target == "cursor":
+        return generate_cursorrules(analysis)
+    if target == "claude":
+        return generate_claude_instructions(analysis)
+    return generate_instructions(analysis)
+
+
+# ---------------------------------------------------------------------------
 # File I/O with marker-based merge
 # ---------------------------------------------------------------------------
 

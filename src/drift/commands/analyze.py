@@ -155,6 +155,20 @@ from drift.errors import EXIT_FINDINGS_ABOVE_THRESHOLD
     default="auto",
     help="Progress reporting: auto (Rich bar), json (JSON-lines on stderr), none.",
 )
+@click.option(
+    "--explain",
+    "explain",
+    is_flag=True,
+    default=False,
+    help="Show contextual explanation panels for each finding (why it matters, suggested action).",
+)
+@click.option(
+    "--group-by",
+    "group_by",
+    type=click.Choice(["signal", "severity", "directory", "module"]),
+    default=None,
+    help="Group findings by dimension: signal, severity, directory, or module.",
+)
 def analyze(
     repo: Path,
     path: str | None,
@@ -180,6 +194,8 @@ def analyze(
     compact_json: bool,
     no_color: bool,
     progress_format: str,
+    explain: bool,
+    group_by: str | None,
 ) -> None:
     """Detailed drift analysis \u2014 produces comprehensive findings for investigation and triage.
 
@@ -328,7 +344,11 @@ def analyze(
     if quiet:
         sev = analysis.severity.value.upper()
         n = len(analysis.findings)
-        click.echo(f"score: {analysis.drift_score:.3f}  severity: {sev}  findings: {n}")
+        grade = analysis.grade[0]
+        click.echo(
+            f"score: {analysis.drift_score:.3f}  grade: {grade}"
+            f"  severity: {sev}  findings: {n}"
+        )
     elif output_format == "json":
         from drift.output.json_output import analysis_to_json
 
@@ -336,6 +356,8 @@ def analyze(
             analysis,
             compact=compact_json,
             drift_score_scope=drift_score_scope,
+            language=cfg.language,
+            group_by=group_by,
         )
         _emit_machine_output(json_text, output_file)
     elif output_format == "sarif":
@@ -367,6 +389,9 @@ def analyze(
             sort_by=sort_by,
             max_findings=max_findings,
             show_code=not no_code,
+            language=cfg.language,
+            explain=explain,
+            group_by=group_by,
         )
 
         if show_suppressed and analysis.suppressed_count:

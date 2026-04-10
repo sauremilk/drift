@@ -93,6 +93,9 @@ markdown = [
 mcp = [
     "mcp[cli]>=1.2.0,<2.0",
 ]
+watch = [
+    "watchfiles>=1.0",
+]
 dev = [
     "pytest>=8.0",
     "pytest-cov>=5.0",

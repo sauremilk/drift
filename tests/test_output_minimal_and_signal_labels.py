@@ -16,6 +16,7 @@ from drift.output.rich_output import _signal_label
 class _DummyConfig:
     embeddings_enabled = True
     embedding_model = None
+    language = None
 
     def severity_gate(self) -> str:
         return "high"

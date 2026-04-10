@@ -59,6 +59,7 @@ def status(
     """
     from drift.analyzer import analyze_repo
     from drift.config import DriftConfig
+    from drift.finding_rendering import build_first_run_summary, select_priority_findings
     from drift.output.guided_output import (
         can_continue,
         determine_status,
@@ -80,6 +81,7 @@ def status(
         prof = get_profile("vibe-coding")
 
     thresholds = prof.guided_thresholds if prof.guided_thresholds else None
+    language = cfg.language or prof.output_language or "de"
 
     # --- Run analysis (reuses existing engine) ---
     analysis = analyze_repo(
@@ -96,16 +98,19 @@ def status(
     continue_flag = can_continue(light)
 
     # --- Top findings by severity ---
-    sorted_findings = sorted(
-        analysis.findings,
-        key=lambda f: (-_severity_rank(f.severity.value), -f.score),
-    )
-    top_findings = sorted_findings[:top]
+    top_findings = select_priority_findings(analysis, max_items=top)
+    first_run = build_first_run_summary(analysis, max_items=top, language=language)
 
     # --- JSON output ---
     if output_json:
         payload = _build_json_payload(
-            light, headline, continue_flag, top_findings, analysis, thresholds
+            light,
+            headline,
+            continue_flag,
+            top_findings,
+            analysis,
+            thresholds,
+            first_run,
         )
         click.echo(json.dumps(payload, ensure_ascii=False, indent=2))
         sys.exit(0)
@@ -113,6 +118,7 @@ def status(
     # --- Rich terminal output ---
     console.print()
     console.print(f"  {emoji}  {headline}", style="bold")
+    console.print(f"  {first_run['why_this_matters']}", style="dim")
     console.print()
 
     if not is_calibrated(thresholds):
@@ -144,6 +150,7 @@ def status(
             "  [yellow]Tipp: Kopiere einen der Prompts oben "
             "und gib ihn deinem KI-Assistenten.[/yellow]"
         )
+    console.print(f"  [bold]Naechster Schritt:[/bold] {first_run['next_step']}")
     console.print()
 
     sys.exit(0)
@@ -183,6 +190,7 @@ def _build_json_payload(
     top_findings: Sequence[object],
     analysis: object,
     thresholds: dict[str, float] | None,
+    first_run: dict[str, object],
 ) -> dict[str, object]:
     """Build the JSON payload for ``drift status --json``."""
     from drift.finding_rendering import _finding_guided
@@ -198,5 +206,7 @@ def _build_json_payload(
         "can_continue": continue_flag,
         "calibrated": is_calibrated(thresholds),
         "findings_count": len(getattr(analysis, "findings", [])),
+        "why_this_matters": first_run.get("why_this_matters"),
+        "next_step": first_run.get("next_step"),
         "top_findings": findings_list,
     }

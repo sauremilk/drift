@@ -253,6 +253,7 @@ from drift.commands.status import status
 from drift.commands.timeline import timeline
 from drift.commands.trend import trend
 from drift.commands.validate_cmd import validate
+from drift.commands.watch import watch
 
 main.add_command(analyze)
 main.add_command(baseline)
@@ -281,6 +282,7 @@ main.add_command(trend)
 main.add_command(validate)
 main.add_command(self_analyze)
 main.add_command(badge)
+main.add_command(watch)
 
 
 def safe_main() -> None:

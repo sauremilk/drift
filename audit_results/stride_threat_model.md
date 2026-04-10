@@ -1,5 +1,20 @@
 # STRIDE Threat Model
 
+## 2026-04-10 - ADR-043: Shared First-Run Summary Contract
+
+- Scope: Additive first-run guidance block shared by `drift analyze --format json`, Rich terminal output, and `drift status`. The change introduces a common prioritization helper in `finding_rendering.py`, a new `first_run` top-level JSON block in `json_output.py`, and a `Start Here` / `Starte hier` panel in `rich_output.py`. `status.py` now reuses the same prioritized findings and next-step summary instead of local sorting.
+- Input path changes: None.
+- Output path changes: Yes - existing CLI JSON, Rich terminal output, and guided status JSON gain additive guidance fields derived from existing findings.
+- External interface changes: Additive only. Existing findings, fix_first, and status fields remain; new fields are `first_run` in analyze JSON plus `why_this_matters` / `next_step` in status JSON.
+- Trust boundary: No new trust boundary. All new text is derived deterministically from existing in-process analysis data; no new network, subprocess, or filesystem write path introduced.
+- STRIDE review:
+	- S (Spoofing): No identity or authentication boundary change.
+	- T (Tampering): Low risk. Guidance is derived from existing findings and deterministic prioritization rules. A malicious change would need to tamper with the underlying repository analysis data already in scope.
+	- R (Repudiation): Improved. `analyze`, `status`, and JSON consumers now point to the same first recommended action instead of command-specific heuristics, reducing ambiguity in follow-up decisions.
+	- I (Information Disclosure): No new sensitive data classes. The new block only reshapes existing finding metadata and recommendations.
+	- D (Denial of Service): Negligible overhead. The helper performs bounded in-memory sorting/deduplication over the already-produced finding list.
+	- E (Elevation of Privilege): No privilege boundary change.
+
 ## 2026-06-01 - ADR-042: Schema Evolution and Finding-ID Promotion
 
 - Scope: Output schema unification (`OUTPUT_SCHEMA_VERSION` in `models.py`) from split "1.1"/"2.0" to unified "2.1". Promotion of `finding_id` (16-char SHA256 fingerprint) into all output channels: CLI JSON (`json_output.py`), SARIF (`findings_to_sarif`), API helpers (`api_helpers.py`), and agent tasks. Extension of `drift explain` and MCP `drift_explain` to accept finding fingerprints for finding-level drill-down. New `drift.output.schema.json` published for agent-side contract validation.

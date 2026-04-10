@@ -10,6 +10,33 @@ Repository: https://github.com/mick-gsk/drift
 Documentation: https://mick-gsk.github.io/drift/
 Command: drift analyze --repo .
 
+## Two Modes — Same Engine
+
+Drift runs as CLI or MCP server. Both use the same analysis engine and signal set.
+
+CLI mode (terminals, CI):
+  drift brief --task "refactor auth" → structural guardrails for agent prompts
+  drift nudge --changed-files src/auth.py → real-time safe_to_commit check
+  drift check --fail-on high → CI gate (exits 1 on violations)
+  drift analyze --repo . --format json → full analysis report
+
+MCP mode (Cursor, Claude Code, Copilot):
+  drift_brief → scope-aware guardrails injected into agent context
+  drift_nudge → safe_to_commit: true/false after each edit
+  drift_diff → before/after comparison before push
+  drift_feedback → mark findings as TP/FP to calibrate signal weights
+
+## safe_to_commit
+
+drift nudge returns a safe_to_commit boolean with blocking reasons. Blocks on:
+- New critical/high-severity findings
+- Score degradation exceeding threshold
+- Expired baseline (full rescan needed)
+- Parse failures in changed files
+- Git change detection failure
+
+This gives AI coding agents an immediate go/no-go signal after each edit — no manual review needed.
+
 ## Use Cases
 
 - Detect pattern fragmentation: same concern implemented N different ways in one module
@@ -18,16 +45,28 @@ Command: drift analyze --repo .
 - Measure explainability deficit: complex functions without documentation or types
 - Track temporal volatility: files changed by too many authors too fast
 - Detect system misalignment: novel import patterns foreign to their module
+- Detect phantom references: unresolvable function/class references (AI hallucination indicator)
 - CI gate: block PRs on high-severity architectural findings via GitHub Actions
+- Agent guardrails: inject structural constraints before AI coding sessions
 - Trend tracking: monitor drift score evolution over time
+
+## Benchmarks
+
+Ground-truth precision: 100% (47 TP, 0 FP across 114 fixtures, 17 signals)
+Ground-truth recall: 100% (0 FN)
+Mutation recall: 100% (25/25 injected patterns detected)
+Wild-repo precision: 77% strict / 95% lenient (5 repos, historical v0.5 model)
+No LLM in the detection pipeline — same input, same output, reproducible in CI.
+
+Artifacts: benchmark_results/v2.7.0_precision_recall_baseline.json, benchmark_results/mutation_benchmark.json
+Full study: docs/STUDY.md
 
 ## Signals
 
-### Scoring-active (15)
+### Scoring-active (20, contribute to composite drift score)
 - PFS: Pattern Fragmentation (weight 0.16)
 - AVS: Architecture Violations (weight 0.16)
 - MDS: Mutant Duplicates (weight 0.13)
-- TVS: Temporal Volatility (weight 0.0)
 - EDS: Explainability Deficit (weight 0.09)
 - SMS: System Misalignment (weight 0.08)
 - DIA: Doc-Implementation Drift (weight 0.04)
@@ -37,19 +76,20 @@ Command: drift analyze --repo .
 - GCD: Guard Clause Deficit (weight 0.03)
 - BAT: Bypass Accumulation (weight 0.03)
 - ECM: Exception Contract Drift (weight 0.03)
+- MAZ: Missing Authorization (weight 0.02, CWE-862)
+- PHR: Phantom Reference (weight 0.02, AI hallucination indicator)
 - COD: Cohesion Deficit (weight 0.01)
+- HSC: Hardcoded Secret (weight 0.01, CWE-798)
+- ISD: Insecure Default (weight 0.01, CWE-1188)
 - CCC: Co-Change Coupling (weight 0.005)
+- FOE: Fan-Out Explosion (weight 0.005)
+- TVS: Temporal Volatility (weight 0.0, part of scoring model, temporarily zero-weighted)
 
-### Report-only (9, weight 0.0, pending validation)
+### Report-only (4, weight 0.0, findings shown but not scored)
 - TSA: TypeScript Architecture — TS/JS layer leaks, cycles, cross-package imports
 - CXS: Cognitive Complexity — deeply nested control flow
-- FOE: Fan-Out Explosion — high dependency fan-out
 - CIR: Circular Import — circular dependency chains
 - DCA: Dead Code Accumulation — unreferenced symbols
-- MAZ: Missing Authorization — API endpoints lacking auth checks (CWE-862)
-- ISD: Insecure Default — unsafe default config patterns (CWE-1188)
-- HSC: Hardcoded Secret — embedded secrets/credentials (CWE-798)
-- PHR: Phantom Reference — unresolvable function/class references (AI hallucination indicator)
 
 ## Docs
 
@@ -62,9 +102,9 @@ Command: drift analyze --repo .
 
 ## Optional
 
-- [Full Benchmark Study](https://github.com/mick-gsk/drift/blob/main/docs/STUDY.md): 97.3% precision (strict, v0.5 model) on 263 ground-truth-labeled findings across 15 repositories — not revalidated for the current v2.5.x 24-signal model
+- [Full Benchmark Study](https://github.com/mick-gsk/drift/blob/main/docs/STUDY.md): 100% ground-truth precision/recall on 114 fixtures (v2.7.0+), 77% strict wild-repo precision (v0.5 model on 5 repos)
 - [Changelog](https://github.com/mick-gsk/drift/blob/main/CHANGELOG.md): version history and signal improvements
-- [Case Studies](https://mick-gsk.github.io/drift/case-studies/): FastAPI, Pydantic, Django
+- [Case Studies](https://mick-gsk.github.io/drift/case-studies/): FastAPI, Pydantic, Django, Paramiko
 - [GitHub Action](https://github.com/mick-gsk/drift/blob/main/action.yml): CI integration with SARIF upload
 
 ## Keywords

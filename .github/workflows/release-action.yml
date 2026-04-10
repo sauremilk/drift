@@ -1,0 +1,35 @@
+# Release Action — keeps major version tag (v1) updated alongside semver tags.
+# Triggered after the main release workflow creates a new vX.Y.Z tag.
+name: Release Action Tag
+
+on:
+  push:
+    tags:
+      - "v[0-9]+.[0-9]+.[0-9]+"
+
+permissions:
+  contents: write
+
+jobs:
+  update-major-tag:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Update major version tag
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG="${GITHUB_REF#refs/tags/}"
+          MAJOR="${TAG%%.*}"
+
+          echo "Release tag: ${TAG}"
+          echo "Major tag:   ${MAJOR}"
+
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          # Force-update the major version tag (e.g. v2) to point to
+          # the same commit as the full semver tag (e.g. v2.5.1).
+          git tag -fa "${MAJOR}" -m "Update ${MAJOR} tag to ${TAG}"
+          git push origin "${MAJOR}" --force

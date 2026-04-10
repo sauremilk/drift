@@ -41,6 +41,15 @@
       "minimum": 0.0,
       "maximum": 1.0
     },
+    "grade": {
+      "type": "string",
+      "enum": ["A", "B", "C", "D", "F"],
+      "description": "Letter grade derived from drift_score (A=best, F=worst)."
+    },
+    "grade_label": {
+      "type": "string",
+      "description": "Human-readable label for the grade, e.g. 'Good' or 'Critical Drift'."
+    },
     "drift_score_scope": {
       "type": "string"
     },

@@ -1,5 +1,23 @@
 # Risk Register
 
+## 2026-04-10 - ADR-043: Shared First-Run Summary Contract
+
+- Risk ID: RISK-OUTPUT-2026-04-10-043
+- Component: `src/drift/finding_rendering.py`, `src/drift/output/json_output.py`, `src/drift/output/rich_output.py`, `src/drift/commands/analyze.py`, `src/drift/commands/status.py`
+- Type: Output contract extension (additive, non-breaking)
+- Description: `drift analyze` and `drift status` now share one deterministic first-run prioritization path. JSON output gains a top-level `first_run` block, Rich output gains a `Start Here` / `Starte hier` panel, and status JSON adds `why_this_matters` plus `next_step`. This improves first-run clarity but creates a risk that command surfaces drift apart again if one path is changed without the shared helper.
+- Trigger: `drift analyze` Rich/JSON output or `drift status --json` after future output-only changes that bypass the shared helper.
+- Impact: Low to Medium. Incorrect or divergent first-step guidance can mis-prioritize remediation work even when the underlying findings remain correct.
+- Mitigation:
+  - Shared helper functions `select_priority_findings()` and `build_first_run_summary()` centralize ranking and summary text.
+  - Additive contract only; existing `fix_first`, findings, and status fields remain intact.
+  - Regression coverage added in `tests/test_guided_mode.py`, `tests/test_json_output.py`, and `tests/test_output_golden.py`.
+  - ADR-043 updated so future output work is expected to preserve the shared contract.
+  - Verification commands:
+    - `pytest tests/test_guided_mode.py tests/test_json_output.py tests/test_output_golden.py -q --maxfail=1`
+    - `drift analyze --repo . --format json --exit-zero`
+- Residual risk: Low. Main residual risk is future maintenance drift between user-facing surfaces, bounded by the shared helper and regression tests.
+
 ## 2026-04-10 - ADR-040: PHR Third-Party Import Resolver
 
 - Risk ID: RISK-PHR-IMPORT-RESOLVER-2026-04-10-040

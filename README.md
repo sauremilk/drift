@@ -7,13 +7,12 @@
 **AI writes the code. Drift keeps the architecture honest.**
 
 [![CI](https://github.com/mick-gsk/drift/actions/workflows/ci.yml/badge.svg)](https://github.com/mick-gsk/drift/actions/workflows/ci.yml)
+[![codecov](https://codecov.io/gh/mick-gsk/drift/branch/main/graph/badge.svg)](https://codecov.io/gh/mick-gsk/drift)
 [![PyPI](https://img.shields.io/pypi/v/drift-analyzer?cacheSeconds=300)](https://pypi.org/project/drift-analyzer/)
 [![PyPI Downloads](https://img.shields.io/pypi/dm/drift-analyzer)](https://pypi.org/project/drift-analyzer/)
 [![Python versions](https://img.shields.io/pypi/pyversions/drift-analyzer)](https://pypi.org/project/drift-analyzer/)
-[![Drift Score](https://img.shields.io/badge/drift%20score-0.50-yellow?style=flat)](docs/STUDY.md)
-[![codecov](https://codecov.io/gh/mick-gsk/drift/branch/main/graph/badge.svg)](https://codecov.io/gh/mick-gsk/drift)
-[![License](https://img.shields.io/github/license/mick-gsk/drift)](LICENSE)
 [![GitHub Stars](https://img.shields.io/github/stars/mick-gsk/drift?style=flat)](https://github.com/mick-gsk/drift/stargazers)
+[![License](https://img.shields.io/github/license/mick-gsk/drift)](LICENSE)
 [![Discussions](https://img.shields.io/github/discussions/mick-gsk/drift)](https://github.com/mick-gsk/drift/discussions)
 
 [Docs](https://mick-gsk.github.io/drift/) · [Quick Start](docs-site/getting-started/quickstart.md) · [Benchmarking](docs-site/benchmarking.md) · [Trust & Limitations](docs-site/trust-evidence.md)
@@ -23,6 +22,31 @@
 ---
 
 ## 🤔 Why drift?
+
+Most linters catch single-file style issues. Drift catches what they miss:
+cross-file structural drift that accumulates silently during AI-assisted development.
+
+<table>
+<tr><th>Without Drift</th><th>With Drift</th></tr>
+<tr>
+<td>
+
+- Agent duplicates a helper in 3 modules — tests pass
+- Layer boundary violated in a refactor — CI green
+- Auth middleware reimplemented 4 ways — linter silent
+- Score degrades over weeks — nobody notices
+
+</td>
+<td>
+
+- `drift brief` injects structural guardrails *before* the agent writes code
+- `drift nudge` flags new violations in real-time during the session
+- `drift check` blocks the commit on high-severity findings
+- `drift trend` tracks score evolution — regressions are visible
+
+</td>
+</tr>
+</table>
 
 > 🔍 **Before** — `drift brief` analyses your repo scope and generates structural constraints ready to paste into your agent prompt  
 > 🚦 **After** — `drift check` runs 20+ cross-file signals and exits 1 on violations — CI, SARIF, and pre-commit ready  
@@ -53,7 +77,7 @@ drift brief --task "refactor the auth service" --format markdown
 
 ```bash
 drift check --fail-on high         # local or CI gate
-drift diff --staged-only           # pre-commit hook
+drift check --fail-on none         # pre-commit hook (advisory, report-only)
 drift analyze --repo . --format json  # full report
 ```
 
@@ -79,7 +103,16 @@ drift analyze --repo . --format json  # full report
     upload-sarif: "true"        # findings appear as PR annotations
 ```
 
-**MCP / AI Tools:** Cursor, Claude Code, and Copilot can call drift directly via MCP server or HTTP API — includes `drift_nudge` for real-time session feedback and negative-context feeds.
+**MCP / AI Tools:** Cursor, Claude Code, and Copilot call drift directly via MCP server — the agent runs a full session loop:
+
+| Phase | MCP Tool | What it does |
+|---|---|---|
+| **Plan** | `drift_brief` | Scope-aware guardrails injected into the agent prompt |
+| **Code** | `drift_nudge` | Real-time `safe_to_commit` check after each edit |
+| **Verify** | `drift_diff` | Full before/after comparison before push |
+| **Learn** | `drift_feedback` | Mark findings as TP/FP — calibrates signal weights |
+
+📖 [MCP setup guide →](docs-site/integrations.md)
 
 **pre-commit:** Add `drift diff --staged-only` as a hook — findings block the commit before they reach CI.
 
@@ -157,11 +190,12 @@ Comparison reflects primary design scope per [STUDY.md §9](docs/STUDY.md).
 ---
 
 > [!NOTE]
-> Drift analyzes its own source code on every release. Results are checked in as [benchmark_results/drift_self.json](benchmark_results/drift_self.json). Same input, same output — reproducible in CI.
->
-> ```bash
-> drift self   # or: drift analyze --repo https://github.com/mick-gsk/drift
-> ```
+> Drift analyzes its own source code on every release — same input, same output, reproducible in CI.
+> Results: [benchmark_results/drift_self.json](benchmark_results/drift_self.json)
+
+```bash
+drift self   # or: drift analyze --repo https://github.com/mick-gsk/drift
+```
 
 ---
 
@@ -172,7 +206,7 @@ Comparison reflects primary design scope per [STUDY.md §9](docs/STUDY.md).
 | [Quick Start](docs-site/getting-started/quickstart.md) | Install → first findings in 2 minutes |
 | [Brief & Guardrails](docs-site/integrations.md) | Pre-task agent workflow |
 | [CI Integration](docs-site/getting-started/team-rollout.md) | GitHub Action, SARIF, pre-commit, progressive rollout |
-| [Signal Reference](docs-site/algorithms/signals.md) | All 21 signals with detection logic |
+| [Signal Reference](docs-site/algorithms/signals.md) | All 25 signals with detection logic |
 | [Benchmarking & Trust](docs-site/benchmarking.md) | Precision/Recall, methodology, artifacts |
 | [MCP & AI Tools](docs-site/integrations.md) | Cursor, Claude Code, Copilot, HTTP API |
 | [Configuration](docs-site/getting-started/configuration.md) | drift.yaml, layer boundaries, signal weights |
@@ -214,8 +248,14 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) · [ROADMAP.md](ROADMAP.md)
 
 Drift's pipeline is deterministic and benchmark artifacts are published in the repository — claims can be inspected, not just trusted.
 
+| Metric | Value | Artifact |
+|---|---|---|
+| Ground-truth precision | 100 % (47 TP, 0 FP) | [v2.7.0 baseline](benchmark_results/v2.7.0_precision_recall_baseline.json) |
+| Ground-truth recall | 100 % (0 FN across 114 fixtures) | [v2.7.0 baseline](benchmark_results/v2.7.0_precision_recall_baseline.json) |
+| Mutation recall | 100 % (25/25 injected patterns) | [mutation benchmark](benchmark_results/mutation_benchmark.json) |
+| Wild-repo precision | 77 % strict / 95 % lenient (5 repos) | [study §5](docs/STUDY.md) |
+
 - **No LLM in detection.** Same input, same output. Reproducible in CI and auditable.
-- **Benchmarked:** 77 % strict / 95 % lenient precision on a historical ground-truth baseline (286 findings, 5 repos). 88 % mutation recall (15/17 patterns). These numbers apply to historical benchmark models and have not been revalidated for the current signal set.
 - **Single-rater caveat:** ground-truth classification is not yet independently replicated.
 - **Small-repo noise:** repositories with few files can produce noisy scores. Calibration mitigates but does not eliminate this.
 - **Temporal signals** depend on clone depth and git history quality.

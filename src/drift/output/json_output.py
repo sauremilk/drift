@@ -10,6 +10,7 @@ from drift.api_helpers import build_drift_score_scope, signal_abbrev, signal_abb
 from drift.baseline import finding_fingerprint
 from drift.config import DriftConfig
 from drift.finding_context import classify_finding_context, split_findings_by_context
+from drift.finding_rendering import _select_priority_findings_from_list, build_first_run_summary
 from drift.models import (
     OUTPUT_SCHEMA_VERSION,
     Finding,
@@ -116,21 +117,9 @@ def _expected_benefit_for_finding(f: Finding) -> str:
 
 
 def _fix_first_list(ranked_findings: list[Finding], max_items: int = 10) -> list[dict[str, Any]]:
-    prioritized = sorted(
-        ranked_findings,
-        key=lambda f: (
-            _priority_rank(_priority_class(f)),
-            _SEVERITY_RANK[f.severity],
-            -float(f.impact),
-            -float(f.score_contribution),
-            f.signal_type,
-            f.file_path.as_posix() if f.file_path else "",
-            int(f.start_line or 0),
-        ),
-    )
-
     items: list[dict[str, Any]] = []
-    for idx, f in enumerate(prioritized[:max_items], start=1):
+    prioritized = _select_priority_findings_from_list(ranked_findings, max_items=max_items)
+    for idx, f in enumerate(prioritized, start=1):
         items.append(
             {
                 "rank": idx,
@@ -272,6 +261,8 @@ def analysis_to_json(
     indent: int = 2,
     compact: bool = False,
     drift_score_scope: str | None = None,
+    language: str | None = None,
+    group_by: str | None = None,
 ) -> str:
     """Serialize a RepoAnalysis to JSON string."""
     # Rank findings by impact (descending) for consumer convenience
@@ -304,6 +295,8 @@ def analysis_to_json(
         "repo": analysis.repo_path.as_posix(),
         "analyzed_at": analysis.analyzed_at.isoformat(),
         "drift_score": round(analysis.drift_score, 3),
+        "grade": analysis.grade[0],
+        "grade_label": analysis.grade[1],
         "drift_score_scope": drift_score_scope or build_drift_score_scope(context="repo"),
         "severity": analysis.severity.value,
         "analysis_status": _analysis_status_to_dict(analysis),
@@ -322,6 +315,11 @@ def analysis_to_json(
             "ai_tools_detected": analysis.ai_tools_detected,
             "analysis_duration_seconds": analysis.analysis_duration_seconds,
         },
+        "first_run": build_first_run_summary(
+            analysis,
+            max_items=3,
+            language=language,
+        ),
         "findings_compact": compact_findings,
         "compact_summary": {
             "findings_total": len(ranked),
@@ -353,6 +351,18 @@ def analysis_to_json(
             for nc in findings_to_negative_context(analysis.findings, max_items=20)
         ],
     }
+
+    if group_by:
+        from drift.output.grouping import group_findings
+
+        grouped = group_findings(deduped_findings, group_by)
+        data["grouped_findings"] = {
+            name: [
+                _finding_compact_dict(f, rank=i, duplicate_count=1)
+                for i, f in enumerate(items, 1)
+            ]
+            for name, items in grouped.items()
+        }
 
     if not compact:
         data["modules"] = [_module_to_dict(m) for m in analysis.module_scores]

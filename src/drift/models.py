@@ -385,6 +385,13 @@ class RepoAnalysis:
         return severity_for_score(self.drift_score)
 
     @property
+    def grade(self) -> tuple[str, str]:
+        """Letter grade derived from drift score, e.g. ``("B", "Good")``."""
+        from drift.scoring.engine import score_to_grade
+
+        return score_to_grade(self.drift_score)
+
+    @property
     def is_degraded(self) -> bool:
         return self.analysis_status == "degraded"
 

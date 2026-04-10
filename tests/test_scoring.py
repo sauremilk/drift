@@ -12,6 +12,7 @@ from drift.scoring.engine import (
     composite_score,
     compute_module_scores,
     compute_signal_scores,
+    score_to_grade,
     severity_gate_pass,
 )
 
@@ -283,3 +284,42 @@ def test_dampening_k20_single_finding_penalty():
     expected = round(0.9 * damp, 4)
     assert scores[SignalType.ARCHITECTURE_VIOLATION] == pytest.approx(expected, abs=0.001)
     assert scores[SignalType.ARCHITECTURE_VIOLATION] > 0.0  # not zeroed
+
+
+# ── Letter grade ───────────────────────────────────────────────────────────
+
+
+@pytest.mark.parametrize(
+    "score, expected_grade",
+    [
+        (0.00, "A"),
+        (0.10, "A"),
+        (0.19, "A"),
+        (0.20, "B"),
+        (0.39, "B"),
+        (0.40, "C"),
+        (0.59, "C"),
+        (0.60, "D"),
+        (0.79, "D"),
+        (0.80, "F"),
+        (0.95, "F"),
+        (1.00, "F"),
+    ],
+)
+def test_score_to_grade_boundaries(score: float, expected_grade: str):
+    grade, label = score_to_grade(score)
+    assert grade == expected_grade
+    assert isinstance(label, str)
+    assert len(label) > 0
+
+
+def test_score_to_grade_returns_tuple():
+    grade, label = score_to_grade(0.0)
+    assert grade == "A"
+    assert label == "Excellent"
+
+
+def test_score_to_grade_worst_case():
+    grade, label = score_to_grade(1.0)
+    assert grade == "F"
+    assert label == "Critical Drift"
