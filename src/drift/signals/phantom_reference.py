@@ -18,7 +18,9 @@ from __future__ import annotations
 
 import ast
 import builtins
+import importlib.util
 import logging
+import sys
 from collections import defaultdict
 from pathlib import Path, PurePosixPath
 from typing import ClassVar, Literal
@@ -59,6 +61,9 @@ _FRAMEWORK_GLOBALS: frozenset[str] = frozenset({
     "__version__", "__package__", "__spec__",
 })
 
+# Standard library module names (Python 3.10+) — used to skip stdlib imports
+_STDLIB_MODULES: frozenset[str] = frozenset(sys.stdlib_module_names)
+
 # Minimum function count to flag a file (avoids noise on tiny scripts)
 _MIN_CALLS_FOR_FINDING = 1
 
@@ -66,6 +71,58 @@ _MIN_CALLS_FOR_FINDING = 1
 # ---------------------------------------------------------------------------
 # AST helpers — collect used names and locally defined names
 # ---------------------------------------------------------------------------
+
+
+def _is_in_try_except_import_error(node: ast.ImportFrom | ast.Import, tree: ast.Module) -> bool:
+    """Check whether an import node lives inside a try/except ImportError block.
+
+    Walks the top-level and nested try blocks to find import nodes that are
+    guarded by ``except ImportError`` (conditional / optional imports).
+    """
+    for top_node in ast.walk(tree):
+        if not isinstance(top_node, ast.Try):
+            continue
+        # Check if any handler catches ImportError / ModuleNotFoundError
+        has_import_guard = False
+        for handler in top_node.handlers:
+            if handler.type is None:  # bare except
+                has_import_guard = True
+                break
+            guard_names: list[str] = []
+            if isinstance(handler.type, ast.Name):
+                guard_names.append(handler.type.id)
+            elif isinstance(handler.type, ast.Tuple):
+                for elt in handler.type.elts:
+                    if isinstance(elt, ast.Name):
+                        guard_names.append(elt.id)
+            if any(n in ("ImportError", "ModuleNotFoundError") for n in guard_names):
+                has_import_guard = True
+                break
+        if not has_import_guard:
+            continue
+        # Check if *our* import node lives in the try body
+        for body_node in ast.walk(top_node):
+            if body_node is node:
+                return True
+    return False
+
+
+def _collect_type_checking_import_ids(tree: ast.Module) -> set[int]:
+    """Return Python ``id()`` values for all import nodes inside TYPE_CHECKING blocks."""
+    tc_ids: set[int] = set()
+    for node in ast.walk(tree):
+        if not isinstance(node, ast.If):
+            continue
+        is_tc = (isinstance(node.test, ast.Name) and node.test.id == "TYPE_CHECKING") or (
+            isinstance(node.test, ast.Attribute)
+            and isinstance(node.test.value, ast.Name)
+            and node.test.attr == "TYPE_CHECKING"
+        )
+        if is_tc:
+            for child in ast.walk(node):
+                if isinstance(child, (ast.Import, ast.ImportFrom)):
+                    tc_ids.add(id(child))
+    return tc_ids
 
 
 class _NameCollector(ast.NodeVisitor):
@@ -423,6 +480,12 @@ class PhantomReferenceSignal(BaseSignal):
         project_symbols = _build_project_symbols(parse_results)
         module_exports = _build_module_exports(parse_results, self.repo_path)
 
+        # Build set of root-level project module names for third-party check
+        project_modules: set[str] = set()
+        for mod_name in module_exports:
+            root = mod_name.split(".")[0]
+            project_modules.add(root)
+
         findings: list[Finding] = []
 
         for pr in parse_results:
@@ -432,7 +495,7 @@ class PhantomReferenceSignal(BaseSignal):
                 continue
 
             file_findings = self._analyze_file(
-                pr, project_symbols, module_exports,
+                pr, project_symbols, module_exports, project_modules,
             )
             findings.extend(file_findings)
 
@@ -443,6 +506,7 @@ class PhantomReferenceSignal(BaseSignal):
         pr: ParseResult,
         project_symbols: set[str],
         module_exports: dict[str, set[str]],
+        project_modules: set[str],
     ) -> list[Finding]:
         """Analyse a single file for phantom references."""
         # Re-parse the source to get the full AST
@@ -499,6 +563,18 @@ class PhantomReferenceSignal(BaseSignal):
             tree, module_exports,
         )
         phantoms.extend(phantom_imports)
+
+        # Find third-party imports that are not installed (ADR-040)
+        tc_ids = _collect_type_checking_import_ids(tree)
+        third_party_phantoms = self._check_third_party_imports(
+            tree, project_modules, tc_ids,
+        )
+        # Deduplicate: skip names already flagged from other checks
+        already_flagged = {p[0] for p in phantoms}
+        for name, line in third_party_phantoms:
+            if name not in already_flagged:
+                phantoms.append((name, line))
+                already_flagged.add(name)
 
         if not phantoms:
             return []
@@ -596,4 +672,63 @@ class PhantomReferenceSignal(BaseSignal):
                         ):
                             continue
                     phantoms.append((real_name, node.lineno))
+        return phantoms
+
+    @staticmethod
+    def _check_third_party_imports(
+        tree: ast.Module,
+        project_modules: set[str],
+        type_checking_ids: set[int] | None = None,
+    ) -> list[tuple[str, int]]:
+        """Detect imports of third-party packages not installed in the environment.
+
+        Uses ``importlib.util.find_spec`` for safe, non-executing validation.
+        Skips stdlib modules, project-internal modules, and conditional imports
+        guarded by ``try/except ImportError``.
+
+        Decision: ADR-040
+        """
+        phantoms: list[tuple[str, int]] = []
+        tc_ids = type_checking_ids or set()
+
+        for node in ast.walk(tree):
+            if isinstance(node, (ast.Import, ast.ImportFrom)):
+                # Skip imports in TYPE_CHECKING blocks
+                if id(node) in tc_ids:
+                    continue
+                # Determine the root module name to check
+                if isinstance(node, ast.Import):
+                    modules_to_check = [
+                        (alias.name.split(".")[0], node.lineno)
+                        for alias in node.names
+                    ]
+                else:
+                    # from X import Y — check X
+                    mod = node.module or ""
+                    if not mod:
+                        continue
+                    modules_to_check = [(mod.split(".")[0], node.lineno)]
+
+                for root_module, lineno in modules_to_check:
+                    # Skip stdlib modules
+                    if root_module in _STDLIB_MODULES:
+                        continue
+
+                    # Skip project-internal modules (already checked elsewhere)
+                    if root_module in project_modules:
+                        continue
+
+                    # Skip conditional imports: try/except ImportError
+                    if _is_in_try_except_import_error(node, tree):
+                        continue
+
+                    # Check if the package is installed
+                    try:
+                        spec = importlib.util.find_spec(root_module)
+                    except (ModuleNotFoundError, ValueError):
+                        spec = None
+
+                    if spec is None:
+                        phantoms.append((root_module, lineno))
+
         return phantoms
