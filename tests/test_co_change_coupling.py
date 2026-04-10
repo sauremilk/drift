@@ -5,10 +5,18 @@ from __future__ import annotations
 import datetime
 from pathlib import Path
 
+import pytest
+
 from drift.config import DriftConfig
 from drift.models import CommitInfo, ImportInfo, ParseResult, SignalType
+from drift.precision import (
+    ensure_signals_registered,
+    has_matching_finding,
+    run_fixture,
+)
 from drift.signals.base import SignalCapabilities
 from drift.signals.co_change_coupling import CoChangeCouplingSignal
+from tests.fixtures.ground_truth import FIXTURES_BY_SIGNAL, GroundTruthFixture
 
 
 def _commit(
@@ -139,3 +147,38 @@ class TestCoChangeCouplingSignal:
 
         findings = _run_signal(parse_results, commits)
         assert findings == []
+
+
+# ---------------------------------------------------------------------------
+# Parametrized ground-truth fixture tests
+# ---------------------------------------------------------------------------
+
+ensure_signals_registered()
+
+_CCC_FIXTURES = FIXTURES_BY_SIGNAL.get(SignalType.CO_CHANGE_COUPLING, [])
+
+
+@pytest.mark.parametrize(
+    "fixture",
+    _CCC_FIXTURES,
+    ids=[f.name for f in _CCC_FIXTURES],
+)
+def test_ccc_ground_truth(fixture: GroundTruthFixture, tmp_path: Path) -> None:
+    """Verify CCC ground-truth fixtures produce expected findings."""
+    findings, _warnings = run_fixture(
+        fixture, tmp_path, signal_filter={SignalType.CO_CHANGE_COUPLING}
+    )
+    for exp in fixture.expected:
+        if exp.signal_type != SignalType.CO_CHANGE_COUPLING:
+            continue
+        detected = has_matching_finding(findings, exp)
+        if exp.should_detect:
+            assert detected, (
+                f"[FN] {fixture.name}: expected CCC at {exp.file_path} "
+                f"but not found. Findings: {[(f.signal_type, f.file_path) for f in findings]}"
+            )
+        else:
+            assert not detected, (
+                f"[FP] {fixture.name}: did NOT expect CCC at {exp.file_path} "
+                f"but found. Findings: {[(f.signal_type, f.file_path) for f in findings]}"
+            )

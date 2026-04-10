@@ -32,7 +32,7 @@ Drift helps teams inspect architectural drift before it becomes normalized. The 
 - outputs: rich terminal, JSON, SARIF
 - GitHub Action support: yes
 - analysis style: deterministic, no LLM in the detector pipeline
-- scoring model: 15 scoring signals in the current composite model; 8 additional signals are report-only, with TVS at weight 0.0 pending re-validation
+- scoring model: 18 scoring signals in the current composite model; 6 additional signals are report-only, with TVS at weight 0.0 pending re-validation
 
 ## Suggested directory blurb
 

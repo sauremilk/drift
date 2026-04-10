@@ -73,6 +73,7 @@ _SIGNAL_CATEGORY: dict[str, NegativeContextCategory] = {
     SignalType.FAN_OUT_EXPLOSION: NegativeContextCategory.ARCHITECTURE,
     SignalType.TS_ARCHITECTURE: NegativeContextCategory.ARCHITECTURE,
     SignalType.COGNITIVE_COMPLEXITY: NegativeContextCategory.COMPLEXITY,
+    SignalType.PHANTOM_REFERENCE: NegativeContextCategory.COMPLETENESS,
 }
 
 

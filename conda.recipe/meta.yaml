@@ -69,7 +69,7 @@ about:
     Python codebases. It finds pattern fragmentation, architecture violations,
     near-duplicate code, and temporal volatility across modules. Output formats
     include Rich terminal, machine-readable JSON, and SARIF for CI integration.
-    23 signal families (15 scoring-active, 8 report-only) are configurable via
+    24 signal families (18 scoring-active, 6 report-only) are configurable via
     a YAML config file.
   doc_url: https://mick-gsk.github.io/drift/
   dev_url: https://github.com/mick-gsk/drift

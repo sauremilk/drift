@@ -20,6 +20,8 @@ class Profile:
     policies: dict[str, object] = field(default_factory=dict)
     fail_on: str = "none"
     auto_calibrate: bool = True
+    guided_thresholds: dict[str, float] = field(default_factory=dict)
+    output_language: str = "de"
 
 
 # ---------------------------------------------------------------------------
@@ -130,6 +132,8 @@ _register(
             },
         },
         fail_on="none",
+        guided_thresholds={"green_max": 0.35, "yellow_max": 0.65},
+        output_language="de",
     )
 )
 

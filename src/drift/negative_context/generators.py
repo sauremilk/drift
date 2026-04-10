@@ -1066,6 +1066,57 @@ def _gen_cod(finding: Finding) -> list[NegativeContext]:
 
 
 # ---------------------------------------------------------------------------
+# Phantom Reference generator (PHR)
+# ---------------------------------------------------------------------------
+
+
+@_register(SignalType.PHANTOM_REFERENCE)
+def _gen_phr(finding: Finding) -> list[NegativeContext]:
+    """Phantom reference — unresolvable names that may be AI-hallucinated."""
+    meta = finding.metadata
+    phantom_names = meta.get("phantom_names", [])
+    name_list = ", ".join(
+        p["name"] if isinstance(p, dict) else str(p)
+        for p in phantom_names[:5]
+    )
+    phantom_count = meta.get("phantom_count", len(phantom_names))
+    file_name = finding.file_path.name if finding.file_path else "unknown"
+
+    description = (
+        f"File '{file_name}' references {phantom_count} name"
+        f"{'s' if phantom_count != 1 else ''} that cannot be resolved: "
+        f"{_sanitize(name_list) or 'unknown references'}. "
+        f"These may be AI-hallucinated symbols or missing imports."
+    )
+
+    return [NegativeContext(
+        anti_pattern_id=_neg_id(SignalType.PHANTOM_REFERENCE, finding),
+        category=NegativeContextCategory.COMPLETENESS,
+        source_signal=SignalType.PHANTOM_REFERENCE,
+        severity=finding.severity,
+        scope=_scope_from_finding(finding),
+        description=description,
+        forbidden_pattern=(
+            f"# ANTI-PATTERN: Using unverified symbol names in {file_name}\n"
+            f"# Do not reference functions or classes that do not exist in "
+            f"the project symbol table"
+        ),
+        canonical_alternative=(
+            "# REQUIRED: Verify every imported name exists in the project or "
+            "in an installed dependency before use.\n"
+            "# If the function was suggested by AI, implement it first or "
+            "replace with an existing equivalent."
+        ),
+        affected_files=_affected(finding),
+        confidence=0.7 if phantom_count >= 3 else 0.6,
+        rationale=(
+            "AI coding assistants frequently hallucinate function and class "
+            "names that do not exist in the target codebase."
+        ),
+    )]
+
+
+# ---------------------------------------------------------------------------
 # Fallback generator for signals without specific generators
 # ---------------------------------------------------------------------------
 

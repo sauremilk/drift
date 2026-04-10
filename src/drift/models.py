@@ -11,6 +11,13 @@ if TYPE_CHECKING:
     from pathlib import Path
 
 # ---------------------------------------------------------------------------
+# Output schema version (ADR-042)
+# ---------------------------------------------------------------------------
+# Shared across CLI JSON output and API responses.
+# Major: incompatible field removals/renames.  Minor: additive new fields.
+OUTPUT_SCHEMA_VERSION = "2.1"
+
+# ---------------------------------------------------------------------------
 # Enums
 # ---------------------------------------------------------------------------
 
@@ -68,6 +75,29 @@ class PatternCategory(StrEnum):
     VALIDATION = "validation"
     RETURN_PATTERN = "return_pattern"
     REACT_HOOK = "react_hook"
+
+
+# ---------------------------------------------------------------------------
+# Logical Location (AST-based)
+# ---------------------------------------------------------------------------
+
+
+@dataclass
+class LogicalLocation:
+    """AST-based logical location for a finding.
+
+    Provides stable, line-number-independent coordinates that survive
+    code edits — enabling autonomous agents to identify the affected
+    code element even after preceding modifications shift line numbers.
+
+    Field semantics follow SARIF v2.1.0 §3.33.
+    """
+
+    fully_qualified_name: str  # e.g. "src.api.auth.AuthService.login"
+    name: str  # e.g. "login"
+    kind: str  # "function" | "method" | "class" | "module"
+    class_name: str | None = None  # e.g. "AuthService"
+    namespace: str | None = None  # e.g. "src.api.auth"
 
 
 # ---------------------------------------------------------------------------
@@ -269,6 +299,7 @@ class Finding:
     metadata: dict[str, Any] = field(default_factory=dict)
     rule_id: str | None = None
     attribution: Attribution | None = None
+    logical_location: LogicalLocation | None = None
 
     def __post_init__(self) -> None:
         if self.rule_id is None:

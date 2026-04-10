@@ -91,55 +91,16 @@ extra:
 
 nav:
   - Home: index.md
-  - Get Started:
-      - Quick Start: getting-started/quickstart.md
-      - Installation: getting-started/installation.md
-      - Prompts to Try: getting-started/prompts.md
-      - Real-World Problems: getting-started/vibe-coding-problems.md
-      - Configuration: getting-started/configuration.md
-      - Team Rollout: getting-started/team-rollout.md
-      - Finding Triage: getting-started/finding-triage.md
-      - Integrations: integrations.md
-      - Troubleshooting: getting-started/troubleshooting.md
-  - How It Works:
-      - Algorithm Deep Dive: algorithms/deep-dive.md
-      - Signal Reference: algorithms/signals.md
-      - Scoring Model: algorithms/scoring.md
-      - Use Cases:
-          - Overview: use-cases/index.md
-          - Architecture Drift Detection for Python: use-cases/architecture-drift-python.md
-          - Architectural Linter for AI Coding Teams: use-cases/architectural-linter-ai-teams.md
-          - CI Architecture Checks with SARIF: use-cases/ci-architecture-checks-sarif.md
-          - Technical Debt Detection for AI-Assisted Codebases: use-cases/technical-debt-ai-codebases.md
-      - Comparisons:
-          - Overview: comparisons/index.md
-          - Drift vs Ruff: comparisons/drift-vs-ruff.md
-          - Drift vs Semgrep and CodeQL: comparisons/drift-vs-semgrep-codeql.md
-          - Drift vs Architecture Conformance Tools: comparisons/drift-vs-architecture-conformance.md
-  - Trust & Evidence:
-      - Prove It Yourself: prove-it.md
-      - Evaluate Drift: start-here.md
-      - Trust and Evidence: trust-evidence.md
-      - Benchmarking and Trust: benchmarking.md
-      - Benchmark Study: study.md
-      - Stability and Release Status: stability.md
-      - Case Studies:
-          - Overview: case-studies/index.md
-          - FastAPI: case-studies/fastapi.md
-          - Pydantic: case-studies/pydantic.md
-          - Django: case-studies/django.md
-          - Paramiko: case-studies/paramiko.md
-      - Example Findings: product/example-findings.md
-  - Reference:
-      - FAQ: faq.md
-      - Glossary: glossary.md
-      - API and Outputs: reference/api-outputs.md
-      - Negative Context: reference/negative-context.md
-      - Performance: reference/performance.md
-      - Signals:
-          - PFS (Pattern Fragmentation): reference/signals/pfs.md
-      - Product Strategy: product-strategy.md
-      - Press and Brand: product/press-brand.md
-  - Contributing:
-      - Contributing: contributing.md
-      - Changelog: changelog.md
+  - Quickstart: guides/quickstart.md
+  - Guides:
+    - Agent-Workflow: guides/agent-workflow.md
+    - Code-Health über Zeit: guides/health-over-time.md
+    - CI/CD Integration: guides/ci-integration.md
+  - Konzepte:
+    - Signals: concepts/signals.md
+    - Baseline: concepts/baseline.md
+    - Scoring: concepts/scoring.md
+    - Diagnose vs. Navigation: concepts/diagnosis-vs-navigation.md
+  - Referenz:
+    - Commands: reference/commands.md
+    - Konfiguration: reference/configuration.md

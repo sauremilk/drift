@@ -97,7 +97,7 @@ def _build_error_payload(
     suggested_action = suggested_action_override or (info.action if info else hint)
     return {
         "error": True,
-        "schema_version": "2.0",
+        "schema_version": "2.1",
         "type": "error",
         "error_code": error_code,
         "category": category,
@@ -135,7 +135,7 @@ def _configure_logging(verbose: bool = False) -> None:
 class SuggestingGroup(click.Group):
     """Click Group that adds did-you-mean hints for unknown subcommands."""
 
-    _CORE_COMMANDS = ("analyze", "fix-plan", "check")
+    _CORE_COMMANDS = ("status", "setup", "analyze", "fix-plan", "check")
 
     def get_command(self, ctx: click.Context, cmd_name: str) -> click.Command | None:
         command = super().get_command(ctx, cmd_name)
@@ -149,6 +149,29 @@ class SuggestingGroup(click.Group):
                 ctx=ctx,
             )
         return None
+
+    def invoke(self, ctx: click.Context) -> None:
+        """Delegate bare ``drift`` to ``drift status`` for vibe-coding profile (OD-01)."""
+        if ctx.invoked_subcommand is None:
+            try:
+                from pathlib import Path
+
+                from drift.config import DriftConfig
+                from drift.profiles import get_profile
+
+                cfg = DriftConfig.load(Path("."))
+                prof = get_profile("vibe-coding")
+                if cfg.language is not None or (
+                    hasattr(cfg.weights, "mutant_duplicate")
+                    and float(cfg.weights.mutant_duplicate)
+                    == float(prof.weights.get("mutant_duplicate", 0))
+                    and float(cfg.weights.mutant_duplicate) >= 0.18
+                ):
+                    ctx.invoke(self.get_command(ctx, "status"))  # type: ignore[arg-type]
+                    return
+            except Exception:
+                pass
+        super().invoke(ctx)
 
     def format_commands(self, ctx: click.Context, formatter: click.HelpFormatter) -> None:
         """Render curated command sections for faster onboarding."""
@@ -193,9 +216,9 @@ def main(verbose: bool = False) -> None:
     """Drift — Detect architectural erosion from AI-generated code.
 
     Guided first run:
-      1) drift analyze --repo .
-      2) drift fix-plan --repo .
-      3) drift check --fail-on none
+      1) drift setup              # Konfiguration erstellen
+      2) drift status             # Projektzustand als Ampel
+      3) drift analyze --repo .   # Detailanalyse
 
     Run 'drift start' for a concise onboarding walkthrough.
     """
@@ -223,7 +246,9 @@ from drift.commands.precision_cmd import precision
 from drift.commands.scan import scan
 from drift.commands.self_analyze import self_analyze
 from drift.commands.serve import serve
+from drift.commands.setup import setup
 from drift.commands.start import start
+from drift.commands.status import status
 from drift.commands.timeline import timeline
 from drift.commands.trend import trend
 from drift.commands.validate_cmd import validate
@@ -247,6 +272,8 @@ main.add_command(precision)
 main.add_command(scan)
 main.add_command(serve)
 main.add_command(start)
+main.add_command(status)
+main.add_command(setup)
 main.add_command(timeline)
 main.add_command(trend)
 main.add_command(validate)

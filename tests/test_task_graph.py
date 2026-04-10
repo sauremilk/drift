@@ -323,7 +323,7 @@ class TestShapeForProfile:
     @pytest.fixture()
     def full_result(self) -> dict[str, Any]:
         return {
-            "schema_version": "2.0",
+            "schema_version": "2.1",
             "status": "ok",
             "agent_instruction": "Do X",
             "drift_score": 3.5,

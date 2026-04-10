@@ -6,7 +6,7 @@ It is designed for teams that need to answer a practical question before rollout
 
 ## Public claims safe to repeat
 
-- drift uses 15 scoring signals in the composite score (TVS currently at weight 0.0 pending re-validation)
+- drift uses 20 scoring signals in the composite score (TVS currently at weight 0.0 pending re-validation)
 - the conservative public benchmark claim is 77% strict precision / 95% lenient on the historical v0.5 six-signal baseline
 - the current study corpus covers 15 real-world repositories
 - all analysis is deterministic and does not use an LLM in the detector pipeline

@@ -108,6 +108,7 @@ class TestJsonOutputGolden:
         data = json.loads(analysis_to_json(analysis))
 
         expected_finding_keys = {
+            "finding_id",
             "signal",
             "signal_abbrev",
             "rule_id",
@@ -127,6 +128,7 @@ class TestJsonOutputGolden:
             "start_line",
             "end_line",
             "symbol",
+            "logical_location",
             "related_files",
             "ai_attributed",
             "attribution",

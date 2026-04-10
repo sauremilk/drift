@@ -218,3 +218,27 @@ def _fix_first_concise(analysis: RepoAnalysis, max_items: int = 5) -> list[dict[
             }
         )
     return items
+
+
+def _finding_guided(f: Any, *, rank: int | None = None) -> dict[str, Any]:
+    """Guided-mode finding dict with plain-language text and agent prompt.
+
+    Designed for users without architecture expertise (Persona A).
+    """
+    from drift.output.guided_output import plain_text_for_signal, severity_label
+    from drift.output.prompt_generator import file_role_description, generate_agent_prompt
+
+    signal = signal_abbrev(f.signal_type)
+    severity = f.severity.value
+    return {
+        "signal": signal,
+        "signal_type": f.signal_type,
+        "severity_label": severity_label(severity),
+        "plain_text": plain_text_for_signal(f.signal_type),
+        "file_role": file_role_description(f),
+        "file": f.file_path.as_posix() if f.file_path else None,
+        "line": f.start_line,
+        "agent_prompt": generate_agent_prompt(f),
+        "fingerprint": _finding_fingerprint_value(f),
+        **({"rank": rank} if rank is not None else {}),
+    }

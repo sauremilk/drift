@@ -55,7 +55,7 @@ def test_validate_outputs_json(tmp_path: Path) -> None:
     result = runner.invoke(main, ["validate", "--repo", str(tmp_path)])
     assert result.exit_code == 0
     payload = json.loads(result.output)
-    assert payload["schema_version"] == "2.0"
+    assert payload["schema_version"] == "2.1"
     assert "valid" in payload
     assert "git_available" in payload
 
@@ -67,7 +67,7 @@ def test_scan_outputs_json(monkeypatch, tmp_path: Path) -> None:
         scan_command,
         "api_scan",
         lambda *args, **kwargs: {
-            "schema_version": "2.0",
+            "schema_version": "2.1",
             "accept_change": True,
             "blocking_reasons": [],
         },
@@ -77,7 +77,7 @@ def test_scan_outputs_json(monkeypatch, tmp_path: Path) -> None:
     result = runner.invoke(main, ["scan", "--repo", str(tmp_path), "--max-findings", "1"])
     assert result.exit_code == 0
     payload = json.loads(result.output)
-    assert payload["schema_version"] == "2.0"
+    assert payload["schema_version"] == "2.1"
     assert "accept_change" in payload
     assert "blocking_reasons" in payload
 
@@ -90,7 +90,7 @@ def test_scan_accepts_signals_alias(monkeypatch, tmp_path: Path) -> None:
     def _fake_scan(*args, **kwargs):
         captured.update(kwargs)
         return {
-            "schema_version": "2.0",
+            "schema_version": "2.1",
             "accept_change": True,
             "blocking_reasons": [],
         }
@@ -122,7 +122,7 @@ def test_scan_passes_exclude_and_max_per_signal(monkeypatch, tmp_path: Path) -> 
     def _fake_scan(*args, **kwargs):
         captured.update(kwargs)
         return {
-            "schema_version": "2.0",
+            "schema_version": "2.1",
             "accept_change": True,
             "blocking_reasons": [],
         }
@@ -238,7 +238,7 @@ def test_fix_plan_target_path_filters(monkeypatch) -> None:
 
     def fake_fix_plan(*args, **kwargs):
         captured.update(kwargs)
-        return {"schema_version": "2.0", "tasks": [], "task_count": 0}
+        return {"schema_version": "2.1", "tasks": [], "task_count": 0}
 
     monkeypatch.setattr(fp_module, "api_fix_plan", fake_fix_plan)
 
@@ -259,7 +259,7 @@ def test_fix_plan_exclude_paths_pass_through(monkeypatch) -> None:
 
     def fake_fix_plan(*args, **kwargs):
         captured.update(kwargs)
-        return {"schema_version": "2.0", "tasks": [], "task_count": 0}
+        return {"schema_version": "2.1", "tasks": [], "task_count": 0}
 
     monkeypatch.setattr(fp_module, "api_fix_plan", fake_fix_plan)
 
@@ -291,7 +291,7 @@ def test_fix_plan_include_deferred_pass_through(monkeypatch) -> None:
 
     def fake_fix_plan(*args, **kwargs):
         captured.update(kwargs)
-        return {"schema_version": "2.0", "tasks": [], "task_count": 0}
+        return {"schema_version": "2.1", "tasks": [], "task_count": 0}
 
     monkeypatch.setattr(fp_module, "api_fix_plan", fake_fix_plan)
 

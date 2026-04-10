@@ -699,6 +699,7 @@ class ScoringPhase:
         files: list[FileInfo],
         config: DriftConfig,
         findings: list[Finding],
+        parse_results: list[ParseResult] | None = None,
     ) -> ScoredFindings:
         all_findings = findings
         self._impact_assigner(all_findings, config.weights)
@@ -743,6 +744,12 @@ class ScoringPhase:
 
         # Classify every finding into an operational context for policy-aware triage.
         annotate_finding_contexts(all_findings, config)
+
+        # Enrich findings with AST-based logical locations for agent navigation.
+        from drift.logical_location import enrich_logical_locations
+
+        if parse_results:
+            enrich_logical_locations(all_findings, parse_results)
 
         n_modules = len({f.path.parent.as_posix() for f in files})
         is_small_repo = n_modules < config.thresholds.small_repo_module_threshold
@@ -869,7 +876,10 @@ class AnalysisPipeline:
             workers=workers,
             active_signals=active_signals,
         )
-        scored = self._scoring.run(repo_path, files, config, signaled.findings)
+        scored = self._scoring.run(
+            repo_path, files, config, signaled.findings,
+            parse_results=parsed.parse_results,
+        )
 
         # Attribution enrichment (ADR-034): enrich findings with git-blame
         # provenance when enabled.  Runs after scoring, before assembly.

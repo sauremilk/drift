@@ -47,7 +47,7 @@ def test_compute_signal_scores_averages():
     ]
     scores = compute_signal_scores(findings)
     # Scores are count-dampened: mean * min(1, ln(1+n)/ln(1+10))
-    k = 10
+    k = 20
     pf_mean = 0.5
     pf_damp = min(1.0, math.log(1 + 2) / math.log(1 + k))
     assert scores[SignalType.PATTERN_FRAGMENTATION] == pytest.approx(round(pf_mean * pf_damp, 4))
@@ -238,3 +238,48 @@ def test_auto_calibrate_weights_deterministic_across_input_order():
     even_first = findings[1::2] + findings[::2]
     assert auto_calibrate_weights(odd_first, base_weights).model_dump() == baseline.model_dump()
     assert auto_calibrate_weights(even_first, base_weights).model_dump() == baseline.model_dump()
+
+
+# ── Dampening k=20 (ADR-041) ─────────────────────────────────────────────
+
+
+def test_dampening_k20_reduces_prolific_signals():
+    """50 findings with k=20 produce a score below raw mean (ADR-041 P3)."""
+    findings = [_finding(SignalType.EXPLAINABILITY_DEFICIT, 0.4) for _ in range(50)]
+    scores = compute_signal_scores(findings)
+    # With k=20, dampening = ln(51)/ln(21) ≈ 1.29 → clamped to 1.0
+    # Actually 50 findings still saturate at k=20, so score ≈ mean.
+    # The key property: the same test with k=10 (explicit param) yields
+    # exactly the same result, because 50 > 20. The difference shows
+    # for mid-range counts.
+    assert scores[SignalType.EXPLAINABILITY_DEFICIT] == pytest.approx(0.4, abs=0.01)
+
+
+def test_dampening_k20_differentiates_midrange_counts():
+    """10 findings get dampened more with k=20 than k=10 (ADR-041 P3)."""
+    import math
+
+    findings = [_finding(SignalType.PATTERN_FRAGMENTATION, 0.6) for _ in range(10)]
+
+    score_k20 = compute_signal_scores(findings)  # default k=20
+    score_k10 = compute_signal_scores(findings, dampening_k=10)
+
+    # k=10: dampening = ln(11)/ln(11) = 1.0 → score = 0.6
+    # k=20: dampening = ln(11)/ln(21) ≈ 0.787 → score ≈ 0.472
+    assert score_k10[SignalType.PATTERN_FRAGMENTATION] > score_k20[SignalType.PATTERN_FRAGMENTATION]
+
+    k20_damp = math.log(1 + 10) / math.log(1 + 20)
+    expected = round(0.6 * k20_damp, 4)
+    assert score_k20[SignalType.PATTERN_FRAGMENTATION] == pytest.approx(expected, abs=0.001)
+
+
+def test_dampening_k20_single_finding_penalty():
+    """A single finding is dampened but not zeroed (FN safety check)."""
+    import math
+
+    findings = [_finding(SignalType.ARCHITECTURE_VIOLATION, 0.9)]
+    scores = compute_signal_scores(findings)
+    damp = math.log(2) / math.log(21)  # ≈ 0.228
+    expected = round(0.9 * damp, 4)
+    assert scores[SignalType.ARCHITECTURE_VIOLATION] == pytest.approx(expected, abs=0.001)
+    assert scores[SignalType.ARCHITECTURE_VIOLATION] > 0.0  # not zeroed

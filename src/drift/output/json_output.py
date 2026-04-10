@@ -7,15 +7,22 @@ from typing import Any
 
 from drift import __version__
 from drift.api_helpers import build_drift_score_scope, signal_abbrev, signal_abbrev_map
+from drift.baseline import finding_fingerprint
 from drift.config import DriftConfig
 from drift.finding_context import classify_finding_context, split_findings_by_context
-from drift.models import Finding, ModuleScore, RepoAnalysis, Severity, SignalType
+from drift.models import (
+    OUTPUT_SCHEMA_VERSION,
+    Finding,
+    ModuleScore,
+    RepoAnalysis,
+    Severity,
+    SignalType,
+)
 from drift.negative_context import findings_to_negative_context, negative_context_to_dict
 from drift.recommendations import generate_recommendation
 
-# JSON schema version — increment on breaking output changes.
-# Major: incompatible field removals/renames.  Minor: additive new fields.
-SCHEMA_VERSION = "1.1"
+# JSON schema version — shared with API responses (ADR-042).
+SCHEMA_VERSION = OUTPUT_SCHEMA_VERSION
 
 
 _ARCHITECTURE_BOUNDARY_SIGNALS = {
@@ -127,6 +134,7 @@ def _fix_first_list(ranked_findings: list[Finding], max_items: int = 10) -> list
         items.append(
             {
                 "rank": idx,
+                "finding_id": finding_fingerprint(f),
                 "priority_class": _priority_class(f),
                 "signal": f.signal_type,
                 "signal_abbrev": signal_abbrev(f.signal_type),
@@ -160,6 +168,7 @@ def _finding_sort_key(f: Finding) -> tuple[float, str, str, int, int]:
 def _finding_to_dict(f: Finding, *, impact_rank: int | None = None) -> dict[str, Any]:
     rec = generate_recommendation(f)
     d: dict[str, Any] = {
+        "finding_id": finding_fingerprint(f),
         "signal": f.signal_type,
         "signal_abbrev": signal_abbrev(f.signal_type),
         "rule_id": f.rule_id,
@@ -176,6 +185,13 @@ def _finding_to_dict(f: Finding, *, impact_rank: int | None = None) -> dict[str,
         "end_line": f.end_line,
         "finding_context": classify_finding_context(f, DriftConfig()),
         "symbol": f.symbol,
+        "logical_location": {
+            "fully_qualified_name": f.logical_location.fully_qualified_name,
+            "name": f.logical_location.name,
+            "kind": f.logical_location.kind,
+            "class_name": f.logical_location.class_name,
+            "namespace": f.logical_location.namespace,
+        } if f.logical_location else None,
         "related_files": [rf.as_posix() for rf in f.related_files],
         "ai_attributed": f.ai_attributed,
         "deferred": f.deferred,
@@ -223,6 +239,7 @@ def _finding_compact_dict(
     """Compact finding shape optimized for agent/CI prioritization."""
     return {
         "rank": rank,
+        "finding_id": finding_fingerprint(finding),
         "signal": finding.signal_type,
         "signal_abbrev": signal_abbrev(finding.signal_type),
         "rule_id": finding.rule_id,
@@ -409,6 +426,19 @@ def findings_to_sarif(analysis: RepoAnalysis) -> str:
                 location["physicalLocation"]["region"] = {"startLine": 1}
             result["locations"] = [location]
 
+        # SARIF v2.1.0 §3.33: logical locations for AST-based navigation.
+        if f.logical_location:
+            ll: dict[str, Any] = {
+                "name": f.logical_location.name,
+                "kind": f.logical_location.kind,
+                "fullyQualifiedName": f.logical_location.fully_qualified_name,
+            }
+            result["locations"] = result.get("locations", [])
+            if result["locations"]:
+                result["locations"][0]["logicalLocations"] = [ll]
+            else:
+                result["logicalLocations"] = [ll]
+
         # Include all related locations (Opt-2: expose every location in SARIF)
         if f.related_files:
             result["relatedLocations"] = [
@@ -428,6 +458,10 @@ def findings_to_sarif(analysis: RepoAnalysis) -> str:
 
         # ADR-006: context tags as SARIF result properties
         props: dict[str, Any] = {}
+
+        # ADR-042: stable finding ID for cross-referencing
+        props["drift:findingId"] = finding_fingerprint(f)
+
         ctx_tags = f.metadata.get("context_tags")
         if ctx_tags:
             props["drift:context"] = ctx_tags

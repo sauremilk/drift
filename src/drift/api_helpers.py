@@ -17,7 +17,7 @@ from typing import TYPE_CHECKING, Any
 
 from drift.config import DriftConfig
 from drift.finding_context import classify_finding_context
-from drift.models import SignalType
+from drift.models import OUTPUT_SCHEMA_VERSION, SignalType
 from drift.response_shaping import build_drift_score_scope as _build_drift_score_scope
 from drift.signal_mapping import resolve_signal as _resolve_signal
 from drift.signal_mapping import signal_scope_label as _signal_scope_label
@@ -28,7 +28,7 @@ if TYPE_CHECKING:
     from drift.models import AgentTask, RepoAnalysis
 
 
-SCHEMA_VERSION = "2.0"
+SCHEMA_VERSION = OUTPUT_SCHEMA_VERSION
 
 
 _SEVERITY_RANK: dict[str, int] = {
@@ -241,8 +241,10 @@ def _finding_concise(f: Any) -> dict[str, Any]:
 
     signal = signal_abbrev(f.signal_type)
     severity = f.severity.value
+    fp = _finding_fingerprint_value(f)
 
     return {
+        "finding_id": fp,
         "signal": signal,
         "signal_abbrev": signal,
         "signal_id": signal,
@@ -253,8 +255,15 @@ def _finding_concise(f: Any) -> dict[str, Any]:
         "title": f.title,
         "file": f.file_path.as_posix() if f.file_path else None,
         "line": f.start_line,
+        "logical_location": {
+            "fully_qualified_name": f.logical_location.fully_qualified_name,
+            "name": f.logical_location.name,
+            "kind": f.logical_location.kind,
+            "class_name": f.logical_location.class_name,
+            "namespace": f.logical_location.namespace,
+        } if getattr(f, "logical_location", None) else None,
         "finding_context": classify_finding_context(f, DriftConfig()),
-        "fingerprint": _finding_fingerprint_value(f),
+        "fingerprint": fp,
         "next_step": _next_step_for_finding(f),
     }
 
@@ -271,7 +280,9 @@ def _finding_detailed(f: Any, *, rank: int | None = None) -> dict[str, Any]:
     rec = generate_recommendation(f)
     signal = signal_abbrev(f.signal_type)
     severity = f.severity.value
+    fp = _finding_fingerprint_value(f)
     return {
+        "finding_id": fp,
         "signal": signal,
         "signal_abbrev": signal,
         "signal_id": signal,
@@ -291,8 +302,15 @@ def _finding_detailed(f: Any, *, rank: int | None = None) -> dict[str, Any]:
         "end_line": f.end_line,
         "finding_context": classify_finding_context(f, DriftConfig()),
         "symbol": f.symbol,
+        "logical_location": {
+            "fully_qualified_name": f.logical_location.fully_qualified_name,
+            "name": f.logical_location.name,
+            "kind": f.logical_location.kind,
+            "class_name": f.logical_location.class_name,
+            "namespace": f.logical_location.namespace,
+        } if getattr(f, "logical_location", None) else None,
         "related_files": [rf.as_posix() for rf in f.related_files],
-        "fingerprint": _finding_fingerprint_value(f),
+        "fingerprint": fp,
         "next_step": _next_step_for_finding(f),
         "expected_benefit": _expected_benefit_for_finding(f),
         "remediation": {
@@ -460,6 +478,7 @@ def _task_to_api_dict(t: Any) -> dict[str, Any]:
         "file": t.file_path,
         "start_line": t.start_line,
         "symbol": t.symbol,
+        "logical_location": t.metadata.get("logical_location"),
         "related_files": t.related_files,
         "complexity": t.complexity,
         "automation_fit": automation_fit,

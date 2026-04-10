@@ -1,0 +1,13 @@
+calibration:
+  enabled: true
+  auto_recalibrate: true
+  min_samples: 20
+  correlation_window_days: 30
+  weak_fp_window_days: 60
+  decay_days: 90
+  feedback_path: .drift/feedback.jsonl
+  history_dir: .drift/history
+  max_snapshots: 50
+  bug_labels:
+    - bug
+    - regression

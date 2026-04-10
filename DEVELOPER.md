@@ -81,7 +81,7 @@ baselines per repository and automatically invalidates them when:
 
 ---
 
-## Signals (24 total — 15 scoring-active, 9 report-only)
+## Signals (24 total — 18 scoring-active, 6 report-only)
 
 ### Scoring-active signals
 
@@ -102,6 +102,9 @@ baselines per repository and automatically invalidates them when:
 | **ECM** | Exception Contract Drift | Public functions whose exception profile changed across recent commits (git-based, MVP) |
 | **COD** | Cohesion Deficit | Modules that mix weakly related semantic responsibilities |
 | **CCC** | Co-Change Coupling | Files that repeatedly co-change without explicit import dependency |
+| **HSC** | Hardcoded Secret | Embedded secrets/tokens/credentials in source (CWE-798) |
+| **FOE** | Fan-Out Explosion | Modules/functions with unusually high dependency fan-out |
+| **PHR** | Phantom Reference | Unresolvable function/class references (AI hallucination indicator) |
 
 ### Report-only signals (weight 0.0, pending validation)
 
@@ -109,13 +112,10 @@ baselines per repository and automatically invalidates them when:
 |--------|--------|---------|
 | **TSA** | TypeScript Architecture | TS/JS layer leaks, cycles, cross-package imports |
 | **CXS** | Cognitive Complexity | Functions with deeply nested, hard-to-follow control flow |
-| **FOE** | Fan-Out Explosion | Modules/functions with unusually high dependency fan-out |
 | **CIR** | Circular Import | Circular dependency chains in the module import graph |
 | **DCA** | Dead Code Accumulation | Unreferenced functions/classes/symbols accumulating over time |
 | **MAZ** | Missing Authorization | API endpoints lacking auth/authz checks (CWE-862) |
 | **ISD** | Insecure Default | Unsafe default config patterns (CWE-1188) |
-| **HSC** | Hardcoded Secret | Embedded secrets/tokens/credentials in source (CWE-798) |
-| **PHR** | Phantom Reference | Unresolvable function/class references (AI hallucination indicator) |
 
 Adding a new signal: see [CONTRIBUTING.md → Adding a new signal](CONTRIBUTING.md#adding-a-new-signal).
 

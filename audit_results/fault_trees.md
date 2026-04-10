@@ -1,5 +1,49 @@
 # Fault Tree Analysis
 
+## 2026-06-14 - ADR-039: Signal Activation (MAZ/PHR/HSC/ISD/FOE)
+
+### Top Event (TE-0)
+Newly scoring signals produce unacceptable false positive rates or composite score inflation after activation.
+
+### FT-1: False positive branch — individual signal FP
+
+```
+            TE-FP: scoring signal emits low-value finding
+                        |
+                     OR-Gate
+         +------+------+------+------+
+        IE-1   IE-2   IE-3   IE-4   IE-5
+        MAZ:    ISD:    HSC:   PHR:   FOE:
+        dev-    dev-    templ  3rd-   barrel
+        handler config  value  party  file
+```
+
+- MCS-1 (MAZ): Dev-server handler without auth decorator → suppressed by CLI-path/dev-path fence
+- MCS-2 (ISD): Dev-only `DEBUG=True` → suppressed by `drift:ignore-security` directive
+- MCS-3 (HSC): Template placeholder matches entropy heuristic → suppressed by `_is_safe_value`
+- MCS-4 (PHR): Third-party import not in project tree → suppressed by known-module allowlist
+- MCS-5 (FOE): Re-export barrel file → suppressed by barrel-file detection
+
+### FT-2: Score inflation branch — composite score distortion
+
+```
+            TE-SCORE: composite score breaks comparability
+                        |
+                     AND-Gate
+         +--------------+--------------+
+   IE-1: multiple new          IE-2: combined weight
+   signals fire on same        contribution exceeds
+   module simultaneously       recalibration tolerance
+```
+
+- MCS-1: All 5 signals fire simultaneously AND total weight (0.065) shifts score significantly → bounded by conservative weights and module-level aggregation
+- Mitigation: Baseline comparison via `drift_diff`; weight sum is ~6.5% of total
+
+### Verification
+- Ground-truth: 5 ISD fixtures, 1 MAZ TN, 6 HSC, 3 FOE, 17 PHR (all passing)
+- Precision/recall: `pytest tests/test_precision_recall.py -v`
+- Baseline diff: `drift analyze --repo . --format json --exit-zero`
+
 ## 2026-04-10 - TS Type-Safety-Bypass detection path
 
 ### Top Event (TE-0)
@@ -957,3 +1001,46 @@ Weil kein `PatternInstance` mit `category=PatternCategory.RETURN_PATTERN` erzeug
   - Accept: current heuristic focuses on call targets; decorator names tracked via _ScopeCollector.
 - Branch C: Name used only in type annotations (not at runtime).
   - Mitigation: TYPE_CHECKING blocks skipped; annotation-only names not collected.
+
+## 2026-04-10 - Scoring Promotion: HSC, FOE, PHR (ADR-040)
+
+### FT-1: HSC Finding = False Positive (Top Event)
+- Top event: HSC emits a hardcoded-secret finding for a value that is not actually a secret.
+- Gate: OR (any of IE-1, IE-2, IE-3 sufficient)
+
+#### IE-1: Value is a placeholder or example
+- Branch BE-1: Variable name matches secret pattern but value is a known placeholder (`changeme`, `xxx-*`, `PLACEHOLDER`, `<YOUR_*_HERE>`).
+  - Mitigation: Placeholder allowlist in HSC heuristics.
+- Branch BE-2: Value is a documentation example or test fixture string.
+  - Mitigation: Low-entropy threshold (3.5 bits) filters short/simple strings.
+
+#### IE-2: Secret is externalized but variable name triggers detection
+- Branch BE-3: RHS is `os.environ["KEY"]` or `os.getenv("KEY")` call.
+  - Mitigation: AST check recognizes os.environ/os.getenv as safe sourcing.
+- Branch BE-4: Value loaded from config file or environment variable via framework.
+  - Mitigation: Partial — only stdlib os.environ recognized; framework-specific patterns accepted as residual risk.
+
+#### IE-3: ML/data constants with high entropy
+- Branch BE-5: Hex tokenizer vocabulary or model hash strings.
+  - Mitigation: Context-aware skip for known ML file patterns.
+
+### FT-2: FOE Finding = False Positive (Top Event)
+- Top event: FOE emits a fan-out finding for a file that legitimately needs many imports.
+- Gate: OR (any of IE-1, IE-2 sufficient)
+
+#### IE-1: File is a barrel/re-export module
+- Branch BE-1: `__init__.py` re-exports names from submodules.
+  - Mitigation: `__init__.py` excluded from FOE detection.
+
+#### IE-2: File is a test module
+- Branch BE-2: Test files import many fixtures/helpers/mocks.
+  - Mitigation: `is_test_file()` guard excludes test files.
+
+### FT-3: Scoring-promotion risk — FP affects composite score
+- Top event: Previously report-only FP now inflates composite drift score.
+- Branch A: HSC false positive (weight 0.02) adds ≤0.02 to module score.
+  - Mitigation: Low weight limits impact; existing FP guards active.
+- Branch B: FOE false positive (weight 0.01) adds ≤0.01 to module score.
+  - Mitigation: Low weight + `__init__.py` exclusion + test-file guard.
+- Branch C: PHR false positive (weight 0.02) adds ≤0.02 to module score.
+  - Mitigation: Existing PHR FP mitigations (star-import skip, __getattr__ skip, framework allowlist).

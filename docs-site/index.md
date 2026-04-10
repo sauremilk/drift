@@ -19,7 +19,7 @@ Unlike linters (Ruff, pylint) which check single files, or security scanners (Se
 - **Temporal Volatility (TVS)** — files that change together but aren't co-located
 - **Explainability Deficit (EDS)** — complex code without proportional documentation
 
-23 signals total — 15 scoring-active, 8 report-only. Each finding includes file location, cause, severity score, and a concrete next step.
+24 signals total — 18 scoring-active, 6 report-only. Each finding includes file location, cause, severity score, and a concrete next step.
 
 ## Get Started
 

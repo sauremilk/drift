@@ -178,17 +178,17 @@ class SignalWeights(BaseModel):
     # New signals — report-only until precision/recall validated
     ts_architecture: float = 0.0
     cognitive_complexity: float = 0.0
-    fan_out_explosion: float = 0.0
     circular_import: float = 0.0
     dead_code_accumulation: float = 0.0
 
-    # Security-by-default signals (report-only until precision validated)
-    missing_authorization: float = 0.0
-    insecure_default: float = 0.0
-    hardcoded_secret: float = 0.0
+    # Promoted from report-only (ADR-039: agent-safety signals)
+    fan_out_explosion: float = 0.005
+    hardcoded_secret: float = 0.01
+    phantom_reference: float = 0.02
 
-    # AI-hallucination detection (report-only until precision validated)
-    phantom_reference: float = 0.0
+    # Security-by-default signals (ADR-039: activated for scoring)
+    missing_authorization: float = 0.02
+    insecure_default: float = 0.01
 
     def as_dict(self) -> dict[str, float]:
         return self.model_dump()
@@ -531,6 +531,10 @@ class DriftConfig(BaseModel):
     fail_on_delta: float | None = None
     fail_on_delta_window: int = 5
     auto_calibrate: bool = True
+    language: str | None = Field(
+        default=None,
+        description="ISO 639-1 output language for guided mode (e.g. 'de', 'en').",
+    )
     embeddings_enabled: bool = True
     embedding_model: str = "all-MiniLM-L6-v2"
     embedding_batch_size: int = 64

@@ -96,7 +96,7 @@ def test_api_explain_emits_telemetry(
     monkeypatch.setenv("DRIFT_TELEMETRY_FILE", str(out))
 
     result = explain("PFS")
-    assert result["schema_version"] == "2.0"
+    assert result["schema_version"] == "2.1"
 
     rows = _read_jsonl(out)
     assert len(rows) == 1

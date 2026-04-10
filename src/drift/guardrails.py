@@ -163,6 +163,7 @@ def generate_guardrails(
     *,
     max_guardrails: int = 10,
     min_severity: Severity = Severity.LOW,
+    min_confidence: float = 0.0,
 ) -> list[Guardrail]:
     """Generate prioritised guardrails from drift findings.
 
@@ -174,6 +175,10 @@ def generate_guardrails(
         Maximum number of guardrails to return.
     min_severity:
         Minimum severity threshold for guardrails.
+    min_confidence:
+        Minimum confidence threshold for negative-context items.
+        Items below this value are excluded from guardrail generation.
+        Default ``0.0`` preserves backward compatibility.
     """
     # Generate negative context items from findings
     nc_items = findings_to_negative_context(
@@ -187,6 +192,10 @@ def generate_guardrails(
         nc for nc in nc_items
         if _SEVERITY_ORDER.get(nc.severity, 4) <= min_rank
     ]
+
+    # Filter by minimum confidence
+    if min_confidence > 0.0:
+        nc_items = [nc for nc in nc_items if nc.confidence >= min_confidence]
 
     # Sort by: severity (desc), pre-task relevance (desc), confidence (desc)
     nc_items.sort(

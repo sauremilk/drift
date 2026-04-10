@@ -1,5 +1,20 @@
 # STRIDE Threat Model
 
+## 2026-06-01 - ADR-042: Schema Evolution and Finding-ID Promotion
+
+- Scope: Output schema unification (`OUTPUT_SCHEMA_VERSION` in `models.py`) from split "1.1"/"2.0" to unified "2.1". Promotion of `finding_id` (16-char SHA256 fingerprint) into all output channels: CLI JSON (`json_output.py`), SARIF (`findings_to_sarif`), API helpers (`api_helpers.py`), and agent tasks. Extension of `drift explain` and MCP `drift_explain` to accept finding fingerprints for finding-level drill-down. New `drift.output.schema.json` published for agent-side contract validation.
+- Input path changes: Yes — `explain()` in `src/drift/api/explain.py` now accepts fingerprint strings as `topic`, triggering a repo scan to resolve the finding.
+- Output path changes: Yes — all JSON/SARIF/API outputs gain a `finding_id` field; `schema_version` changes from "1.1"/"2.0" to "2.1"; new `drift.output.schema.json` file.
+- External interface changes: Additive. `finding_id` is a new field; `schema_version` bumped; no fields removed or renamed.
+- Trust boundary: No new trust boundary. Fingerprint-based explain reuses existing `analyze_repo()` pipeline and config loading. No new subprocess, network, or filesystem access patterns.
+- STRIDE review:
+	- S (Spoofing): No risk change. Finding fingerprints are deterministic content hashes — no identity or authentication boundary involved.
+	- T (Tampering): Low risk. Fingerprints are SHA256-derived from `(signal_type, file_path, start_line, end_line, title)` — content-based and deterministic. An attacker would need to modify repository content to alter fingerprints.
+	- R (Repudiation): Improved. Stable `finding_id` enables cross-run finding correlation, baseline tracking, and audit trails. Agents can reference specific findings unambiguously.
+	- I (Information Disclosure): No new data classes. `finding_id` is derived from already-public finding fields. The explain endpoint returns the same finding data already available in scan output.
+	- D (Denial of Service): Low risk. Fingerprint-based explain triggers a full `analyze_repo()` call — same cost as a normal scan. No amplification vector beyond existing scan behavior.
+	- E (Elevation of Privilege): No privilege change. All operations run with the same OS-level permissions.
+
 ## 2026-04-12 - ADR-034: Causal Attribution via Git Blame
 
 - Scope: New optional enrichment pipeline (`src/drift/attribution.py`, `src/drift/ingestion/git_blame.py`) that executes `git blame --porcelain` as a subprocess to attribute findings to commits, authors, and branches. Opt-in via `attribution.enabled: true` in config. No signal, scoring, or ingestion logic changes — purely post-scoring enrichment.
@@ -190,3 +205,17 @@ No new trust-boundary changes introduced by Issue #121.
 - Input path changes: None.
 - Output path changes: None.
 - External interface changes: None.
+
+## 2026-04-10 - AST-based logical location in findings (ADR-039)
+
+- Scope: New `logical_location` field on Finding model, exposed in JSON, SARIF, and AgentTask outputs.
+- Input path changes: None (uses existing ParseResult data from AST parsing).
+- Output path changes: Yes — JSON findings include new `logical_location` object; SARIF results include `logicalLocations` array per §3.33; AgentTask/fix_plan/nudge responses include `logical_location` dict.
+- External interface changes: Output schema is additive; all existing fields remain unchanged. No field removals.
+- STRIDE review:
+        - S (Spoofing): No identity boundary change.
+        - T (Tampering): No new write targets; output is derived from existing parsed AST data.
+        - R (Repudiation): Improved — findings carry richer provenance (class/method/module context).
+        - I (Information Disclosure): No new sensitive data; field contains only structural code identifiers already visible in source.
+        - D (Denial of Service): Negligible runtime impact — interval-index lookup is O(n) over existing ParseResult.
+        - E (Elevation of Privilege): No privilege boundary change.

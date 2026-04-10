@@ -2,7 +2,7 @@
 
 # Drift
 
-**Deterministic cross-file coherence analysis for Python codebases**
+**Keep your codebase coherent as AI generates more of it.**
 
 [![CI](https://github.com/mick-gsk/drift/actions/workflows/ci.yml/badge.svg)](https://github.com/mick-gsk/drift/actions/workflows/ci.yml)
 [![PyPI](https://img.shields.io/pypi/v/drift-analyzer?cacheSeconds=300)](https://pypi.org/project/drift-analyzer/)
@@ -14,9 +14,11 @@
 
 </div>
 
-Drift detects structural erosion that accumulates across files: the same error handling done four different ways, database imports leaking into the API layer, AST-level near-duplicate helpers across modules. These problems pass existing tests but make the codebase progressively harder to change.
+Drift keeps your codebase coherent as AI generates more of it.
 
-The analysis is deterministic (no LLM in the pipeline) and produces findings with file locations, severity, and a suggested next step. Precision upper-bound estimate: [77 % strict / 95 % lenient on the historical v0.5.0 ground-truth baseline](docs/STUDY.md) (score-weighted sample of 286 findings, 5 repos, single-rater — not yet independently replicated). See [Trust and limitations](#trust-and-limitations) for full caveats.
+It detects when the same problem gets solved four different ways across files, when database logic leaks into the API layer, and when AI-generated scaffolding creates structural duplication — without an LLM in the pipeline. Findings come with file locations, severity, and a concrete next step.
+
+Built for AI-assisted development workflows. Works standalone, in CI, and as an MCP server inside Cursor, Copilot, and Claude.
 
 ```bash
 pip install drift-analyzer        # requires Python 3.11+
@@ -90,6 +92,8 @@ Comparison reflects primary design scope per [STUDY.md §9](docs/STUDY.md).
 
 ```bash
 drift analyze --repo .          # see your top findings
+drift trend --repo .            # track score over time (run after each session)
+drift brief --repo .            # compact agent-ready summary
 drift fix-plan --repo .         # get actionable repair tasks
 drift check --fail-on none      # add report-only CI discipline
 ```
@@ -130,9 +134,11 @@ Drift provides an MCP server and agent-native commands for use inside AI coding 
 ```bash
 pip install drift-analyzer[mcp]
 drift init --mcp --claude         # scaffold MCP configs for your editor
+drift brief --repo .                   # pre-task structural briefing for agents
 drift scan --repo . --max-findings 5   # session baseline for agents
 drift diff --staged-only               # pre-commit structural check
 drift fix-plan --repo .                # agent-friendly repair tasks
+drift copilot-context --repo .         # generate Copilot instructions from findings
 ```
 
 Full setup: [Integrations](docs-site/integrations.md) · [Vibe-Coding Guide](examples/vibe-coding/README.md) · [Demo walkthroughs](demos/README.md)
@@ -144,6 +150,60 @@ Drift runs multiple signal families against the codebase. Each signal detects a 
 `drift explain <SIGNAL>` shows what any signal detects and how to address it.
 
 [Signal Reference](docs-site/algorithms/signals.md) · [Algorithm Deep Dive](docs-site/algorithms/deep-dive.md) · [Scoring Model](docs-site/algorithms/scoring.md)
+
+## Commands
+
+### 🔍 Diagnose
+
+| Command | Zweck |
+|---|---|
+| `drift scan` | Agent-native Repository-Scan mit kompaktem Finding-Summary; optimiert für AI-Coding-Sessions. |
+| `drift analyze` | Vollständige Repository-Analyse mit konfigurierbarem Output-Format (rich/JSON/SARIF/CSV) und Severity-Gate. |
+| `drift check` | CI-Gate: analysiert einen Diff und gibt Exit-Code 1 zurück, wenn Findings den konfigurierten Schwellenwert überschreiten. |
+| `drift diff` | Änderungsfokussierte Drift-Analyse; vergleicht Working-Tree, staged Changes oder einen Git-Ref. |
+| `drift patterns` | Zeigt ermittelte Code-Muster nach Kategorie (z. B. `error_handling`, `data_access`) im Repository. |
+| `drift precision` | Führt Ground-Truth-Fixtures aus und gibt pro Signal Precision, Recall und F1-Score aus. |
+
+### 🧭 Navigation & Agent-Support
+
+| Command | Zweck |
+|---|---|
+| `drift_nudge` *(MCP only)* | Schnelles direktionales Feedback nach Edits: Score-Delta und `safe_to_commit`-Status — kein eigenständiger CLI-Command, nur via MCP. |
+| `drift brief` | Pre-Task-Briefing: Liefert scope-bewusste Guardrails für Agent-Delegation zu einer konkreten Aufgabe. |
+| `drift fix-plan` | Priorisierte, aktionierbare Reparaturtask-Liste aus den aktuellen Findings — optimiert für Agenten. |
+| `drift explain` | Beschreibt ein Signal im Terminal: Definition, Erkennungslogik und empfohlener Fix-Ansatz. |
+| `drift export-context` | Exportiert erkannte Anti-Patterns als Markdown-Datei für Agent-Kontext-Dateien (`.instructions.md`, `.prompt.md`). |
+
+### 📊 Kalibrierung & Qualität
+
+| Command | Zweck |
+|---|---|
+| `drift calibrate` | Click-Gruppe: Berechnet kalibrierte Signal-Gewichte aus gesammelten Feedback-Ereignissen (`run`-Subcommand). |
+| `drift feedback` | Click-Gruppe mit Subcommands `mark`, `summary`, `import`: Erfasst TP/FP/FN-Verdicts für Signal-Kalibrierung. |
+| `drift precision` | Misst Ground-Truth-Precision/Recall für einzelne Signale als Qualitätsmetriken im Kalibrierprozess. |
+| `drift self` | Analysiert Drifts eigenen Source-Code — Qualitätskontrolle für das Tool-Repository selbst. |
+
+### 📈 Trend & History
+
+| Command | Zweck |
+|---|---|
+| `drift trend` | Zeigt den Drift-Score-Verlauf über die Zeit anhand gespeicherter History-Snapshots (erfordert mehrere Analyseläufe). |
+| `drift timeline` | Root-Cause-Analyse: Zeigt wann und warum Drift in jedem Modul begonnen hat. |
+
+### ⚙️ Setup & Integration
+
+| Command | Zweck |
+|---|---|
+| `drift init` | Scaffoldet `drift.yaml`, GitHub-Actions-Workflow, Git-Hooks und MCP-Editor-Konfigurationen. |
+| `drift baseline` | Click-Gruppe: Verwaltet Finding-Baselines für inkrementelle Adoption (`save`/`compare`-Subcommands). |
+| `drift validate` | Preflight-Validierung: Prüft Konfiguration und Environment und gibt strukturiertes JSON aus. |
+| `drift config` | Click-Gruppe: Inspiziert und validiert die `drift.yaml`-Konfigurationsdatei. |
+| `drift mcp` | MCP-Integration mit drei Modi via Flags: `--serve` (MCP-Server via stdio), `--list` (Tool-Katalog), `--schema` (Parameter-Schema). |
+| `drift serve` | Startet einen A2A-kompatiblen HTTP-Server für Agent-zu-Agent-Integration (erfordert `pip install drift-analyzer[serve]`). |
+| `drift badge` | Generiert eine shields.io-Badge-URL passend zum aktuellen Repository-Drift-Score. |
+| `drift copilot-context` | Generiert eine Copilot-Instructions-Datei aus den aktuellen Drift-Analyse-Ergebnissen. |
+
+> **Nicht gelistet:** `drift start` (geführter Onboarding-Walkthrough) und `drift self` (intern, nur im Drift-Source-Repo). Vollständige Referenz: [Command-Referenz](docs/reference/commands.md).
 
 ## Use cases
 
@@ -182,6 +242,20 @@ drift analyze --repo . --format json | jq '.findings[] | select(.signal=="MDS")'
 
 **Output:** MDS findings listing all 6 locations with high similarity scores, enabling a single extract-to-shared-module refactoring.
 </details>
+
+## drift runs on itself
+
+Drift analyzes its own source code on every release. The results are checked in as [benchmark_results/drift_self.json](benchmark_results/drift_self.json).
+
+```bash
+drift analyze --repo https://github.com/mick-gsk/drift
+# or locally:
+drift self
+```
+
+This is not just a demo — it's a reproducibility signal. If a claimed improvement degrades drift's own coherence score, it shows up in CI before merge.
+
+---
 
 ## Setup and CI integration
 

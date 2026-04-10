@@ -1,7 +1,21 @@
 ## [Unreleased]
 
+### Added
+
+- Activate MAZ (missing authorization, weight 0.02) and ISD (insecure default, weight 0.01) as scoring-active signals, completing the agent-safety signal suite (ADR-039).
+- Recalibrate HSC (0.02→0.01), FOE (0.01→0.005) weights for conservative activation alongside MAZ/ISD (ADR-039).
+- Add 5 new ISD ground-truth fixtures (2 TP, 3 TN) for precision/recall coverage.
+- Add FMEA, fault tree, and risk register entries for 5-signal activation (ADR-039).
+- Activate HSC (hardcoded secret, weight 0.02), FOE (fan-out explosion, weight 0.01), and PHR (phantom reference, weight 0.02) as scoring-active signals for agent-safety use cases (ADR-040).
+- Add 9 new ground-truth fixtures for HSC (4), FOE (3), and PHR (2) scoring-promotion coverage.
+- Add PHR to signal abbreviation mapping for drift_nudge/diff resolution.
+- Add `min_confidence` parameter to `generate_guardrails()` for filtering low-confidence negative-context items from agent guidance.
+- Add dedicated PHANTOM_REFERENCE generator in negative context pipeline, replacing generic fallback with signal-specific anti-pattern guidance (confidence ≥ 0.6).
+
 ### Changed
 
+- Increase count-dampening constant from k=10 to k=20 for better score differentiation of mid-range signal counts (ADR-041 P3).
+- Cap breadth multiplier at 4.0 in impact scoring to prevent unbounded inflation from very large related-file clusters (ADR-041 P4).
 - Expand TypeScript analysis coverage with additional fixtures and parser/signal/output updates for TS architecture, naming consistency, React hooks, and type-safety bypass detection.
 
 ### Fixed

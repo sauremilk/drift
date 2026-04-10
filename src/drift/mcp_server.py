@@ -632,7 +632,8 @@ async def drift_explain(
         Field(
             description=(
                 "Signal abbreviation ('PFS'), signal name"
-                " ('pattern_fragmentation'), or error code ('DRIFT-1001')."
+                " ('pattern_fragmentation'), error code ('DRIFT-1001'),"
+                " or finding fingerprint (hex string from finding_id field)."
             ),
         ),
     ],
@@ -651,14 +652,16 @@ async def drift_explain(
         Field(description="Optional session ID from drift_session_start for stateful workflows."),
     ] = "",
 ) -> str:
-    """Explain a drift signal, rule, or error code.
+    """Explain a drift signal, rule, error code, or individual finding.
 
     Use when you encounter an unfamiliar signal abbreviation (e.g. "PFS"),
     need to understand what a finding means, or want remediation guidance.
+    Pass a finding_id (fingerprint) from scan results for finding-level detail.
 
     Args:
         topic: Signal abbreviation ("PFS"), signal name
-            ("pattern_fragmentation"), or error code ("DRIFT-1001").
+            ("pattern_fragmentation"), error code ("DRIFT-1001"),
+            or finding fingerprint (hex string from finding_id).
         response_profile: Response profile ('planner', 'coder', 'verifier',
             'merge_readiness'). Omit for full response.
         session_id: Optional session ID for stateful workflows.

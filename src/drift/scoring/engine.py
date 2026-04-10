@@ -34,17 +34,22 @@ _severity_for_score = severity_for_score
 
 
 # Count-dampening constant: finding counts above this value produce a
-# dampening factor of ~1.0 (see ADR-003 for derivation).
-_DAMPENING_K = 10
+# dampening factor of ~1.0 (see ADR-003 for derivation, ADR-041 for k=20).
+_DAMPENING_K = 20
+
+# Breadth-multiplier ceiling (ADR-041): caps the log-based breadth factor
+# so that very large related_file clusters don't inflate impact unboundedly.
+_BREADTH_CAP = 4.0
 
 
 def assign_impact_scores(findings: list[Finding], weights: SignalWeights) -> None:
     """Compute and assign impact scores to each finding in-place.
 
-    impact = signal_weight × score × (1 + log(1 + related_file_count))
+    impact = signal_weight × score × min(BREADTH_CAP, 1 + log(1 + related_file_count))
 
     The logarithmic factor rewards findings that span many files without
-    creating an unbounded multiplier for very large clusters.
+    creating an unbounded multiplier for very large clusters.  The cap
+    prevents extreme inflation beyond ~50 related files (see ADR-041).
 
     Also computes ``score_contribution`` — the fraction of the composite
     score attributable to this finding.  Useful for prioritising which
@@ -56,7 +61,7 @@ def assign_impact_scores(findings: list[Finding], weights: SignalWeights) -> Non
     for f in findings:
         key = _SIGNAL_WEIGHT_KEYS.get(f.signal_type, f.signal_type)
         w = weight_dict.get(key, 0.1)
-        breadth = 1 + math.log(1 + len(f.related_files))
+        breadth = min(_BREADTH_CAP, 1 + math.log(1 + len(f.related_files)))
         f.impact = round(w * f.score * breadth, 4)
 
         # score_contribution: estimated share of the composite score
@@ -121,7 +126,7 @@ def apply_path_overrides(
             wd = override.weights.as_dict()
             key = _SIGNAL_WEIGHT_KEYS.get(f.signal_type, f.signal_type)
             w = wd.get(key, 0.1)
-            breadth = 1 + math.log(1 + len(f.related_files))
+            breadth = min(_BREADTH_CAP, 1 + math.log(1 + len(f.related_files)))
             f.impact = round(w * f.score * breadth, 4)
 
         kept.append(f)

@@ -5,12 +5,20 @@ from __future__ import annotations
 import textwrap
 from pathlib import Path
 
+import pytest
+
 from drift.config import DriftConfig
 from drift.models import FunctionInfo, ParseResult, SignalType
+from drift.precision import (
+    ensure_signals_registered,
+    has_matching_finding,
+    run_fixture,
+)
 from drift.signals.cognitive_complexity import (
     CognitiveComplexitySignal,
     _cognitive_complexity_of_body,
 )
+from tests.fixtures.ground_truth import FIXTURES_BY_SIGNAL, GroundTruthFixture
 
 
 def _make_pr(
@@ -229,3 +237,38 @@ class TestCXSTrueNegative:
         findings = signal.analyze([pr], {}, DriftConfig())
 
         assert len(findings) == 0
+
+
+# ---------------------------------------------------------------------------
+# Parametrized ground-truth fixture tests
+# ---------------------------------------------------------------------------
+
+ensure_signals_registered()
+
+_CXS_FIXTURES = FIXTURES_BY_SIGNAL.get(SignalType.COGNITIVE_COMPLEXITY, [])
+
+
+@pytest.mark.parametrize(
+    "fixture",
+    _CXS_FIXTURES,
+    ids=[f.name for f in _CXS_FIXTURES],
+)
+def test_cxs_ground_truth(fixture: GroundTruthFixture, tmp_path: Path) -> None:
+    """Verify CXS ground-truth fixtures produce expected findings."""
+    findings, _warnings = run_fixture(
+        fixture, tmp_path, signal_filter={SignalType.COGNITIVE_COMPLEXITY}
+    )
+    for exp in fixture.expected:
+        if exp.signal_type != SignalType.COGNITIVE_COMPLEXITY:
+            continue
+        detected = has_matching_finding(findings, exp)
+        if exp.should_detect:
+            assert detected, (
+                f"[FN] {fixture.name}: expected CXS at {exp.file_path} "
+                f"but not found. Findings: {[(f.signal_type, f.file_path) for f in findings]}"
+            )
+        else:
+            assert not detected, (
+                f"[FP] {fixture.name}: did NOT expect CXS at {exp.file_path} "
+                f"but found. Findings: {[(f.signal_type, f.file_path) for f in findings]}"
+            )

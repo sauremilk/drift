@@ -9,7 +9,7 @@ from __future__ import annotations
 
 from typing import Any
 
-SCHEMA_VERSION = "2.0"
+SCHEMA_VERSION = "2.1"
 
 
 def build_drift_score_scope(

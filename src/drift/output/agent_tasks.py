@@ -780,6 +780,16 @@ def _finding_to_task(
         expected_score_delta=round(finding.score_contribution, 4),
     )
 
+    # Propagate logical_location via metadata for API serialization.
+    if finding.logical_location:
+        task.metadata["logical_location"] = {
+            "fully_qualified_name": finding.logical_location.fully_qualified_name,
+            "name": finding.logical_location.name,
+            "kind": finding.logical_location.kind,
+            "class_name": finding.logical_location.class_name,
+            "namespace": finding.logical_location.namespace,
+        }
+
     # Apply automation fitness classification (mutates task in place)
     _classify_task(finding, task)
 

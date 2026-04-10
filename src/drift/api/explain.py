@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 from pathlib import Path
 from typing import Any, cast
 
@@ -10,10 +11,14 @@ from drift.api_helpers import (
     VALID_SIGNAL_IDS,
     _base_response,
     _error_response,
+    _finding_detailed,
     resolve_signal,
     shape_for_profile,
     signal_abbrev,
 )
+
+# Regex for finding fingerprint: 8-16 lowercase hex chars.
+_FINGERPRINT_RE = re.compile(r"^[0-9a-f]{8,16}$")
 
 
 def _repo_examples_for_signal(
@@ -61,11 +66,13 @@ def explain(
     ----------
     topic:
         A signal abbreviation (``"PFS"``), signal type name
-        (``"pattern_fragmentation"``), or error code (``"DRIFT-1001"``).
+        (``"pattern_fragmentation"``), error code (``"DRIFT-1001"``),
+        or a finding fingerprint (16-char hex string from ``finding_id``).
     repo_path:
         Optional repository root.  When provided, a lightweight scan is
         performed and the top findings for the signal are included as
-        ``repo_examples`` in the response.
+        ``repo_examples`` in the response.  Required when *topic* is a
+        finding fingerprint.
     """
     import importlib
 
@@ -166,6 +173,23 @@ def explain(
             )
             return result
 
+        # ADR-042: Try as finding fingerprint (8-16 hex chars)
+        if _FINGERPRINT_RE.match(topic.lower()):
+            finding_result = _explain_finding_by_fingerprint(
+                topic.lower(), repo_path,
+            )
+            if finding_result is not None:
+                _emit_api_telemetry(
+                    tool_name="api.explain",
+                    params=params,
+                    status="ok",
+                    elapsed_ms=elapsed_ms(),
+                    result=finding_result,
+                    error=None,
+                    repo_root=Path(repo_path).resolve() if repo_path else Path.cwd(),
+                )
+                return shape_for_profile(finding_result, response_profile)
+
         # Not found — helpful error
         result = _error_response(
             "DRIFT-1003",
@@ -217,3 +241,54 @@ def _related_signals(abbr: str) -> list[str]:
         "ECM": ["TVS"],
     }
     return relations.get(abbr, [])
+
+
+def _explain_finding_by_fingerprint(
+    fingerprint: str,
+    repo_path: str | Path | None,
+) -> dict[str, Any] | None:
+    """Resolve a finding fingerprint and return a detailed explanation.
+
+    Performs a lightweight scan of *repo_path* (or cwd) and matches the
+    fingerprint against all findings.  Returns ``None`` if no match is found.
+    """
+    from drift.baseline import finding_fingerprint
+
+    root = Path(repo_path).resolve() if repo_path else Path.cwd()
+    try:
+        from drift.analyzer import analyze_repo
+
+        cfg = _load_config_cached(root)
+        analysis = analyze_repo(root, config=cfg)
+    except Exception:
+        return None
+
+    for f in analysis.findings:
+        fp = finding_fingerprint(f)
+        if fp == fingerprint or fp.startswith(fingerprint):
+            sig_abbr = signal_abbrev(f.signal_type)
+            detail = _finding_detailed(f)
+
+            # Enrich with signal-level context
+            import importlib
+
+            explain_mod = importlib.import_module("drift.commands.explain")
+            signal_info = cast(
+                dict[str, dict[str, Any]],
+                getattr(explain_mod, "_SIGNAL_INFO", {}),
+            )
+            sig_info = signal_info.get(sig_abbr, {})
+
+            return _base_response(
+                type="finding",
+                finding_id=fp,
+                finding=detail,
+                signal=sig_abbr,
+                signal_name=sig_info.get("name", f.signal_type),
+                signal_description=sig_info.get("description", ""),
+                detection_logic=sig_info.get("detects", ""),
+                remediation_approach=sig_info.get("fix_hint", ""),
+                related_signals=_related_signals(sig_abbr),
+            )
+
+    return None

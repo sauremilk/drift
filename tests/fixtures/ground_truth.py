@@ -5133,6 +5133,266 @@ PHR_PARENT_REEXPORT_TN = GroundTruthFixture(
 
 
 # ---------------------------------------------------------------------------
+# HSC scoring-promotion fixtures (ADR-040)
+# ---------------------------------------------------------------------------
+
+HSC_GITHUB_TOKEN_TP = GroundTruthFixture(
+    name="hsc_github_token_tp",
+    description="Hardcoded GitHub PAT token → should fire HSC",
+    files={
+        "deploy/__init__.py": "",
+        "deploy/config.py": textwrap.dedent("""\
+            GITHUB_TOKEN = "ghp_ABCDEFghijklmnopqrstuvwxyz0123456789"
+            API_URL = "https://api.github.com"
+        """),
+    },
+    expected=[
+        ExpectedFinding(
+            signal_type=SignalType.HARDCODED_SECRET,
+            file_path="deploy/config.py",
+            should_detect=True,
+            description="ghp_ prefix is a high-confidence GitHub PAT token",
+        ),
+    ],
+)
+
+HSC_HIGH_ENTROPY_TP = GroundTruthFixture(
+    name="hsc_high_entropy_tp",
+    description="High-entropy string in secret-named variable → should fire HSC",
+    files={
+        "settings/__init__.py": "",
+        "settings/secrets.py": textwrap.dedent("""\
+            DB_PASSWORD = "xK9#mP2$vL5nQ8wR3jT6yU0iO4eA7sD1fG"
+            APP_NAME = "myapp"
+        """),
+    },
+    expected=[
+        ExpectedFinding(
+            signal_type=SignalType.HARDCODED_SECRET,
+            file_path="settings/secrets.py",
+            should_detect=True,
+            description="Variable name matches secret pattern and value has high entropy",
+        ),
+    ],
+)
+
+HSC_ENV_READ_TN = GroundTruthFixture(
+    name="hsc_env_read_tn",
+    description="Secrets read from environment → should NOT fire HSC",
+    kind=FixtureKind.CONFOUNDER,
+    files={
+        "config/__init__.py": "",
+        "config/settings.py": textwrap.dedent("""\
+            import os
+            SECRET_KEY = os.environ["SECRET_KEY"]
+            DB_PASSWORD = os.getenv("DB_PASSWORD", "")
+            API_TOKEN = os.environ.get("API_TOKEN", None)
+        """),
+    },
+    expected=[
+        ExpectedFinding(
+            signal_type=SignalType.HARDCODED_SECRET,
+            file_path="config/settings.py",
+            should_detect=False,
+            description="All secrets sourced from os.environ/os.getenv → safe",
+        ),
+    ],
+)
+
+HSC_PLACEHOLDER_TN = GroundTruthFixture(
+    name="hsc_placeholder_tn",
+    description=(
+        "Non-secret config values in file with secret-like variable names "
+        "→ should NOT fire HSC"
+    ),
+    kind=FixtureKind.CONFOUNDER,
+    files={
+        "config/__init__.py": "",
+        "config/defaults.py": textwrap.dedent("""\
+            DB_HOST = "localhost"
+            DB_PORT = "5432"
+            API_TIMEOUT = "30"
+            LOG_LEVEL = "DEBUG"
+            APP_NAME = "myservice"
+        """),
+    },
+    expected=[
+        ExpectedFinding(
+            signal_type=SignalType.HARDCODED_SECRET,
+            file_path="config/defaults.py",
+            should_detect=False,
+            description=(
+                "Non-secret config values (host, port, timeout) do not match "
+                "secret heuristics"
+            ),
+        ),
+    ],
+)
+
+
+# ---------------------------------------------------------------------------
+# FOE scoring-promotion fixtures (ADR-040)
+# ---------------------------------------------------------------------------
+
+FOE_HIGH_IMPORT_TP = GroundTruthFixture(
+    name="foe_high_import_tp",
+    description="File with 22 unique imports → should fire FOE (threshold 15)",
+    files={
+        "app/__init__.py": "",
+        "app/god_module.py": textwrap.dedent("""\
+            import os
+            import sys
+            import json
+            import logging
+            import pathlib
+            import hashlib
+            import datetime
+            import collections
+            import functools
+            import itertools
+            import typing
+            import dataclasses
+            import re
+            import math
+            import sqlite3
+            import urllib
+            import http
+            import email
+            import csv
+            import io
+            import abc
+            import contextlib
+
+            def do_everything():
+                pass
+        """),
+    },
+    expected=[
+        ExpectedFinding(
+            signal_type=SignalType.FAN_OUT_EXPLOSION,
+            file_path="app/god_module.py",
+            should_detect=True,
+            description="22 unique imports exceeds threshold of 15",
+        ),
+    ],
+)
+
+FOE_NORMAL_IMPORT_TN = GroundTruthFixture(
+    name="foe_normal_import_tn",
+    description="File with 8 imports → should NOT fire FOE",
+    files={
+        "utils/__init__.py": "",
+        "utils/helpers.py": textwrap.dedent("""\
+            import os
+            import sys
+            import json
+            import logging
+            import pathlib
+            import hashlib
+            import typing
+            import dataclasses
+
+            def helper():
+                pass
+        """),
+    },
+    expected=[
+        ExpectedFinding(
+            signal_type=SignalType.FAN_OUT_EXPLOSION,
+            file_path="utils/helpers.py",
+            should_detect=False,
+            description="8 imports is well below threshold of 15",
+        ),
+    ],
+)
+
+FOE_BARREL_FILE_TN = GroundTruthFixture(
+    name="foe_barrel_file_tn",
+    description="__init__.py barrel file with many re-exports → excluded from FOE",
+    kind=FixtureKind.CONFOUNDER,
+    files={
+        "mypackage/__init__.py": textwrap.dedent("""\
+            from mypackage.core import Engine
+            from mypackage.config import Settings
+            from mypackage.utils import helper
+            from mypackage.models import User, Order, Product
+            from mypackage.db import connect, disconnect
+            from mypackage.api import create_app, register_routes
+            from mypackage.auth import login, logout, verify_token
+            from mypackage.cache import get_cache, set_cache
+            from mypackage.logging import setup_logging
+            from mypackage.errors import AppError, ValidationError
+        """),
+    },
+    expected=[
+        ExpectedFinding(
+            signal_type=SignalType.FAN_OUT_EXPLOSION,
+            file_path="mypackage/__init__.py",
+            should_detect=False,
+            description="__init__.py barrel files are excluded from FOE detection",
+        ),
+    ],
+)
+
+
+# ---------------------------------------------------------------------------
+# PHR additional fixtures (ADR-040: scoring-promotion coverage)
+# ---------------------------------------------------------------------------
+
+PHR_CONDITIONAL_IMPORT_TN = GroundTruthFixture(
+    name="phr_conditional_import_tn",
+    description="try/except ImportError guard → should NOT fire PHR",
+    kind=FixtureKind.CONFOUNDER,
+    files={
+        "compat/__init__.py": "",
+        "compat/shims.py": textwrap.dedent("""\
+            try:
+                from rapidjson import loads as json_loads
+            except ImportError:
+                from json import loads as json_loads
+
+            def parse(data: str):
+                return json_loads(data)
+        """),
+    },
+    expected=[
+        ExpectedFinding(
+            signal_type=SignalType.PHANTOM_REFERENCE,
+            file_path="compat/shims.py",
+            should_detect=False,
+            description="try/except ImportError is a valid conditional import guard",
+        ),
+    ],
+)
+
+PHR_FRAMEWORK_DECORATOR_TN = GroundTruthFixture(
+    name="phr_framework_decorator_tn",
+    description="Flask/pytest decorators → should NOT fire PHR",
+    kind=FixtureKind.CONFOUNDER,
+    files={
+        "web/__init__.py": "",
+        "web/routes.py": textwrap.dedent("""\
+            from flask import Flask
+
+            app = Flask(__name__)
+
+            @app.route("/health")
+            def health():
+                return {"status": "ok"}
+        """),
+    },
+    expected=[
+        ExpectedFinding(
+            signal_type=SignalType.PHANTOM_REFERENCE,
+            file_path="web/routes.py",
+            should_detect=False,
+            description="Flask app.route decorator is a framework-injected name",
+        ),
+    ],
+)
+
+
+# ---------------------------------------------------------------------------
 # FP-Reduction fixtures (ADR-036, ADR-037, ADR-038)
 # ---------------------------------------------------------------------------
 
@@ -5380,6 +5640,584 @@ MDS_CONFOUNDER_NAME_DIVERSE_TN = GroundTruthFixture(
 )
 
 
+# ── Cognitive Complexity (CXS) ────────────────────────────────────────────
+
+CXS_TP_DEEP_NESTING = GroundTruthFixture(
+    name="cxs_tp_deep_nesting",
+    description="Function with 4+ nested if/for/while levels → CC >> 15, should fire CXS",
+    kind=FixtureKind.POSITIVE,
+    files={
+        "services/__init__.py": "",
+        "services/processor.py": """\
+            def process_batch(orders, users, config, database):
+                results = []
+                for order in orders:
+                    if order.status == "pending":
+                        for item in order.items:
+                            if item.quantity > 0:
+                                if item.price > config.min_price:
+                                    while not database.is_ready():
+                                        if config.retry:
+                                            try:
+                                                database.reconnect()
+                                            except Exception:
+                                                if config.fallback:
+                                                    results.append(None)
+                                                else:
+                                                    raise
+                                        else:
+                                            break
+                                    results.append(item)
+                return results
+        """,
+    },
+    expected=[
+        ExpectedFinding(
+            signal_type=SignalType.COGNITIVE_COMPLEXITY,
+            file_path="services/processor.py",
+            should_detect=True,
+            description="Deep nesting (4+ levels) produces CC well above threshold 15",
+        ),
+    ],
+)
+
+CXS_TN_FLAT_CODE = GroundTruthFixture(
+    name="cxs_tn_flat_code",
+    description="Linear function with no control structures → CC = 0, should NOT fire CXS",
+    kind=FixtureKind.NEGATIVE,
+    files={
+        "utils/__init__.py": "",
+        "utils/format.py": """\
+            def format_report(title, body, footer, author, date):
+                header = f"Report: {title}"
+                separator = "=" * len(header)
+                content = f"{header}\\n{separator}\\n{body}"
+                attribution = f"By {author} on {date}"
+                result = f"{content}\\n{footer}\\n{attribution}"
+                return result
+        """,
+    },
+    expected=[
+        ExpectedFinding(
+            signal_type=SignalType.COGNITIVE_COMPLEXITY,
+            file_path="utils/format.py",
+            should_detect=False,
+            description="Purely linear code, CC = 0",
+        ),
+    ],
+)
+
+CXS_TP_MANY_ELIF = GroundTruthFixture(
+    name="cxs_tp_many_elif",
+    description="Function with long elif chain → CC > 15 from many branches, should fire CXS",
+    kind=FixtureKind.POSITIVE,
+    files={
+        "handlers/__init__.py": "",
+        "handlers/dispatch.py": """\
+            def dispatch_event(event_type, payload, context, logger, config):
+                if event_type == "create":
+                    logger.info("create")
+                elif event_type == "update":
+                    logger.info("update")
+                elif event_type == "delete":
+                    logger.info("delete")
+                elif event_type == "archive":
+                    logger.info("archive")
+                elif event_type == "restore":
+                    logger.info("restore")
+                elif event_type == "publish":
+                    logger.info("publish")
+                elif event_type == "unpublish":
+                    logger.info("unpublish")
+                elif event_type == "merge":
+                    logger.info("merge")
+                elif event_type == "split":
+                    logger.info("split")
+                elif event_type == "clone":
+                    logger.info("clone")
+                elif event_type == "transfer":
+                    logger.info("transfer")
+                elif event_type == "import":
+                    logger.info("import")
+                elif event_type == "export":
+                    logger.info("export")
+                elif event_type == "validate":
+                    logger.info("validate")
+                elif event_type == "notify":
+                    logger.info("notify")
+                elif event_type == "escalate":
+                    logger.info("escalate")
+                else:
+                    logger.warning("unknown event")
+                return True
+        """,
+    },
+    expected=[
+        ExpectedFinding(
+            signal_type=SignalType.COGNITIVE_COMPLEXITY,
+            file_path="handlers/dispatch.py",
+            should_detect=True,
+            description="16 elif branches → CC = 17 (1 if + 16 elif), above threshold 15",
+        ),
+    ],
+)
+
+CXS_BOUNDARY_THRESHOLD = GroundTruthFixture(
+    name="cxs_boundary_threshold",
+    description="Function with CC=16 (just above threshold 15) — boundary detection case",
+    kind=FixtureKind.BOUNDARY,
+    files={
+        "core/__init__.py": "",
+        "core/validation.py": """\
+def validate_order(order, catalog, user, config, logger):
+    if not order.items:
+        return False
+    for item in order.items:
+        if item.id not in catalog:
+            if config.strict:
+                return False
+            else:
+                logger.warning("Unknown item", item.id)
+        if item.quantity <= 0:
+            return False
+        if item.price < 0:
+            return False
+    if not user.is_active and not user.is_guest:
+        if config.block_inactive:
+            return False
+    if config.warn_inactive:
+        logger.warning("Inactive user", user.id)
+    return True
+""",
+    },
+    expected=[
+        ExpectedFinding(
+            signal_type=SignalType.COGNITIVE_COMPLEXITY,
+            file_path="core/validation.py",
+            should_detect=True,
+            description="CC=16 — just above threshold 15, boundary detection case",
+        ),
+    ],
+)
+
+CXS_CONFOUNDER_ASYNC_LOOPS = GroundTruthFixture(
+    name="cxs_confounder_async_loops",
+    description="Async for + if with moderate nesting → CC below threshold, should NOT fire CXS",
+    kind=FixtureKind.CONFOUNDER,
+    files={
+        "workers/__init__.py": "",
+        "workers/fetcher.py": """\
+            async def fetch_pages(urls, session, max_retries):
+                results = []
+                async for url in urls:
+                    if url.startswith("https"):
+                        try:
+                            resp = await session.get(url)
+                            results.append(resp)
+                        except Exception:
+                            if max_retries > 0:
+                                results.append(None)
+                return results
+        """,
+    },
+    expected=[
+        ExpectedFinding(
+            signal_type=SignalType.COGNITIVE_COMPLEXITY,
+            file_path="workers/fetcher.py",
+            should_detect=False,
+            description="CC ~9 despite async for/if/try/except nesting — below threshold 15",
+        ),
+    ],
+)
+
+CXS_CONFOUNDER_DECORATORS = GroundTruthFixture(
+    name="cxs_confounder_decorators",
+    description="Many decorators but trivial body → CC = 0, should NOT fire CXS",
+    kind=FixtureKind.CONFOUNDER,
+    files={
+        "api/__init__.py": "",
+        "api/endpoints.py": """\
+            def require_auth(f):
+                return f
+            def rate_limit(f):
+                return f
+            def cache_response(f):
+                return f
+            def log_request(f):
+                return f
+            def validate_input(f):
+                return f
+            def track_metrics(f):
+                return f
+
+            @require_auth
+            @rate_limit
+            @cache_response
+            @log_request
+            @validate_input
+            @track_metrics
+            def get_user_profile(user_id, session, config, logger, cache):
+                return session.query(user_id)
+        """,
+    },
+    expected=[
+        ExpectedFinding(
+            signal_type=SignalType.COGNITIVE_COMPLEXITY,
+            file_path="api/endpoints.py",
+            should_detect=False,
+            description="Decorators don't affect CC — function body is trivial, CC = 0",
+        ),
+    ],
+)
+
+
+# ── Additional Co-Change Coupling (CCC) fixtures ─────────────────────────
+
+CCC_TP_CROSS_LAYER = GroundTruthFixture(
+    name="ccc_tp_cross_layer",
+    description="API views + DB queries co-change 10 times without imports → should fire CCC",
+    kind=FixtureKind.POSITIVE,
+    files={
+        "api/__init__.py": "",
+        "api/views.py": """\
+            def list_users(request):
+                return {"users": []}
+            def get_user(request, user_id):
+                return {"user": user_id}
+        """,
+        "db/__init__.py": "",
+        "db/queries.py": """\
+            def fetch_users(connection):
+                return connection.execute("SELECT * FROM users")
+            def fetch_user_by_id(connection, user_id):
+                return connection.execute("SELECT * FROM users WHERE id=?", user_id)
+        """,
+    },
+    commits=[
+        CommitInfo(
+            hash=f"cross{i:04d}",
+            author="dev",
+            email="dev@example.com",
+            timestamp=_dt.datetime(2026, 6, 1 + i, tzinfo=_dt.UTC),
+            message=f"feat: update api and db layer #{i}",
+            files_changed=["api/views.py", "db/queries.py"],
+        )
+        for i in range(10)
+    ],
+    expected=[
+        ExpectedFinding(
+            signal_type=SignalType.CO_CHANGE_COUPLING,
+            file_path="api/views.py",
+            should_detect=True,
+            description="Cross-layer co-change without import edge → hidden coupling",
+        ),
+    ],
+)
+
+CCC_CONFOUNDER_BURST_TN = GroundTruthFixture(
+    name="ccc_confounder_burst_tn",
+    description=(
+        "9 co-changes in burst + 24 solo commits — CCC has no burst filtering, "
+        "so this still fires (should_detect=True despite burst pattern)"
+    ),
+    kind=FixtureKind.CONFOUNDER,
+    files={
+        "svc/__init__.py": "",
+        "svc/auth.py": """\
+            def authenticate(username, password):
+                return username == "admin"
+        """,
+        "svc/logging.py": """\
+            def log_event(event_type, payload):
+                print(f"{event_type}: {payload}")
+        """,
+    },
+    commits=[
+        # Burst: 9 co-changes in 2 days
+        *[
+            CommitInfo(
+                hash=f"burst{i:04d}",
+                author="dev",
+                email="dev@example.com",
+                timestamp=_dt.datetime(2026, 1, 1, tzinfo=_dt.UTC)
+                + _dt.timedelta(hours=i * 2),
+                message=f"fix: burst commit #{i}",
+                files_changed=["svc/auth.py", "svc/logging.py"],
+            )
+            for i in range(9)
+        ],
+        # Solo commits to give enough history
+        *[
+            CommitInfo(
+                hash=f"solo{i:04d}",
+                author="dev",
+                email="dev@example.com",
+                timestamp=_dt.datetime(2026, 2, 1 + i, tzinfo=_dt.UTC),
+                message=f"chore: solo work #{i}",
+                files_changed=["svc/auth.py"],
+            )
+            for i in range(24)
+        ],
+    ],
+    expected=[
+        ExpectedFinding(
+            signal_type=SignalType.CO_CHANGE_COUPLING,
+            file_path="svc/auth.py",
+            should_detect=True,
+            description=(
+                "CCC has no temporal/burst filtering — 9 co-changes satisfy "
+                "all thresholds even though concentrated in a burst"
+            ),
+        ),
+    ],
+)
+
+
+# ── Additional Cohesion Deficit (COD) fixtures ────────────────────────────
+
+COD_CONFOUNDER_SINGLE_METHOD_TN = GroundTruthFixture(
+    name="cod_confounder_single_method_tn",
+    description="File with only 1 function — below min_units=4, should NOT fire COD",
+    kind=FixtureKind.CONFOUNDER,
+    files={
+        "helpers/__init__.py": "",
+        "helpers/single.py": """\
+            def compute_total(items):
+                return sum(item.price * item.quantity for item in items)
+        """,
+    },
+    expected=[
+        ExpectedFinding(
+            signal_type=SignalType.COHESION_DEFICIT,
+            file_path="helpers/single.py",
+            should_detect=False,
+            description="Only 1 function — below min_units=4 threshold",
+        ),
+    ],
+)
+
+COD_CONFOUNDER_PROPERTY_ONLY_TN = GroundTruthFixture(
+    name="cod_confounder_property_only_tn",
+    description=(
+        "Class with 5 @property methods sharing domain vocabulary → cohesive, "
+        "should NOT fire COD"
+    ),
+    kind=FixtureKind.CONFOUNDER,
+    files={
+        "domain/__init__.py": "",
+        "domain/order.py": """\
+            class Order:
+                def __init__(self, items, customer, discount):
+                    self._items = items
+                    self._customer = customer
+                    self._discount = discount
+
+                @property
+                def order_total(self):
+                    return sum(i.price for i in self._items)
+
+                @property
+                def order_discount(self):
+                    return self._discount
+
+                @property
+                def order_final_price(self):
+                    return self.order_total - self.order_discount
+
+                @property
+                def order_item_count(self):
+                    return len(self._items)
+
+                @property
+                def order_customer_name(self):
+                    return self._customer.name
+        """,
+    },
+    expected=[
+        ExpectedFinding(
+            signal_type=SignalType.COHESION_DEFICIT,
+            file_path="domain/order.py",
+            should_detect=False,
+            description="All properties share 'order' vocabulary — cohesive domain object",
+        ),
+    ],
+)
+
+COD_BOUNDARY_PARTIAL_COHESION = GroundTruthFixture(
+    name="cod_boundary_partial_cohesion",
+    description="4 payment-cohesive + 4 unrelated functions → mixed cohesion, should fire COD",
+    kind=FixtureKind.BOUNDARY,
+    files={
+        "services/__init__.py": "",
+        "services/mixed.py": """\
+            def calculate_payment_amount(order):
+                return order.total
+
+            def validate_payment_method(method):
+                return method in ("card", "bank")
+
+            def process_payment_refund(payment_id):
+                return {"refunded": payment_id}
+
+            def format_payment_receipt(payment):
+                return f"Receipt: {payment}"
+
+            def send_email_notification(recipient, subject, body):
+                print(f"To: {recipient}")
+
+            def resize_image_thumbnail(image, width, height):
+                return image[:width * height]
+
+            def parse_xml_config(raw):
+                return {"config": raw}
+
+            def generate_pdf_report(data, template):
+                return f"PDF: {template}"
+        """,
+    },
+    expected=[
+        ExpectedFinding(
+            signal_type=SignalType.COHESION_DEFICIT,
+            file_path="services/mixed.py",
+            should_detect=True,
+            description="4 payment functions + 4 unrelated → low aggregate Jaccard similarity",
+        ),
+    ],
+)
+
+
+# ---------------------------------------------------------------------------
+# ISD scoring-promotion fixtures (ADR-039)
+# ---------------------------------------------------------------------------
+
+ISD_DJANGO_INSECURE_TP = GroundTruthFixture(
+    name="isd_django_insecure_tp",
+    description="Django settings with DEBUG=True and ALLOWED_HOSTS=['*'] → should fire ISD",
+    files={
+        "myproject/__init__.py": "",
+        "myproject/settings.py": textwrap.dedent("""\
+            import os
+
+            DEBUG = True
+            ALLOWED_HOSTS = ["*"]
+            CORS_ALLOW_ALL_ORIGINS = True
+            SECRET_KEY = os.environ["SECRET_KEY"]
+        """),
+    },
+    expected=[
+        ExpectedFinding(
+            signal_type=SignalType.INSECURE_DEFAULT,
+            file_path="myproject/settings.py",
+            should_detect=True,
+            description=(
+                "DEBUG=True + ALLOWED_HOSTS=['*'] + CORS all origins → "
+                "multiple ISD findings"
+            ),
+        ),
+    ],
+)
+
+ISD_VERIFY_FALSE_TP = GroundTruthFixture(
+    name="isd_verify_false_tp",
+    description="requests.get with verify=False to external URL → should fire ISD",
+    files={
+        "client/__init__.py": "",
+        "client/api.py": textwrap.dedent("""\
+            import requests
+
+            def fetch_data():
+                resp = requests.get("https://api.example.com/data", verify=False)
+                return resp.json()
+        """),
+    },
+    expected=[
+        ExpectedFinding(
+            signal_type=SignalType.INSECURE_DEFAULT,
+            file_path="client/api.py",
+            should_detect=True,
+            description="verify=False on external HTTPS endpoint disables TLS validation",
+        ),
+    ],
+)
+
+ISD_SECURE_DJANGO_TN = GroundTruthFixture(
+    name="isd_secure_django_tn",
+    description="Properly secured Django settings → should NOT fire ISD",
+    kind=FixtureKind.CONFOUNDER,
+    files={
+        "myproject/__init__.py": "",
+        "myproject/settings.py": textwrap.dedent("""\
+            import os
+
+            DEBUG = False
+            ALLOWED_HOSTS = ["myapp.example.com"]
+            SESSION_COOKIE_SECURE = True
+            CSRF_COOKIE_SECURE = True
+            SECURE_SSL_REDIRECT = True
+            SECRET_KEY = os.environ["SECRET_KEY"]
+        """),
+    },
+    expected=[
+        ExpectedFinding(
+            signal_type=SignalType.INSECURE_DEFAULT,
+            file_path="myproject/settings.py",
+            should_detect=False,
+            description="All settings are production-safe → no ISD findings",
+        ),
+    ],
+)
+
+ISD_VERIFY_FALSE_LOCALHOST_TN = GroundTruthFixture(
+    name="isd_verify_false_localhost_tn",
+    description=(
+        "verify=False targeting localhost → reduced severity, still detected "
+        "but loopback-scoped"
+    ),
+    kind=FixtureKind.BOUNDARY,
+    files={
+        "dev/__init__.py": "",
+        "dev/local_client.py": textwrap.dedent("""\
+            import requests
+
+            def ping_local():
+                return requests.get("http://localhost:8000/health", verify=False)
+        """),
+    },
+    expected=[
+        ExpectedFinding(
+            signal_type=SignalType.INSECURE_DEFAULT,
+            file_path="dev/local_client.py",
+            should_detect=True,
+            description="verify=False on localhost is still detected but with reduced score (0.45)",
+        ),
+    ],
+)
+
+ISD_IGNORE_DIRECTIVE_TN = GroundTruthFixture(
+    name="isd_ignore_directive_tn",
+    description="File with # drift:ignore-security → should NOT fire ISD despite insecure settings",
+    kind=FixtureKind.CONFOUNDER,
+    files={
+        "legacy/__init__.py": "",
+        "legacy/settings.py": textwrap.dedent("""\
+            # drift:ignore-security
+            # Legacy settings kept for backwards compatibility testing
+
+            DEBUG = True
+            ALLOWED_HOSTS = ["*"]
+        """),
+    },
+    expected=[
+        ExpectedFinding(
+            signal_type=SignalType.INSECURE_DEFAULT,
+            file_path="legacy/settings.py",
+            should_detect=False,
+            description="drift:ignore-security directive suppresses all ISD findings in this file",
+        ),
+    ],
+)
+
+
 # Append NBV + BAT + PHR fixtures to ALL_FIXTURES
 ALL_FIXTURES.extend([
     NBV_VALIDATE_TP,
@@ -5468,6 +6306,18 @@ ALL_FIXTURES.extend([
     PHR_PRIVATE_NAME_BOUNDARY,
     PHR_SINGLE_CHAR_BOUNDARY,
     PHR_PARENT_REEXPORT_TN,
+    # ── HSC scoring-promotion fixtures (ADR-040) ──
+    HSC_GITHUB_TOKEN_TP,
+    HSC_HIGH_ENTROPY_TP,
+    HSC_ENV_READ_TN,
+    HSC_PLACEHOLDER_TN,
+    # ── FOE scoring-promotion fixtures (ADR-040) ──
+    FOE_HIGH_IMPORT_TP,
+    FOE_NORMAL_IMPORT_TN,
+    FOE_BARREL_FILE_TN,
+    # ── PHR additional fixtures (ADR-040) ──
+    PHR_CONDITIONAL_IMPORT_TN,
+    PHR_FRAMEWORK_DECORATOR_TN,
     # ── FP-Reduction fixtures (ADR-036/037/038) ──
     AVS_MODELS_OMNILAYER_TN,
     AVS_CONFOUNDER_DTO_TN,
@@ -5475,6 +6325,24 @@ ALL_FIXTURES.extend([
     MDS_CONFOUNDER_PROTOCOL_METHODS_TN,
     MDS_CONFOUNDER_THIN_WRAPPER_TN,
     MDS_CONFOUNDER_NAME_DIVERSE_TN,
+    # ── CXS / CCC / COD extended coverage ──
+    CXS_TP_DEEP_NESTING,
+    CXS_TN_FLAT_CODE,
+    CXS_TP_MANY_ELIF,
+    CXS_BOUNDARY_THRESHOLD,
+    CXS_CONFOUNDER_ASYNC_LOOPS,
+    CXS_CONFOUNDER_DECORATORS,
+    CCC_TP_CROSS_LAYER,
+    CCC_CONFOUNDER_BURST_TN,
+    COD_CONFOUNDER_SINGLE_METHOD_TN,
+    COD_CONFOUNDER_PROPERTY_ONLY_TN,
+    COD_BOUNDARY_PARTIAL_COHESION,
+    # ── ISD scoring-promotion fixtures (ADR-039) ──
+    ISD_DJANGO_INSECURE_TP,
+    ISD_VERIFY_FALSE_TP,
+    ISD_SECURE_DJANGO_TN,
+    ISD_VERIFY_FALSE_LOCALHOST_TN,
+    ISD_IGNORE_DIRECTIVE_TN,
 ])
 
 

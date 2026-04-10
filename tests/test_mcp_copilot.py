@@ -532,7 +532,7 @@ class TestMcpServerHelpers:
         from drift import mcp_server
 
         fake_result = {
-            "schema_version": "2.0",
+            "schema_version": "2.1",
             "type": "brief",
             "task": "add payment",
             "scope": {

@@ -1,5 +1,39 @@
 # Risk Register
 
+## 2026-06-14 - ADR-039: Activate MAZ/PHR/HSC/ISD/FOE for Scoring
+
+- Risk ID: RISK-SIGNAL-ACTIVATION-2026-06-14-039
+- Component: `src/drift/config.py` (SignalWeights), `tests/fixtures/ground_truth.py`
+- Type: Signal behavior change (report-only → scoring-active for 5 signals)
+- Description: Five previously report-only signals are promoted to scoring-active with conservative weights: MAZ=0.02, PHR=0.02, HSC=0.01, ISD=0.01, FOE=0.005. This adds +0.065 to the total signal weight budget (~6.5% of composite score). Finding detection logic is unchanged — only the weight (and therefore score impact) changes from 0.0 to non-zero.
+- Severity: Low to Medium
+- Likelihood: Low (all signals were already emitting findings in report-only mode; only score contribution changes)
+- Mitigation:
+  - Conservative weights chosen based on signal maturity and existing precision data
+  - All 5 signals have ground-truth fixture coverage (ISD: 5 new, MAZ: 1 TN, HSC: 6, FOE: 3, PHR: 17)
+  - Precision/recall validated via `test_precision_recall.py` — all fixtures pass
+  - Existing FP-reduction mechanisms (CLI-path fence, drift:ignore-security, barrel-file detection, env-template suppression) remain active
+  - Score comparability: baseline diff via `drift_diff` recommended after activation
+  - Weights are configurable via `drift.yaml` — users can revert individual signals to 0.0
+- Residual risk: Low. Primary residual risk is minor score inflation for repositories that trigger multiple newly-scoring signals simultaneously. Conservative weights and per-signal configurability bound the impact. No detection logic changes means no new FP/FN modes beyond those already documented.
+
+## 2026-06-01 - ADR-042: Schema Evolution and Finding-ID Promotion
+
+- Risk ID: RISK-OUTPUT-2026-06-01-042
+- Component: `src/drift/output/json_output.py`, `src/drift/api_helpers.py`, `src/drift/api/explain.py`, `src/drift/models.py`, `src/drift/mcp_server.py`
+- Type: Output schema version bump (additive, minor) + new output field + explain input extension
+- Description: Schema version unified from split "1.1" (CLI) / "2.0" (API) to "2.1". All output channels (JSON, SARIF, API) gain a `finding_id` field (16-char SHA256 fingerprint). `drift explain` and MCP `drift_explain` now accept finding fingerprints for finding-level drill-down, triggering a full analysis scan.
+- Severity: Low
+- Likelihood: Low (additive changes only; no fields removed or renamed)
+- Mitigation:
+  - Schema version bump follows established minor-version convention (additive fields only)
+  - `finding_id` is deterministic and content-based — no randomness or state dependency
+  - Fingerprint-based explain reuses existing `analyze_repo()` pipeline with same security boundaries
+  - Existing consumers of `schema_version` "1.1" or "2.0" may need test updates but face no runtime breakage (new fields are ignored by lenient parsers)
+  - `drift.output.schema.json` enables machine-verifiable contract validation
+  - Regression tests updated for new schema version
+- Residual risk: Low. Consumers with strict schema validation against "1.1" or "2.0" will reject "2.1" output until updated. This is intentional — the version bump signals the schema change. Fingerprint-based explain has the same performance cost as a normal scan.
+
 ## 2026-04-10 - TypeScript signal expansion and parser/output wiring hardening
 
 - Risk ID: RISK-TS-SIGNALS-2026-04-10
@@ -997,3 +1031,32 @@
   - Decorator-only references: partially covered via _ScopeCollector
 - Verification: 22 targeted tests (test_phantom_reference.py) + 6 ground-truth fixtures (2 TP, 4 TN/confounder) all passing. P=1.00 R=1.00 on fixture suite.
 - Residual risk: Medium; report-only status (weight 0.0) prevents false positives from affecting composite scores. Real-world precision validation pending on external repos.
+
+## 2026-04-10 - AST Logical Location Enrichment (ADR-039)
+
+- Risk ID: RISK-LL-2026-04-10-039
+- Component: src/drift/logical_location.py, src/drift/models.py, src/drift/pipeline.py, src/drift/output/json_output.py, src/drift/output/agent_tasks.py, src/drift/api_helpers.py
+- Type: Output schema extension (additive field on Finding model)
+- Description: Findings are enriched with AST-based logical locations (class, method, function, module) from existing ParseResult data. New `logical_location` object in JSON, `logicalLocations` in SARIF, and `logical_location` dict in AgentTask/API responses.
+- Trigger examples: All findings emitted by any signal; enrichment is post-processing in ScoringPhase.
+- Impact: Downstream consumers that strictly validate JSON schema may encounter unexpected new field. SARIF consumers gain richer location data.
+- Mitigation: Field is optional (`None` when no match); existing fields unchanged; backward-compatible. Symbol backfill only when `Finding.symbol` was previously empty.
+- Verification: tests/test_logical_location.py (22 tests), tests/test_precision_recall.py (no regression), full `make check`.
+- Residual risk: Low; purely additive output with no signal logic changes.
+
+## 2026-04-10 - Scoring Promotion: HSC, FOE, PHR (ADR-040)
+
+- Risk ID: RISK-SCORE-2026-04-10-040
+- Component: src/drift/config.py (SignalWeights), src/drift/signal_mapping.py
+- Type: Scoring change (weight activation for 3 previously report-only signals)
+- Description: HSC (hardcoded secrets), FOE (fan-out explosion), and PHR (phantom references) are promoted from report-only (weight 0.0) to scoring-active (HSC 0.02, FOE 0.01, PHR 0.02). This means findings from these signals now contribute to the composite drift score, affect module-level severity, and can trigger safe_to_commit blocking in agent loops.
+- Trigger examples: Any codebase with hardcoded secrets (HSC), files with >15 imports (FOE), or unresolvable function references (PHR) will now see score impact.
+- Impact: Composite scores may increase for affected modules. Agent loops (drift_nudge) will block commits when new HIGH-severity PHR/HSC findings appear.
+- Mitigation:
+  - Conservative weights (0.01–0.02) limit maximum score contribution per signal.
+  - All three signals retain their existing FP-reduction heuristics.
+  - 11 new ground-truth fixtures added (4 HSC, 3 FOE, 2 PHR supplement, 2 existing PHR TP).
+  - Precision/recall validation on full fixture suite before merge.
+  - PHR abbreviation mapping fix ensures drift_nudge/diff correctly reference PHR findings.
+- Verification: `pytest tests/test_precision_recall.py -v` (all signals P=1.00 R=1.00), `make check` (full CI suite).
+- Residual risk: Medium; real-world FP rates for scoring-active HSC/FOE/PHR not yet validated on external repos. Weight can be reverted to 0.0 without code changes if FP rate is unacceptable.

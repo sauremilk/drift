@@ -11,6 +11,7 @@ from drift.api import brief as api_brief
 from drift.commands.brief import brief as brief_cmd
 from drift.guardrails import (
     Guardrail,
+    generate_guardrails,
     guardrails_to_prompt_block,
 )
 
@@ -441,3 +442,80 @@ class TestBriefProgress:
         runner = self._make_runner()
         result = runner.invoke(brief_cmd, ["--help"])
         assert "--progress" in result.output
+
+
+# ---------------------------------------------------------------------------
+# Guardrail min_confidence filtering
+# ---------------------------------------------------------------------------
+
+
+class TestGuardrailMinConfidence:
+    """P1: generate_guardrails() must filter NC items below min_confidence."""
+
+    @staticmethod
+    def _make_findings() -> list:
+        """Create findings that produce NCs with varying confidence levels."""
+        from drift.models import Finding, Severity, SignalType
+
+        return [
+            Finding(
+                signal_type=SignalType.ARCHITECTURE_VIOLATION,
+                severity=Severity.HIGH,
+                score=0.8,
+                title="Layer violation in api/routes.py",
+                description="Direct DB import from API layer.",
+                file_path=Path("api/routes.py"),
+                metadata={
+                    "source_layer": "api",
+                    "target_layer": "db",
+                    "import_path": "db.models",
+                },
+            ),
+            Finding(
+                signal_type=SignalType.PHANTOM_REFERENCE,
+                severity=Severity.MEDIUM,
+                score=0.5,
+                title="1 unresolvable reference in utils.py",
+                description="utils.py uses 1 name that cannot be resolved.",
+                file_path=Path("utils.py"),
+                metadata={
+                    "phantom_names": [{"name": "nonexistent_fn", "line": 10}],
+                    "phantom_count": 1,
+                },
+            ),
+            Finding(
+                signal_type=SignalType.PATTERN_FRAGMENTATION,
+                severity=Severity.HIGH,
+                score=0.9,
+                title="error_handling: 4 variants in services/",
+                description="4 different error handling patterns found.",
+                file_path=Path("services/payment.py"),
+                related_files=[Path("services/order.py")],
+                metadata={"pattern": "error_handling", "variant_count": 4},
+            ),
+        ]
+
+    def test_min_confidence_zero_keeps_all(self) -> None:
+        """Default min_confidence=0.0 preserves all guardrails."""
+        findings = self._make_findings()
+        guardrails = generate_guardrails(findings, min_confidence=0.0)
+        assert len(guardrails) >= 1
+
+    def test_min_confidence_filters_weak_items(self) -> None:
+        """NC items below the floor are excluded."""
+        findings = self._make_findings()
+        all_grs = generate_guardrails(findings, min_confidence=0.0)
+        filtered_grs = generate_guardrails(findings, min_confidence=0.6)
+        assert len(filtered_grs) <= len(all_grs)
+
+    def test_min_confidence_high_excludes_everything(self) -> None:
+        """A very high floor removes all guardrails."""
+        findings = self._make_findings()
+        guardrails = generate_guardrails(findings, min_confidence=1.0)
+        assert len(guardrails) == 0
+
+    def test_backward_compat_no_min_confidence(self) -> None:
+        """Calling without min_confidence works as before."""
+        findings = self._make_findings()
+        guardrails = generate_guardrails(findings)
+        assert len(guardrails) >= 1

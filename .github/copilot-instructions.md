@@ -235,7 +235,7 @@ Vollständiger Developer Guide: **[DEVELOPER.md](../DEVELOPER.md)**
 ```
 ingestion/ → signals/ → scoring/ → output/
   AST + Git     24 Detektoren  Score+Severity   Rich/JSON/SARIF
-              (15 scoring-aktiv, 9 report-only)
+              (20 scoring-aktiv, 4 report-only)
 ```
 
 ### Wichtigste Kommandos
@@ -290,7 +290,7 @@ DRIFT_SKIP_HOOKS=1 git push          # ALLE Gates (äußerster Notfall)
 
 | Pfad | Inhalt |
 |------|--------|
-| `src/drift/signals/` | 24 Signale — 15 scoring-aktiv (PFS, AVS, MDS, EDS, TVS, SMS, DIA, BEM, TPD, GCD, NBV, BAT, ECM, COD, CCC) + 9 report-only (TSA, CXS, FOE, CIR, DCA, MAZ, ISD, HSC, PHR) |
+| `src/drift/signals/` | 24 Signale — 20 scoring-aktiv (PFS, AVS, MDS, EDS, TVS, SMS, DIA, BEM, TPD, GCD, NBV, BAT, ECM, COD, CCC, HSC, FOE, PHR, MAZ, ISD) + 4 report-only (TSA, CXS, CIR, DCA) |
 | `src/drift/ingestion/` | AST-Parsing, Git-History, File-Discovery |
 | `src/drift/scoring/` | Composite-Score, Module-Scores, Severity |
 | `src/drift/output/` | Rich-Terminal, JSON, SARIF |

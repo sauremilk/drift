@@ -92,7 +92,7 @@ class TestNudgeAPI:
         """nudge() response has schema_version."""
         self._mock_nudge_deps(monkeypatch, tmp_path)
         result = nudge(tmp_path, changed_files=[])
-        assert result["schema_version"] == "2.0"
+        assert result["schema_version"] == "2.1"
 
     def test_nudge_direction_field(self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
         """nudge() response has direction field."""
