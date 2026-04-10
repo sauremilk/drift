@@ -624,7 +624,7 @@ class DriftConfig(BaseModel):
             ) from exc
 
     @staticmethod
-    def _apply_extends(data: dict[str, Any]) -> dict[str, Any]:
+    def _apply_extends(data: Any) -> dict[str, Any]:
         """Merge built-in preset defaults under user-supplied overrides.
 
         If *data* contains an ``extends`` key naming a registered profile,
@@ -632,6 +632,18 @@ class DriftConfig(BaseModel):
         top (user wins).  Nested dicts (weights, thresholds, policies) are
         merged key-by-key; all other fields are replaced wholesale.
         """
+        if not isinstance(data, dict):
+            from drift.errors import DriftConfigError
+
+            raise DriftConfigError(
+                "DRIFT-1001",
+                config_path="drift.yaml",
+                field="root",
+                reason="Top-level config must be a mapping/object.",
+                line="?",
+                context=None,
+            )
+
         extends = data.get("extends")
         if not extends:
             return data
