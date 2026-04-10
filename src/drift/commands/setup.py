@@ -10,6 +10,7 @@ from __future__ import annotations
 import json
 import sys
 from pathlib import Path
+from typing import cast
 
 import click
 import yaml  # type: ignore[import-untyped]
@@ -43,7 +44,7 @@ def _ask_project_type() -> str:
         console.print(f"    {key}) {label}")
     console.print()
     choice = click.prompt("  Deine Wahl", type=click.Choice(list(_PROJECT_TYPES)), default="1")
-    return choice
+    return cast(str, choice)
 
 
 def _ask_ai_usage() -> str:
@@ -55,7 +56,7 @@ def _ask_ai_usage() -> str:
         console.print(f"    {key}) {label}")
     console.print()
     choice = click.prompt("  Deine Wahl", type=click.Choice(list(_AI_USAGE)), default="1")
-    return choice
+    return cast(str, choice)
 
 
 def _ask_strictness() -> str:
@@ -68,7 +69,7 @@ def _ask_strictness() -> str:
     console.print("    3) Streng — alles anzeigen")
     console.print()
     choice = click.prompt("  Deine Wahl", type=click.Choice(["1", "2", "3"]), default="1")
-    return choice
+    return cast(str, choice)
 
 
 # ---------------------------------------------------------------------------

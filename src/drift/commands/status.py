@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import json
 import sys
+from collections.abc import Sequence
 from pathlib import Path
 
 import click
@@ -179,7 +180,7 @@ def _build_json_payload(
     light: object,
     headline: str,
     continue_flag: bool,
-    top_findings: list[object],
+    top_findings: Sequence[object],
     analysis: object,
     thresholds: dict[str, float] | None,
 ) -> dict[str, object]:
