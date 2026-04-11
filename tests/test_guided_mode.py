@@ -500,6 +500,7 @@ class TestFirstRunRenderMode:
         analysis.suppressed_count = 0  # type: ignore[attr-defined]
         analysis.context_tagged_count = 0  # type: ignore[attr-defined]
         analysis.analysis_duration_seconds = 1.0  # type: ignore[attr-defined]
+        analysis.phase_timings = {}  # type: ignore[attr-defined]
         analysis.is_degraded = False  # type: ignore[attr-defined]
         analysis.degradation_causes = []  # type: ignore[attr-defined]
         analysis.degradation_components = []  # type: ignore[attr-defined]
