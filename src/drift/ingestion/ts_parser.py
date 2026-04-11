@@ -733,10 +733,11 @@ def _has_auth_in_handler_body(handler_node: Any, source: bytes) -> bool:
 
     has_auth_symbol = False
     for child in _walk(handler_node):
-        if child.type in ("identifier", "property_identifier"):
-            if _looks_like_ts_auth(_node_text(child, source)):
-                has_auth_symbol = True
-                break
+        if child.type in ("identifier", "property_identifier") and _looks_like_ts_auth(
+            _node_text(child, source)
+        ):
+            has_auth_symbol = True
+            break
 
     return has_auth_symbol and has_reject_hint
 
