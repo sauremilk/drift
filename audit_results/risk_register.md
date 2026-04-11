@@ -1,5 +1,23 @@
 # Risk Register
 
+## 2026-04-12 - Issue #248: EDS TS/TSX self-documenting signature heuristic
+
+- Risk ID: RISK-SIGNAL-2026-04-12-248
+- Component: `src/drift/signals/explainability_deficit.py`, `tests/test_coverage_boost_15_signals_misc.py`
+- Type: Signal precision hardening (false-positive reduction)
+- Description: Explainability Deficit (EDS) treats typed TypeScript/TSX function signatures as explainability evidence and no longer penalizes missing JSDoc or explicit return annotations in those self-documenting signature contexts.
+- Trigger: `drift analyze` on TypeScript-heavy repositories where many functions are typed but intentionally undocumented via JSDoc.
+- Impact: High-positive. Reduces dominant EDS false-positive volume and improves signal credibility/actionability in TS/TSX ecosystems.
+- Mitigation:
+  - Added `_has_self_documenting_ts_signature()` and language-aware scoring in EDS.
+  - Added inferred-return evidence path for TS/TSX signatures without explicit return types.
+  - Restricted behavior to TS/TSX; JS behavior remains unchanged.
+  - Added targeted regressions for typed signature, inferred return, and JS guard behavior.
+- Verification:
+  - `python -m pytest tests/test_coverage_boost_15_signals_misc.py -q --tb=short`
+  - `python -m ruff check src/drift/signals/explainability_deficit.py tests/test_coverage_boost_15_signals_misc.py`
+- Residual risk: Low-Medium. Some truly unclear TS helpers may be down-prioritized when signatures exist; mitigation scope is language-bounded and keeps non-TS behavior intact.
+
 ## 2026-04-12 - Issue #247: GCD TypeScript precision hardening for declarative wrappers
 
 - Risk ID: RISK-SIGNAL-2026-04-12-247
