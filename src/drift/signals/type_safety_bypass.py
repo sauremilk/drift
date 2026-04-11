@@ -29,7 +29,26 @@ from drift.signals.base import BaseSignal, register_signal
 
 _TS_DIRECTIVE_RE = re.compile(r"@ts-(ignore|expect-error)")
 
+_TSB_TEST_SUFFIXES = (
+    ".test.ts",
+    ".spec.ts",
+    ".test.tsx",
+    ".spec.tsx",
+)
+
+_TSB_TEST_DIRS = frozenset({"__tests__", "__mocks__"})
+
 _DEFAULT_THRESHOLD = 5
+
+
+def _is_tsb_test_file(file_path: Path) -> bool:
+    """Return True for TS test/spec files and common JS test/mock directories."""
+    name = file_path.name.lower()
+    if name.endswith(_TSB_TEST_SUFFIXES):
+        return True
+
+    parts = file_path.as_posix().lower().split("/")
+    return any(part in _TSB_TEST_DIRS for part in parts)
 
 
 def _count_bypasses(source: str, language: str) -> list[dict[str, str | int]]:
@@ -127,6 +146,8 @@ class TypeSafetyBypassSignal(BaseSignal):
 
         for pr in parse_results:
             if pr.language not in _TS_LANGUAGES:
+                continue
+            if _is_tsb_test_file(pr.file_path):
                 continue
 
             source = _read_source(pr.file_path, self.repo_path)

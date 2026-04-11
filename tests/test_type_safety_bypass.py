@@ -169,3 +169,35 @@ class TestTypeSafetyBypassSignal:
         from drift.signals.type_safety_bypass import TypeSafetyBypassSignal
 
         assert TypeSafetyBypassSignal in _SIGNAL_REGISTRY
+
+    @pytest.mark.parametrize(
+        "relative_path",
+        [
+            "src/user.test.ts",
+            "src/user.spec.tsx",
+            "src/__tests__/user.ts",
+            "src/__mocks__/user.ts",
+        ],
+    )
+    def test_test_and_mock_paths_are_skipped(self, tmp_path: Path, relative_path: str) -> None:
+        from drift.config import DriftConfig
+        from drift.models import ParseResult
+        from drift.signals.type_safety_bypass import TypeSafetyBypassSignal
+
+        file_path = tmp_path / Path(relative_path)
+        file_path.parent.mkdir(parents=True, exist_ok=True)
+        file_path.write_text("const x = JSON.parse(data) as any;", encoding="utf-8")
+
+        pr = ParseResult(
+            file_path=file_path,
+            language="typescript",
+            functions=[],
+            classes=[],
+            imports=[],
+            patterns=[],
+            line_count=1,
+        )
+
+        signal = TypeSafetyBypassSignal()
+        findings = signal.analyze([pr], {}, DriftConfig())
+        assert findings == []

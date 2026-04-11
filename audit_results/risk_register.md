@@ -1,5 +1,50 @@
 # Risk Register
 
+## 2026-04-11 - Issue #211: TSB test/spec path exclusion
+
+- Risk ID: RISK-SIGNAL-2026-04-11-211
+- Component: `src/drift/signals/type_safety_bypass.py`, `tests/test_type_safety_bypass.py`
+- Type: Signal precision hardening (false-positive reduction)
+- Description: Type Safety Bypass now skips known test/spec and mock contexts (`*.test.ts`, `*.spec.ts`, `*.test.tsx`, `*.spec.tsx`, `__tests__/`, `__mocks__/`) to prevent test scaffolding from being triaged as production drift.
+- Trigger: `drift analyze` on TypeScript-heavy repositories with test mocks and double-casts in test code.
+- Impact: Medium-positive. Reduces dominant TSB false positives and improves actionability.
+- Mitigation:
+  - Added explicit TSB path classifier for test/spec/mock patterns.
+  - Added parametrized regression test covering all intended skip patterns.
+  - Kept matcher narrow to avoid suppressing production findings.
+- Residual risk: Low. Main residual risk is edge-case naming collisions; bounded by explicit suffix/dir checks and regression coverage.
+
+## 2026-04-11 - ADR-055: Dependency-aware Signal Cache Keying
+
+- Risk ID: RISK-PIPELINE-2026-04-11-055
+- Component: `src/drift/signals/base.py`, `src/drift/cache.py`, `src/drift/pipeline.py`, `src/drift/config.py`
+- Type: Signal execution + cache invalidation strategy change (feature-flagged)
+- Description: Introduces dependency-aware signal cache keying with explicit scopes (`file_local`, `module_wide`, `repo_wide`, `git_dependent`) and selective cache invalidation.
+- Trigger: `drift analyze` runs with `signal_cache_dependency_scopes_enabled: true`.
+- Impact: Medium-positive for performance. Main risk is stale reuse if scope-key mapping is incorrect.
+- Mitigation:
+  - Feature flag defaults to `false` for safe rollout.
+  - Conservative fallback to `repo_wide` for unknown scopes.
+  - Cache schema version bump invalidates incompatible legacy entries.
+  - Regression tests for file-local selective invalidation and git-state fingerprint changes.
+- Residual risk: Low. Behavior is gated, deterministic, and covered by targeted tests.
+
+## 2026-04-11 - ADR-054: File-Discovery Manifest Cache (Hybrid Invalidation)
+
+- Risk ID: RISK-INGESTION-2026-04-11-054
+- Component: `src/drift/ingestion/file_discovery.py`
+- Type: Input/output path extension (repository-local cache manifest)
+- Description: Discovery introduces a persistent manifest in `.drift-cache/file_discovery_manifest.json` with cache key + invalidator metadata (`git_head` primary, `mtime` fallback) and serialized file descriptors.
+- Trigger: Repeated `drift analyze` / API calls that perform file discovery.
+- Impact: Low to Medium. Incorrect cache reuse could serve stale file lists and mask newly added/removed files until invalidation.
+- Mitigation:
+  - Deterministic cache key includes repo path, include/exclude, `max_files`, TS toggle, supported languages, and schema version.
+  - Hybrid invalidation: HEAD-based invalidation for git repos, mtime fingerprint fallback for non-git environments.
+  - Manifest read is defensive (version/type checks); malformed manifests degrade safely to full re-scan.
+  - Atomic manifest writes and bounded cache entry count reduce corruption/bloat risk.
+  - Regression tests added for cache hit, HEAD invalidation, fallback invalidation, and corrupt-manifest recovery.
+- Residual risk: Low. Main residual risk is conservative false cache misses (extra scans), not silent wrong findings.
+
 ## 2026-06-15 — Phase 3: TypeScript Verständlichkeit & Einführbarkeit
 
 - Risk ID: RISK-OUTPUT-2026-06-15-TS-PHASE3

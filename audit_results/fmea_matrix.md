@@ -1,5 +1,20 @@
 # FMEA Matrix
 
+## 2026-04-11 - Issue #211: TSB exclude test/spec and mock paths
+
+| Signal | Failure Mode | Cause | Effect | Detection | Mitigation | S | O | D | RPN | Status |
+|---|---|---|---|---|---|---:|---:|---:|---:|---|
+| TSB | FP: test/spec files flagged as production type-safety debt | Signal analyzed TS test fixtures and mock scaffolding (`*.test.ts`, `*.spec.tsx`, `__tests__`, `__mocks__`) like production code | Dominant false-positive cluster, lower triage trust, reduced actionability | `tests/test_type_safety_bypass.py::test_test_and_mock_paths_are_skipped` | Skip known test/spec/mock path patterns in TSB analysis loop before parsing/counting bypasses | 7 | 8 | 2 | 112 | Mitigated |
+| TSB | FN risk: production files accidentally skipped due over-broad path matching | Path classifier could suppress real findings when non-test files resemble test naming | Potential under-reporting in edge naming cases | Parametrized regression cases limited to explicit suffixes/dirs | Restrict skip rule to exact suffix set (`.test.ts/.spec.ts/.test.tsx/.spec.tsx`) and explicit dirs (`__tests__`, `__mocks__`) | 4 | 2 | 4 | 32 | Mitigated |
+
+## 2026-04-11 - ADR-055: Dependency-aware Signal Cache Keying
+
+| Signal | Failure Mode | Cause | Effect | Detection | Mitigation | S | O | D | RPN | Status |
+|---|---|---|---|---|---|---:|---:|---:|---:|---|
+| CACHE | FP-equivalent: stale findings reused for changed file | file_local cache key not tied to per-file content hash | Outdated findings after local edits | `test_signal_phase_file_local_dependency_cache_reruns_only_changed_file` | file_local path hashes keyed per file + targeted rerun on miss | 7 | 2 | 3 | 42 | Mitigated |
+| CACHE | FN-equivalent: needless cache invalidation for unaffected files | global content hash invalidates entire signal cache | Performance degradation and lower incremental usability | pipeline component tests + cache-key unit tests | dependency-aware keying (`file_local/module_wide/repo_wide/git_dependent`) behind feature flag | 4 | 6 | 2 | 48 | Mitigated |
+| CACHE | Stale git-dependent cache entry after commit churn | git-dependent key ignores commit/file-history changes | Drift findings lag behind repository history | `test_signal_cache_git_state_fingerprint_changes_with_commit_hash` | git-state fingerprint includes commit hashes + file-history stats | 6 | 2 | 3 | 36 | Mitigated |
+
 ## 2026-04-11 - Phase 2 TS Parity: BEM/EDS/MDS/PFS TypeScript validation
 
 | Signal | Failure Mode | Cause | Effect | Detection | Mitigation | S | O | D | RPN | Status |

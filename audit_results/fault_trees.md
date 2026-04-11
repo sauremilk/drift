@@ -1,5 +1,59 @@
 # Fault Tree Analysis
 
+## 2026-04-11 - Issue #211: TSB test/spec false-positive reduction
+
+### Top Event (TE-TSB-211)
+Type Safety Bypass (TSB) reports large false-positive volume from TypeScript test/spec and mock files.
+
+### FT-1: false-positive branch
+
+```
+           TE-FP: test-only bypasses reported as production debt
+                         |
+                      OR-Gate
+               +---------+---------+
+              IE-1      IE-2      IE-3
+```
+
+- **IE-1 (MCS)**: `*.test.ts` / `*.spec.tsx` analyzed as regular source
+  - Mitigation: suffix-based skip list in TSB signal.
+- **IE-2 (MCS)**: `__tests__/` paths not excluded in TSB loop
+  - Mitigation: explicit directory marker exclusion.
+- **IE-3 (MCS)**: `__mocks__/` scaffold files treated as production findings
+  - Mitigation: explicit directory marker exclusion.
+
+### FT-2: false-negative guard
+
+- **IE-4 (Guard)**: over-broad test-path regex suppresses real production files
+  - Mitigation: narrow, explicit path rules + parametrized regression tests for allowed skip patterns only.
+
+## 2026-04-11 - ADR-055: Dependency-aware Signal Cache Keying
+
+### Top Event (TE-CACHE-055)
+Signal cache returns stale or over-invalidated results after small repository edits.
+
+### FT-1: stale cache reuse (false-negative equivalent)
+
+```
+           TE: stale findings reused after change
+                         |
+                      OR-Gate
+               +---------+---------+
+              IE-1      IE-2      IE-3
+```
+
+- **IE-1 (MCS)**: file_local key not bound to current file hash
+  - Mitigation: per-file key uses current parse content hash.
+- **IE-2 (MCS)**: git-dependent key omits commit/file-history dimensions
+  - Mitigation: git-state fingerprint adds commit hashes and file-history metrics.
+- **IE-3 (MCS)**: unknown cache scope falls through to unstable behavior
+  - Mitigation: conservative fallback to `repo_wide` scope.
+
+### FT-2: unnecessary invalidation (false-positive equivalent)
+
+- **IE-4 (MCS)**: repo-wide hash used for all signals regardless of dependency scope
+  - Mitigation: dependency-aware scope mapping + feature-flagged rollout.
+
 ## 2026-04-11 - Issue #210: NBV TS/JS ensure_* upsert FP reduction
 
 ### Top Event (TE-NBV-210)
