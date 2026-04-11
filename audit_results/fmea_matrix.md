@@ -1,5 +1,12 @@
 # FMEA Matrix
 
+## 2026-04-12 - Issue #245: PFS cap to INFO for combined framework+plugin context
+
+| Signal | Failure Mode | Cause | Effect | Detection | Mitigation | S | O | D | RPN | Status |
+|---|---|---|---|---|---|---:|---:|---:|---:|---|
+| PFS | FP: Cross-extension plugin diversity still prioritized above informational context | Existing dampening reduced severity but did not enforce a terminal cap when both framework-facing and multi-plugin context were detected together | Medium/low findings still consumed triage budget in intentional plugin architectures | New regression `test_combined_framework_and_plugin_dampening_caps_to_info` in `tests/test_pattern_fragmentation.py` | Add combined dampening cap: when `framework_context_dampened` and `plugin_context_dampened` are both true, severity is forced to `INFO` and metadata marks `combined_plugin_framework_cap` | 7 | 7 | 2 | 98 | Mitigated |
+| PFS | FN-Risk: Real intra-module fragmentation in plugin API modules may be under-prioritized | INFO cap for combined contexts can down-rank some true issues in extension-local API layers | Potentially slower remediation for genuine inconsistency in plugin surfaces | Core/no-plugin and plugin-only dampening tests remain active; new test is scoped to combined context only | Cap is bounded to simultaneous framework+multi-plugin hints; non-combined paths keep existing severity logic and score visibility | 4 | 3 | 4 | 48 | Mitigated |
+
 ## 2026-04-12 - Issue #244: MDS FP bei absichtlicher Cross-Plugin-Duplikation
 
 | Signal | Failure Mode | Cause | Effect | Detection | Mitigation | S | O | D | RPN | Status |

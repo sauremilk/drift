@@ -302,6 +302,12 @@ class PatternFragmentationSignal(BaseSignal):
                 elif canonical_ratio < 0.15 and severity is Severity.HIGH:
                     severity = Severity.MEDIUM
 
+                # When both dampeners are active in multi-plugin layouts,
+                # treat the finding as informational context, not drift urgency.
+                combined_plugin_framework_cap = bool(framework_hints and plugin_hints)
+                if combined_plugin_framework_cap and severity is not Severity.INFO:
+                    severity = Severity.INFO
+
                 nc_count = len(non_canonical)
                 canonical_examples = sorted(
                     variants[canonical],
@@ -358,6 +364,7 @@ class PatternFragmentationSignal(BaseSignal):
                             "framework_context_hints": framework_hints,
                             "plugin_context_dampened": bool(plugin_hints),
                             "plugin_context_hints": plugin_hints,
+                            "combined_plugin_framework_cap": combined_plugin_framework_cap,
                             "deliberate_pattern_risk": (
                                 "May reflect architecture transition or deliberate variation. "
                                 "Review whether variants serve distinct purposes."

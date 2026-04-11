@@ -233,6 +233,80 @@ def test_plugin_architecture_api_fragmentation_is_dampened_to_low():
     assert finding.metadata["plugin_context_hints"]
 
 
+def test_combined_framework_and_plugin_dampening_caps_to_info():
+    # Error-handling variants inside one extension API surface can be expected
+    # when several plugins expose distinct external-provider contracts.
+    error_fingerprints = [
+        {"handler": "value_error"},
+        {"handler": "exception"},
+        {"handler": "os_error"},
+        {"handler": "type_error"},
+        {"handler": "runtime_error"},
+    ]
+    patterns = [
+        _make_pattern(
+            PatternCategory.ERROR_HANDLING,
+            "extensions/anthropic/src/api",
+            f"err_{i}",
+            fp,
+        )
+        for i, fp in enumerate(error_fingerprints)
+    ]
+    patterns.extend(
+        [
+            _make_pattern(
+                PatternCategory.ERROR_HANDLING,
+                "extensions/openai/src/api",
+                "openai_err",
+                {"handler": "provider_specific"},
+            ),
+            _make_pattern(
+                PatternCategory.ERROR_HANDLING,
+                "extensions/sglang/src/api",
+                "sglang_err",
+                {"handler": "provider_specific"},
+            ),
+        ]
+    )
+    patterns.extend(
+        [
+            _make_pattern(
+                PatternCategory.API_ENDPOINT,
+                "extensions/anthropic/src/api",
+                "route_a",
+                {"route": "messages"},
+            ),
+            _make_pattern(
+                PatternCategory.API_ENDPOINT,
+                "extensions/openai/src/api",
+                "route_b",
+                {"route": "chat"},
+            ),
+            _make_pattern(
+                PatternCategory.API_ENDPOINT,
+                "extensions/sglang/src/api",
+                "route_c",
+                {"route": "generate"},
+            ),
+        ]
+    )
+
+    findings = PatternFragmentationSignal().analyze(_wrap(patterns), {}, None)
+    target = [
+        f
+        for f in findings
+        if f.file_path.as_posix() == "extensions/anthropic/src/api"
+        and f.metadata.get("category") == PatternCategory.ERROR_HANDLING.value
+    ]
+
+    assert len(target) == 1
+    finding = target[0]
+    assert finding.metadata["framework_context_dampened"] is True
+    assert finding.metadata["plugin_context_dampened"] is True
+    assert finding.metadata["combined_plugin_framework_cap"] is True
+    assert finding.severity == Severity.INFO
+
+
 def test_score_aggregation():
     findings = [
         Finding(

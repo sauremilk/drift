@@ -1,5 +1,30 @@
 # Fault Tree Analysis
 
+## 2026-04-12 - Issue #245: PFS cross-extension plugin diversity severity over-prioritization
+
+### Top Event (TE-PFS-245)
+PFS reports framework-facing plugin-boundary pattern diversity above informational severity in multi-plugin monorepos.
+
+### FT-1: false-positive branch
+
+```
+          TE-FP: intentional cross-plugin diversity prioritized as drift urgency
+                         |
+                      OR-Gate
+               +---------+---------+
+              IE-1      IE-2
+```
+
+- **IE-1 (MCS)**: Framework-surface dampening and plugin-layout dampening were applied independently but did not force a final informational cap when both contexts were true.
+  - Mitigation: Add combined-context terminal cap to `INFO` severity.
+- **IE-2 (MCS)**: Multi-plugin extension layouts naturally produce API and error-handling variant diversity that is architecturally expected.
+  - Mitigation: Preserve finding visibility in metadata while lowering urgency (`combined_plugin_framework_cap`).
+
+### FT-2: false-negative guard
+
+- **IE-3 (Guard)**: Combined-context cap could down-rank genuine local fragmentation inside extension API modules.
+  - Mitigation: Cap only applies when both framework-facing and multi-plugin hints are active simultaneously; non-combined modules keep existing severity behavior.
+
 ## 2026-04-12 - Issue #244: MDS false positives on cross-plugin workspace duplication
 
 ### Top Event (TE-MDS-244)

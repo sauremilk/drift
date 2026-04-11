@@ -1,5 +1,22 @@
 # Risk Register
 
+## 2026-04-12 - Issue #245: PFS combined framework+plugin context severity cap
+
+- Risk ID: RISK-SIGNAL-2026-04-12-245
+- Component: `src/drift/signals/pattern_fragmentation.py`, `tests/test_pattern_fragmentation.py`
+- Type: Signal precision hardening (false-positive reduction)
+- Description: Pattern Fragmentation (PFS) now caps severity to `INFO` when both context dampeners are active (`framework_context_dampened=true` and `plugin_context_dampened=true`). This targets intentional cross-extension diversity in plugin monorepos.
+- Trigger: `drift analyze` on repositories with multiple extensions/plugins where framework-facing API/error-handling variants differ by provider contract.
+- Impact: Medium-positive. Reduces residual PFS triage noise for known intentional plugin-boundary diversity while preserving finding traceability.
+- Mitigation:
+  - Add combined-context terminal severity cap (`combined_plugin_framework_cap`).
+  - Keep full finding metadata so context remains inspectable for manual review.
+  - Add targeted regression `test_combined_framework_and_plugin_dampening_caps_to_info`.
+- Verification:
+  - `python -m pytest tests/test_pattern_fragmentation.py -q --tb=short`
+  - `python -m ruff check src/drift/signals/pattern_fragmentation.py tests/test_pattern_fragmentation.py`
+- Residual risk: Low-Medium. Some real extension-local fragmentation may be down-ranked when both hints are present; scope is intentionally narrow to combined-context cases.
+
 ## 2026-04-12 - Issue #244: MDS caps cross-plugin workspace duplicates to INFO
 
 - Risk ID: RISK-SIGNAL-2026-04-12-244
