@@ -39,6 +39,7 @@ def test_default_classification_migration_docs_and_production() -> None:
 
     assert classify_path_context(Path("src/migrations/0001_initial.py"), cfg) == "migration"
     assert classify_path_context(Path("docs/reference/config.md"), cfg) == "docs"
+    assert classify_path_context(Path("tests/test_core.py"), cfg) == "test"
     assert classify_path_context(Path("src/core/service.py"), cfg) == "production"
 
 

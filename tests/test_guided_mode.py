@@ -505,6 +505,7 @@ class TestFirstRunRenderMode:
         analysis.degradation_components = []  # type: ignore[attr-defined]
         analysis.repo_path = Path(".")  # type: ignore[attr-defined]
         analysis.module_scores = []  # type: ignore[attr-defined]
+        analysis.skipped_languages = {}  # type: ignore[attr-defined]
 
         buf = StringIO()
         console = Console(file=buf, force_terminal=True, width=120)

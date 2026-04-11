@@ -177,6 +177,22 @@ class TestSignalScopeRegistry:
 
         assert BaseSignal.incremental_scope == "cross_file"
 
+    def test_all_signals_have_valid_cache_dependency_scope(self) -> None:
+        from drift.signals.base import registered_signals
+
+        for cls in registered_signals():
+            assert cls.cache_dependency_scope in {
+                "file_local",
+                "module_wide",
+                "repo_wide",
+                "git_dependent",
+            }, f"{cls.__name__} has invalid cache dependency scope '{cls.cache_dependency_scope}'"
+
+    def test_default_cache_dependency_scope_is_repo_wide(self) -> None:
+        from drift.signals.base import BaseSignal
+
+        assert BaseSignal.cache_dependency_scope == "repo_wide"
+
 
 # ---------------------------------------------------------------------------
 # Phase 3 — _direction_for_delta

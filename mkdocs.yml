@@ -116,6 +116,7 @@ nav:
     - Troubleshooting: getting-started/troubleshooting.md
   - Guides:
     - Quickstart: getting-started/quickstart.md
+    - First Week: guides/first-week.md
     - Agent Workflow: getting-started/prompts.md
     - Configuration Levels: guides/configuration-levels.md
     - Configuration Profiles: guides/configuration-profiles.md
@@ -123,6 +124,7 @@ nav:
     - Cursor MCP Setup: guides/cursor-mcp-setup.md
     - Feedback & Calibration: guides/feedback-calibration.md
     - Negative Context for Agents: guides/negative-context-agents.md
+    - Onboarding Troubleshooting: guides/onboarding-troubleshooting.md
     - Code-Health über Zeit: study.md
     - CI/CD Integration: use-cases/ci-architecture-checks-sarif.md
   - Konzepte:
@@ -136,6 +138,7 @@ nav:
     - Konfiguration: getting-started/configuration.md
     - Negative Context: reference/negative-context.md
     - Performance: reference/performance.md
+    - Signals Cheat Sheet: reference/signals-cheatsheet.md
     - Signals:
       - PFS — Pattern Fragmentation: reference/signals/pfs.md
       - AVS — Architecture Violation: reference/signals/avs.md

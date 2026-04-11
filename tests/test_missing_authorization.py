@@ -261,6 +261,20 @@ class TestMAZTrueNegatives:
         findings = signal.analyze([pr], {}, DriftConfig())
         assert len(findings) == 0
 
+    def test_test_file_can_be_included_with_reduced_severity(self) -> None:
+        pr = ParseResult(
+            file_path=Path("tests/test_api.py"),
+            language="python",
+            functions=[_func("get_users", "tests/test_api.py", 10)],
+            imports=[_imp("tests/test_api.py", "fastapi")],
+            patterns=[_endpoint_pattern("get_users", "tests/test_api.py", 10)],
+        )
+        signal = MissingAuthorizationSignal()
+        findings = signal.analyze([pr], {}, DriftConfig(test_file_handling="reduce_severity"))
+        assert len(findings) == 1
+        assert findings[0].severity == Severity.LOW
+        assert findings[0].metadata.get("finding_context") == "test"
+
     def test_non_python_skipped(self) -> None:
         pr = ParseResult(
             file_path=Path("api.rs"),

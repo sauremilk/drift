@@ -505,6 +505,67 @@ function tryConnect(host: string, port: number): boolean {
         findings = self._run([pr], repo_path=tmp_path)
         assert findings == []
 
+    @needs_tree_sitter
+    def test_ts_try_with_promise_catch_no_finding(self, tmp_path: Path):
+        source = """\
+async function tryConnect(host: string): Promise<Connection | null> {
+    return connect(host).catch(() => null);
+}
+"""
+        fp = _write_ts(tmp_path, "src/network.ts", source)
+        from drift.ingestion.ts_parser import parse_typescript_file
+
+        pr = parse_typescript_file(fp, "typescript")
+        findings = self._run([pr], repo_path=tmp_path)
+        assert findings == []
+
+    @needs_tree_sitter
+    def test_ts_try_with_optional_chain_and_fallback_no_finding(self, tmp_path: Path):
+        source = """\
+function tryGetTheme(config: AppConfig | undefined): Theme {
+    return config?.settings?.theme ?? defaultTheme;
+}
+"""
+        fp = _write_ts(tmp_path, "src/network.ts", source)
+        from drift.ingestion.ts_parser import parse_typescript_file
+
+        pr = parse_typescript_file(fp, "typescript")
+        findings = self._run([pr], repo_path=tmp_path)
+        assert findings == []
+
+    @needs_tree_sitter
+    def test_ts_try_with_conditional_early_fallback_no_finding(self, tmp_path: Path):
+        source = """\
+function tryGetRuntime(runtime: Runtime | undefined): Runtime | undefined {
+    if (!runtime?.isAvailable) {
+        return undefined;
+    }
+    return runtime.getInstance();
+}
+"""
+        fp = _write_ts(tmp_path, "src/network.ts", source)
+        from drift.ingestion.ts_parser import parse_typescript_file
+
+        pr = parse_typescript_file(fp, "typescript")
+        findings = self._run([pr], repo_path=tmp_path)
+        assert findings == []
+
+    @needs_tree_sitter
+    def test_ts_try_without_recovery_pattern_still_finding(self, tmp_path: Path):
+        source = """\
+function tryConnect(host: string): Connection {
+    return connect(host);
+}
+"""
+        fp = _write_ts(tmp_path, "src/network.ts", source)
+        from drift.ingestion.ts_parser import parse_typescript_file
+
+        pr = parse_typescript_file(fp, "typescript")
+        findings = self._run([pr], repo_path=tmp_path)
+        assert len(findings) == 1
+        assert findings[0].signal_type == SignalType.NAMING_CONTRACT_VIOLATION
+        assert findings[0].metadata.get("prefix_rule") == "try_"
+
     def test_ts_test_file_excluded(self):
         """TS test files should be excluded from NBV analysis."""
         fp = Path("src/validators.test.ts")

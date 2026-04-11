@@ -79,6 +79,38 @@ class TestTypeScriptParser:
         assert "formatName" in names
         assert "processItems" in names
 
+    def test_extract_return_type_from_typed_arrow_declarator(self, tmp_path: Path) -> None:
+        from drift.ingestion.ts_parser import parse_typescript_file
+
+        ts_code = textwrap.dedent("""\
+            const isUsableTimestamp: (input: unknown) => boolean = (input) => {
+                return typeof input === "number" && input > 0;
+            };
+        """)
+        (tmp_path / "typed_arrow.ts").write_text(ts_code, encoding="utf-8")
+        result = parse_typescript_file(Path("typed_arrow.ts"), tmp_path, "typescript")
+
+        fn = next((f for f in result.functions if f.name == "isUsableTimestamp"), None)
+        assert fn is not None
+        assert fn.return_type == "boolean"
+
+    def test_extract_type_predicate_return_type(self, tmp_path: Path) -> None:
+        from drift.ingestion.ts_parser import parse_typescript_file
+
+        ts_code = textwrap.dedent("""\
+            type BrowserNode = { kind: "browser" };
+
+            export function isBrowserNode(node: unknown): node is BrowserNode {
+                return typeof node === "object" && node !== null;
+            }
+        """)
+        (tmp_path / "type_predicate.ts").write_text(ts_code, encoding="utf-8")
+        result = parse_typescript_file(Path("type_predicate.ts"), tmp_path, "typescript")
+
+        fn = next((f for f in result.functions if f.name == "isBrowserNode"), None)
+        assert fn is not None
+        assert fn.return_type == "node is BrowserNode"
+
     def test_parse_classes(self, tmp_path: Path, ts_source: str) -> None:
         from drift.ingestion.ts_parser import parse_typescript_file
 

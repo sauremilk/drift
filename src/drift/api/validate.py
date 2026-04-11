@@ -126,7 +126,12 @@ def validate(
             try:
                 from drift.ingestion.file_discovery import discover_files
 
-                files = discover_files(repo_path, cfg.include, cfg.exclude)
+                files = discover_files(
+                    repo_path,
+                    cfg.include,
+                    cfg.exclude,
+                    cache_dir=cfg.cache_dir,
+                )
                 files_discoverable = len(files)
                 langs = {f.language for f in files}
                 if "python" in langs:

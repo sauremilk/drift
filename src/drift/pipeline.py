@@ -12,15 +12,17 @@ Architectural invariant (Phase-5 boundary contract):
 from __future__ import annotations
 
 import datetime
+import hashlib
 import logging
 import os
 import subprocess
 import threading
 import time
+from collections import defaultdict
 from collections.abc import Callable
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, cast
 
 from drift.cache import ParseCache, SignalCache
 from drift.context_tags import apply_context_tags, scan_context_tags
@@ -526,6 +528,38 @@ class SignalPhase:
         self._embedding_factory = embedding_factory
         self._signal_factory = signal_factory
 
+    @staticmethod
+    def _cache_dependency_scope(signal: BaseSignal) -> str:
+        explicit_scope = getattr(signal, "cache_dependency_scope", None)
+        if isinstance(explicit_scope, str) and explicit_scope in {
+            "file_local",
+            "module_wide",
+            "repo_wide",
+            "git_dependent",
+        }:
+            return explicit_scope
+
+        incremental_scope = getattr(signal, "incremental_scope", "cross_file")
+        if incremental_scope == "file_local":
+            return "file_local"
+        if incremental_scope == "git_dependent":
+            return "git_dependent"
+        return "repo_wide"
+
+    @staticmethod
+    def _module_bucket(path_str: str) -> str:
+        from pathlib import PurePosixPath
+
+        parent = PurePosixPath(path_str).parent.as_posix()
+        return parent if parent not in {"", "."} else "."
+
+    @staticmethod
+    def _history_subset(
+        file_histories: dict[str, FileHistory],
+        file_paths: set[str],
+    ) -> dict[str, FileHistory]:
+        return {k: v for k, v in file_histories.items() if k in file_paths}
+
     def run(
         self,
         repo_path: Path,
@@ -588,23 +622,93 @@ class SignalPhase:
 
         # --- signal-level result cache ---
         sig_cache = SignalCache(repo_path / config.cache_dir)
-        config_fp = SignalCache.config_fingerprint(config)
-        content_hash = SignalCache.content_hash_for_results(
-            parsed.parse_results, parsed.file_hashes,
-        )
 
         def _run_or_cache(signal: BaseSignal) -> list[Finding]:
             sig_type_enum = getattr(signal, "signal_type", None)
             sig_type = sig_type_enum.value if sig_type_enum is not None else None
-            if sig_type is not None:
-                cached = sig_cache.get(sig_type, config_fp, content_hash)
+            if sig_type is None:
+                return signal.analyze(parsed.parse_results, parsed.file_histories, config)
+
+            # Feature-flagged rollout: keep legacy behavior as default.
+            if not config.signal_cache_dependency_scopes_enabled:
+                legacy_config_fp = SignalCache.config_fingerprint(config)
+                legacy_content_hash = SignalCache.content_hash_for_results(
+                    parsed.parse_results,
+                    parsed.file_hashes,
+                )
+                cached = sig_cache.get(sig_type, legacy_config_fp, legacy_content_hash)
                 if cached is not None:
                     return cached
-            findings = signal.analyze(
-                parsed.parse_results, parsed.file_histories, config,
+                findings = signal.analyze(parsed.parse_results, parsed.file_histories, config)
+                sig_cache.put(sig_type, legacy_config_fp, legacy_content_hash, findings)
+                return findings
+
+            dep_scope = self._cache_dependency_scope(signal)
+            scope_config_fp = SignalCache.config_fingerprint(config)
+
+            if dep_scope == "file_local":
+                file_local_findings: list[Finding] = []
+                for pr in parsed.parse_results:
+                    p = pr.file_path.as_posix()
+                    file_hash = parsed.file_hashes.get(p)
+                    if not file_hash:
+                        continue
+                    content_hash = SignalCache.content_hash_for_file(file_hash)
+                    cached = sig_cache.get(sig_type, scope_config_fp, content_hash)
+                    if cached is not None:
+                        file_local_findings.extend(cached)
+                        continue
+                    local_histories = self._history_subset(parsed.file_histories, {p})
+                    fresh = signal.analyze([pr], local_histories, config)
+                    sig_cache.put(sig_type, scope_config_fp, content_hash, fresh)
+                    file_local_findings.extend(fresh)
+                return file_local_findings
+
+            if dep_scope == "module_wide":
+                module_findings: list[Finding] = []
+                module_map: dict[str, list[ParseResult]] = defaultdict(list)
+                for pr in parsed.parse_results:
+                    module_map[self._module_bucket(pr.file_path.as_posix())].append(pr)
+
+                for module_name in sorted(module_map):
+                    bucket_results = module_map[module_name]
+                    module_hash = SignalCache.content_hash_for_module(
+                        bucket_results,
+                        parsed.file_hashes,
+                    )
+                    scoped_hash = SignalCache.content_hash_for_file(
+                        hashlib.sha256(f"module:{module_name}:{module_hash}".encode()).hexdigest()[:32],
+                    )
+                    cached = sig_cache.get(sig_type, scope_config_fp, scoped_hash)
+                    if cached is not None:
+                        module_findings.extend(cached)
+                        continue
+
+                    bucket_paths = {p.file_path.as_posix() for p in bucket_results}
+                    local_histories = self._history_subset(parsed.file_histories, bucket_paths)
+                    fresh = signal.analyze(bucket_results, local_histories, config)
+                    sig_cache.put(sig_type, scope_config_fp, scoped_hash, fresh)
+                    module_findings.extend(fresh)
+                return module_findings
+
+            repo_hash = SignalCache.content_hash_for_results(
+                parsed.parse_results,
+                parsed.file_hashes,
             )
-            if sig_type is not None:
-                sig_cache.put(sig_type, config_fp, content_hash, findings)
+            if dep_scope == "git_dependent":
+                git_fp = SignalCache.git_state_fingerprint(
+                    cast(list[object], parsed.commits),
+                    cast(dict[str, object], parsed.file_histories),
+                )
+                content_hash = hashlib.sha256(f"{repo_hash}|{git_fp}".encode()).hexdigest()[:32]
+            else:
+                content_hash = repo_hash
+
+            cached = sig_cache.get(sig_type, scope_config_fp, content_hash)
+            if cached is not None:
+                return cached
+            findings = signal.analyze(parsed.parse_results, parsed.file_histories, config)
+            sig_cache.put(sig_type, scope_config_fp, content_hash, findings)
             return findings
 
         # --- parallel signal execution ---

@@ -17,6 +17,7 @@ from pathlib import Path
 from typing import ClassVar, Literal
 
 from drift.config import DriftConfig
+from drift.ingestion.test_detection import classify_file_context
 from drift.models import (
     FileHistory,
     Finding,
@@ -29,26 +30,7 @@ from drift.signals.base import BaseSignal, register_signal
 
 _TS_DIRECTIVE_RE = re.compile(r"@ts-(ignore|expect-error)")
 
-_TSB_TEST_SUFFIXES = (
-    ".test.ts",
-    ".spec.ts",
-    ".test.tsx",
-    ".spec.tsx",
-)
-
-_TSB_TEST_DIRS = frozenset({"__tests__", "__mocks__"})
-
 _DEFAULT_THRESHOLD = 5
-
-
-def _is_tsb_test_file(file_path: Path) -> bool:
-    """Return True for TS test/spec files and common JS test/mock directories."""
-    name = file_path.name.lower()
-    if name.endswith(_TSB_TEST_SUFFIXES):
-        return True
-
-    parts = file_path.as_posix().lower().split("/")
-    return any(part in _TSB_TEST_DIRS for part in parts)
 
 
 def _count_bypasses(source: str, language: str) -> list[dict[str, str | int]]:
@@ -142,12 +124,14 @@ class TypeSafetyBypassSignal(BaseSignal):
         config: DriftConfig,
     ) -> list[Finding]:
         threshold = getattr(config.thresholds, "tsb_bypass_threshold", _DEFAULT_THRESHOLD)
+        handling = config.test_file_handling or "exclude"
         findings: list[Finding] = []
 
         for pr in parse_results:
             if pr.language not in _TS_LANGUAGES:
                 continue
-            if _is_tsb_test_file(pr.file_path):
+            path_context = classify_file_context(pr.file_path)
+            if path_context == "test" and handling == "exclude":
                 continue
 
             source = _read_source(pr.file_path, self.repo_path)
@@ -160,10 +144,14 @@ class TypeSafetyBypassSignal(BaseSignal):
 
             bypass_count = len(bypasses)
             score = round(min(1.0, bypass_count / max(1, threshold)), 3)
+            if path_context == "test" and handling == "reduce_severity":
+                score = round(score * 0.4, 3)
 
             severity = (
                 Severity.HIGH if score >= 0.7 else Severity.MEDIUM if score >= 0.3 else Severity.LOW
             )
+            if path_context == "test" and handling == "reduce_severity":
+                severity = Severity.LOW
 
             kinds: dict[str, int] = {}
             for b in bypasses:
@@ -199,7 +187,9 @@ class TypeSafetyBypassSignal(BaseSignal):
                         "bypass_count": bypass_count,
                         "bypasses": bypasses[:20],
                         "kind_distribution": kinds,
+                        "finding_context": path_context,
                     },
+                    finding_context=path_context,
                     rule_id="type_safety_bypass",
                 )
             )

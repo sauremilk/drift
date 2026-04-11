@@ -228,7 +228,8 @@ def _deser_pattern(d: dict[str, Any]) -> PatternInstance:
 # Version tag embedded in each cache entry.  Bump when the Finding
 # dataclass or signal contract changes in an incompatible way.
 # v3: migrated from pickle to JSON to eliminate CWE-502 deserialization risk.
-_SIGNAL_CACHE_VERSION = 3
+# v4: dependency-aware cache key builders for selective signal invalidation.
+_SIGNAL_CACHE_VERSION = 4
 
 
 class SignalCache:
@@ -312,6 +313,49 @@ class SignalCache:
             parts.append(h)
         combined = "|".join(parts)
         return hashlib.sha256(combined.encode()).hexdigest()[:32]
+
+    @staticmethod
+    def content_hash_for_module(
+        parse_results: list[ParseResult],
+        file_hashes: dict[str, str],
+    ) -> str:
+        """Compute a stable hash for a module-scoped ParseResult slice."""
+        return SignalCache.content_hash_for_results(parse_results, file_hashes)
+
+    @staticmethod
+    def git_state_fingerprint(
+        commits: list[object],
+        file_histories: dict[str, object],
+    ) -> str:
+        """Build a deterministic git-state fingerprint for git-dependent signals."""
+        commit_hashes: list[str] = []
+        for c in commits:
+            commit_hashes.append(str(getattr(c, "hash", "")))
+
+        history_parts: list[str] = []
+        for path in sorted(file_histories):
+            h = file_histories[path]
+            history_parts.append(
+                "|".join(
+                    [
+                        path,
+                        str(getattr(h, "total_commits", 0)),
+                        str(getattr(h, "unique_authors", 0)),
+                        str(getattr(h, "ai_attributed_commits", 0)),
+                        str(getattr(h, "change_frequency_30d", 0.0)),
+                        str(getattr(h, "defect_correlated_commits", 0)),
+                        str(getattr(h, "last_modified", "")),
+                        str(getattr(h, "first_seen", "")),
+                    ],
+                ),
+            )
+
+        payload = {
+            "commits": commit_hashes,
+            "histories": history_parts,
+        }
+        encoded = json.dumps(payload, sort_keys=True, default=str)
+        return hashlib.sha256(encoded.encode()).hexdigest()[:32]
 
     def _cache_path(self, signal_type: str, config_fp: str, content_hash: str) -> Path:
         key = f"{signal_type}_{config_fp}_{content_hash}"

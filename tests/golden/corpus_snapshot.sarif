@@ -35,10 +35,11 @@
             }
           ],
           "message": {
-            "text": "Exact duplicates (2×): process_order\n2 identical copies (6 lines each) at: src\\myapp\\service_a.py:4, src\\myapp\\service_b.py:4. Consider consolidating.\nFIX: Extract process_order() into src/myapp/shared.py. 2 identical copies (similarity: 1.00). Effort: S."
+            "text": "Exact duplicates (2×): process_order\n2 identical copies (6 lines each) at: src\\myapp\\service_a.py:4, src\\myapp\\service_b.py:4. Consider consolidating.\nFIX: Extract process_order() into src/myapp/shared.py. 2 identical copies (similarity: 1.00). Effort: S. | Merge 'process_order' and 'process_order' (across src/myapp/service_a.py and src/myapp/service_b.py)"
           },
           "properties": {
-            "drift:findingId": "3a69d86a362eb5db"
+            "drift:findingId": "3a69d86a362eb5db",
+            "drift:language": "python"
           },
           "relatedLocations": [
             {
@@ -77,10 +78,11 @@
             }
           ],
           "message": {
-            "text": "Exact duplicates (2×): validate_input\n2 identical copies (9 lines each) at: src\\myapp\\service_a.py:12, src\\myapp\\service_b.py:12. Consider consolidating.\nFIX: Extract validate_input() into src/myapp/shared.py. 2 identical copies (similarity: 1.00). Effort: S."
+            "text": "Exact duplicates (2×): validate_input\n2 identical copies (9 lines each) at: src\\myapp\\service_a.py:12, src\\myapp\\service_b.py:12. Consider consolidating.\nFIX: Extract validate_input() into src/myapp/shared.py. 2 identical copies (similarity: 1.00). Effort: S. | Merge 'validate_input' and 'validate_input' (across src/myapp/service_a.py and src/myapp/service_b.py)"
           },
           "properties": {
-            "drift:findingId": "6f1fb38c67d67f1f"
+            "drift:findingId": "6f1fb38c67d67f1f",
+            "drift:language": "python"
           },
           "relatedLocations": [
             {
@@ -119,10 +121,11 @@
             }
           ],
           "message": {
-            "text": "Near-duplicate (90%): connect_postgres ↔ connect_redis\nsrc\\myapp\\connectors\\db.py:8 and src\\myapp\\connectors\\db.py:17 are 90% similar. Small differences may indicate copy-paste divergence.\nFIX: Extract connect_postgres() into src/myapp/connectors/shared.py. Similarity: 90%. Effort: S."
+            "text": "Near-duplicate (90%): connect_postgres ↔ connect_redis\nsrc\\myapp\\connectors\\db.py:8 and src\\myapp\\connectors\\db.py:17 are 90% similar. Small differences may indicate copy-paste divergence.\nFIX: Extract connect_postgres() into src/myapp/connectors/shared.py. Similarity: 90%. Effort: S. | Merge 'connect_postgres' and 'connect_redis' (in src/myapp/connectors/db.py)"
           },
           "properties": {
-            "drift:findingId": "086fb7cb5f9ca3db"
+            "drift:findingId": "086fb7cb5f9ca3db",
+            "drift:language": "python"
           },
           "relatedLocations": [
             {
@@ -161,10 +164,11 @@
             }
           ],
           "message": {
-            "text": "Near-duplicate (90%): connect_postgres ↔ connect_mongodb\nsrc\\myapp\\connectors\\db.py:8 and src\\myapp\\connectors\\db.py:26 are 90% similar. Small differences may indicate copy-paste divergence.\nFIX: Extract connect_postgres() into src/myapp/connectors/shared.py. Similarity: 90%. Effort: S."
+            "text": "Near-duplicate (90%): connect_postgres ↔ connect_mongodb\nsrc\\myapp\\connectors\\db.py:8 and src\\myapp\\connectors\\db.py:26 are 90% similar. Small differences may indicate copy-paste divergence.\nFIX: Extract connect_postgres() into src/myapp/connectors/shared.py. Similarity: 90%. Effort: S. | Merge 'connect_postgres' and 'connect_mongodb' (in src/myapp/connectors/db.py)"
           },
           "properties": {
-            "drift:findingId": "3ee21745c06c345c"
+            "drift:findingId": "3ee21745c06c345c",
+            "drift:language": "python"
           },
           "relatedLocations": [
             {
@@ -203,10 +207,11 @@
             }
           ],
           "message": {
-            "text": "Near-duplicate (90%): connect_postgres ↔ connect_elasticsearch\nsrc\\myapp\\connectors\\db.py:8 and src\\myapp\\connectors\\db.py:35 are 90% similar. Small differences may indicate copy-paste divergence.\nFIX: Extract connect_postgres() into src/myapp/connectors/shared.py. Similarity: 90%. Effort: S."
+            "text": "Near-duplicate (90%): connect_postgres ↔ connect_elasticsearch\nsrc\\myapp\\connectors\\db.py:8 and src\\myapp\\connectors\\db.py:35 are 90% similar. Small differences may indicate copy-paste divergence.\nFIX: Extract connect_postgres() into src/myapp/connectors/shared.py. Similarity: 90%. Effort: S. | Merge 'connect_postgres' and 'connect_elasticsearch' (in src/myapp/connectors/db.py)"
           },
           "properties": {
-            "drift:findingId": "3d5f675df0a880a6"
+            "drift:findingId": "3d5f675df0a880a6",
+            "drift:language": "python"
           },
           "relatedLocations": [
             {
@@ -245,10 +250,11 @@
             }
           ],
           "message": {
-            "text": "Near-duplicate (90%): connect_postgres ↔ connect_rabbitmq\nsrc\\myapp\\connectors\\db.py:8 and src\\myapp\\connectors\\db.py:44 are 90% similar. Small differences may indicate copy-paste divergence.\nFIX: Extract connect_postgres() into src/myapp/connectors/shared.py. Similarity: 90%. Effort: S."
+            "text": "Near-duplicate (90%): connect_postgres ↔ connect_rabbitmq\nsrc\\myapp\\connectors\\db.py:8 and src\\myapp\\connectors\\db.py:44 are 90% similar. Small differences may indicate copy-paste divergence.\nFIX: Extract connect_postgres() into src/myapp/connectors/shared.py. Similarity: 90%. Effort: S. | Merge 'connect_postgres' and 'connect_rabbitmq' (in src/myapp/connectors/db.py)"
           },
           "properties": {
-            "drift:findingId": "8a2d99f2d0782163"
+            "drift:findingId": "8a2d99f2d0782163",
+            "drift:language": "python"
           },
           "relatedLocations": [
             {
@@ -287,10 +293,11 @@
             }
           ],
           "message": {
-            "text": "Near-duplicate (90%): connect_postgres ↔ connect_kafka\nsrc\\myapp\\connectors\\db.py:8 and src\\myapp\\connectors\\db.py:53 are 90% similar. Small differences may indicate copy-paste divergence.\nFIX: Extract connect_postgres() into src/myapp/connectors/shared.py. Similarity: 90%. Effort: S."
+            "text": "Near-duplicate (90%): connect_postgres ↔ connect_kafka\nsrc\\myapp\\connectors\\db.py:8 and src\\myapp\\connectors\\db.py:53 are 90% similar. Small differences may indicate copy-paste divergence.\nFIX: Extract connect_postgres() into src/myapp/connectors/shared.py. Similarity: 90%. Effort: S. | Merge 'connect_postgres' and 'connect_kafka' (in src/myapp/connectors/db.py)"
           },
           "properties": {
-            "drift:findingId": "63e41f79e7ffaf67"
+            "drift:findingId": "63e41f79e7ffaf67",
+            "drift:language": "python"
           },
           "relatedLocations": [
             {
@@ -329,10 +336,11 @@
             }
           ],
           "message": {
-            "text": "Near-duplicate (90%): connect_postgres ↔ connect_memcached\nsrc\\myapp\\connectors\\db.py:8 and src\\myapp\\connectors\\db.py:62 are 90% similar. Small differences may indicate copy-paste divergence.\nFIX: Extract connect_postgres() into src/myapp/connectors/shared.py. Similarity: 90%. Effort: S."
+            "text": "Near-duplicate (90%): connect_postgres ↔ connect_memcached\nsrc\\myapp\\connectors\\db.py:8 and src\\myapp\\connectors\\db.py:62 are 90% similar. Small differences may indicate copy-paste divergence.\nFIX: Extract connect_postgres() into src/myapp/connectors/shared.py. Similarity: 90%. Effort: S. | Merge 'connect_postgres' and 'connect_memcached' (in src/myapp/connectors/db.py)"
           },
           "properties": {
-            "drift:findingId": "3cbcd1a866a6c925"
+            "drift:findingId": "3cbcd1a866a6c925",
+            "drift:language": "python"
           },
           "relatedLocations": [
             {
@@ -371,10 +379,11 @@
             }
           ],
           "message": {
-            "text": "Near-duplicate (90%): connect_postgres ↔ connect_dynamodb\nsrc\\myapp\\connectors\\db.py:8 and src\\myapp\\connectors\\db.py:71 are 90% similar. Small differences may indicate copy-paste divergence.\nFIX: Extract connect_postgres() into src/myapp/connectors/shared.py. Similarity: 90%. Effort: S."
+            "text": "Near-duplicate (90%): connect_postgres ↔ connect_dynamodb\nsrc\\myapp\\connectors\\db.py:8 and src\\myapp\\connectors\\db.py:71 are 90% similar. Small differences may indicate copy-paste divergence.\nFIX: Extract connect_postgres() into src/myapp/connectors/shared.py. Similarity: 90%. Effort: S. | Merge 'connect_postgres' and 'connect_dynamodb' (in src/myapp/connectors/db.py)"
           },
           "properties": {
-            "drift:findingId": "802492552f544ccc"
+            "drift:findingId": "802492552f544ccc",
+            "drift:language": "python"
           },
           "relatedLocations": [
             {
@@ -413,10 +422,11 @@
             }
           ],
           "message": {
-            "text": "Near-duplicate (90%): connect_redis ↔ connect_mongodb\nsrc\\myapp\\connectors\\db.py:17 and src\\myapp\\connectors\\db.py:26 are 90% similar. Small differences may indicate copy-paste divergence.\nFIX: Extract connect_redis() into src/myapp/connectors/shared.py. Similarity: 90%. Effort: S."
+            "text": "Near-duplicate (90%): connect_redis ↔ connect_mongodb\nsrc\\myapp\\connectors\\db.py:17 and src\\myapp\\connectors\\db.py:26 are 90% similar. Small differences may indicate copy-paste divergence.\nFIX: Extract connect_redis() into src/myapp/connectors/shared.py. Similarity: 90%. Effort: S. | Merge 'connect_redis' and 'connect_mongodb' (in src/myapp/connectors/db.py)"
           },
           "properties": {
-            "drift:findingId": "e40899d5eaadf472"
+            "drift:findingId": "e40899d5eaadf472",
+            "drift:language": "python"
           },
           "relatedLocations": [
             {
@@ -455,10 +465,11 @@
             }
           ],
           "message": {
-            "text": "Near-duplicate (90%): connect_redis ↔ connect_elasticsearch\nsrc\\myapp\\connectors\\db.py:17 and src\\myapp\\connectors\\db.py:35 are 90% similar. Small differences may indicate copy-paste divergence.\nFIX: Extract connect_redis() into src/myapp/connectors/shared.py. Similarity: 90%. Effort: S."
+            "text": "Near-duplicate (90%): connect_redis ↔ connect_elasticsearch\nsrc\\myapp\\connectors\\db.py:17 and src\\myapp\\connectors\\db.py:35 are 90% similar. Small differences may indicate copy-paste divergence.\nFIX: Extract connect_redis() into src/myapp/connectors/shared.py. Similarity: 90%. Effort: S. | Merge 'connect_redis' and 'connect_elasticsearch' (in src/myapp/connectors/db.py)"
           },
           "properties": {
-            "drift:findingId": "fd717276192fea9b"
+            "drift:findingId": "fd717276192fea9b",
+            "drift:language": "python"
           },
           "relatedLocations": [
             {
@@ -497,10 +508,11 @@
             }
           ],
           "message": {
-            "text": "Near-duplicate (90%): connect_redis ↔ connect_rabbitmq\nsrc\\myapp\\connectors\\db.py:17 and src\\myapp\\connectors\\db.py:44 are 90% similar. Small differences may indicate copy-paste divergence.\nFIX: Extract connect_redis() into src/myapp/connectors/shared.py. Similarity: 90%. Effort: S."
+            "text": "Near-duplicate (90%): connect_redis ↔ connect_rabbitmq\nsrc\\myapp\\connectors\\db.py:17 and src\\myapp\\connectors\\db.py:44 are 90% similar. Small differences may indicate copy-paste divergence.\nFIX: Extract connect_redis() into src/myapp/connectors/shared.py. Similarity: 90%. Effort: S. | Merge 'connect_redis' and 'connect_rabbitmq' (in src/myapp/connectors/db.py)"
           },
           "properties": {
-            "drift:findingId": "dff7ef1c533d731c"
+            "drift:findingId": "dff7ef1c533d731c",
+            "drift:language": "python"
           },
           "relatedLocations": [
             {
@@ -539,10 +551,11 @@
             }
           ],
           "message": {
-            "text": "Near-duplicate (90%): connect_redis ↔ connect_kafka\nsrc\\myapp\\connectors\\db.py:17 and src\\myapp\\connectors\\db.py:53 are 90% similar. Small differences may indicate copy-paste divergence.\nFIX: Extract connect_redis() into src/myapp/connectors/shared.py. Similarity: 90%. Effort: S."
+            "text": "Near-duplicate (90%): connect_redis ↔ connect_kafka\nsrc\\myapp\\connectors\\db.py:17 and src\\myapp\\connectors\\db.py:53 are 90% similar. Small differences may indicate copy-paste divergence.\nFIX: Extract connect_redis() into src/myapp/connectors/shared.py. Similarity: 90%. Effort: S. | Merge 'connect_redis' and 'connect_kafka' (in src/myapp/connectors/db.py)"
           },
           "properties": {
-            "drift:findingId": "b42e69d1095d3153"
+            "drift:findingId": "b42e69d1095d3153",
+            "drift:language": "python"
           },
           "relatedLocations": [
             {
@@ -581,10 +594,11 @@
             }
           ],
           "message": {
-            "text": "Near-duplicate (90%): connect_redis ↔ connect_memcached\nsrc\\myapp\\connectors\\db.py:17 and src\\myapp\\connectors\\db.py:62 are 90% similar. Small differences may indicate copy-paste divergence.\nFIX: Extract connect_redis() into src/myapp/connectors/shared.py. Similarity: 90%. Effort: S."
+            "text": "Near-duplicate (90%): connect_redis ↔ connect_memcached\nsrc\\myapp\\connectors\\db.py:17 and src\\myapp\\connectors\\db.py:62 are 90% similar. Small differences may indicate copy-paste divergence.\nFIX: Extract connect_redis() into src/myapp/connectors/shared.py. Similarity: 90%. Effort: S. | Merge 'connect_redis' and 'connect_memcached' (in src/myapp/connectors/db.py)"
           },
           "properties": {
-            "drift:findingId": "9c58e3224891f0b6"
+            "drift:findingId": "9c58e3224891f0b6",
+            "drift:language": "python"
           },
           "relatedLocations": [
             {
@@ -623,10 +637,11 @@
             }
           ],
           "message": {
-            "text": "Near-duplicate (90%): connect_redis ↔ connect_dynamodb\nsrc\\myapp\\connectors\\db.py:17 and src\\myapp\\connectors\\db.py:71 are 90% similar. Small differences may indicate copy-paste divergence.\nFIX: Extract connect_redis() into src/myapp/connectors/shared.py. Similarity: 90%. Effort: S."
+            "text": "Near-duplicate (90%): connect_redis ↔ connect_dynamodb\nsrc\\myapp\\connectors\\db.py:17 and src\\myapp\\connectors\\db.py:71 are 90% similar. Small differences may indicate copy-paste divergence.\nFIX: Extract connect_redis() into src/myapp/connectors/shared.py. Similarity: 90%. Effort: S. | Merge 'connect_redis' and 'connect_dynamodb' (in src/myapp/connectors/db.py)"
           },
           "properties": {
-            "drift:findingId": "e3f7c175abe45d0f"
+            "drift:findingId": "e3f7c175abe45d0f",
+            "drift:language": "python"
           },
           "relatedLocations": [
             {
@@ -665,10 +680,11 @@
             }
           ],
           "message": {
-            "text": "Near-duplicate (90%): connect_mongodb ↔ connect_elasticsearch\nsrc\\myapp\\connectors\\db.py:26 and src\\myapp\\connectors\\db.py:35 are 90% similar. Small differences may indicate copy-paste divergence.\nFIX: Extract connect_mongodb() into src/myapp/connectors/shared.py. Similarity: 90%. Effort: S."
+            "text": "Near-duplicate (90%): connect_mongodb ↔ connect_elasticsearch\nsrc\\myapp\\connectors\\db.py:26 and src\\myapp\\connectors\\db.py:35 are 90% similar. Small differences may indicate copy-paste divergence.\nFIX: Extract connect_mongodb() into src/myapp/connectors/shared.py. Similarity: 90%. Effort: S. | Merge 'connect_mongodb' and 'connect_elasticsearch' (in src/myapp/connectors/db.py)"
           },
           "properties": {
-            "drift:findingId": "1abbd8e6fe7b0303"
+            "drift:findingId": "1abbd8e6fe7b0303",
+            "drift:language": "python"
           },
           "relatedLocations": [
             {
@@ -707,10 +723,11 @@
             }
           ],
           "message": {
-            "text": "Near-duplicate (90%): connect_mongodb ↔ connect_rabbitmq\nsrc\\myapp\\connectors\\db.py:26 and src\\myapp\\connectors\\db.py:44 are 90% similar. Small differences may indicate copy-paste divergence.\nFIX: Extract connect_mongodb() into src/myapp/connectors/shared.py. Similarity: 90%. Effort: S."
+            "text": "Near-duplicate (90%): connect_mongodb ↔ connect_rabbitmq\nsrc\\myapp\\connectors\\db.py:26 and src\\myapp\\connectors\\db.py:44 are 90% similar. Small differences may indicate copy-paste divergence.\nFIX: Extract connect_mongodb() into src/myapp/connectors/shared.py. Similarity: 90%. Effort: S. | Merge 'connect_mongodb' and 'connect_rabbitmq' (in src/myapp/connectors/db.py)"
           },
           "properties": {
-            "drift:findingId": "6cbd857575016b4f"
+            "drift:findingId": "6cbd857575016b4f",
+            "drift:language": "python"
           },
           "relatedLocations": [
             {
@@ -749,10 +766,11 @@
             }
           ],
           "message": {
-            "text": "Near-duplicate (90%): connect_mongodb ↔ connect_kafka\nsrc\\myapp\\connectors\\db.py:26 and src\\myapp\\connectors\\db.py:53 are 90% similar. Small differences may indicate copy-paste divergence.\nFIX: Extract connect_mongodb() into src/myapp/connectors/shared.py. Similarity: 90%. Effort: S."
+            "text": "Near-duplicate (90%): connect_mongodb ↔ connect_kafka\nsrc\\myapp\\connectors\\db.py:26 and src\\myapp\\connectors\\db.py:53 are 90% similar. Small differences may indicate copy-paste divergence.\nFIX: Extract connect_mongodb() into src/myapp/connectors/shared.py. Similarity: 90%. Effort: S. | Merge 'connect_mongodb' and 'connect_kafka' (in src/myapp/connectors/db.py)"
           },
           "properties": {
-            "drift:findingId": "ec1565fc0123f085"
+            "drift:findingId": "ec1565fc0123f085",
+            "drift:language": "python"
           },
           "relatedLocations": [
             {
@@ -791,10 +809,11 @@
             }
           ],
           "message": {
-            "text": "Near-duplicate (90%): connect_mongodb ↔ connect_memcached\nsrc\\myapp\\connectors\\db.py:26 and src\\myapp\\connectors\\db.py:62 are 90% similar. Small differences may indicate copy-paste divergence.\nFIX: Extract connect_mongodb() into src/myapp/connectors/shared.py. Similarity: 90%. Effort: S."
+            "text": "Near-duplicate (90%): connect_mongodb ↔ connect_memcached\nsrc\\myapp\\connectors\\db.py:26 and src\\myapp\\connectors\\db.py:62 are 90% similar. Small differences may indicate copy-paste divergence.\nFIX: Extract connect_mongodb() into src/myapp/connectors/shared.py. Similarity: 90%. Effort: S. | Merge 'connect_mongodb' and 'connect_memcached' (in src/myapp/connectors/db.py)"
           },
           "properties": {
-            "drift:findingId": "0deebb1fc015d9bb"
+            "drift:findingId": "0deebb1fc015d9bb",
+            "drift:language": "python"
           },
           "relatedLocations": [
             {
@@ -833,10 +852,11 @@
             }
           ],
           "message": {
-            "text": "Near-duplicate (90%): connect_mongodb ↔ connect_dynamodb\nsrc\\myapp\\connectors\\db.py:26 and src\\myapp\\connectors\\db.py:71 are 90% similar. Small differences may indicate copy-paste divergence.\nFIX: Extract connect_mongodb() into src/myapp/connectors/shared.py. Similarity: 90%. Effort: S."
+            "text": "Near-duplicate (90%): connect_mongodb ↔ connect_dynamodb\nsrc\\myapp\\connectors\\db.py:26 and src\\myapp\\connectors\\db.py:71 are 90% similar. Small differences may indicate copy-paste divergence.\nFIX: Extract connect_mongodb() into src/myapp/connectors/shared.py. Similarity: 90%. Effort: S. | Merge 'connect_mongodb' and 'connect_dynamodb' (in src/myapp/connectors/db.py)"
           },
           "properties": {
-            "drift:findingId": "23d1f3255109cb81"
+            "drift:findingId": "23d1f3255109cb81",
+            "drift:language": "python"
           },
           "relatedLocations": [
             {
@@ -875,10 +895,11 @@
             }
           ],
           "message": {
-            "text": "Near-duplicate (90%): connect_elasticsearch ↔ connect_rabbitmq\nsrc\\myapp\\connectors\\db.py:35 and src\\myapp\\connectors\\db.py:44 are 90% similar. Small differences may indicate copy-paste divergence.\nFIX: Extract connect_elasticsearch() into src/myapp/connectors/shared.py. Similarity: 90%. Effort: S."
+            "text": "Near-duplicate (90%): connect_elasticsearch ↔ connect_rabbitmq\nsrc\\myapp\\connectors\\db.py:35 and src\\myapp\\connectors\\db.py:44 are 90% similar. Small differences may indicate copy-paste divergence.\nFIX: Extract connect_elasticsearch() into src/myapp/connectors/shared.py. Similarity: 90%. Effort: S. | Merge 'connect_elasticsearch' and 'connect_rabbitmq' (in src/myapp/connectors/db.py)"
           },
           "properties": {
-            "drift:findingId": "bea2c171de1ae0f8"
+            "drift:findingId": "bea2c171de1ae0f8",
+            "drift:language": "python"
           },
           "relatedLocations": [
             {
@@ -917,10 +938,11 @@
             }
           ],
           "message": {
-            "text": "Near-duplicate (90%): connect_elasticsearch ↔ connect_kafka\nsrc\\myapp\\connectors\\db.py:35 and src\\myapp\\connectors\\db.py:53 are 90% similar. Small differences may indicate copy-paste divergence.\nFIX: Extract connect_elasticsearch() into src/myapp/connectors/shared.py. Similarity: 90%. Effort: S."
+            "text": "Near-duplicate (90%): connect_elasticsearch ↔ connect_kafka\nsrc\\myapp\\connectors\\db.py:35 and src\\myapp\\connectors\\db.py:53 are 90% similar. Small differences may indicate copy-paste divergence.\nFIX: Extract connect_elasticsearch() into src/myapp/connectors/shared.py. Similarity: 90%. Effort: S. | Merge 'connect_elasticsearch' and 'connect_kafka' (in src/myapp/connectors/db.py)"
           },
           "properties": {
-            "drift:findingId": "d94e46e5ee4ade34"
+            "drift:findingId": "d94e46e5ee4ade34",
+            "drift:language": "python"
           },
           "relatedLocations": [
             {
@@ -959,10 +981,11 @@
             }
           ],
           "message": {
-            "text": "Near-duplicate (90%): connect_elasticsearch ↔ connect_memcached\nsrc\\myapp\\connectors\\db.py:35 and src\\myapp\\connectors\\db.py:62 are 90% similar. Small differences may indicate copy-paste divergence.\nFIX: Extract connect_elasticsearch() into src/myapp/connectors/shared.py. Similarity: 90%. Effort: S."
+            "text": "Near-duplicate (90%): connect_elasticsearch ↔ connect_memcached\nsrc\\myapp\\connectors\\db.py:35 and src\\myapp\\connectors\\db.py:62 are 90% similar. Small differences may indicate copy-paste divergence.\nFIX: Extract connect_elasticsearch() into src/myapp/connectors/shared.py. Similarity: 90%. Effort: S. | Merge 'connect_elasticsearch' and 'connect_memcached' (in src/myapp/connectors/db.py)"
           },
           "properties": {
-            "drift:findingId": "17b4520f20184ed0"
+            "drift:findingId": "17b4520f20184ed0",
+            "drift:language": "python"
           },
           "relatedLocations": [
             {
@@ -1001,10 +1024,11 @@
             }
           ],
           "message": {
-            "text": "Near-duplicate (90%): connect_elasticsearch ↔ connect_dynamodb\nsrc\\myapp\\connectors\\db.py:35 and src\\myapp\\connectors\\db.py:71 are 90% similar. Small differences may indicate copy-paste divergence.\nFIX: Extract connect_elasticsearch() into src/myapp/connectors/shared.py. Similarity: 90%. Effort: S."
+            "text": "Near-duplicate (90%): connect_elasticsearch ↔ connect_dynamodb\nsrc\\myapp\\connectors\\db.py:35 and src\\myapp\\connectors\\db.py:71 are 90% similar. Small differences may indicate copy-paste divergence.\nFIX: Extract connect_elasticsearch() into src/myapp/connectors/shared.py. Similarity: 90%. Effort: S. | Merge 'connect_elasticsearch' and 'connect_dynamodb' (in src/myapp/connectors/db.py)"
           },
           "properties": {
-            "drift:findingId": "5383c65c5a1a78f7"
+            "drift:findingId": "5383c65c5a1a78f7",
+            "drift:language": "python"
           },
           "relatedLocations": [
             {
@@ -1043,10 +1067,11 @@
             }
           ],
           "message": {
-            "text": "Near-duplicate (90%): connect_rabbitmq ↔ connect_kafka\nsrc\\myapp\\connectors\\db.py:44 and src\\myapp\\connectors\\db.py:53 are 90% similar. Small differences may indicate copy-paste divergence.\nFIX: Extract connect_rabbitmq() into src/myapp/connectors/shared.py. Similarity: 90%. Effort: S."
+            "text": "Near-duplicate (90%): connect_rabbitmq ↔ connect_kafka\nsrc\\myapp\\connectors\\db.py:44 and src\\myapp\\connectors\\db.py:53 are 90% similar. Small differences may indicate copy-paste divergence.\nFIX: Extract connect_rabbitmq() into src/myapp/connectors/shared.py. Similarity: 90%. Effort: S. | Merge 'connect_rabbitmq' and 'connect_kafka' (in src/myapp/connectors/db.py)"
           },
           "properties": {
-            "drift:findingId": "0cd9cc380edd3dfd"
+            "drift:findingId": "0cd9cc380edd3dfd",
+            "drift:language": "python"
           },
           "relatedLocations": [
             {
@@ -1085,10 +1110,11 @@
             }
           ],
           "message": {
-            "text": "Near-duplicate (90%): connect_rabbitmq ↔ connect_memcached\nsrc\\myapp\\connectors\\db.py:44 and src\\myapp\\connectors\\db.py:62 are 90% similar. Small differences may indicate copy-paste divergence.\nFIX: Extract connect_rabbitmq() into src/myapp/connectors/shared.py. Similarity: 90%. Effort: S."
+            "text": "Near-duplicate (90%): connect_rabbitmq ↔ connect_memcached\nsrc\\myapp\\connectors\\db.py:44 and src\\myapp\\connectors\\db.py:62 are 90% similar. Small differences may indicate copy-paste divergence.\nFIX: Extract connect_rabbitmq() into src/myapp/connectors/shared.py. Similarity: 90%. Effort: S. | Merge 'connect_rabbitmq' and 'connect_memcached' (in src/myapp/connectors/db.py)"
           },
           "properties": {
-            "drift:findingId": "dff84741ec572976"
+            "drift:findingId": "dff84741ec572976",
+            "drift:language": "python"
           },
           "relatedLocations": [
             {
@@ -1127,10 +1153,11 @@
             }
           ],
           "message": {
-            "text": "Near-duplicate (90%): connect_rabbitmq ↔ connect_dynamodb\nsrc\\myapp\\connectors\\db.py:44 and src\\myapp\\connectors\\db.py:71 are 90% similar. Small differences may indicate copy-paste divergence.\nFIX: Extract connect_rabbitmq() into src/myapp/connectors/shared.py. Similarity: 90%. Effort: S."
+            "text": "Near-duplicate (90%): connect_rabbitmq ↔ connect_dynamodb\nsrc\\myapp\\connectors\\db.py:44 and src\\myapp\\connectors\\db.py:71 are 90% similar. Small differences may indicate copy-paste divergence.\nFIX: Extract connect_rabbitmq() into src/myapp/connectors/shared.py. Similarity: 90%. Effort: S. | Merge 'connect_rabbitmq' and 'connect_dynamodb' (in src/myapp/connectors/db.py)"
           },
           "properties": {
-            "drift:findingId": "5772a9d3a380a895"
+            "drift:findingId": "5772a9d3a380a895",
+            "drift:language": "python"
           },
           "relatedLocations": [
             {
@@ -1169,10 +1196,11 @@
             }
           ],
           "message": {
-            "text": "Near-duplicate (90%): connect_kafka ↔ connect_memcached\nsrc\\myapp\\connectors\\db.py:53 and src\\myapp\\connectors\\db.py:62 are 90% similar. Small differences may indicate copy-paste divergence.\nFIX: Extract connect_kafka() into src/myapp/connectors/shared.py. Similarity: 90%. Effort: S."
+            "text": "Near-duplicate (90%): connect_kafka ↔ connect_memcached\nsrc\\myapp\\connectors\\db.py:53 and src\\myapp\\connectors\\db.py:62 are 90% similar. Small differences may indicate copy-paste divergence.\nFIX: Extract connect_kafka() into src/myapp/connectors/shared.py. Similarity: 90%. Effort: S. | Merge 'connect_kafka' and 'connect_memcached' (in src/myapp/connectors/db.py)"
           },
           "properties": {
-            "drift:findingId": "4f0d1be93c6bf270"
+            "drift:findingId": "4f0d1be93c6bf270",
+            "drift:language": "python"
           },
           "relatedLocations": [
             {
@@ -1211,10 +1239,11 @@
             }
           ],
           "message": {
-            "text": "Near-duplicate (90%): connect_kafka ↔ connect_dynamodb\nsrc\\myapp\\connectors\\db.py:53 and src\\myapp\\connectors\\db.py:71 are 90% similar. Small differences may indicate copy-paste divergence.\nFIX: Extract connect_kafka() into src/myapp/connectors/shared.py. Similarity: 90%. Effort: S."
+            "text": "Near-duplicate (90%): connect_kafka ↔ connect_dynamodb\nsrc\\myapp\\connectors\\db.py:53 and src\\myapp\\connectors\\db.py:71 are 90% similar. Small differences may indicate copy-paste divergence.\nFIX: Extract connect_kafka() into src/myapp/connectors/shared.py. Similarity: 90%. Effort: S. | Merge 'connect_kafka' and 'connect_dynamodb' (in src/myapp/connectors/db.py)"
           },
           "properties": {
-            "drift:findingId": "85f4042bb99e00fa"
+            "drift:findingId": "85f4042bb99e00fa",
+            "drift:language": "python"
           },
           "relatedLocations": [
             {
@@ -1253,10 +1282,11 @@
             }
           ],
           "message": {
-            "text": "Near-duplicate (90%): connect_memcached ↔ connect_dynamodb\nsrc\\myapp\\connectors\\db.py:62 and src\\myapp\\connectors\\db.py:71 are 90% similar. Small differences may indicate copy-paste divergence.\nFIX: Extract connect_memcached() into src/myapp/connectors/shared.py. Similarity: 90%. Effort: S."
+            "text": "Near-duplicate (90%): connect_memcached ↔ connect_dynamodb\nsrc\\myapp\\connectors\\db.py:62 and src\\myapp\\connectors\\db.py:71 are 90% similar. Small differences may indicate copy-paste divergence.\nFIX: Extract connect_memcached() into src/myapp/connectors/shared.py. Similarity: 90%. Effort: S. | Merge 'connect_memcached' and 'connect_dynamodb' (in src/myapp/connectors/db.py)"
           },
           "properties": {
-            "drift:findingId": "dcd61b3c256ab376"
+            "drift:findingId": "dcd61b3c256ab376",
+            "drift:language": "python"
           },
           "relatedLocations": [
             {
@@ -1295,10 +1325,11 @@
             }
           ],
           "message": {
-            "text": "Near-duplicate (85%): fetch_user_data ↔ get_customer_info\nsrc\\myapp\\handler_v1.py:4 and src\\myapp\\handler_v2.py:4 are 85% similar. Small differences may indicate copy-paste divergence.\nFIX: Extract fetch_user_data() into src/myapp/shared.py. Similarity: 85%. Effort: S."
+            "text": "Near-duplicate (85%): fetch_user_data ↔ get_customer_info\nsrc\\myapp\\handler_v1.py:4 and src\\myapp\\handler_v2.py:4 are 85% similar. Small differences may indicate copy-paste divergence.\nFIX: Extract fetch_user_data() into src/myapp/shared.py. Similarity: 85%. Effort: S. | Merge 'fetch_user_data' and 'get_customer_info' (across src/myapp/handler_v1.py and src/myapp/handler_v2.py)"
           },
           "properties": {
-            "drift:findingId": "6f7af21b5a7d7800"
+            "drift:findingId": "6f7af21b5a7d7800",
+            "drift:language": "python"
           },
           "relatedLocations": [
             {
@@ -1337,7 +1368,7 @@
             }
           ],
           "message": {
-            "text": "return_pattern: 2 variants in src/myapp/models/\n2 return_pattern variants in src/myapp/models/ (1/2 use canonical pattern).\n  - src/myapp/models/core.py:25 (Product.find_by_sku)\nFIX: Consolidate to the dominant pattern (1x, exemplar: src/myapp/models/core.py:11). Deviations: src/myapp/models/core.py:25 (Product.find_by_sku)."
+            "text": "return_pattern: 2 variants in src/myapp/models/\n2 return_pattern variants in src/myapp/models/ (1/2 use canonical pattern).\n  - src/myapp/models/core.py:25 (Product.find_by_sku)\nFIX: Consolidate to the dominant pattern (1x, exemplar: src/myapp/models/core.py:11). Deviations: src/myapp/models/core.py:25 (Product.find_by_sku). | Consolidate 2 pattern variants in src/myapp/models"
           },
           "properties": {
             "drift:findingId": "4c322947dea01b7a"
@@ -1380,10 +1411,11 @@
             }
           ],
           "message": {
-            "text": "Unexplained complexity: transform_dataset\nComplexity: 29, LOC: 60. No docstring. No corresponding test found. No return type annotation.\nFIX: Function transform_dataset (complexity 29): add Docstring, Tests, Return-Type."
+            "text": "Unexplained complexity: transform_dataset\nComplexity: 29, LOC: 60. No docstring. No corresponding test found. No return type annotation.\nFIX: Function transform_dataset (complexity 29): add Docstring, Tests, Return-Type. | Document 'transform_dataset'"
           },
           "properties": {
-            "drift:findingId": "98d5538fca2c720d"
+            "drift:findingId": "98d5538fca2c720d",
+            "drift:language": "python"
           },
           "ruleId": "explainability_deficit"
         },
@@ -1410,10 +1442,11 @@
             }
           ],
           "message": {
-            "text": "Unexplained complexity: calculate_pricing\nComplexity: 19, LOC: 49. No docstring. No corresponding test found. No return type annotation.\nFIX: Function calculate_pricing (complexity 19): add Docstring, Tests, Return-Type."
+            "text": "Unexplained complexity: calculate_pricing\nComplexity: 19, LOC: 49. No docstring. No corresponding test found. No return type annotation.\nFIX: Function calculate_pricing (complexity 19): add Docstring, Tests, Return-Type. | Document 'calculate_pricing'"
           },
           "properties": {
-            "drift:findingId": "e58dd1a1123f0bd8"
+            "drift:findingId": "e58dd1a1123f0bd8",
+            "drift:language": "python"
           },
           "ruleId": "explainability_deficit"
         },
@@ -1440,10 +1473,11 @@
             }
           ],
           "message": {
-            "text": "Unexplained complexity: process_registration\nComplexity: 10, LOC: 25. No docstring. No corresponding test found. No return type annotation.\nFIX: Function process_registration (complexity 10): add Docstring, Tests, Return-Type."
+            "text": "Unexplained complexity: process_registration\nComplexity: 10, LOC: 25. No docstring. No corresponding test found. No return type annotation.\nFIX: Function process_registration (complexity 10): add Docstring, Tests, Return-Type. | Document 'process_registration'"
           },
           "properties": {
-            "drift:findingId": "c2c57de1abc9d061"
+            "drift:findingId": "c2c57de1abc9d061",
+            "drift:language": "python"
           },
           "ruleId": "explainability_deficit"
         },
@@ -1502,7 +1536,8 @@
             "text": "Naming contract violation: Inventory.check_stock()\nFunction 'Inventory.check_stock' has prefix 'check_' but does not satisfy the expected contract: validate_*/check_* expects at least one raise or return False/None.\nFIX: 'Inventory.check_stock()' at src/myapp/models/core.py:38 does not satisfy 'check_' naming contract. Suggestion: implement a rejection path (raise or return False/None), or rename the function to match non-validating behavior."
           },
           "properties": {
-            "drift:findingId": "092ff896d6032905"
+            "drift:findingId": "092ff896d6032905",
+            "drift:language": "python"
           },
           "ruleId": "naming_contract_violation"
         },
@@ -1532,7 +1567,8 @@
             "text": "Naming contract violation: validate_user_profile()\nFunction 'validate_user_profile' has prefix 'validate_' but does not satisfy the expected contract: validate_*/check_* expects at least one raise or return False/None.\nFIX: 'validate_user_profile()' at src/myapp/utils/naming.py:4 does not satisfy 'validate_' naming contract. Suggestion: implement a rejection path (raise or return False/None), or rename the function to match non-validating behavior."
           },
           "properties": {
-            "drift:findingId": "3f6bd384232864dd"
+            "drift:findingId": "3f6bd384232864dd",
+            "drift:language": "python"
           },
           "ruleId": "naming_contract_violation"
         },
@@ -1562,7 +1598,8 @@
             "text": "Naming contract violation: ensure_database_connection()\nFunction 'ensure_database_connection' has prefix 'ensure_' but does not satisfy the expected contract: ensure_* expects at least one raise statement.\nFIX: 'ensure_database_connection()' at src/myapp/utils/naming.py:11 does not satisfy 'ensure_' naming contract. Suggestion: add at least one raise path that enforces the ensured precondition."
           },
           "properties": {
-            "drift:findingId": "521495b69a3bcf19"
+            "drift:findingId": "521495b69a3bcf19",
+            "drift:language": "python"
           },
           "ruleId": "naming_contract_violation"
         },
@@ -1621,7 +1658,8 @@
             "text": "Deep nesting in transform_dataset()\nFunction 'transform_dataset' in src\\myapp\\processors\\transform.py has nesting depth 7 (threshold: 4). Deep nesting makes control flow hard to follow.\nFIX: Reduce nesting in 'transform_dataset' (depth 7, threshold 4): use early returns, extract nested blocks into helpers, or invert conditions."
           },
           "properties": {
-            "drift:findingId": "8509e359f548566b"
+            "drift:findingId": "8509e359f548566b",
+            "drift:language": "python"
           },
           "ruleId": "deep_nesting"
         },
@@ -1651,7 +1689,8 @@
             "text": "Deep nesting in process_registration()\nFunction 'process_registration' in src\\myapp\\processors\\validator.py has nesting depth 6 (threshold: 4). Deep nesting makes control flow hard to follow.\nFIX: Reduce nesting in 'process_registration' (depth 6, threshold 4): use early returns, extract nested blocks into helpers, or invert conditions."
           },
           "properties": {
-            "drift:findingId": "42f21537c3ea6399"
+            "drift:findingId": "42f21537c3ea6399",
+            "drift:language": "python"
           },
           "ruleId": "deep_nesting"
         },
@@ -1681,7 +1720,8 @@
             "text": "Deep nesting in calculate_pricing()\nFunction 'calculate_pricing' in src\\myapp\\processors\\pricing.py has nesting depth 5 (threshold: 4). Deep nesting makes control flow hard to follow.\nFIX: Reduce nesting in 'calculate_pricing' (depth 5, threshold 4): use early returns, extract nested blocks into helpers, or invert conditions."
           },
           "properties": {
-            "drift:findingId": "992535612148b980"
+            "drift:findingId": "992535612148b980",
+            "drift:language": "python"
           },
           "ruleId": "deep_nesting"
         },
@@ -1885,7 +1925,8 @@
             "text": "High cognitive complexity in calculate_pricing()\nFunction 'calculate_pricing' in src\\myapp\\processors\\pricing.py has cognitive complexity 52 (threshold: 15). Complex control flow makes this function hard to understand and maintain.\nFIX: Reduce cognitive complexity of 'calculate_pricing' (currently 52, threshold 15): extract nested logic into helper functions, replace nested conditionals with guard clauses, simplify boolean expressions."
           },
           "properties": {
-            "drift:findingId": "9d57ec3f1df88531"
+            "drift:findingId": "9d57ec3f1df88531",
+            "drift:language": "python"
           },
           "ruleId": "cognitive_complexity"
         },
@@ -1915,7 +1956,8 @@
             "text": "High cognitive complexity in transform_dataset()\nFunction 'transform_dataset' in src\\myapp\\processors\\transform.py has cognitive complexity 108 (threshold: 15). Complex control flow makes this function hard to understand and maintain.\nFIX: Reduce cognitive complexity of 'transform_dataset' (currently 108, threshold 15): extract nested logic into helper functions, replace nested conditionals with guard clauses, simplify boolean expressions."
           },
           "properties": {
-            "drift:findingId": "a8bcf58428ef0c13"
+            "drift:findingId": "a8bcf58428ef0c13",
+            "drift:language": "python"
           },
           "ruleId": "cognitive_complexity"
         },
@@ -1945,7 +1987,8 @@
             "text": "High cognitive complexity in process_registration()\nFunction 'process_registration' in src\\myapp\\processors\\validator.py has cognitive complexity 27 (threshold: 15). Complex control flow makes this function hard to understand and maintain.\nFIX: Reduce cognitive complexity of 'process_registration' (currently 27, threshold 15): extract nested logic into helper functions, replace nested conditionals with guard clauses, simplify boolean expressions."
           },
           "properties": {
-            "drift:findingId": "e0a732a307111b15"
+            "drift:findingId": "e0a732a307111b15",
+            "drift:language": "python"
           },
           "ruleId": "cognitive_complexity"
         },
@@ -1974,7 +2017,8 @@
             "text": "8 potentially unused exports in db.py\nsrc\\myapp\\connectors\\db.py exports 8/8 public symbols that are never imported elsewhere: connect_postgres, connect_redis, connect_mongodb, connect_elasticsearch, connect_rabbitmq, connect_kafka, connect_memcached, connect_dynamodb. Dead code increases maintenance cost and confuses contributors.\nFIX: Review and remove 8 unused exports in db.py: connect_postgres, connect_redis, connect_mongodb, connect_elasticsearch, connect_rabbitmq, connect_kafka, connect_memcached, connect_dynamodb. If they are framework entry-points or dynamically loaded, mark with # drift:ignore or add to exclude patterns."
           },
           "properties": {
-            "drift:findingId": "2f1fc78563f35208"
+            "drift:findingId": "2f1fc78563f35208",
+            "drift:language": "python"
           },
           "ruleId": "dead_code_accumulation"
         },
@@ -2003,7 +2047,8 @@
             "text": "2 potentially unused exports in orders.py\nsrc\\myapp\\handlers\\orders.py exports 2/3 public symbols that are never imported elsewhere: OrderError, PaymentError. Dead code increases maintenance cost and confuses contributors.\nFIX: Review and remove 2 unused exports in orders.py: OrderError, PaymentError. If they are framework entry-points or dynamically loaded, mark with # drift:ignore or add to exclude patterns."
           },
           "properties": {
-            "drift:findingId": "ea183abeb26976be"
+            "drift:findingId": "ea183abeb26976be",
+            "drift:language": "python"
           },
           "ruleId": "dead_code_accumulation"
         },
@@ -2032,7 +2077,8 @@
             "text": "2 potentially unused exports in payments.py\nsrc\\myapp\\handlers\\payments.py exports 2/2 public symbols that are never imported elsewhere: handle_payment, handle_refund. Dead code increases maintenance cost and confuses contributors.\nFIX: Review and remove 2 unused exports in payments.py: handle_payment, handle_refund. If they are framework entry-points or dynamically loaded, mark with # drift:ignore or add to exclude patterns."
           },
           "properties": {
-            "drift:findingId": "0335e4ef2cf787db"
+            "drift:findingId": "0335e4ef2cf787db",
+            "drift:language": "python"
           },
           "ruleId": "dead_code_accumulation"
         },
@@ -2061,7 +2107,8 @@
             "text": "9 potentially unused exports in core.py\nsrc\\myapp\\models\\core.py exports 9/9 public symbols that are never imported elsewhere: User.__init__, User.find_by_email, Product.__init__, Product.find_by_sku, Inventory.__init__, Inventory.check_stock, User, Product, Inventory. Dead code increases maintenance cost and confuses contributors.\nFIX: Review and remove 9 unused exports in core.py: User.__init__, User.find_by_email, Product.__init__, Product.find_by_sku, Inventory.__init__, Inventory.check_stock, User, Product, Inventory. If they are framework entry-points or dynamically loaded, mark with # drift:ignore or add to exclude patterns."
           },
           "properties": {
-            "drift:findingId": "62674eb7bb984b34"
+            "drift:findingId": "62674eb7bb984b34",
+            "drift:language": "python"
           },
           "ruleId": "dead_code_accumulation"
         },
@@ -2090,7 +2137,8 @@
             "text": "2 potentially unused exports in enriched.py\nsrc\\myapp\\models\\enriched.py exports 2/3 public symbols that are never imported elsewhere: EnrichedOrder.__init__, EnrichedOrder.process. Dead code increases maintenance cost and confuses contributors.\nFIX: Review and remove 2 unused exports in enriched.py: EnrichedOrder.__init__, EnrichedOrder.process. If they are framework entry-points or dynamically loaded, mark with # drift:ignore or add to exclude patterns."
           },
           "properties": {
-            "drift:findingId": "f43f9d3c479e04fa"
+            "drift:findingId": "f43f9d3c479e04fa",
+            "drift:language": "python"
           },
           "ruleId": "dead_code_accumulation"
         },
@@ -2119,7 +2167,8 @@
             "text": "3 potentially unused exports in outlier_module.py\nsrc\\myapp\\outlier_module.py exports 3/3 public symbols that are never imported elsewhere: read_shared_memory, call_native_lib, process_binary_data. Dead code increases maintenance cost and confuses contributors.\nFIX: Review and remove 3 unused exports in outlier_module.py: read_shared_memory, call_native_lib, process_binary_data. If they are framework entry-points or dynamically loaded, mark with # drift:ignore or add to exclude patterns."
           },
           "properties": {
-            "drift:findingId": "4542ed4d903d4b2d"
+            "drift:findingId": "4542ed4d903d4b2d",
+            "drift:language": "python"
           },
           "ruleId": "dead_code_accumulation"
         },
@@ -2148,7 +2197,8 @@
             "text": "2 potentially unused exports in service_a.py\nsrc\\myapp\\service_a.py exports 2/2 public symbols that are never imported elsewhere: process_order, validate_input. Dead code increases maintenance cost and confuses contributors.\nFIX: Review and remove 2 unused exports in service_a.py: process_order, validate_input. If they are framework entry-points or dynamically loaded, mark with # drift:ignore or add to exclude patterns."
           },
           "properties": {
-            "drift:findingId": "e25fb15a47d4aabf"
+            "drift:findingId": "e25fb15a47d4aabf",
+            "drift:language": "python"
           },
           "ruleId": "dead_code_accumulation"
         },
@@ -2177,7 +2227,8 @@
             "text": "2 potentially unused exports in service_b.py\nsrc\\myapp\\service_b.py exports 2/2 public symbols that are never imported elsewhere: process_order, validate_input. Dead code increases maintenance cost and confuses contributors.\nFIX: Review and remove 2 unused exports in service_b.py: process_order, validate_input. If they are framework entry-points or dynamically loaded, mark with # drift:ignore or add to exclude patterns."
           },
           "properties": {
-            "drift:findingId": "1bafadbafcee7e83"
+            "drift:findingId": "1bafadbafcee7e83",
+            "drift:language": "python"
           },
           "ruleId": "dead_code_accumulation"
         },
@@ -2206,7 +2257,8 @@
             "text": "2 potentially unused exports in formatting.py\nsrc\\myapp\\utils\\formatting.py exports 2/2 public symbols that are never imported elsewhere: format_currency, format_money. Dead code increases maintenance cost and confuses contributors.\nFIX: Review and remove 2 unused exports in formatting.py: format_currency, format_money. If they are framework entry-points or dynamically loaded, mark with # drift:ignore or add to exclude patterns."
           },
           "properties": {
-            "drift:findingId": "31af5ce25d1cbfaf"
+            "drift:findingId": "31af5ce25d1cbfaf",
+            "drift:language": "python"
           },
           "ruleId": "dead_code_accumulation"
         },
@@ -2235,7 +2287,38 @@
             "text": "2 potentially unused exports in naming.py\nsrc\\myapp\\utils\\naming.py exports 2/2 public symbols that are never imported elsewhere: validate_user_profile, ensure_database_connection. Dead code increases maintenance cost and confuses contributors.\nFIX: Review and remove 2 unused exports in naming.py: validate_user_profile, ensure_database_connection. If they are framework entry-points or dynamically loaded, mark with # drift:ignore or add to exclude patterns."
           },
           "properties": {
-            "drift:findingId": "ff34536027ff9602"
+            "drift:findingId": "ff34536027ff9602",
+            "drift:language": "python"
+          },
+          "ruleId": "dead_code_accumulation"
+        },
+        {
+          "level": "note",
+          "locations": [
+            {
+              "logicalLocations": [
+                {
+                  "fullyQualifiedName": "tests.test_api.test_user_creation",
+                  "kind": "function",
+                  "name": "test_user_creation"
+                }
+              ],
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "tests/test_api.py"
+                },
+                "region": {
+                  "startLine": 4
+                }
+              }
+            }
+          ],
+          "message": {
+            "text": "6 potentially unused exports in test_api.py\ntests\\test_api.py exports 6/6 public symbols that are never imported elsewhere: test_user_creation, test_order_processing, test_payment_success, test_shipping_calculation, test_inventory_check, test_refund_process. Dead code increases maintenance cost and confuses contributors.\nFIX: Review and remove 6 unused exports in test_api.py: test_user_creation, test_order_processing, test_payment_success, test_shipping_calculation, test_inventory_check, test_refund_process. If they are framework entry-points or dynamically loaded, mark with # drift:ignore or add to exclude patterns."
+          },
+          "properties": {
+            "drift:findingId": "a88fe6029a63a504",
+            "drift:language": "python"
           },
           "ruleId": "dead_code_accumulation"
         }
@@ -2248,6 +2331,10 @@
               "defaultConfiguration": {
                 "level": "error"
               },
+              "help": {
+                "markdown": "**Merge 'process_order' and 'process_order' (across src/myapp/service_a.py and src/myapp/service_b.py)**: These functions are 100% similar but in different files. Extract the common logic into a shared utility module, then have both call the shared version.",
+                "text": "These functions are 100% similar but in different files. Extract the common logic into a shared utility module, then have both call the shared version."
+              },
               "id": "mutant_duplicate",
               "shortDescription": {
                 "text": "mutant_duplicate"
@@ -2257,6 +2344,10 @@
               "defaultConfiguration": {
                 "level": "warning"
               },
+              "help": {
+                "markdown": "**Consolidate 2 pattern variants in src/myapp/models**: Found 2 variants of the same pattern. Adopt the canonical variant '{\"strategies\": [\"return_none\", \"return_value\"]}' across: src/myapp/models/core.py. Extract a shared helper function and replace inline implementations.",
+                "text": "Found 2 variants of the same pattern. Adopt the canonical variant '{\"strategies\": [\"return_none\", \"return_value\"]}' across: src/myapp/models/core.py. Extract a shared helper function and replace inline implementations."
+              },
               "id": "pattern_fragmentation",
               "shortDescription": {
                 "text": "pattern_fragmentation"
@@ -2265,6 +2356,10 @@
             {
               "defaultConfiguration": {
                 "level": "error"
+              },
+              "help": {
+                "markdown": "**Document 'transform_dataset'**: Add a docstring explaining what 'transform_dataset' does, its parameters, and return value. Add return type annotation. Consider splitting this function (complexity: 29) into smaller, well-named sub-functions.",
+                "text": "Add a docstring explaining what 'transform_dataset' does, its parameters, and return value. Add return type annotation. Consider splitting this function (complexity: 29) into smaller, well-named sub-functions."
               },
               "id": "explainability_deficit",
               "shortDescription": {

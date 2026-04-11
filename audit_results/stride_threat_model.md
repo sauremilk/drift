@@ -1,5 +1,20 @@
 # STRIDE Threat Model
 
+## 2026-04-11 - ADR-054: File-Discovery Manifest Cache (Hybrid Invalidation)
+
+- Scope: Additive ingestion performance path in [src/drift/ingestion/file_discovery.py](src/drift/ingestion/file_discovery.py). Discovery results can be loaded from `.drift-cache/file_discovery_manifest.json` when invalidation state matches.
+- Input path changes: Yes - new local cache input path. Discovery now reads a persisted JSON manifest from repository-local cache dir.
+- Output path changes: Yes - discovery now writes a manifest file with cache entries, invalidator metadata, and serialized file descriptors.
+- External interface changes: Additive only. Public discovery semantics and analyzer outputs remain unchanged.
+- Trust boundary: New local file trust boundary: drift process <-> repository-local cache artifact (`.drift-cache/file_discovery_manifest.json`).
+- STRIDE review:
+	- S (Spoofing): No identity/auth boundary change.
+	- T (Tampering): Low risk. Manifest may be modified manually or by tooling. Mitigation: strict schema/version checks, defensive deserialization, safe fallback to full re-scan on mismatch.
+	- R (Repudiation): Improved operational traceability via explicit invalidator metadata (`git_head` or `mtime`).
+	- I (Information Disclosure): Low risk. Manifest stores relative paths and file metadata already derivable from repository contents.
+	- D (Denial of Service): Low risk. Corrupt/oversized manifest could force cache misses. Mitigation: bounded entry count and resilient fallback path.
+	- E (Elevation of Privilege): No privilege change. Cache read/write uses the same filesystem permissions as the invoking user.
+
 ## 2026-06-15 — Phase 3: TypeScript Verständlichkeit & Einführbarkeit
 
 - Scope: Four additive changes for TypeScript support visibility: (1) `language` field on Finding model with auto-inference from file extension, (2) `skipped_languages` in JSON summary + new Rich warning panel, (3) `ts_enabled` parameter on `discover_files()` wired to `DriftConfig.languages.typescript`, (4) `LanguagesConfig` sub-model in config. No signal or scoring changes.

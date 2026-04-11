@@ -187,6 +187,9 @@ class TestIsBoolLikeReturnType:
     def test_nested_async_wrapper_bool_types(self):
         assert _is_bool_like_return_type("Promise<PromiseLike<boolean>>") is True
 
+    def test_ts_type_predicate_is_bool_like(self):
+        assert _is_bool_like_return_type("node is BrowserNode") is True
+
     def test_non_bool_wrapped_types(self):
         assert _is_bool_like_return_type("Promise<string>") is False
         assert _is_bool_like_return_type("Observable<number>") is False

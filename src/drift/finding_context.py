@@ -14,6 +14,8 @@ from functools import lru_cache
 from pathlib import Path
 from typing import TYPE_CHECKING
 
+from drift.ingestion.test_detection import classify_file_context
+
 if TYPE_CHECKING:
     from drift.config import DriftConfig
     from drift.models import Finding
@@ -81,6 +83,10 @@ def classify_path_context(path: Path | None, config: DriftConfig) -> str:
     """Return context class for a file path using configured glob rules."""
     if path is None:
         return config.finding_context.default_context
+
+    baseline_context = classify_file_context(path)
+    if baseline_context == "test":
+        return baseline_context
 
     posix = path.as_posix()
     for rule in _ordered_rules(config):

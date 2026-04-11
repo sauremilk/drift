@@ -17,6 +17,7 @@ from drift.cache import ParseCache, SignalCache
 from drift.cli import _machine_error_enabled
 from drift.config import DriftConfig
 from drift.models import (
+    FileHistory,
     Finding,
     FunctionInfo,
     ParseResult,
@@ -149,6 +150,45 @@ def test_signal_cache_evicts_old_signals(tmp_path: Path) -> None:
 
     SignalCache(tmp_path)
     assert not stale.exists()
+
+
+def test_signal_cache_content_hash_for_module_is_deterministic() -> None:
+    file_hashes = {
+        "src/a.py": "a" * 32,
+        "src/b.py": "b" * 32,
+    }
+    parse_results = [
+        ParseResult(file_path=Path("src/b.py"), language="python"),
+        ParseResult(file_path=Path("src/a.py"), language="python"),
+    ]
+
+    h1 = SignalCache.content_hash_for_module(parse_results, file_hashes)
+    h2 = SignalCache.content_hash_for_module(list(reversed(parse_results)), file_hashes)
+    assert h1 == h2
+
+
+def test_signal_cache_git_state_fingerprint_changes_with_commit_hash() -> None:
+    class _Commit:
+        def __init__(self, h: str) -> None:
+            self.hash = h
+
+    histories = {"src/a.py": FileHistory(path=Path("src/a.py"), total_commits=1)}
+    fp1 = SignalCache.git_state_fingerprint([_Commit("h1")], histories)
+    fp2 = SignalCache.git_state_fingerprint([_Commit("h2")], histories)
+    assert fp1 != fp2
+
+
+def test_signal_cache_git_state_fingerprint_changes_with_history() -> None:
+    class _Commit:
+        def __init__(self, h: str) -> None:
+            self.hash = h
+
+    commits = [_Commit("h1")]
+    h1 = {"src/a.py": FileHistory(path=Path("src/a.py"), total_commits=1)}
+    h2 = {"src/a.py": FileHistory(path=Path("src/a.py"), total_commits=2)}
+    fp1 = SignalCache.git_state_fingerprint(commits, h1)
+    fp2 = SignalCache.git_state_fingerprint(commits, h2)
+    assert fp1 != fp2
 
 
 # ── mutant_duplicates: early return with < 2 qualifying functions ─────────────

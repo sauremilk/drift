@@ -1,5 +1,63 @@
 # Risk Register
 
+## 2026-04-11 - Issue #219: NBV TS style-only naming checks removed + duplicate findings eliminated
+
+- Risk ID: RISK-SIGNAL-2026-04-11-219
+- Component: `src/drift/signals/naming_contract_violation.py`, `tests/test_ts_naming_consistency.py`
+- Type: Signal behavior change (precision hardening)
+- Description: NBV no longer reports TypeScript interface I-prefix convention and mixed generic parameter naming as drift findings. Additionally, duplicated TS naming blocks in NBV were consolidated, removing duplicate findings emitted for the same file/pattern.
+- Trigger: `drift analyze` on TS-heavy repositories with mixed `T`/`TName` generic naming or repository-specific interface naming conventions (`I*` vs no-prefix).
+- Impact: High-positive. Reduces style-driven false positives and removes duplicate low-severity noise, improving NBV credibility and actionability.
+- Mitigation:
+  - Removed TS style-only NBV sub-checks for interface prefix and generic naming mix.
+  - Kept architecture-relevant enum casing consistency check.
+  - Added regressions asserting no I-prefix/generic-style findings and exactly one enum-casing finding (duplicate guard).
+- Residual risk: Low-Medium. Teams that intentionally want strict naming-style enforcement no longer receive these NBV findings; this is accepted because the checks are stylistic, not architectural.
+
+## 2026-04-11 - Issue #215: NBV TS is*/has* bool-return extraction and fallback hardening
+
+- Risk ID: RISK-SIGNAL-2026-04-11-215
+- Component: `src/drift/ingestion/ts_parser.py`, `src/drift/signals/naming_contract_violation.py`, `tests/test_typescript_parser.py`, `tests/test_naming_contract_violation.py`
+- Type: Signal behavior change (precision hardening)
+- Description: NBV now extracts TypeScript return types from typed-arrow declarators (`const isX: (...) => boolean = ...`) and treats TS type-predicate annotations (`x is Foo`) as bool-compatible. If return annotations are absent, NBV uses bounded expression heuristics (`!`, comparisons, `instanceof`, `in`, `Boolean(...)`) for bool-return inference.
+- Trigger: `drift analyze` on TS-heavy repositories with `is*`/`has*` helpers where parser metadata previously exposed `return_type: N/A`.
+- Impact: High-positive. Expected strong false-positive reduction for NBV naming checks without weakening strict non-bool controls.
+- Mitigation:
+  - Added `_extract_ts_return_type()` in TS parser with declarator type fallback.
+  - Extended `_is_bool_like_return_type()` for TS type predicates.
+  - Hardened `_ts_has_bool_return()` with conservative bool-expression checks for unannotated returns.
+  - Added regressions for typed-arrow, type-predicate, and comparison-return scenarios.
+- Residual risk: Low-Medium. Some edge-case expressions with implicit truthy/falsy semantics remain intentionally strict to avoid new false negatives.
+
+## 2026-04-11 - Issue #214: NBV TS/JS ensure_* side-effect false positives
+
+- Risk ID: RISK-SIGNAL-2026-04-11-214
+- Component: `src/drift/signals/naming_contract_violation.py`, `tests/test_naming_contract_violation.py`
+- Type: Signal behavior change (precision hardening)
+- Description: NBV for TS/JS `ensure_*` now accepts idempotent ensure-by-side-effect contracts in addition to throw/value-return contracts. Covered side-effects include stateful assignments (`obj.key = ...`, `obj[key] ??= ...`) and common mutating initialization calls (`mkdir*`, `set`, `register`, `push`, `attachShadow`, `initialize`).
+- Trigger: `drift analyze` on TS/JS repositories with initialization helpers that intentionally return `void`.
+- Impact: Medium-positive. Reduces high-volume false positives in bootstrap/init code and improves NBV credibility.
+- Mitigation:
+  - Added `_ts_has_idempotent_side_effect()` and integrated it into `_ts_has_ensure_contract()`.
+  - Added three positive regression tests for mkdir/property-assignment/registry-set ensure patterns.
+  - Preserved strict negative control for no-op ensure functions without throw, return-value, or side-effects.
+- Residual risk: Low. Some edge-case mutating call names may still be missed or overly accepted; bounded by explicit markers and regression coverage.
+
+## 2026-04-11 - Issue #218: Zentralisierte Testdatei-Erkennung und finding_context-Angleichung
+
+- Risk ID: RISK-SIGNAL-2026-04-11-218
+- Component: `src/drift/ingestion/test_detection.py`, `src/drift/finding_context.py`, `src/drift/models.py`, `src/drift/signals/type_safety_bypass.py`, `src/drift/signals/missing_authorization.py`, `src/drift/signals/dead_code_accumulation.py`, `src/drift/signals/co_change_coupling.py`, `src/drift/signals/explainability_deficit.py`
+- Type: Signal precision hardening (kontextbasierte Testdatei-Behandlung)
+- Description: Test-/Generated-Kontext wird zentral klassifiziert und über `finding_context` standardisiert propagiert. Betroffene Signale nutzen einheitliches Verhalten via `test_file_handling` (`exclude` oder `reduce_severity`) statt uneinheitlicher lokaler Pfadregeln.
+- Trigger: `drift analyze` auf Repositories mit hohem Anteil an Testdateien, Specs oder Mock-Code.
+- Impact: Medium-positive. Reduziert FP-Volumen in Testkontexten und erhöht Vergleichbarkeit der Befunde über Signale hinweg.
+- Mitigation:
+  - Zentrale Pfadklassifizierung in `ingestion/test_detection.py`.
+  - Einheitliche Kontexteinordnung über `classify_file_context` und `Finding.finding_context`.
+  - Signal-spezifische Standardstrategie beibehalten (`TSB/MAZ` eher `exclude`, `DCA/CCC/EDS` eher `reduce_severity`).
+  - Regressions- und Verhaltenstests für alle angepassten Signale ergänzt.
+- Residual risk: Low-Medium. Falschklassifizierung in Randfällen (insbesondere projektspezifische Testpfade) bleibt möglich, ist aber per Konfigurations-Override begrenzbar.
+
 ## 2026-04-11 - Issue #213: MAZ unknown-framework false-positive suppression
 
 - Risk ID: RISK-SIGNAL-2026-04-11-213

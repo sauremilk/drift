@@ -201,3 +201,28 @@ class TestTypeSafetyBypassSignal:
         signal = TypeSafetyBypassSignal()
         findings = signal.analyze([pr], {}, DriftConfig())
         assert findings == []
+
+    def test_test_files_can_be_included_with_reduced_severity(self, tmp_path: Path) -> None:
+        from drift.config import DriftConfig
+        from drift.models import ParseResult, Severity
+        from drift.signals.type_safety_bypass import TypeSafetyBypassSignal
+
+        file_path = tmp_path / "src" / "demo.test.ts"
+        file_path.parent.mkdir(parents=True, exist_ok=True)
+        file_path.write_text("const x = JSON.parse(data) as any;", encoding="utf-8")
+
+        pr = ParseResult(
+            file_path=file_path,
+            language="typescript",
+            functions=[],
+            classes=[],
+            imports=[],
+            patterns=[],
+            line_count=1,
+        )
+
+        cfg = DriftConfig(test_file_handling="reduce_severity")
+        findings = TypeSafetyBypassSignal().analyze([pr], {}, cfg)
+        assert len(findings) == 1
+        assert findings[0].severity == Severity.LOW
+        assert findings[0].metadata.get("finding_context") == "test"

@@ -3,11 +3,31 @@
 from __future__ import annotations
 
 import fnmatch
+import hashlib
+import json
 import logging
+import os
+import subprocess
+import tempfile
+import time
 from functools import lru_cache
-from pathlib import Path
+from pathlib import Path, PurePosixPath
+from threading import Lock
+from typing import Any
 
 from drift.models import FileInfo
+
+
+def _matches_include_patterns(path_str: str, include_patterns: list[str]) -> bool:
+    posix_path = PurePosixPath(path_str)
+    for pattern in include_patterns:
+        norm = pattern.replace("\\", "/")
+        if posix_path.match(norm):
+            return True
+        if norm.startswith("**/") and posix_path.match(norm[3:]):
+            return True
+    return False
+
 
 logger = logging.getLogger("drift")
 
@@ -20,6 +40,13 @@ LANGUAGE_MAP: dict[str, str] = {
 }
 
 SUPPORTED_LANGUAGES = {"python"}
+
+_DISCOVERY_MANIFEST_VERSION = 1
+_DISCOVERY_MANIFEST_FILE = "file_discovery_manifest.json"
+_DISCOVERY_MANIFEST_MAX_ENTRIES = 16
+_GIT_HEAD_TTL_SECONDS = 5.0
+_GIT_HEAD_CACHE_LOCK = Lock()
+_GIT_HEAD_CACHE: dict[str, tuple[float, str | None]] = {}
 
 
 def _detect_supported_languages() -> set[str]:
@@ -92,6 +119,172 @@ def _matches_any(path_str: str, patterns: list[str]) -> bool:
     return _matches_any_prepared(path_str, prepared)
 
 
+def _manifest_path(repo_path: Path, cache_dir: str) -> Path:
+    return repo_path / cache_dir / _DISCOVERY_MANIFEST_FILE
+
+
+def _load_discovery_manifest(path: Path) -> dict[str, Any]:
+    try:
+        raw = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return {
+            "version": _DISCOVERY_MANIFEST_VERSION,
+            "entries": {},
+        }
+    if not isinstance(raw, dict):
+        return {"version": _DISCOVERY_MANIFEST_VERSION, "entries": {}}
+    if raw.get("version") != _DISCOVERY_MANIFEST_VERSION:
+        return {"version": _DISCOVERY_MANIFEST_VERSION, "entries": {}}
+    entries = raw.get("entries")
+    if not isinstance(entries, dict):
+        return {"version": _DISCOVERY_MANIFEST_VERSION, "entries": {}}
+    return {
+        "version": _DISCOVERY_MANIFEST_VERSION,
+        "entries": entries,
+    }
+
+
+def _store_discovery_manifest(path: Path, manifest: dict[str, Any]) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    # Atomic replace keeps manifest reads consistent across interrupted writes.
+    fd, tmp_name = tempfile.mkstemp(
+        prefix=".discovery-manifest-",
+        suffix=".json",
+        dir=path.parent,
+        text=True,
+    )
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8") as handle:
+            json.dump(manifest, handle, ensure_ascii=True, separators=(",", ":"))
+        Path(tmp_name).replace(path)
+    finally:
+        tmp_path = Path(tmp_name)
+        if tmp_path.exists():
+            tmp_path.unlink(missing_ok=True)
+
+
+def _current_git_head(repo_path: Path) -> str | None:
+    posix_key = repo_path.resolve().as_posix()
+    now = time.monotonic()
+    with _GIT_HEAD_CACHE_LOCK:
+        cached = _GIT_HEAD_CACHE.get(posix_key)
+        if cached is not None and (now - cached[0]) < _GIT_HEAD_TTL_SECONDS:
+            return cached[1]
+
+    try:
+        result = subprocess.run(
+            ["git", "-C", str(repo_path), "rev-parse", "HEAD"],
+            capture_output=True,
+            check=True,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+            stdin=subprocess.DEVNULL,
+            timeout=5,
+        )
+    except (
+        FileNotFoundError,
+        subprocess.CalledProcessError,
+        subprocess.TimeoutExpired,
+    ):
+        head = None
+    else:
+        head = result.stdout.strip() or None
+
+    with _GIT_HEAD_CACHE_LOCK:
+        _GIT_HEAD_CACHE[posix_key] = (now, head)
+    return head
+
+
+def _mtime_fingerprint(
+    repo_path: Path,
+    include_patterns: list[str],
+    prepared_exclude: tuple[PreparedPattern, ...],
+    supported_languages: set[str],
+) -> str:
+    max_mtime_ns = 0
+    candidate_count = 0
+    for root, dirs, files in os.walk(repo_path):
+        root_path = Path(root)
+        rel_root = root_path.relative_to(repo_path).as_posix()
+        pruned_dirs: list[str] = []
+        for d in dirs:
+            rel_dir = f"{rel_root}/{d}" if rel_root != "." else d
+            if _matches_any_prepared(rel_dir, prepared_exclude):
+                continue
+            pruned_dirs.append(d)
+        dirs[:] = pruned_dirs
+
+        for file_name in files:
+            file_path = root_path / file_name
+            rel = file_path.relative_to(repo_path).as_posix()
+            if _matches_any_prepared(rel, prepared_exclude):
+                continue
+            if not _matches_include_patterns(rel, include_patterns):
+                continue
+            lang = detect_language(file_path)
+            if lang is None or lang not in supported_languages:
+                continue
+            try:
+                mtime_ns = os.stat(file_path, follow_symlinks=False).st_mtime_ns
+            except OSError:
+                continue
+            candidate_count += 1
+            if mtime_ns > max_mtime_ns:
+                max_mtime_ns = mtime_ns
+    return f"mtime:{candidate_count}:{max_mtime_ns}"
+
+
+def _cache_key(
+    repo_path: Path,
+    include_patterns: list[str],
+    exclude_patterns: list[str],
+    max_files: int | None,
+    ts_enabled: bool,
+    supported_languages: set[str],
+) -> str:
+    payload = {
+        "repo": repo_path.resolve().as_posix(),
+        "include": include_patterns,
+        "exclude": exclude_patterns,
+        "max_files": max_files,
+        "ts_enabled": ts_enabled,
+        "supported": sorted(supported_languages),
+        "version": _DISCOVERY_MANIFEST_VERSION,
+    }
+    encoded = json.dumps(payload, sort_keys=True, separators=(",", ":")).encode("utf-8")
+    return hashlib.sha256(encoded).hexdigest()
+
+
+def _deserialize_files(items: list[dict[str, Any]]) -> list[FileInfo]:
+    out: list[FileInfo] = []
+    for item in items:
+        try:
+            out.append(
+                FileInfo(
+                    path=Path(item["path"]),
+                    language=str(item["language"]),
+                    size_bytes=int(item["size_bytes"]),
+                    line_count=int(item["line_count"]),
+                )
+            )
+        except (KeyError, TypeError, ValueError):
+            continue
+    return out
+
+
+def _serialize_files(files: list[FileInfo]) -> list[dict[str, Any]]:
+    return [
+        {
+            "path": file.path.as_posix(),
+            "language": file.language,
+            "size_bytes": file.size_bytes,
+            "line_count": file.line_count,
+        }
+        for file in files
+    ]
+
+
 def discover_files(
     repo_path: Path,
     include: list[str] | None = None,
@@ -99,6 +292,7 @@ def discover_files(
     max_files: int | None = None,
     skipped_out: dict[str, int] | None = None,
     ts_enabled: bool = True,
+    cache_dir: str = ".drift-cache",
 ) -> list[FileInfo]:
     """Walk the repo and return all source files matching include/exclude patterns.
 
@@ -143,8 +337,43 @@ def discover_files(
     prepared_exclude = _prepare_patterns(tuple(exclude))
     include_patterns = list(dict.fromkeys(include))
 
-    files: list[FileInfo] = []
     repo_path = repo_path.resolve()
+
+    cache_key = _cache_key(
+        repo_path,
+        include_patterns,
+        exclude,
+        max_files,
+        ts_enabled,
+        supported,
+    )
+    invalidator_type = "git_head"
+    invalidator_value = _current_git_head(repo_path)
+    if invalidator_value is None:
+        invalidator_type = "mtime"
+        invalidator_value = _mtime_fingerprint(
+            repo_path,
+            include_patterns,
+            prepared_exclude,
+            supported,
+        )
+
+    manifest_file = _manifest_path(repo_path, cache_dir)
+    manifest = _load_discovery_manifest(manifest_file)
+    entry = manifest.get("entries", {}).get(cache_key)
+    if isinstance(entry, dict):
+        entry_invalidator = entry.get("invalidator")
+        if (
+            isinstance(entry_invalidator, dict)
+            and entry_invalidator.get("type") == invalidator_type
+            and entry_invalidator.get("value") == invalidator_value
+        ):
+            cached_items = entry.get("files")
+            if isinstance(cached_items, list):
+                cached_files = _deserialize_files(cached_items)
+                return cached_files
+
+    files: list[FileInfo] = []
 
     # Max file size to analyse (5 MB) — skip generated/vendored giants
     max_bytes = 5 * 1024 * 1024
@@ -228,4 +457,34 @@ def discover_files(
         if skipped_out is not None:
             skipped_out.update(skipped_langs)
 
-    return sorted(files, key=lambda f: f.path.as_posix())
+    files = sorted(files, key=lambda f: f.path.as_posix())
+
+    entries = manifest.setdefault("entries", {})
+    if isinstance(entries, dict):
+        entries[cache_key] = {
+            "created_at": int(time.time()),
+            "invalidator": {
+                "type": invalidator_type,
+                "value": invalidator_value,
+            },
+            "files": _serialize_files(files),
+        }
+        if len(entries) > _DISCOVERY_MANIFEST_MAX_ENTRIES:
+            sorted_items = sorted(
+                entries.items(),
+                key=lambda item: (
+                    int(item[1].get("created_at", 0))
+                    if isinstance(item[1], dict)
+                    else 0
+                ),
+                reverse=True,
+            )
+            manifest["entries"] = {
+                key: value for key, value in sorted_items[:_DISCOVERY_MANIFEST_MAX_ENTRIES]
+            }
+        try:
+            _store_discovery_manifest(manifest_file, manifest)
+        except OSError:
+            logger.debug("Unable to persist discovery manifest: %s", manifest_file)
+
+    return files

@@ -1,5 +1,34 @@
 # FMEA Matrix
 
+## 2026-04-11 - Issue #219: NBV TS style-check FP and duplicate finding reduction
+
+| Signal | Failure Mode | Cause | Effect | Detection | Mitigation | S | O | D | RPN | Status |
+|---|---|---|---|---|---|---:|---:|---:|---:|---|
+| NBV | FP: TypeScript style conventions reported as drift (`I*` interfaces, mixed `T`/`TName` generics) | Style-oriented TS naming heuristics treated as architecture contract violations | High low-value noise and reduced trust in NBV findings | Regression updates in `tests/test_ts_naming_consistency.py` (`test_dominant_i_prefix_does_not_flag_outliers`, `test_mixed_generics_not_flagged`) | Remove style-only TS naming checks from NBV and keep architecture-relevant checks only | 7 | 8 | 2 | 112 | Mitigated |
+| NBV | FP amplification: duplicate findings for same TS pattern/file | Duplicated TS naming-check blocks in NBV analyze path emitted findings twice | Inflated finding counts, triage fatigue, misleading severity distribution | Regression hardening in `tests/test_ts_naming_consistency.py` (`test_mixed_enum_casing_flagged` now expects exactly one finding) | Consolidate TS naming check path to one block | 6 | 7 | 2 | 84 | Mitigated |
+
+## 2026-04-11 - Issue #215: NBV TS is*/has* bool-return extraction + fallback heuristics
+
+| Signal | Failure Mode | Cause | Effect | Detection | Mitigation | S | O | D | RPN | Status |
+|---|---|---|---|---|---|---:|---:|---:|---:|---|
+| NBV | FP: `is*`/`has*` TS functions flagged despite boolean contract | Parser missed return type from typed-arrow declarators and type predicates; metadata frequently `return_type: N/A` | High FP volume and reduced trust/actionability for NBV | Added parser + signal regressions (`test_extract_return_type_from_typed_arrow_declarator`, `test_type_predicate_return_type_no_finding`, `test_typed_arrow_declarator_return_type_no_finding`) | Add declarator-aware return type extraction and treat TS type-predicate annotations as bool-compatible | 8 | 8 | 3 | 192 | Mitigated |
+| NBV | FN: fallback heuristic may over-accept non-bool return semantics | Relaxed fallback could infer bool from broad expression classes | Potential under-reporting of naming violations in edge cases | Negative controls keep non-bool wrappers and bare returns flagged; helper-level tests for bool-like classification | Keep heuristic bounded to explicit bool-indicator expressions (`!`, comparisons, `instanceof`, `in`, `Boolean(...)`) and avoid generic truthy/falsy acceptance | 5 | 3 | 4 | 60 | Mitigated |
+
+## 2026-04-11 - Issue #218: Zentralisierte Testdatei-Erkennung und finding_context-Angleichung
+
+| Signal | Failure Mode | Cause | Effect | Detection | Mitigation | S | O | D | RPN | Status |
+|---|---|---|---|---|---|---:|---:|---:|---:|---|
+| TSB/MAZ/DCA/CCC/EDS | FP: Testcode wird als Produktionsdrift priorisiert | Heterogene lokale Testpfadregeln und fehlende gemeinsame Kontextnormalisierung | Hohe Triage-Last, sinkende Actionability | Neue Regressionstests in `tests/test_*` inkl. Kontext-Assertions (`finding_context == test`) | Zentrale `classify_file_context`-Nutzung + einheitliche `test_file_handling`-Strategie pro Signal | 6 | 7 | 3 | 126 | Mitigated |
+| TSB/MAZ/DCA/CCC/EDS | FN: Reale Produktionsbefunde werden unterdrückt | Zu breite Testpfadklassifizierung (z. B. Fixture-/Sample-Pfade) | Unterberichtung in produktionsnahen Dateipfaden | Fixture-Regressionsfälle (u. a. `tests/fixtures/...`) in Zieltestsuite | Fixture-Ausnahme in zentraler Erkennung + konfigurierbarer globaler Override | 5 | 3 | 4 | 60 | Mitigated |
+| ALL | Inconsistency: Kontext nur in `metadata`, nicht im Top-Level-Feld | Uneinheitliche Model-Nutzung in Signalimplementierungen | Erschwerte Downstream-Auswertung (JSON/SARIF/Tooling) | Modelltests + neue signalnahe Assertions auf `finding_context` | `Finding.finding_context` eingeführt und mit `metadata['finding_context']` synchronisiert | 4 | 4 | 3 | 48 | Mitigated |
+
+## 2026-04-11 - Issue #214: NBV TS/JS ensure_* side-effect FP reduction
+
+| Signal | Failure Mode | Cause | Effect | Detection | Mitigation | S | O | D | RPN | Status |
+|---|---|---|---|---|---|---:|---:|---:|---:|---|
+| NBV | FP: TS/JS `ensure_*` idempotent init helpers flagged as violations | TS ensure contract recognized only `throw` or value-returning `return`; common ensure-by-side-effect (`mkdir`, `set`, property assignment) remained unrecognized | High FP clusters in initialization/bootstrap code, lower signal trust and actionability | Added regressions in `tests/test_naming_contract_violation.py` (`test_ensure_idempotent_mkdir_side_effect_no_finding`, `test_ensure_property_assignment_side_effect_no_finding`, `test_ensure_registry_set_side_effect_no_finding`) | Extend `_ts_has_ensure_contract()` to accept idempotent side-effect patterns while keeping no-op `ensure_*` functions (no throw/value/side-effect) reportable | 7 | 7 | 3 | 147 | Mitigated |
+| NBV | FN: relaxed side-effect acceptance may over-accept weak `ensure_*` functions | Heuristic could classify broad mutation-like calls as contract fulfillment in edge cases | Potential under-reporting for truly weak ensure contracts | Existing negative control `test_ensure_without_throw_or_return_value_is_flagged` remains; requires explicit side-effect shape | Keep acceptance bounded to explicit assignment/update/mutating-call indicators and preserve strict no-op rejection path | 4 | 3 | 4 | 48 | Mitigated |
+
 ## 2026-04-11 - Issue #213: MAZ unknown-framework false-positive suppression
 
 | Signal | Failure Mode | Cause | Effect | Detection | Mitigation | S | O | D | RPN | Status |

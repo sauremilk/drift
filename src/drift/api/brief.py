@@ -133,6 +133,161 @@ def _brief_next_step_contract(risk_level: str) -> dict[str, Any]:
     )
 
 
+def _build_brief_result(
+    *,
+    task: str,
+    scope: Any,
+    expanded_paths: list[str],
+    analysis: Any,
+    scoped_findings: list[Finding],
+    cfg: Any,
+    signals: list[str] | None,
+    max_guardrails: int,
+    repo_path: Path,
+    elapsed_ms_value: int,
+) -> dict[str, Any]:
+    """Build brief response payload from already prepared analysis artifacts."""
+    from drift.guardrails import generate_guardrails, guardrails_to_prompt_block
+    from drift.models import Severity
+
+    scope_risk = _compute_scope_risk(scoped_findings, cfg)
+    level = _risk_level(scope_risk, scoped_findings)
+    reason = _risk_reason(scoped_findings, level)
+
+    blocking_signals = sorted({
+        signal_abbrev(f.signal_type)
+        for f in scoped_findings
+        if f.severity in (Severity.CRITICAL, Severity.HIGH)
+    })
+
+    guardrails = generate_guardrails(
+        scoped_findings,
+        max_guardrails=max_guardrails,
+    )
+    prompt_block = guardrails_to_prompt_block(guardrails)
+
+    top_sigs = _top_signals(
+        analysis,
+        signal_filter=set(s.upper() for s in signals) if signals else None,
+        config=cfg,
+    )
+
+    result = _base_response(
+        type="brief",
+        task=task,
+        scope={
+            "resolved_paths": scope.paths,
+            "expanded_dependency_paths": expanded_paths,
+            "resolution_method": scope.method,
+            "file_count": scope.file_count,
+            "function_count": scope.function_count,
+            "confidence": round(scope.confidence, 2),
+            "matched_tokens": scope.matched_tokens,
+        },
+        risk={
+            "level": level,
+            "score": round(scope_risk, 3),
+            "reason": reason,
+            "blocking_signals": blocking_signals,
+        },
+        landscape={
+            "drift_score": round(analysis.drift_score, 3),
+            "drift_score_scope": build_drift_score_scope(
+                context="brief",
+                path=scope.paths[0] if scope.paths else None,
+                signal_scope=(
+                    signal_scope_label(selected=signals)
+                    if signals
+                    else "pre-task-default"
+                ),
+            ),
+            "severity": analysis.severity.value,
+            "top_signals": top_sigs,
+            "finding_count": len(scoped_findings),
+        },
+        guardrails=[g.to_dict() for g in guardrails],
+        guardrails_prompt_block=prompt_block,
+        recommended_next=["drift diff --uncommitted", "drift nudge"],
+        meta={
+            "analysis_duration_ms": elapsed_ms_value,
+            "signals_evaluated": len(top_sigs),
+            "repo_path": str(repo_path),
+        },
+    )
+    result.update(_brief_next_step_contract(level))
+    return result
+
+
+def brief_from_analysis(
+    *,
+    path: str | Path,
+    task: str,
+    analysis: Any,
+    cfg: Any,
+    scope_override: str | None = None,
+    signals: list[str] | None = None,
+    max_guardrails: int = 10,
+    include_non_operational: bool = False,
+) -> dict[str, Any]:
+    """Build a brief response from an already computed RepoAnalysis."""
+    from drift.scope_resolver import expand_scope_imports, resolve_scope
+
+    repo_path = Path(path).resolve()
+    layer_names = None
+    if hasattr(cfg, "policy") and hasattr(cfg.policy, "layer_boundaries"):
+        layer_names = [lb.name for lb in cfg.policy.layer_boundaries]
+
+    scope_aliases: dict[str, str] | None = None
+    if hasattr(cfg, "brief") and cfg.brief.scope_aliases:
+        scope_aliases = cfg.brief.scope_aliases
+
+    scope = resolve_scope(
+        task,
+        repo_path,
+        scope_override=scope_override,
+        layer_names=layer_names,
+        scope_aliases=scope_aliases,
+    )
+
+    expanded_paths = expand_scope_imports(scope, repo_path)
+    all_scope_paths = scope.paths + expanded_paths
+
+    scoped_findings = analysis.findings
+    if all_scope_paths:
+        def _in_scope(f: Finding) -> bool:
+            if not f.file_path:
+                return True
+            fp = f.file_path.as_posix().strip("/")
+            return any(
+                fp == p or fp.startswith(p + "/") or p.startswith(fp + "/")
+                for p in all_scope_paths
+            )
+
+        scoped_findings = [f for f in analysis.findings if _in_scope(f)]
+
+    if not include_non_operational:
+        op, _non_op, _ctx_counts = split_findings_by_context(
+            scoped_findings, cfg, include_non_operational=False,
+        )
+        scoped_findings = op
+
+    scope.file_count = analysis.total_files
+    scope.function_count = analysis.total_functions
+
+    return _build_brief_result(
+        task=task,
+        scope=scope,
+        expanded_paths=expanded_paths,
+        analysis=analysis,
+        scoped_findings=scoped_findings,
+        cfg=cfg,
+        signals=signals,
+        max_guardrails=max_guardrails,
+        repo_path=repo_path,
+        elapsed_ms_value=0,
+    )
+
+
 def brief(
     path: str | Path = ".",
     *,
@@ -168,8 +323,6 @@ def brief(
     """
     from drift.analyzer import analyze_repo
     from drift.config import apply_signal_filter, resolve_signal_names
-    from drift.guardrails import generate_guardrails, guardrails_to_prompt_block
-    from drift.models import Severity
     from drift.scope_resolver import expand_scope_imports, resolve_scope
     from drift.telemetry import timed_call
 
@@ -258,76 +411,18 @@ def brief(
         scope.file_count = analysis.total_files
         scope.function_count = analysis.total_functions
 
-        # --- Risk calculation ------------------------------------------------
-        scope_risk = _compute_scope_risk(scoped_findings, cfg)
-        level = _risk_level(scope_risk, scoped_findings)
-        reason = _risk_reason(scoped_findings, level)
-
-        # Find blocking signals
-        blocking_signals = sorted({
-            signal_abbrev(f.signal_type)
-            for f in scoped_findings
-            if f.severity in (Severity.CRITICAL, Severity.HIGH)
-        })
-
-        # --- Guardrails ------------------------------------------------------
-        guardrails = generate_guardrails(
-            scoped_findings,
-            max_guardrails=max_guardrails,
-        )
-        prompt_block = guardrails_to_prompt_block(guardrails)
-
-        # --- Top signals (scoped) --------------------------------------------
-        top_sigs = _top_signals(
-            analysis,
-            signal_filter=set(s.upper() for s in signals) if signals else None,
-            config=cfg,
-        )
-
-        # --- Build response --------------------------------------------------
-        result = _base_response(
-            type="brief",
+        result = _build_brief_result(
             task=task,
-            scope={
-                "resolved_paths": scope.paths,
-                "expanded_dependency_paths": expanded_paths,
-                "resolution_method": scope.method,
-                "file_count": scope.file_count,
-                "function_count": scope.function_count,
-                "confidence": round(scope.confidence, 2),
-                "matched_tokens": scope.matched_tokens,
-            },
-            risk={
-                "level": level,
-                "score": round(scope_risk, 3),
-                "reason": reason,
-                "blocking_signals": blocking_signals,
-            },
-            landscape={
-                "drift_score": round(analysis.drift_score, 3),
-                "drift_score_scope": build_drift_score_scope(
-                    context="brief",
-                    path=scope.paths[0] if scope.paths else None,
-                    signal_scope=(
-                        signal_scope_label(selected=signals)
-                        if signals
-                        else "pre-task-default"
-                    ),
-                ),
-                "severity": analysis.severity.value,
-                "top_signals": top_sigs,
-                "finding_count": len(scoped_findings),
-            },
-            guardrails=[g.to_dict() for g in guardrails],
-            guardrails_prompt_block=prompt_block,
-            recommended_next=["drift diff --uncommitted", "drift nudge"],
-            meta={
-                "analysis_duration_ms": round(elapsed_ms() * 1.0, 0),
-                "signals_evaluated": len(top_sigs),
-                "repo_path": str(repo_path),
-            },
+            scope=scope,
+            expanded_paths=expanded_paths,
+            analysis=analysis,
+            scoped_findings=scoped_findings,
+            cfg=cfg,
+            signals=signals,
+            max_guardrails=max_guardrails,
+            repo_path=repo_path,
+            elapsed_ms_value=int(round(elapsed_ms() * 1.0, 0)),
         )
-        result.update(_brief_next_step_contract(level))
 
         _emit_api_telemetry(
             tool_name="api.brief",

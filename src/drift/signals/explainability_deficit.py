@@ -8,6 +8,7 @@ AI-attributed, indicating "accepted without understanding."
 from __future__ import annotations
 
 from drift.config import DriftConfig
+from drift.ingestion.test_detection import classify_file_context
 from drift.models import (
     FileHistory,
     Finding,
@@ -136,15 +137,12 @@ class ExplainabilityDeficitSignal(BaseSignal):
             min_func_loc = config.thresholds.min_function_loc
 
         findings: list[Finding] = []
+        handling = config.test_file_handling or "reduce_severity"
 
         for _key, func in all_functions.items():
             # Skip test files and trivial functions
-            file_posix = func.file_path.as_posix().lower()
-            if (
-                "test" in file_posix
-                or file_posix.endswith(".spec.ts")
-                or file_posix.endswith(".spec.tsx")
-            ):
+            path_context = classify_file_context(func.file_path)
+            if path_context == "test" and handling == "exclude":
                 continue
             # Primary gate: cyclomatic complexity (better proxy for
             # "needs explanation" than raw LOC)
@@ -178,6 +176,8 @@ class ExplainabilityDeficitSignal(BaseSignal):
             visibility_factor = 0.7 if is_private else 1.0
             # Combine complexity-weighted deficit with LOC and visibility.
             weighted_score = weighted_score * (0.7 + 0.3 * loc_factor) * visibility_factor
+            if path_context == "test" and handling == "reduce_severity":
+                weighted_score *= 0.5
 
             # Check AI attribution and defect correlation for this file (ADR-048)
             fpath_str = func.file_path.as_posix()
@@ -199,6 +199,9 @@ class ExplainabilityDeficitSignal(BaseSignal):
             elif weighted_score >= 0.5:
                 severity = Severity.MEDIUM
             elif weighted_score >= 0.3:
+                severity = Severity.LOW
+
+            if path_context == "test" and handling == "reduce_severity":
                 severity = Severity.LOW
 
             desc_parts = [
@@ -249,7 +252,9 @@ class ExplainabilityDeficitSignal(BaseSignal):
                         "has_test": has_test,
                         "has_return_type": func.return_type is not None,
                         "explanation_score": round(explanation, 3),
+                        "finding_context": path_context,
                     },
+                    finding_context=path_context,
                 )
             )
 

@@ -68,6 +68,7 @@ def status(
         headline_for_status,
         is_calibrated,
         plain_text_for_signal,
+        profile_score_context,
         severity_label,
     )
     from drift.output.prompt_generator import generate_agent_prompt
@@ -82,7 +83,7 @@ def status(
         prof = get_profile("vibe-coding")
 
     thresholds = prof.guided_thresholds if prof.guided_thresholds else None
-    language = cfg.language or prof.output_language or "de"
+    language = cfg.language or prof.output_language or "en"
 
     # --- Run analysis (reuses existing engine) ---
     analysis = analyze_repo(
@@ -94,7 +95,7 @@ def status(
 
     # --- Compute traffic light ---
     light = determine_status(analysis, thresholds)
-    headline = headline_for_status(light)
+    headline = headline_for_status(light, language)
     emoji = emoji_for_status(light)
     continue_flag = can_continue(light)
 
@@ -119,6 +120,12 @@ def status(
     # --- Rich terminal output ---
     console.print()
     console.print(f"  {emoji}  {headline}", style="bold")
+    score_ctx = profile_score_context(profile, language)
+    score_line = (
+        f"  Score: [bold]{analysis.drift_score:.2f}[/bold]"
+        + (f"  [dim]{score_ctx}[/dim]" if score_ctx else "")
+    )
+    console.print(score_line)
     console.print(f"  {first_run['why_this_matters']}", style="dim")
     console.print()
 
@@ -135,8 +142,8 @@ def status(
         console.print(f"  Top {len(top_findings)} issues:", style="bold")
         console.print()
         for i, f in enumerate(top_findings, 1):
-            sev = severity_label(f.severity.value)
-            plain = plain_text_for_signal(f.signal_type)
+            sev = severity_label(f.severity.value, language)
+            plain = plain_text_for_signal(f.signal_type, language)
             prompt = generate_agent_prompt(f, analysis)
             console.print(f"  {i}. [{_severity_color(f.severity.value)}]{sev}[/]: {plain}")
             # Show file:line reference as a separate navigation hint (PRD F-06: not in prompt)
@@ -149,7 +156,16 @@ def status(
             console.print("     [dim]Prompt:[/dim]")
             console.print(f"     {prompt}")
             console.print()
-
+    # --- repo-context hint (only when findings exist, not spammy) ---
+    if top_findings:
+        # Map signal_type to abbreviation for the hint
+        from drift.finding_rendering import signal_abbrev
+        abbr = signal_abbrev(getattr(top_findings[0], "signal_type", ""))
+        console.print(
+            f"  [dim]Run [bold]drift explain {abbr} --repo-context[/bold] "
+            "to see examples from your own codebase.[/dim]"
+        )
+        console.print()
     # --- Separator + can_continue ---
     if continue_flag:
         console.print("  [green]Everything looks good — proceed with confidence.[/green]")

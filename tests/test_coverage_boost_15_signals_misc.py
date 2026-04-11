@@ -12,7 +12,7 @@ from pathlib import Path
 from unittest.mock import patch
 
 from drift.config import DriftConfig
-from drift.models import FunctionInfo, ParseResult
+from drift.models import FunctionInfo, ParseResult, Severity
 from drift.signals.explainability_deficit import ExplainabilityDeficitSignal, _explanation_score
 from drift.signals.naming_contract_violation import NamingContractViolationSignal, _has_create_path
 
@@ -157,6 +157,20 @@ def test_exd_init_method_skipped_line_160(tmp_path: Path) -> None:
     findings = signal.analyze([pr], {}, DriftConfig())
     # __init__ skipped
     assert findings == []
+
+
+def test_exd_test_file_reduce_severity_mode(tmp_path: Path) -> None:
+    test_fn = _make_fn("compute", "tests/test_service.py", complexity=25, loc=100)
+    pr = ParseResult(
+        file_path=Path("tests/test_service.py"),
+        language="python",
+        functions=[test_fn],
+    )
+    signal = ExplainabilityDeficitSignal(repo_path=tmp_path)
+    findings = signal.analyze([pr], {}, DriftConfig(test_file_handling="reduce_severity"))
+    assert len(findings) == 1
+    assert findings[0].severity == Severity.LOW
+    assert findings[0].metadata.get("finding_context") == "test"
 
 
 # ── doc_impl_drift: _get_mistune with import failure ─────────────────────────

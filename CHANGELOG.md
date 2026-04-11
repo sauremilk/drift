@@ -41,6 +41,7 @@
 
 ### Fixed
 
+- NBV Issue #214: TypeScript/JavaScript `ensure_*` now also accepts idempotent ensure-by-side-effect patterns (for example `mkdir*`, registry `set`, and property/index assignments), reducing false positives for initialization helpers that intentionally use `void` contracts.
 - HSC Issue #212: suppress false positives for env-var name constants (`*_ENV`, `*_VAR`) and marker/sentinel constants (`MARKER`, `PREFIX`, `ALPHABET`, `MESSAGE`, `ERROR_CODE`) while preserving known-prefix true positives.
 - NBV Issue #210: `ensure_*` in TypeScript/JavaScript now accepts language-conformant upsert/get-or-create semantics (throw **or** value-returning return path), reducing false positives while preserving Python `ensure_*` raise expectations.
 - Activate MAZ (missing authorization, weight 0.02) and ISD (insecure default, weight 0.01) as scoring-active signals, completing the agent-safety signal suite (ADR-039).
@@ -75,7 +76,7 @@
 - Stabilize `tests/test_golden_snapshot.py` under Windows/xdist by using per-run cache directories and treating SARIF trend data as volatile for golden comparisons.
 - Fix malformed fixture payload in `tests/test_low_modules_boost3.py` so cross-package allowlist parsing works deterministically in CI.
 
-## [2.9.1] - 2026-04-10
+## [2.9.2] - 2026-04-11
 
 Short version: Introduce calibration hardening and signal quality improvements for AVS, DIA, and MDS.
 

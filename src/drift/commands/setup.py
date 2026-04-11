@@ -8,6 +8,7 @@ a drift.yaml tuned to the user's project type.  Replaces the static
 from __future__ import annotations
 
 import json
+import locale
 import sys
 from pathlib import Path
 from typing import cast
@@ -18,10 +19,26 @@ import yaml  # type: ignore[import-untyped]
 from drift.commands import console
 
 # ---------------------------------------------------------------------------
-# Question definitions (German, everyday language)
+# Locale detection
 # ---------------------------------------------------------------------------
 
-_PROJECT_TYPES: dict[str, str] = {
+
+def _detect_language() -> str:
+    """Return 'de' when the system locale is German, else 'en'."""
+    try:
+        loc = locale.getlocale()[0] or ""
+        if loc.startswith("de"):
+            return "de"
+    except Exception:  # noqa: BLE001
+        pass
+    return "en"
+
+
+# ---------------------------------------------------------------------------
+# Question definitions — German and English variants
+# ---------------------------------------------------------------------------
+
+_PROJECT_TYPES_DE: dict[str, str] = {
     "1": "Web-App (Frontend + Backend)",
     "2": "API / Backend-Service",
     "3": "CLI-Tool oder Library",
@@ -29,46 +46,86 @@ _PROJECT_TYPES: dict[str, str] = {
     "5": "Monorepo / Mehrere Projekte",
 }
 
-_AI_USAGE: dict[str, str] = {
+_PROJECT_TYPES_EN: dict[str, str] = {
+    "1": "Web app (frontend + backend)",
+    "2": "API / backend service",
+    "3": "CLI tool or library",
+    "4": "Data science / ML",
+    "5": "Monorepo / multiple projects",
+}
+
+_PROJECT_TYPES = _PROJECT_TYPES_DE  # backward-compat alias
+
+_AI_USAGE_DE: dict[str, str] = {
     "1": "Ja, regelmäßig (z.\u202fB. Copilot, Cursor, ChatGPT)",
     "2": "Manchmal",
     "3": "Nein, alles von Hand",
 }
 
+_AI_USAGE_EN: dict[str, str] = {
+    "1": "Yes, regularly (e.g. Copilot, Cursor, ChatGPT)",
+    "2": "Sometimes",
+    "3": "No, I write everything myself",
+}
 
-def _ask_project_type() -> str:
+_AI_USAGE = _AI_USAGE_DE  # backward-compat alias
+
+
+def _ask_project_type(lang: str = "en") -> str:
     """Ask which project type the user has."""
-    console.print("  [bold]Was für ein Projekt ist das?[/bold]")
+    types = _PROJECT_TYPES_DE if lang.startswith("de") else _PROJECT_TYPES_EN
+    q = (
+        "  [bold]Was für ein Projekt ist das?[/bold]"
+        if lang.startswith("de")
+        else "  [bold]What type of project is this?[/bold]"
+    )
+    prompt_label = "  Deine Wahl" if lang.startswith("de") else "  Your choice"
+    console.print(q)
     console.print()
-    for key, label in _PROJECT_TYPES.items():
+    for key, label in types.items():
         console.print(f"    {key}) {label}")
     console.print()
-    choice = click.prompt("  Deine Wahl", type=click.Choice(list(_PROJECT_TYPES)), default="1")
+    choice = click.prompt(prompt_label, type=click.Choice(list(types)), default="1")
     return cast(str, choice)
 
 
-def _ask_ai_usage() -> str:
+def _ask_ai_usage(lang: str = "en") -> str:
     """Ask how much AI is used for coding."""
+    usage = _AI_USAGE_DE if lang.startswith("de") else _AI_USAGE_EN
+    q = (
+        "  [bold]Nutzt du KI beim Coden?[/bold]"
+        if lang.startswith("de")
+        else "  [bold]Do you use AI for coding?[/bold]"
+    )
+    prompt_label = "  Deine Wahl" if lang.startswith("de") else "  Your choice"
     console.print()
-    console.print("  [bold]Nutzt du KI beim Coden?[/bold]")
+    console.print(q)
     console.print()
-    for key, label in _AI_USAGE.items():
+    for key, label in usage.items():
         console.print(f"    {key}) {label}")
     console.print()
-    choice = click.prompt("  Deine Wahl", type=click.Choice(list(_AI_USAGE)), default="1")
+    choice = click.prompt(prompt_label, type=click.Choice(list(usage)), default="1")
     return cast(str, choice)
 
 
-def _ask_strictness() -> str:
+def _ask_strictness(lang: str = "en") -> str:
     """Ask how strict the checks should be."""
+    prompt_label = "  Deine Wahl" if lang.startswith("de") else "  Your choice"
     console.print()
-    console.print("  [bold]Wie streng sollen die Prüfungen sein?[/bold]")
+    if lang.startswith("de"):
+        console.print("  [bold]Wie streng sollen die Prüfungen sein?[/bold]")
+        console.print()
+        console.print("    1) Entspannt \u2014 nur wirklich wichtige Probleme anzeigen")
+        console.print("    2) Ausgewogen \u2014 guter Mittelweg")
+        console.print("    3) Streng \u2014 alles anzeigen")
+    else:
+        console.print("  [bold]How strict should the checks be?[/bold]")
+        console.print()
+        console.print("    1) Relaxed \u2014 only show the most important problems")
+        console.print("    2) Balanced \u2014 a good middle ground")
+        console.print("    3) Strict \u2014 show everything")
     console.print()
-    console.print("    1) Entspannt — nur wirklich wichtige Probleme anzeigen")
-    console.print("    2) Ausgewogen — guter Mittelweg")
-    console.print("    3) Streng — alles anzeigen")
-    console.print()
-    choice = click.prompt("  Deine Wahl", type=click.Choice(["1", "2", "3"]), default="1")
+    choice = click.prompt(prompt_label, type=click.Choice(["1", "2", "3"]), default="1")
     return cast(str, choice)
 
 
@@ -117,7 +174,7 @@ def _build_config(profile_name: str) -> dict[str, object]:
 # ---------------------------------------------------------------------------
 
 
-@click.command("setup", short_help="Interaktives Setup für Erstnutzer.")
+@click.command("setup", short_help="Interactive guided setup for first-time users.")
 @click.option(
     "--repo",
     "-r",
@@ -137,37 +194,49 @@ def setup(
     non_interactive: bool,
     output_json: bool,
 ) -> None:
-    """Richtet drift für dein Projekt ein — in unter einer Minute.
+    """Set up drift for your project in under a minute.
 
-    Stellt 2–3 einfache Fragen und erzeugt eine passende drift.yaml.
-    Kein Fachwissen nötig.
+    Asks 2\u20133 simple questions and generates a drift.yaml tailored to your
+    project. No architectural expertise required.
 
-    Verwende --non-interactive für die Standardkonfiguration ohne Fragen.
+    Use --non-interactive for defaults without questions.
     """
     repo = repo.resolve()
     config_path = repo / "drift.yaml"
+    lang = _detect_language()
 
     if config_path.exists() and not output_json:
         console.print()
-        console.print(
-            f"  [yellow]drift.yaml existiert bereits in {repo.name}/.[/yellow]"
-        )
-        if not click.confirm("  Überschreiben?", default=False):
-            console.print("  [dim]Abgebrochen.[/dim]")
-            sys.exit(0)
+        if lang.startswith("de"):
+            console.print(
+                f"  [yellow]drift.yaml existiert bereits in {repo.name}/.[/yellow]"
+            )
+            if not click.confirm("  \u00dcberschreiben?", default=False):
+                console.print("  [dim]Abgebrochen.[/dim]")
+                sys.exit(0)
+        else:
+            console.print(
+                f"  [yellow]drift.yaml already exists in {repo.name}/.[/yellow]"
+            )
+            if not click.confirm("  Overwrite?", default=False):
+                console.print("  [dim]Cancelled.[/dim]")
+                sys.exit(0)
 
     # --- Gather answers ---
     if non_interactive:
         profile_name = "vibe-coding"
     else:
         console.print()
-        console.print("  [bold]drift setup[/bold] — Konfiguration in 3 Fragen")
-        console.print("  " + "─" * 45)
+        if lang.startswith("de"):
+            console.print("  [bold]drift setup[/bold] \u2014 Konfiguration in 3 Fragen")
+        else:
+            console.print("  [bold]drift setup[/bold] \u2014 configure in 3 questions")
+        console.print("  " + "\u2500" * 45)
         console.print()
 
-        project_type = _ask_project_type()
-        ai_usage = _ask_ai_usage()
-        strictness = _ask_strictness()
+        project_type = _ask_project_type(lang)
+        ai_usage = _ask_ai_usage(lang)
+        strictness = _ask_strictness(lang)
         profile_name = _derive_profile(project_type, ai_usage, strictness)
 
     # --- Build config ---
@@ -193,12 +262,20 @@ def setup(
     config_path.write_text(yaml_content, encoding="utf-8")
 
     console.print()
-    console.print(f"  [green]✓[/green] drift.yaml erstellt (Profil: {profile_name})")
-    console.print()
-    console.print("  [bold]Nächster Schritt:[/bold]")
-    console.print("    drift status")
-    console.print()
-    console.print("  [dim]Das zeigt dir den aktuellen Zustand deines Projekts.[/dim]")
+    if lang.startswith("de"):
+        console.print(f"  [green]\u2713[/green] drift.yaml erstellt (Profil: {profile_name})")
+        console.print()
+        console.print("  [bold]Nächster Schritt:[/bold]")
+        console.print("    drift status")
+        console.print()
+        console.print("  [dim]Das zeigt dir den aktuellen Zustand deines Projekts.[/dim]")
+    else:
+        console.print(f"  [green]\u2713[/green] drift.yaml created (profile: {profile_name})")
+        console.print()
+        console.print("  [bold]Next step:[/bold]")
+        console.print("    drift status")
+        console.print()
+        console.print("  [dim]This shows the current structural health of your project.[/dim]")
     console.print()
 
     sys.exit(0)

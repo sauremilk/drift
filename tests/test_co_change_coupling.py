@@ -64,6 +64,27 @@ def _run_signal(parse_results: list[ParseResult], commits: list[CommitInfo]):
 
 
 class TestCoChangeCouplingSignal:
+    def test_test_file_pair_reduced_severity_by_default(self) -> None:
+        parse_results = [
+            _pr("tests/test_a.py"),
+            _pr("tests/test_b.py"),
+            _pr("src/core.py"),
+        ]
+        commits = [
+            _commit(1, ["tests/test_a.py", "tests/test_b.py"]),
+            _commit(2, ["tests/test_a.py", "tests/test_b.py"]),
+            _commit(3, ["tests/test_a.py", "tests/test_b.py"]),
+            _commit(4, ["tests/test_a.py", "tests/test_b.py"]),
+            _commit(5, ["src/core.py"]),
+            _commit(6, ["tests/test_a.py", "tests/test_b.py"]),
+            _commit(7, ["src/core.py"]),
+            _commit(8, ["src/core.py", "tests/test_a.py"]),
+        ]
+
+        findings = _run_signal(parse_results, commits)
+        assert len(findings) >= 1
+        assert findings[0].metadata.get("finding_context") == "test"
+
     def test_true_positive_hidden_coupling_without_import_edge(self) -> None:
         parse_results = [
             _pr("src/order_service.py"),

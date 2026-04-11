@@ -55,6 +55,9 @@ class TestIsTestFile:
     def test_nested_dunder_tests_dir(self):
         assert is_test_file(Path("packages/core/__tests__/utils.js"))
 
+    def test_conftest_is_test_file(self):
+        assert is_test_file(Path("tests/conftest.py"))
+
     # ── Negative cases ───────────────────────────────────────────
 
     def test_ts_production_file(self):

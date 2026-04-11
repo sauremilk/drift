@@ -101,6 +101,37 @@ def _walk(node: Any) -> list[Any]:
     return result
 
 
+def _extract_ts_return_type(
+    func_node: Any,
+    source: bytes,
+    declarator: Any | None = None,
+) -> str | None:
+    """Extract return type from a TS function node.
+
+    Supports direct function/method/arrow annotations and typed variable
+    declarators (for example: ``const isFoo: (x) => boolean = (...) => ...``).
+    """
+    ret_node = _child_by_field(func_node, "return_type")
+    if ret_node is not None:
+        return _node_text(ret_node, source).lstrip(": ")
+
+    if declarator is None:
+        return None
+
+    decl_type_node = _child_by_field(declarator, "type")
+    if decl_type_node is None:
+        return None
+
+    for child in _walk(decl_type_node):
+        if child.type != "function_type":
+            continue
+        fn_ret = _child_by_field(child, "return_type")
+        if fn_ret is not None:
+            return _node_text(fn_ret, source).lstrip(": ")
+
+    return None
+
+
 # ---------------------------------------------------------------------------
 # AST n-gram computation (for Mutant Duplicate detection)
 # ---------------------------------------------------------------------------
@@ -148,6 +179,7 @@ def _extract_functions(
     for node in _walk(root):
         name: str | None = None
         func_node: Any | None = None
+        declarator_node: Any | None = None
         is_method = False
 
         if node.type == "function_declaration":
@@ -169,6 +201,7 @@ def _extract_functions(
                 if name_nd and value_nd and value_nd.type == "arrow_function":
                     name = _node_text(name_nd, source)
                     func_node = value_nd
+                    declarator_node = decl
                     break
 
         if name is None or func_node is None:
@@ -191,8 +224,7 @@ def _extract_functions(
                     params.append(_node_text(p, source))
 
         # Return type
-        ret_node = _child_by_field(func_node, "return_type")
-        return_type = _node_text(ret_node, source).lstrip(": ") if ret_node else None
+        return_type = _extract_ts_return_type(func_node, source, declarator_node)
 
         # Body hash
         body_node = _child_by_field(func_node, "body")
@@ -612,6 +644,60 @@ _TS_ROUTE_METHODS: frozenset[str] = frozenset({
     "Get", "Post", "Put", "Patch", "Delete", "Head", "Options",
 })
 
+# Auth-related middleware/guard/decorator identifiers (case-insensitive match).
+_TS_AUTH_MARKERS: frozenset[str] = frozenset({
+    "authenticate", "auth", "authorize", "isauth", "isauthenticated",
+    "requireauth", "requiresauth", "ensureauth", "ensureauthenticated",
+    "requirelogin", "loginrequired", "isloggedin", "checkauth",
+    "verifytoken", "verifyjwt", "jwtauth", "jwtguard", "authguard",
+    "passport", "useguards", "authorizationguard", "rolesguard",
+    "requirepermission", "requirepermissions", "requirerole", "requireroles",
+})
+
+
+def _looks_like_ts_auth(text: str) -> bool:
+    """Return True if *text* looks like an auth middleware/guard reference."""
+    normalized = text.lower().replace("_", "").replace("-", "")
+    return any(marker in normalized for marker in _TS_AUTH_MARKERS)
+
+
+def _has_auth_in_call_args(node: Any, source: bytes) -> bool:
+    """Check Express/Fastify-style middleware arguments for auth references.
+
+    Patterns: ``router.get("/path", authMiddleware, handler)``
+    The second-to-last argument(s) before the final handler are middleware.
+    """
+    args_node = _child_by_field(node, "arguments")
+    if args_node is None:
+        return False
+    args = [c for c in args_node.children if c.type not in ("(", ")", ",")]
+    # Skip first arg (route path) and last arg (handler); middle args are middleware.
+    middleware_args = args[1:-1] if len(args) > 2 else []
+    for arg in middleware_args:
+        text = _node_text(arg, source)
+        if _looks_like_ts_auth(text):
+            return True
+    return False
+
+
+def _has_auth_decorator_ts(
+    node: Any,
+    source: bytes,
+    root: Any,
+) -> bool:
+    """Check NestJS-style decorators above the function for auth guards."""
+    # Walk siblings/parent decorators for NestJS @UseGuards(AuthGuard)
+    parent = node.parent
+    if parent is None:
+        return False
+    for child in parent.children:
+        if child.type != "decorator":
+            continue
+        text = _node_text(child, source)
+        if _looks_like_ts_auth(text):
+            return True
+    return False
+
 
 def _extract_api_patterns(
     root: Any,
@@ -673,6 +759,10 @@ def _extract_api_patterns(
                     "method": method.upper(),
                     "route": route_path,
                     "framework": "express",  # generic label
+                    "has_auth": (
+                        _has_auth_in_call_args(node, source)
+                        or _has_auth_decorator_ts(node, source, root)
+                    ),
                 },
             )
         )

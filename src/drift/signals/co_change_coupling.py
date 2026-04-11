@@ -11,6 +11,7 @@ from itertools import combinations
 from pathlib import Path
 
 from drift.config import DriftConfig
+from drift.ingestion.test_detection import is_test_file
 from drift.models import (
     CommitInfo,
     FileHistory,
@@ -170,7 +171,8 @@ class CoChangeCouplingSignal(BaseSignal):
         Uses only commit metadata from AnalysisContext, with deterministic
         weighting to avoid over-emphasizing merge and automated commits.
         """
-        del file_histories, config
+        del file_histories
+        handling = config.test_file_handling or "reduce_severity"
 
         if len(self.commits) < _MIN_HISTORY_COMMITS:
             return []
@@ -244,6 +246,15 @@ class CoChangeCouplingSignal(BaseSignal):
 
             path_a = Path(str(pair[0]))
             path_b = Path(str(pair[1]))
+            pair_has_test = is_test_file(path_a) or is_test_file(path_b)
+            if pair_has_test and handling == "exclude":
+                continue
+
+            if pair_has_test and handling == "reduce_severity":
+                score = round(score * 0.5, 3)
+                if score < 0.2:
+                    continue
+
             sample_hashes = sorted(set(pair_commit_hashes[pair]))[:5]
             raw_count = pair_raw_counts[pair]
             sample_messages = pair_commit_messages[pair][:3]
@@ -291,7 +302,9 @@ class CoChangeCouplingSignal(BaseSignal):
                         "explicit_dependency": False,
                         "commit_samples": sample_hashes,
                         "commit_messages": sample_messages,
+                        "finding_context": "test" if pair_has_test else "production",
                     },
+                    finding_context="test" if pair_has_test else "production",
                 )
             )
 

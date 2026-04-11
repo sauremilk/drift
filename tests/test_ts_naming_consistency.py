@@ -18,9 +18,9 @@ FIXTURES = Path("tests/fixtures/typescript/naming_consistency")
 
 @needs_tree_sitter
 class TestIPrefixConsistency:
-    """Test interface I-prefix convention detection."""
+    """I-prefix is a TS style choice and should not trigger NBV findings."""
 
-    def test_dominant_i_prefix_flags_outliers(self) -> None:
+    def test_dominant_i_prefix_does_not_flag_outliers(self) -> None:
         from drift.config import DriftConfig
         from drift.signals.naming_contract_violation import NamingContractViolationSignal
 
@@ -28,14 +28,10 @@ class TestIPrefixConsistency:
         signal = NamingContractViolationSignal()
         findings = signal.analyze([pr], {}, DriftConfig())
 
-        # Should flag Repository and Service (without I-prefix)
         iprefix_findings = [
             f for f in findings if "I-prefix" in f.title or "missing I-prefix" in f.title
         ]
-
-        assert len(iprefix_findings) >= 2
-        assert any("Repository" in f.title for f in iprefix_findings)
-        assert any("Service" in f.title for f in iprefix_findings)
+        assert iprefix_findings == []
 
     def test_consistent_no_prefix_no_findings(self) -> None:
         from drift.config import DriftConfig
@@ -62,14 +58,14 @@ class TestEnumCasingConsistency:
         findings = signal.analyze([pr], {}, DriftConfig())
 
         enum_findings = [f for f in findings if "mixed member casing" in f.title]
-        assert len(enum_findings) >= 1
+        assert len(enum_findings) == 1
 
 
 @needs_tree_sitter
 class TestGenericParameterNaming:
-    """Test generic parameter naming mix detection."""
+    """Generic naming style mix is not treated as drift (Issue #219)."""
 
-    def test_mixed_generics_flagged(self) -> None:
+    def test_mixed_generics_not_flagged(self) -> None:
         from drift.config import DriftConfig
         from drift.signals.naming_contract_violation import NamingContractViolationSignal
 
@@ -78,9 +74,4 @@ class TestGenericParameterNaming:
         findings = signal.analyze([pr], {}, DriftConfig())
 
         generic_findings = [f for f in findings if "generic parameter" in f.title.lower()]
-        assert len(generic_findings) >= 1
-
-        # Should mention both single-letter and verbose names
-        f = generic_findings[0]
-        assert f.metadata.get("single_letter")
-        assert f.metadata.get("verbose")
+        assert generic_findings == []

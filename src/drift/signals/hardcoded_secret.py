@@ -438,14 +438,14 @@ class HardcodedSecretSignal(BaseSignal):
 
         # Regex-based line-level scan (language-neutral heuristics).
         # Matches: const SECRET = "value", let apiKey = 'value', export const TOKEN = `value`
-        _VAR_ASSIGN_RE = re.compile(
+        var_assign_re = re.compile(
             r"""^[ \t]*(?:export\s+)?(?:const|let|var)\s+"""
             r"""([A-Za-z_$][A-Za-z0-9_$]*)\s*"""
             r"""(?::\s*\S+?\s*)?=\s*"""
             r"""(['"`])(.+?)\2""",
         )
         for lineno, line in enumerate(source.splitlines(), start=1):
-            m = _VAR_ASSIGN_RE.match(line)
+            m = var_assign_re.match(line)
             if not m:
                 continue
             var_name, _quote, string_val = m.group(1), m.group(2), m.group(3)

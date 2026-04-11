@@ -1,5 +1,113 @@
 # Fault Tree Analysis
 
+## 2026-04-11 - Issue #219: NBV TS style-only findings and duplicate output
+
+### Top Event (TE-NBV-219)
+NBV emits non-actionable TypeScript naming findings and duplicate low-severity findings.
+
+### FT-1: false-positive branch
+
+```
+           TE-FP: style-only or duplicate NBV finding emitted
+                         |
+                      OR-Gate
+               +---------+---------+---------+
+              IE-1      IE-2      IE-3
+```
+
+- **IE-1 (MCS)**: Interface naming style (`I*` vs no-prefix) interpreted as drift.
+  - Mitigation: Remove interface I-prefix convention check from NBV.
+- **IE-2 (MCS)**: Mixed generic naming (`T` with `TName`) interpreted as drift.
+  - Mitigation: Remove generic naming-style mix check from NBV.
+- **IE-3 (MCS)**: Duplicated TS naming-check blocks emit findings twice.
+  - Mitigation: Consolidate TS naming checks into a single block and guard with strict regression expectations.
+
+### FT-2: false-negative guard
+
+- **IE-4 (Guard)**: Removing style checks could hide user-preferred style-consistency findings.
+  - Mitigation: Accepted by design; NBV scope remains architectural naming-contract drift, while style enforcement belongs to linters/project style guides.
+
+## 2026-04-11 - Issue #215: NBV TS is*/has* bool-return extraction + fallback heuristics
+
+### Top Event (TE-NBV-215)
+NBV emits false positives for TypeScript `is*`/`has*` functions because bool-return contracts are not recognized.
+
+### FT-1: false-positive branch
+
+```
+           TE-FP: TS bool-contract helper flagged by NBV
+                         |
+                      OR-Gate
+               +---------+---------+---------+
+              IE-1      IE-2      IE-3
+```
+
+- **IE-1 (MCS)**: Typed-arrow declarator return type is not extracted (`const isX: (...) => boolean = ...`).
+  - Mitigation: parser fallback extracts `function_type.return_type` from declarator type annotations.
+- **IE-2 (MCS)**: Type-predicate annotation (`x is Foo`) not treated as bool-compatible return contract.
+  - Mitigation: bool-like return-type matcher recognizes TS type predicates.
+- **IE-3 (MCS)**: Unannotated bool expressions (`typeof`, comparisons, `instanceof`, `in`, `!`) are treated as non-bool.
+  - Mitigation: bounded fallback expression heuristic in `_ts_has_bool_return`.
+
+### FT-2: false-negative guard
+
+- **IE-4 (Guard)**: Heuristic over-accepts non-bool truthy/falsy expressions.
+  - Mitigation: restrict accepted fallback shapes to explicit bool indicators; retain negative controls for non-bool wrappers and bare returns.
+
+## 2026-04-11 - Issue #218: Zentralisierte Testdatei-Erkennung und finding_context-Angleichung
+
+### Top Event (TE-CTX-218)
+Mehrere Signale behandeln Testdateien inkonsistent, wodurch FP-Cluster oder uneinheitliche Priorisierung entstehen.
+
+### FT-1: false-positive branch
+
+```
+           TE-FP: Testcode als Produktionsdrift priorisiert
+                         |
+                      OR-Gate
+               +---------+---------+
+              IE-1      IE-2      IE-3
+```
+
+- **IE-1 (MCS)**: Signal-spezifische lokale Testpfad-Heuristiken weichen voneinander ab
+  - Mitigation: zentrale Klassifikation in `ingestion/test_detection.py`.
+- **IE-2 (MCS)**: Findings transportieren Kontext nur optional in `metadata`
+  - Mitigation: Top-Level-Feld `Finding.finding_context` + Synchronisierung mit Metadata.
+- **IE-3 (MCS)**: Test-Kontext wird nicht konsistent auf Score/Severity angewandt
+  - Mitigation: globaler Schalter `test_file_handling` und signalseitige Standardstrategien (`exclude`/`reduce_severity`).
+
+### FT-2: false-negative guard
+
+- **IE-4 (Guard)**: Überbreite Testklassifikation suppresses produktionsnahe Fixture-Dateien
+  - Mitigation: explizite Fixture-Ausnahme (`tests/fixtures`, `test/fixtures`) in der zentralen Erkennung und Regressionstests.
+
+## 2026-04-11 - Issue #214: NBV TS/JS ensure_* side-effect FP reduction
+
+### Top Event (TE-NBV-214)
+NBV emits false positives for TS/JS `ensure_*` helpers that fulfill contracts via idempotent side-effects instead of throw/value return.
+
+### FT-1: false-positive branch
+
+```
+            TE-FP: TS/JS ensure-by-side-effect flagged by NBV
+                         |
+                      OR-Gate
+               +---------+---------+---------+
+              IE-1      IE-2      IE-3
+```
+
+- **IE-1 (MCS)**: Ensure helper creates directories via `mkdir`/`mkdirSync` with `void` return and no throw.
+  - Mitigation: Accept mutating call patterns in TS ensure contract checker.
+- **IE-2 (MCS)**: Ensure helper initializes state via property/index assignment (`obj.key = ...`, `obj[key] ??= ...`) without value-returning contract.
+  - Mitigation: Accept stateful assignment/update expressions as contract-fulfilling side-effects.
+- **IE-3 (MCS)**: Ensure helper registers cache/registry entries (`set`, `register`, `push`) in guarded branch without throw.
+  - Mitigation: Accept bounded mutator-call markers in TS ensure checker.
+
+### FT-2: false-negative guard
+
+- **IE-4 (Guard)**: No-op `ensure_*` function accidentally accepted after relaxation.
+  - Mitigation: Keep strict negative control where functions without throw, value return, and side-effect indicators remain findings.
+
 ## 2026-04-11 - Issue #213: MAZ unknown-framework false-positive suppression
 
 ### Top Event (TE-MAZ-213)

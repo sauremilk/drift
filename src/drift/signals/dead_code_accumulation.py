@@ -20,6 +20,7 @@ from collections import defaultdict
 from pathlib import Path
 
 from drift.config import DriftConfig
+from drift.ingestion.test_detection import classify_file_context
 from drift.models import (
     FileHistory,
     Finding,
@@ -229,6 +230,7 @@ class DeadCodeAccumulationSignal(BaseSignal):
         config: DriftConfig,
     ) -> list[Finding]:
         ignore_re_exports = config.thresholds.dca_ignore_re_exports
+        handling = config.test_file_handling or "reduce_severity"
         has_application_layout = _has_application_layout(parse_results)
         package_roots = (
             set() if has_application_layout else _discover_package_roots(parse_results)
@@ -251,7 +253,7 @@ class DeadCodeAccumulationSignal(BaseSignal):
         for pr in parse_results:
             if pr.language not in _SUPPORTED_LANGUAGES:
                 continue
-            if is_test_file(pr.file_path):
+            if is_test_file(pr.file_path) and handling == "exclude":
                 continue
             if pr.language == "python" and _is_script_context_path(pr.file_path):
                 # Script-like modules are typically executed, not imported.
@@ -332,6 +334,10 @@ class DeadCodeAccumulationSignal(BaseSignal):
 
             score = round(min(1.0, dead_ratio * 0.8 + dead_count * 0.02), 3)
             severity = Severity.HIGH if score >= 0.7 else Severity.MEDIUM
+            path_context = classify_file_context(file_path)
+            if path_context == "test" and handling == "reduce_severity":
+                score = round(score * 0.45, 3)
+                severity = Severity.LOW
             dead_names = [s[0] for s in dead_symbols[:10]]
 
             # Use line of first dead symbol for SARIF region support (#88)
@@ -376,7 +382,9 @@ class DeadCodeAccumulationSignal(BaseSignal):
                             is_library_finding_path(file_path)
                             or _is_public_api_package_path(file_path, package_roots)
                         ),
+                        "finding_context": path_context,
                     },
+                    finding_context=path_context,
                     rule_id="dead_code_accumulation",
                 )
             )

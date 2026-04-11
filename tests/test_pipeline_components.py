@@ -22,7 +22,7 @@ from drift.models import (
     Severity,
     SignalType,
 )
-from drift.pipeline import DegradationInfo, IngestionPhase, ScoringPhase, SignalPhase
+from drift.pipeline import DegradationInfo, IngestionPhase, ParsedInputs, ScoringPhase, SignalPhase
 
 
 def _config() -> DriftConfig:
@@ -481,3 +481,88 @@ def test_default_workers_ignores_invalid_env(monkeypatch) -> None:
     pipeline = importlib.reload(pipeline)
 
     assert 2 <= pipeline.DEFAULT_WORKERS <= 16
+
+
+def test_signal_phase_file_local_dependency_cache_reruns_only_changed_file(tmp_path: Path) -> None:
+    class _FileLocalSignal:
+        name = "file-local"
+        signal_type = SignalType.PATTERN_FRAGMENTATION
+        incremental_scope = "file_local"
+        cache_dependency_scope = "file_local"
+
+        def __init__(self) -> None:
+            self.calls: list[list[str]] = []
+
+        def analyze(self, parse_results, *_args, **_kwargs):
+            self.calls.append([pr.file_path.as_posix() for pr in parse_results])
+            out: list[Finding] = []
+            for pr in parse_results:
+                out.append(
+                    Finding(
+                        signal_type=SignalType.PATTERN_FRAGMENTATION,
+                        severity=Severity.LOW,
+                        score=0.1,
+                        title=f"f:{pr.file_path.as_posix()}",
+                        description="local",
+                        file_path=pr.file_path,
+                    ),
+                )
+            return out
+
+    cfg = DriftConfig(
+        include=["**/*.py"],
+        exclude=["**/.git/**", "**/.drift-cache/**", "**/__pycache__/**"],
+        embeddings_enabled=False,
+        signal_cache_dependency_scopes_enabled=True,
+    )
+
+    a_path = tmp_path / "a.py"
+    b_path = tmp_path / "b.py"
+    a_path.write_text("def a():\n    return 1\n", encoding="utf-8")
+    b_path.write_text("def b():\n    return 2\n", encoding="utf-8")
+
+    def _parsed_inputs() -> ParsedInputs:
+        return ParsedInputs(
+            parse_results=[
+                ParseResult(file_path=Path("a.py"), language="python"),
+                ParseResult(file_path=Path("b.py"), language="python"),
+            ],
+            commits=[],
+            file_histories={},
+            file_hashes={
+                "a.py": ParseCache.file_hash(a_path),
+                "b.py": ParseCache.file_hash(b_path),
+            },
+        )
+
+    signal = _FileLocalSignal()
+    phase = SignalPhase(
+        embedding_factory=lambda **_kwargs: None,
+        signal_factory=lambda _ctx: [signal],
+    )
+
+    phase.run(
+        tmp_path,
+        cfg,
+        _parsed_inputs(),
+        degradation=DegradationInfo(causes=set(), components=set(), events=[]),
+    )
+    assert signal.calls == [["a.py"], ["b.py"]]
+
+    phase.run(
+        tmp_path,
+        cfg,
+        _parsed_inputs(),
+        degradation=DegradationInfo(causes=set(), components=set(), events=[]),
+    )
+    assert signal.calls == [["a.py"], ["b.py"]]
+
+    a_path.write_text("def a():\n    return 3\n", encoding="utf-8")
+
+    phase.run(
+        tmp_path,
+        cfg,
+        _parsed_inputs(),
+        degradation=DegradationInfo(causes=set(), components=set(), events=[]),
+    )
+    assert signal.calls == [["a.py"], ["b.py"], ["a.py"]]

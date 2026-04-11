@@ -218,6 +218,7 @@ def analyze_repo(
         max_files=config.thresholds.max_discovery_files,
         skipped_out=skipped_langs,
         ts_enabled=config.languages.typescript,
+        cache_dir=config.cache_dir,
     )
 
     if target_path:

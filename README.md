@@ -9,7 +9,9 @@
 24 cross-file signals · 100 % ground-truth precision · deterministic, no LLM · ~30 s for a 2 900-file codebase
 
 ```bash
-pip install drift-analyzer && drift analyze .
+pip install drift-analyzer
+drift setup          # 3-question wizard: picks the right profile for your project
+drift status         # traffic-light health check — your daily entry point
 ```
 
 <img src="demos/demo.gif" alt="drift analyze — Rich terminal output showing structural findings" width="720">

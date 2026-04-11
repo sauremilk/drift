@@ -301,6 +301,7 @@ class Finding:
     attribution: Attribution | None = None
     logical_location: LogicalLocation | None = None
     language: str | None = None
+    finding_context: str | None = None
 
     #: Suffix → language for auto-inference (kept minimal to avoid imports).
     _LANG_MAP: ClassVar[dict[str, str]] = {
@@ -321,6 +322,13 @@ class Finding:
         # Auto-infer language from file extension when not set explicitly.
         if self.language is None and self.file_path is not None:
             self.language = self._LANG_MAP.get(self.file_path.suffix.lower())
+        # Keep explicit field and metadata view in sync for backward compatibility.
+        if self.finding_context and "finding_context" not in self.metadata:
+            self.metadata["finding_context"] = self.finding_context
+        elif self.finding_context is None:
+            existing_ctx = self.metadata.get("finding_context")
+            if isinstance(existing_ctx, str) and existing_ctx.strip():
+                self.finding_context = existing_ctx.strip().lower()
 
 
 @dataclass

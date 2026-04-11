@@ -638,6 +638,40 @@ for _abbr, _info in _SIGNAL_INFO.items():
     _LOOKUP[_info["signal_type"]] = _info
 
 
+# ---------------------------------------------------------------------------
+# Per-signal metadata: fix-time estimates, related signals, AI signal flag
+# ---------------------------------------------------------------------------
+# fix_time: realistic wall-clock range for a single finding
+# related:  abbreviations of closely related signals
+# ai_star:  True → triggered especially often by AI-generated code (★ in --list)
+
+_SIGNAL_META: dict[str, dict[str, Any]] = {
+    "PFS": {"fix_time": "30–90 min", "related": ["MDS", "SMS"],      "ai_star": True},
+    "AVS": {"fix_time": "1–4 h",     "related": ["COD", "CCC"],      "ai_star": False},
+    "MDS": {"fix_time": "15–60 min", "related": ["PFS", "EDS"],      "ai_star": True},
+    "EDS": {"fix_time": "20–45 min", "related": ["TPD", "BEM"],      "ai_star": True},
+    "DIA": {"fix_time": "30–90 min", "related": ["EDS"],             "ai_star": False},
+    "TVS": {"fix_time": "1–4 h",     "related": ["SMS", "PFS"],      "ai_star": False},
+    "SMS": {"fix_time": "30–90 min", "related": ["PFS", "AVS"],      "ai_star": True},
+    "BEM": {"fix_time": "15–30 min", "related": ["ECM", "TPD"],      "ai_star": False},
+    "TPD": {"fix_time": "30–60 min", "related": ["GCD", "EDS"],      "ai_star": False},
+    "GCD": {"fix_time": "20–45 min", "related": ["NBV"],             "ai_star": False},
+    "NBV": {"fix_time": "10–30 min", "related": ["GCD"],             "ai_star": False},
+    "BAT": {"fix_time": "30–180 min","related": ["EDS"],             "ai_star": True},
+    "ECM": {"fix_time": "30–90 min", "related": ["BEM", "AVS"],      "ai_star": False},
+    "COD": {"fix_time": "1–3 h",     "related": ["AVS", "FOE"],      "ai_star": False},
+    "CCC": {"fix_time": "30–90 min", "related": ["COD", "AVS"],      "ai_star": False},
+    "TSA": {"fix_time": "30–90 min", "related": ["AVS", "CIR"],      "ai_star": False},
+    "MAZ": {"fix_time": "15–30 min", "related": ["HSC", "ISD"],      "ai_star": False},
+    "ISD": {"fix_time": "5–20 min",  "related": ["HSC", "MAZ"],      "ai_star": False},
+    "HSC": {"fix_time": "5–15 min",  "related": ["ISD", "MAZ"],      "ai_star": False},
+    "CXS": {"fix_time": "30–90 min", "related": ["COD", "EDS"],      "ai_star": False},
+    "FOE": {"fix_time": "1–3 h",     "related": ["AVS", "COD"],      "ai_star": False},
+    "CIR": {"fix_time": "30–90 min", "related": ["AVS", "COD"],      "ai_star": False},
+    "DCA": {"fix_time": "15–30 min", "related": ["COD"],             "ai_star": False},
+}
+
+
 def _all_abbreviations() -> list[str]:
     return sorted(_SIGNAL_INFO.keys())
 
@@ -807,15 +841,21 @@ def _print_signal_list() -> None:
 
     for abbr in _all_abbreviations():
         info = _SIGNAL_INFO[abbr]
+        meta = _SIGNAL_META.get(abbr, {})
+        label = f"[bold]{abbr}[/bold] [yellow]\u2605[/yellow]" if meta.get("ai_star") else abbr
         table.add_row(
-            abbr,
+            label,
             info["name"],
             info["weight"],
-            info["description"][:80] + ("…" if len(info["description"]) > 80 else ""),
+            info["description"][:80] + ("\u2026" if len(info["description"]) > 80 else ""),
         )
 
     console.print(table)
-    console.print("\n[dim]Run [bold]drift explain <SIGNAL>[/bold] for full details.[/dim]")
+    console.print(
+        "\n[dim][yellow]\u2605[/yellow] = commonly triggered by AI-generated code\n"
+        "Run [bold]drift explain <SIGNAL>[/bold] for full details "
+        "incl. fix-time estimate.[/dim]"
+    )
 
 
 def _print_signal_detail(info: dict[str, Any]) -> None:
@@ -847,7 +887,24 @@ def _print_signal_detail(info: dict[str, Any]) -> None:
     body.append("How to fix\n", style="bold underline")
     body.append(f"{info['fix_hint']}\n", style="green")
 
-    console.print(Panel(body, border_style="cyan", title=f"[bold]Signal: {abbr}[/bold]"))
+    meta = _SIGNAL_META.get(abbr, {})
+    if meta.get("fix_time"):
+        body.append("\nTypical fix time\n", style="bold underline")
+        body.append(f"{meta['fix_time']} per finding\n", style="dim")
+    if meta.get("related"):
+        related_str = "  ".join(meta["related"])
+        body.append("\nRelated signals\n", style="bold underline")
+        body.append(f"{related_str}\n", style="dim")
+        body.append("[dim](run drift explain <ABBR> for details)[/dim]\n")
+
+    title_suffix = "  [yellow]\u2605 AI signal[/yellow]" if meta.get("ai_star") else ""
+    console.print(
+        Panel(
+            body,
+            border_style="cyan",
+            title=f"[bold]Signal: {abbr}[/bold]{title_suffix}",
+        )
+    )
 
 
 def _print_error_code_detail(code: str) -> None:

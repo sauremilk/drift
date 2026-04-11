@@ -224,6 +224,7 @@ def nudge(
                 include=cfg.include,
                 exclude=cfg.exclude,
                 max_files=cfg.thresholds.max_discovery_files,
+                cache_dir=cfg.cache_dir,
             )
             analysis = analyze_repo(repo_path, config=cfg)
 

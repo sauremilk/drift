@@ -1407,11 +1407,16 @@ async def drift_session_start(
     # ADR-025 Phase D: Session autopilot
     if autopilot:
         from drift.analyzer import analyze_repo
-        from drift.api import brief, validate
+        from drift.api import validate
         from drift.api._config import _load_config_cached, _warn_config_issues
+        from drift.api.brief import brief_from_analysis
         from drift.api.fix_plan import _build_fix_plan_response_from_analysis
         from drift.api.scan import _format_scan_response
-        from drift.api_helpers import build_drift_score_scope, shape_for_profile, signal_scope_label
+        from drift.api_helpers import (
+            build_drift_score_scope,
+            shape_for_profile,
+            signal_scope_label,
+        )
         from drift.config import apply_signal_filter, resolve_signal_names
 
         loop = asyncio.get_event_loop()
@@ -1427,16 +1432,8 @@ async def drift_session_start(
                 response_profile=response_profile,
             ),
         )
-        brief_result = await loop.run_in_executor(
-            None,
-            lambda: brief(
-                path=resolved,
-                task="autopilot session start",
-                signals=sig_list,
-                response_profile=response_profile,
-            ),
-        )
-        def _scan_and_fixplan_from_shared_analysis() -> tuple[dict[str, Any], dict[str, Any]]:
+        def _autopilot_from_shared_analysis(
+        ) -> tuple[dict[str, Any], dict[str, Any], dict[str, Any]]:
             repo_path = Path(resolved)
             cfg = _load_config_cached(repo_path)
             cfg_warnings = _warn_config_issues(cfg)
@@ -1461,6 +1458,17 @@ async def drift_session_start(
                 since_days=90,
                 target_path=target_path,
                 active_signals=active_signals,
+            )
+
+            brief_result = brief_from_analysis(
+                path=resolved,
+                task="autopilot session start",
+                analysis=analysis,
+                cfg=cfg,
+                scope_override=target_path,
+                signals=sig_list,
+                max_guardrails=10,
+                include_non_operational=False,
             )
 
             scan_result = _format_scan_response(
@@ -1496,13 +1504,14 @@ async def drift_session_start(
                 warnings=list(warnings),
             )
             return (
+                shape_for_profile(brief_result, response_profile),
                 shape_for_profile(scan_result, response_profile),
                 shape_for_profile(fix_plan_result, response_profile),
             )
 
-        scan_result, fp_result = await loop.run_in_executor(
+        brief_result, scan_result, fp_result = await loop.run_in_executor(
             None,
-            _scan_and_fixplan_from_shared_analysis,
+            _autopilot_from_shared_analysis,
         )
         result["autopilot"] = {
             "validate": val_result,

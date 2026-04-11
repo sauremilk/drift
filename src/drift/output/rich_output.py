@@ -62,6 +62,35 @@ _SIGNAL_LABELS: dict[str, str] = {
     SignalType.HARDCODED_SECRET: "HSC",
 }
 
+# Human-readable short names shown alongside abbreviations in the findings table.
+# Format: abbr → concise English label (max ~16 chars for column fit).
+_SIGNAL_SHORT_NAMES: dict[str, str] = {
+    "PFS": "Pattern Frag.",
+    "AVS": "Arch. Violation",
+    "MDS": "Mutant Dupl.",
+    "EDS": "Expl. Deficit",
+    "DIA": "Doc/Impl Drift",
+    "TVS": "Temp. Volatility",
+    "SMS": "System Misalign.",
+    "BEM": "Broad Exceptions",
+    "TPD": "Test Polarity",
+    "GCD": "Guard Clauses",
+    "NBV": "Naming Contract",
+    "BAT": "Bypass Accum.",
+    "ECM": "Exception Drift",
+    "CCC": "Co-Change",
+    "TSA": "TS Architecture",
+    "COD": "Cohesion Deficit",
+    "MAZ": "Missing Auth.",
+    "ISD": "Insecure Default",
+    "HSC": "Hardcoded Secret",
+    "PHR": "Phantom Ref.",
+    "FOE": "Fan-out Expl.",
+    "CXS": "Cognitive Compl.",
+    "CIR": "Circular Import",
+    "DCA": "Dead Code",
+}
+
 # Signal abbreviations for security findings — these get a dedicated section (ADR-047)
 _SECURITY_SIGNAL_ABBREVS: frozenset[str] = frozenset({"MAZ", "HSC", "ISD"})
 
@@ -173,6 +202,13 @@ def _signal_label(signal_type: str) -> str:
     """Return a stable signal label; fall back to canonical signal id."""
     signal = str(signal_type)
     return _SIGNAL_LABELS.get(signal, signal)
+
+
+def _signal_display_label(signal_type: str) -> str:
+    """Return 'PFS · Pattern Frag.' for table columns; abbr only if unknown."""
+    abbr = _signal_label(signal_type)
+    short = _SIGNAL_SHORT_NAMES.get(abbr)
+    return f"{abbr} · {short}" if short else abbr
 
 
 _MAX_SNIPPET_LINES: int = 8  # Hard cap per finding; prevents scroll-flooding
@@ -729,14 +765,14 @@ def _render_security_section(
 
     table = Table(title="Security Findings", show_lines=True, border_style="bold red")
     table.add_column("", width=2)
-    table.add_column("Signal", min_width=5)
+    table.add_column("Signal", min_width=20)
     table.add_column("Score", justify="right", min_width=6)
     table.add_column("Title / Details", min_width=50)
 
     for f in security:
         icon = _SEVERITY_ICONS.get(f.severity, "?")
         color = _SEVERITY_COLORS.get(f.severity, "white")
-        signal = _signal_label(f.signal_type)
+        signal = _signal_display_label(f.signal_type)
         table.add_row(
             Text(icon, style=color),
             signal,
@@ -760,14 +796,14 @@ def _render_findings_table(
     """Render a Rich table for a list of findings."""
     table = Table(title=title, show_lines=True)
     table.add_column("", width=2)
-    table.add_column("Signal", min_width=5)
+    table.add_column("Signal", min_width=20)
     table.add_column("Score", justify="right", min_width=6)
     table.add_column("Title / Details", min_width=50)
 
     for f in items:
         icon = _SEVERITY_ICONS.get(f.severity, "?")
         color = _SEVERITY_COLORS.get(f.severity, "white")
-        signal = _signal_label(f.signal_type)
+        signal = _signal_display_label(f.signal_type)
 
         table.add_row(
             Text(icon, style=color),

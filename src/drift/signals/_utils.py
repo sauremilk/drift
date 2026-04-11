@@ -6,6 +6,8 @@ import logging
 from pathlib import Path
 from typing import Any
 
+from drift.ingestion.test_detection import is_test_file as _is_test_file
+
 _TS_LANGUAGES: frozenset[str] = frozenset(
     {"typescript", "tsx", "javascript", "jsx"},
 )
@@ -23,24 +25,7 @@ def is_test_file(file_path: Path) -> bool:
 
     Covers Python, TypeScript / JavaScript and common JS test directories.
     """
-    name = file_path.name.lower()
-    if (
-        name.startswith("test_")
-        or name.endswith("_test.py")
-        or name.endswith(".test.ts")
-        or name.endswith(".test.tsx")
-        or name.endswith(".test.js")
-        or name.endswith(".test.jsx")
-        or name.endswith(".spec.ts")
-        or name.endswith(".spec.tsx")
-        or name.endswith(".spec.js")
-        or name.endswith(".spec.jsx")
-    ):
-        return True
-
-    # Common JS test directory convention
-    parts = file_path.as_posix().lower().split("/")
-    return "__tests__" in parts
+    return _is_test_file(file_path)
 
 
 def is_library_finding_path(file_path: Path | None) -> bool:

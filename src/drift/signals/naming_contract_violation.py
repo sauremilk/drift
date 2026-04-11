@@ -140,6 +140,11 @@ def _is_bool_like_return_type(return_type: str | None) -> bool:
     if not return_type:
         return False
 
+    # TS type predicates (for example: "x is BrowserNode") are bool-compatible.
+    compact = " ".join(return_type.strip().split())
+    if re.match(r"^[A-Za-z_][A-Za-z0-9_]*\s+is\s+.+$", compact):
+        return True
+
     normalized = "".join(return_type.strip().split())
     lowered = normalized.lower()
     if lowered in {"bool", "builtins.bool", "boolean"}:
@@ -226,14 +231,60 @@ _CHECKERS_WITH_FN_INFO: dict[str, Callable[[ast.Module, FunctionInfo], bool]] = 
 # ── TypeScript AST checkers (tree-sitter) ─────────────────────────
 
 
-def _ts_has_rejection_path(root: Any, src: bytes) -> bool:
-    """Return True if the TS body contains throw or return false/null."""
+def _ts_has_rejection_path(root: Any, src: bytes, fn_info: FunctionInfo) -> bool:
+    """Return True if TS/JS validation code exposes a rejection path.
+
+    Besides throw and ``return false|null|undefined``, this accepts common
+    validation idioms like returning error strings, structured error objects,
+    bare early ``return;`` and explicit Promise rejection calls.
+    """
+    def _looks_like_rejection_object(expr_text: str) -> bool:
+        compact = " ".join(expr_text.split()).lower()
+        if not compact.startswith("{"):
+            return False
+        if re.search(r"\b(valid|ok)\s*:\s*false\b", compact):
+            return True
+        return bool(re.search(r"\b(error|errors|message|reason)\s*:", compact))
+
+    normalized_return_type = (fn_info.return_type or "").replace(" ", "").lower()
+    allows_error_string = (
+        "string" in normalized_return_type
+        and ("null" in normalized_return_type or "undefined" in normalized_return_type)
+    )
+    allows_bare_return = (
+        not normalized_return_type
+        or "void" in normalized_return_type
+        or "undefined" in normalized_return_type
+        or "null" in normalized_return_type
+    )
+
     for node in ts_walk(root):
         if node.type == "throw_statement":
             return True
+
         if node.type == "return_statement":
-            for child in node.children:
-                if child.type in ("false", "null"):
+            value_children = [c for c in node.children if c.type not in ("return", ";")]
+            if not value_children and allows_bare_return:
+                # In validate/check-style TS functions, bare early return is
+                # commonly used to signal rejection/failure.
+                return True
+
+            value = value_children[0]
+            if value.type in ("false", "null", "undefined"):
+                return True
+            if value.type in ("string", "template_string") and allows_error_string:
+                return True
+
+            value_text = ts_node_text(value, src)
+            if _looks_like_rejection_object(value_text):
+                return True
+
+        if node.type == "call_expression":
+            func = node.child_by_field_name("function")
+            if func is None:
+                continue
+            func_text = ts_node_text(func, src).replace(" ", "").lower()
+            if func_text in {"reject", "promise.reject"} or func_text.endswith(".reject"):
                     return True
     return False
 
@@ -254,9 +305,77 @@ def _ts_has_return_value(root: Any, src: bytes) -> bool:
     return False
 
 
+def _ts_has_idempotent_side_effect(root: Any, src: bytes) -> bool:
+    """Return True for TS ensure-style side effects that establish state.
+
+    This accepts common TS/JS ensure-by-creation patterns (for example
+    property/index assignment, nullish assignment on object slots, and
+    mutating API calls like ``mkdirSync``/``set``/``push``/``register``).
+    """
+
+    mutating_call_markers = (
+        "mkdir",
+        "mkdirsync",
+        "set",
+        "add",
+        "push",
+        "unshift",
+        "splice",
+        "assign",
+        "defineproperty",
+        "writefile",
+        "writefilesync",
+        "appendfile",
+        "appendfilesync",
+        "register",
+        "initialize",
+        "init",
+        "create",
+        "attachshadow",
+        "load",
+        "configure",
+        "start",
+    )
+
+    for node in ts_walk(root):
+        if node.type == "assignment_expression":
+            left = node.child_by_field_name("left")
+            if left is not None:
+                left_text = ts_node_text(left, src)
+                # Local rebind (e.g. `next = {}`) is not enough; we require
+                # stateful targets like `obj.key` or `obj[key]`.
+                if "." in left_text or "[" in left_text:
+                    return True
+
+            assignment_text = ts_node_text(node, src)
+            if "??=" in assignment_text or "||=" in assignment_text or "&&=" in assignment_text:
+                return True
+
+        if node.type == "update_expression":
+            arg = node.child_by_field_name("argument")
+            if arg is not None:
+                arg_text = ts_node_text(arg, src)
+                if "." in arg_text or "[" in arg_text:
+                    return True
+
+        if node.type == "call_expression":
+            func = node.child_by_field_name("function")
+            if func is None:
+                continue
+            func_text = ts_node_text(func, src).lower()
+            if any(marker in func_text for marker in mutating_call_markers):
+                return True
+
+    return False
+
+
 def _ts_has_ensure_contract(root: Any, src: bytes) -> bool:
-    """TS/JS ensure_* allows either throw path or value-returning guarantee path."""
-    return _ts_has_raise(root, src) or _ts_has_return_value(root, src)
+    """TS/JS ensure_* allows throw, value-return, or idempotent init side-effects."""
+    return (
+        _ts_has_raise(root, src)
+        or _ts_has_return_value(root, src)
+        or _ts_has_idempotent_side_effect(root, src)
+    )
 
 
 def _ts_has_create_path(root: Any, src: bytes) -> bool:
@@ -269,6 +388,60 @@ def _ts_has_create_path(root: Any, src: bytes) -> bool:
 
 def _ts_has_bool_return(root: Any, src: bytes, fn_info: FunctionInfo) -> bool:
     """Return True if TS function has boolean return type or only returns booleans."""
+    def _unwrap_expression(node: Any) -> Any:
+        """Unwrap wrapper nodes around an expression for robust type checks."""
+        current = node
+        while current is not None:
+            if current.type in {
+                "parenthesized_expression",
+                "as_expression",
+                "type_assertion",
+                "satisfies_expression",
+                "non_null_expression",
+            }:
+                expr = current.child_by_field_name("expression")
+                if expr is None:
+                    # Fallback for nodes without a named expression field.
+                    children = [c for c in current.children if c.type not in {"(", ")", "as", "!"}]
+                    expr = children[0] if children else None
+                if expr is None:
+                    break
+                current = expr
+                continue
+            break
+        return current
+
+    def _is_bool_like_ts_expression(node: Any) -> bool:
+        """Heuristic for bool-returning TS expressions when return type is absent."""
+        n = _unwrap_expression(node)
+        if n is None:
+            return False
+
+        if n.type in {"true", "false"}:
+            return True
+
+        if n.type == "unary_expression":
+            txt = ts_node_text(n, src).lstrip()
+            # !x and !!x are always boolean in JS/TS.
+            return bool(txt.startswith("!"))
+
+        if n.type == "binary_expression":
+            expr_text = ts_node_text(n, src)
+            comparison_ops = ("===", "!==", "==", "!=", "<=", ">=", "<", ">", "instanceof")
+            if any(op in expr_text for op in comparison_ops):
+                return True
+            return bool(re.search(r"\bin\b", expr_text))
+
+        if n.type == "call_expression":
+            callee = n.child_by_field_name("function")
+            if callee is not None:
+                callee_text = ts_node_text(callee, src).strip()
+                if callee_text == "Boolean":
+                    return True
+            return False
+
+        return False
+
     if _is_bool_like_return_type(fn_info.return_type):
         return True
 
@@ -280,14 +453,62 @@ def _ts_has_bool_return(root: Any, src: bytes, fn_info: FunctionInfo) -> bool:
         value_children = [c for c in ret.children if c.type not in ("return", ";")]
         if not value_children:
             return False  # bare return
-        if value_children[0].type not in ("true", "false"):
+        if not _is_bool_like_ts_expression(value_children[0]):
             return False
     return True
 
 
 def _ts_has_try_except(root: Any, src: bytes) -> bool:
-    """Return True if the TS body contains a try statement."""
-    return any(n.type == "try_statement" for n in ts_walk(root))
+    """Return True for TS try_* contracts with graceful-failure semantics.
+
+    Besides explicit ``try { ... } catch { ... }``, this accepts common
+    TS/JS attempt-style patterns such as Promise ``.catch(...)``, optional
+    chaining with fallback, nullish-coalescing fallback, and conditional
+    early fallback returns.
+    """
+    source_text = src.decode("utf-8", errors="ignore")
+
+    def _is_fallback_literal(expr_text: str) -> bool:
+        normalized = " ".join(expr_text.strip().split()).lower()
+        return normalized in {"", "undefined", "null", "false"}
+
+    def _return_expr(ret_node: Any) -> str:
+        value_children = [c for c in ret_node.children if c.type not in ("return", ";")]
+        if not value_children:
+            return ""
+        return ts_node_text(value_children[0], src)
+
+    # 1) Canonical try/catch.
+    if any(n.type == "try_statement" for n in ts_walk(root)):
+        return True
+
+    # 2) Promise-style handling: foo().catch(...)
+    if re.search(r"\.catch\s*\(", source_text):
+        return True
+
+    returns = [n for n in ts_walk(root) if n.type == "return_statement"]
+
+    # 3) Optional chaining + fallback and nullish fallback expressions.
+    for ret in returns:
+        expr_text = _return_expr(ret)
+        compact = "".join(expr_text.split())
+        if "?." in compact and ("??" in compact or "||" in compact):
+            return True
+        if "??" in compact and not compact.endswith("??undefined"):
+            return True
+
+    # 4) Conditional early return with explicit fallback value.
+    if len(returns) >= 2:
+        for node in ts_walk(root):
+            if node.type != "if_statement":
+                continue
+            for child in ts_walk(node):
+                if child.type != "return_statement":
+                    continue
+                if _is_fallback_literal(_return_expr(child)):
+                    return True
+
+    return False
 
 
 def _read_function_source(
@@ -357,7 +578,7 @@ def _contract_suggestion(matched_prefix: str, fn_name: str) -> str:
 
 
 _TS_CHECKERS: dict[str, Callable[..., bool]] = {
-    "_has_rejection_path": lambda root, src, _fn: _ts_has_rejection_path(root, src),
+    "_has_rejection_path": lambda root, src, fn: _ts_has_rejection_path(root, src, fn),
     "_has_raise": lambda root, src, _fn: _ts_has_raise(root, src),
     "_has_create_path": lambda root, src, _fn: _ts_has_create_path(root, src),
     "_has_bool_return": lambda root, src, fn: _ts_has_bool_return(root, src, fn),
@@ -508,77 +729,11 @@ class NamingContractViolationSignal(BaseSignal):
 
         # ── TS-specific naming convention checks ──────────────────────
 
-        # 1. Interface I-Prefix consistency (cross-file)
-        iface_names_2: list[tuple[str, Path, int]] = []
-        for pr in parse_results:
-            if pr.language not in _TS_LANGUAGES:
-                continue
-            if is_test_file(pr.file_path):
-                continue
-            for cls in pr.classes:
-                if cls.is_interface:
-                    iface_names_2.append((cls.name, cls.file_path, cls.start_line))
+        # Only keep architecture-relevant enum casing consistency.
+        # Generic parameter naming style and interface I-prefix style are
+        # intentionally not treated as drift findings (Issue #219).
 
-        if len(iface_names_2) >= 4:
-            i_prefixed = [
-                n
-                for n, _, _ in iface_names_2
-                if n.startswith("I") and len(n) > 1 and n[1].isupper()
-            ]
-            prefixed_ratio_text = f"{len(i_prefixed)}/{len(iface_names_2)}"
-            ratio = len(i_prefixed) / len(iface_names_2)
-
-            if ratio > 0.5:
-                # I-prefix is dominant → flag outliers without I-prefix
-                for iname, fpath, line in iface_names_2:
-                    if not (iname.startswith("I") and len(iname) > 1 and iname[1].isupper()):
-                        findings.append(
-                            Finding(
-                                signal_type=self.signal_type,
-                                severity=Severity.LOW,
-                                score=0.3,
-                                title=f"Interface '{iname}' missing I-prefix",
-                                description=(
-                                    f"Interface '{iname}' at {fpath.as_posix()}:{line} "
-                                    f"does not use I-prefix, but {prefixed_ratio_text} "
-                                    f"interfaces in the codebase do. "
-                                    f"Inconsistent naming reduces discoverability."
-                                ),
-                                file_path=fpath,
-                                start_line=line,
-                                fix=(
-                                    f"Rename '{iname}' to 'I{iname}' "
-                                    "to match the dominant convention."
-                                ),
-                                metadata={"convention": "I-prefix", "ratio": round(ratio, 2)},
-                            )
-                        )
-            elif ratio < 0.2:
-                # No-prefix is dominant → flag outliers with I-prefix
-                for iname, fpath, line in iface_names_2:
-                    if iname.startswith("I") and len(iname) > 1 and iname[1].isupper():
-                        findings.append(
-                            Finding(
-                                signal_type=self.signal_type,
-                                severity=Severity.LOW,
-                                score=0.3,
-                                title=f"Interface '{iname}' uses I-prefix against convention",
-                                description=(
-                                    f"Interface '{iname}' at {fpath.as_posix()}:{line} "
-                                    f"uses I-prefix, but only {prefixed_ratio_text} "
-                                    f"interfaces do. Inconsistent naming reduces readability."
-                                ),
-                                file_path=fpath,
-                                start_line=line,
-                                fix=(
-                                    f"Rename '{iname}' to '{iname[1:]}' "
-                                    "to match the dominant convention."
-                                ),
-                                metadata={"convention": "no-prefix", "ratio": round(ratio, 2)},
-                            )
-                        )
-
-        # 2. Enum member casing consistency (per-file)
+        # 1. Enum member casing consistency (per-file)
         for pr in parse_results:
             if pr.language not in _TS_LANGUAGES:
                 continue
@@ -649,263 +804,5 @@ class NamingContractViolationSignal(BaseSignal):
                             },
                         )
                     )
-
-        # 3. Generic parameter naming mix (per-file)
-        for pr in parse_results:
-            if pr.language not in _TS_LANGUAGES:
-                continue
-            if is_test_file(pr.file_path):
-                continue
-
-            try:
-                source_text = _resolve_source_path(
-                    pr.file_path, self.repo_path
-                ).read_text(encoding="utf-8", errors="replace")
-            except OSError:
-                continue
-
-            parsed = ts_parse_source(source_text, pr.language)
-            if parsed is None:
-                continue
-            root, src_bytes = parsed
-
-            single_letter: list[str] = []
-            verbose: list[str] = []
-
-            for node in ts_walk(root):
-                if node.type == "type_parameter":
-                    name_node = node.child_by_field_name("name")
-                    if name_node:
-                        pname = ts_node_text(name_node, src_bytes)
-                        if len(pname) == 1 and pname.isupper():
-                            single_letter.append(pname)
-                        elif len(pname) > 1:
-                            verbose.append(pname)
-
-            if single_letter and verbose:
-                findings.append(
-                    Finding(
-                        signal_type=self.signal_type,
-                        severity=Severity.LOW,
-                        score=0.3,
-                        title=f"Mixed generic parameter naming in {pr.file_path.name}",
-                        description=(
-                            f"{pr.file_path.as_posix()} mixes single-letter generics "
-                            f"({', '.join(sorted(set(single_letter)))}) with verbose names "
-                            f"({', '.join(sorted(set(verbose)))}). "
-                            f"Pick one convention per codebase."
-                        ),
-                        file_path=pr.file_path,
-                        start_line=1,
-                        fix=(
-                            "Standardise generic parameter names "
-                            "to either single-letter or descriptive style."
-                        ),
-                        metadata={
-                            "single_letter": sorted(set(single_letter)),
-                            "verbose": sorted(set(verbose)),
-                        },
-                    )
-                )
-
-        # ── TS-specific naming convention checks ──────────────────────
-
-        # 1. Interface I-Prefix consistency (cross-file)
-        iface_names: list[tuple[str, Path, int]] = []
-        for pr in parse_results:
-            if pr.language not in _TS_LANGUAGES:
-                continue
-            if is_test_file(pr.file_path):
-                continue
-            for cls in pr.classes:
-                if cls.is_interface:
-                    iface_names.append((cls.name, cls.file_path, cls.start_line))
-
-        if len(iface_names) >= 4:
-            i_prefixed = [
-                n for n, _, _ in iface_names if n.startswith("I") and len(n) > 1 and n[1].isupper()
-            ]
-            prefixed_ratio_text = f"{len(i_prefixed)}/{len(iface_names)}"
-            ratio = len(i_prefixed) / len(iface_names)
-
-            if ratio > 0.5:
-                # I-prefix is dominant → flag outliers without I-prefix
-                for iname, fpath, line in iface_names_2:
-                    if not (iname.startswith("I") and len(iname) > 1 and iname[1].isupper()):
-                        findings.append(
-                            Finding(
-                                signal_type=self.signal_type,
-                                severity=Severity.LOW,
-                                score=0.3,
-                                title=f"Interface '{iname}' missing I-prefix",
-                                description=(
-                                    f"Interface '{iname}' at {fpath.as_posix()}:{line} "
-                                    f"does not use I-prefix, but {prefixed_ratio_text} "
-                                    f"interfaces in the codebase do. "
-                                    f"Inconsistent naming reduces discoverability."
-                                ),
-                                file_path=fpath,
-                                start_line=line,
-                                fix=(
-                                    f"Rename '{iname}' to 'I{iname}' "
-                                    "to match the dominant convention."
-                                ),
-                                metadata={"convention": "I-prefix", "ratio": round(ratio, 2)},
-                            )
-                        )
-            elif ratio < 0.2:
-                # No-prefix is dominant → flag outliers with I-prefix
-                for iname, fpath, line in iface_names:
-                    if iname.startswith("I") and len(iname) > 1 and iname[1].isupper():
-                        findings.append(
-                            Finding(
-                                signal_type=self.signal_type,
-                                severity=Severity.LOW,
-                                score=0.3,
-                                title=f"Interface '{iname}' uses I-prefix against convention",
-                                description=(
-                                    f"Interface '{iname}' at {fpath.as_posix()}:{line} "
-                                    f"uses I-prefix, but only {len(i_prefixed)}/{len(iface_names)} "
-                                    f"interfaces do. Inconsistent naming reduces readability."
-                                ),
-                                file_path=fpath,
-                                start_line=line,
-                                fix=(
-                                    f"Rename '{iname}' to '{iname[1:]}' "
-                                    "to match the dominant convention."
-                                ),
-                                metadata={"convention": "no-prefix", "ratio": round(ratio, 2)},
-                            )
-                        )
-
-        # 2. Enum member casing consistency (per-file)
-        for pr in parse_results:
-            if pr.language not in _TS_LANGUAGES:
-                continue
-            if is_test_file(pr.file_path):
-                continue
-
-            try:
-                source_text = _resolve_source_path(
-                    pr.file_path, self.repo_path
-                ).read_text(encoding="utf-8", errors="replace")
-            except OSError:
-                continue
-
-            parsed = ts_parse_source(source_text, pr.language)
-            if parsed is None:
-                continue
-            root, src_bytes = parsed
-
-            for node in ts_walk(root):
-                if node.type != "enum_declaration":
-                    continue
-
-                enum_name_node = node.child_by_field_name("name")
-                enum_name = (
-                    ts_node_text(enum_name_node, src_bytes) if enum_name_node else "anonymous"
-                )
-
-                members_2: list[str] = []
-                for child in ts_walk(node):
-                    if child.type == "enum_assignment":
-                        name_node = child.child_by_field_name("name")
-                        if name_node:
-                            members_2.append(ts_node_text(name_node, src_bytes))
-                    elif (
-                        child.type == "property_identifier"
-                        and child.parent
-                        and child.parent.type == "enum_body"
-                    ):
-                        members_2.append(ts_node_text(child, src_bytes))
-
-                if len(members_2) < 2:
-                    continue
-
-                screaming = sum(1 for m in members_2 if re.match(r"^[A-Z][A-Z0-9_]+$", m))
-                pascal = sum(1 for m in members_2 if re.match(r"^[A-Z][a-z]", m) and "_" not in m)
-
-                if screaming > 0 and pascal > 0:
-                    # Mixed casing
-                    dominant = "SCREAMING_SNAKE" if screaming >= pascal else "PascalCase"
-                    findings.append(
-                        Finding(
-                            signal_type=self.signal_type,
-                            severity=Severity.LOW,
-                            score=0.3,
-                            title=f"Enum '{enum_name}' has mixed member casing",
-                            description=(
-                                f"Enum '{enum_name}' in {pr.file_path.as_posix()} "
-                                f"mixes {screaming} SCREAMING_SNAKE and {pascal} PascalCase "
-                                f"members. Dominant style: {dominant}."
-                            ),
-                            file_path=pr.file_path,
-                            start_line=node.start_point[0] + 1,
-                            fix=(f"Standardise enum '{enum_name}' member casing to {dominant}."),
-                            metadata={
-                                "enum_name": enum_name,
-                                "screaming": screaming,
-                                "pascal": pascal,
-                            },
-                        )
-                    )
-
-        # 3. Generic parameter naming mix (per-file)
-        for pr in parse_results:
-            if pr.language not in _TS_LANGUAGES:
-                continue
-            if is_test_file(pr.file_path):
-                continue
-
-            try:
-                source_text = _resolve_source_path(
-                    pr.file_path, self.repo_path
-                ).read_text(encoding="utf-8", errors="replace")
-            except OSError:
-                continue
-
-            parsed = ts_parse_source(source_text, pr.language)
-            if parsed is None:
-                continue
-            root, src_bytes = parsed
-
-            single_letter_2: list[str] = []
-            verbose_2: list[str] = []
-
-            for node in ts_walk(root):
-                if node.type == "type_parameter":
-                    name_node = node.child_by_field_name("name")
-                    if name_node:
-                        pname = ts_node_text(name_node, src_bytes)
-                        if len(pname) == 1 and pname.isupper():
-                            single_letter_2.append(pname)
-                        elif len(pname) > 1:
-                            verbose_2.append(pname)
-
-            if single_letter_2 and verbose_2:
-                findings.append(
-                    Finding(
-                        signal_type=self.signal_type,
-                        severity=Severity.LOW,
-                        score=0.3,
-                        title=f"Mixed generic parameter naming in {pr.file_path.name}",
-                        description=(
-                            f"{pr.file_path.as_posix()} mixes single-letter generics "
-                            f"({', '.join(sorted(set(single_letter_2)))}) with verbose names "
-                            f"({', '.join(sorted(set(verbose_2)))}). "
-                            f"Pick one convention per codebase."
-                        ),
-                        file_path=pr.file_path,
-                        start_line=1,
-                        fix=(
-                            "Standardise generic parameter names "
-                            "to either single-letter or descriptive style."
-                        ),
-                        metadata={
-                            "single_letter": sorted(set(single_letter_2)),
-                            "verbose": sorted(set(verbose_2)),
-                        },
-                    )
-                )
 
         return findings

@@ -131,6 +131,71 @@ def check_permissions(user: object, resource: str) -> str:
         assert len(findings) == 1
         assert "check_" in findings[0].metadata["prefix_rule"]
 
+    @needs_tree_sitter
+    def test_validate_ts_returns_error_string_or_null_no_finding(self, tmp_path: Path):
+        pr = _write_and_parse_ts(
+            tmp_path,
+            "src/validators.ts",
+            """\
+export function validateBaseUrl(input: string): string | null {
+    if (!input.startsWith("https://")) {
+        return "base url must start with https://";
+    }
+    return null;
+}
+""",
+        )
+
+        findings = _run([pr], repo_path=tmp_path)
+        nbv_findings = [
+            f for f in findings if f.signal_type == SignalType.NAMING_CONTRACT_VIOLATION
+        ]
+        assert nbv_findings == []
+
+    @needs_tree_sitter
+    def test_validate_ts_returns_validation_object_no_finding(self, tmp_path: Path):
+        pr = _write_and_parse_ts(
+            tmp_path,
+            "src/validators.ts",
+            """\
+type ValidationResult = { valid: boolean; error?: string };
+
+export function validateConfig(raw: Record<string, unknown>): ValidationResult {
+    if (!raw["token"]) {
+        return { valid: false, error: "missing token" };
+    }
+    return { valid: true };
+}
+""",
+        )
+
+        findings = _run([pr], repo_path=tmp_path)
+        nbv_findings = [
+            f for f in findings if f.signal_type == SignalType.NAMING_CONTRACT_VIOLATION
+        ]
+        assert nbv_findings == []
+
+    @needs_tree_sitter
+    def test_check_ts_bare_return_void_rejection_no_finding(self, tmp_path: Path):
+        pr = _write_and_parse_ts(
+            tmp_path,
+            "src/validators.ts",
+            """\
+export function checkAuth(token?: string): void {
+    if (!token) {
+        return;
+    }
+    const ready = true;
+}
+""",
+        )
+
+        findings = _run([pr], repo_path=tmp_path)
+        nbv_findings = [
+            f for f in findings if f.signal_type == SignalType.NAMING_CONTRACT_VIOLATION
+        ]
+        assert nbv_findings == []
+
 
 # ===================================================================
 # ensure_* — expects raise
@@ -215,6 +280,68 @@ export function ensureReady(flag: boolean): void {
         ]
         assert len(nbv_findings) == 1
         assert nbv_findings[0].metadata.get("prefix_rule") == "ensure_"
+
+    @needs_tree_sitter
+    def test_ensure_idempotent_mkdir_side_effect_no_finding(self, tmp_path: Path):
+        pr = _write_and_parse_ts(
+                tmp_path,
+                "src/fs_helpers.ts",
+                """\
+import * as fs from "node:fs";
+
+export function ensureOutputRootDir(root: string): void {
+    if (!fs.existsSync(root)) {
+        fs.mkdirSync(root, { recursive: true });
+    }
+}
+""",
+        )
+
+        findings = _run([pr], repo_path=tmp_path)
+        nbv_findings = [
+            f for f in findings if f.signal_type == SignalType.NAMING_CONTRACT_VIOLATION
+        ]
+        assert nbv_findings == []
+
+    @needs_tree_sitter
+    def test_ensure_property_assignment_side_effect_no_finding(self, tmp_path: Path):
+        pr = _write_and_parse_ts(
+                tmp_path,
+                "src/dom_helpers.ts",
+                """\
+export function ensureShadowRoot(host: HTMLElement): void {
+    if (!host.shadowRoot) {
+        host.shadowRoot = host.attachShadow({ mode: "open" });
+    }
+}
+""",
+        )
+
+        findings = _run([pr], repo_path=tmp_path)
+        nbv_findings = [
+            f for f in findings if f.signal_type == SignalType.NAMING_CONTRACT_VIOLATION
+        ]
+        assert nbv_findings == []
+
+    @needs_tree_sitter
+    def test_ensure_registry_set_side_effect_no_finding(self, tmp_path: Path):
+        pr = _write_and_parse_ts(
+                tmp_path,
+                "src/registry.ts",
+                """\
+export function ensureThemeRegistered(registry: Map<string, object>, key: string): void {
+    if (!registry.has(key)) {
+        registry.set(key, {});
+    }
+}
+""",
+        )
+
+        findings = _run([pr], repo_path=tmp_path)
+        nbv_findings = [
+            f for f in findings if f.signal_type == SignalType.NAMING_CONTRACT_VIOLATION
+        ]
+        assert nbv_findings == []
 
 
 # ===================================================================
@@ -541,3 +668,62 @@ export async function isSessionLabel(): Promise<string> {
                 ]
                 assert len(nbv_findings) == 1
                 assert nbv_findings[0].metadata.get("prefix_rule") == "is_"
+
+        def test_type_predicate_return_type_no_finding(self, tmp_path: Path):
+                pr = _write_and_parse_ts(
+                        tmp_path,
+                        "src/checks.ts",
+                        """\
+type BrowserNode = { kind: "browser" };
+
+export function isBrowserNode(node: unknown): node is BrowserNode {
+    return typeof node === "object" && node !== null;
+}
+""",
+                )
+
+                findings = _run([pr], repo_path=tmp_path)
+                nbv_findings = [
+                    f
+                    for f in findings
+                    if f.signal_type == SignalType.NAMING_CONTRACT_VIOLATION
+                ]
+                assert nbv_findings == []
+
+        def test_comparison_expression_without_annotation_no_finding(self, tmp_path: Path):
+                pr = _write_and_parse_ts(
+                        tmp_path,
+                        "src/checks.ts",
+                        """\
+export function isUsableTimestamp(input: unknown) {
+    return typeof input === "number" && input > 0;
+}
+""",
+                )
+
+                findings = _run([pr], repo_path=tmp_path)
+                nbv_findings = [
+                    f
+                    for f in findings
+                    if f.signal_type == SignalType.NAMING_CONTRACT_VIOLATION
+                ]
+                assert nbv_findings == []
+
+        def test_typed_arrow_declarator_return_type_no_finding(self, tmp_path: Path):
+                pr = _write_and_parse_ts(
+                        tmp_path,
+                        "src/checks.ts",
+                        """\
+export const hasConversation: (state: { messages: unknown[] }) => boolean = (state) => {
+    return state.messages.length > 0;
+};
+""",
+                )
+
+                findings = _run([pr], repo_path=tmp_path)
+                nbv_findings = [
+                    f
+                    for f in findings
+                    if f.signal_type == SignalType.NAMING_CONTRACT_VIOLATION
+                ]
+                assert nbv_findings == []

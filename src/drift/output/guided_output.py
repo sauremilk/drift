@@ -68,7 +68,7 @@ def can_continue(status: TrafficLight) -> bool:
 
 
 # ---------------------------------------------------------------------------
-# Headlines (everyday German)
+# Headlines — German (default) and English variants
 # ---------------------------------------------------------------------------
 
 _HEADLINES: dict[TrafficLight, str] = {
@@ -80,9 +80,17 @@ _HEADLINES: dict[TrafficLight, str] = {
     ),
 }
 
+_HEADLINES_EN: dict[TrafficLight, str] = {
+    TrafficLight.GREEN: "Your project looks healthy. You can keep coding.",
+    TrafficLight.YELLOW: "There are areas that need attention.",
+    TrafficLight.RED: "Your project has a structural issue you should address now.",
+}
 
-def headline_for_status(status: TrafficLight) -> str:
+
+def headline_for_status(status: TrafficLight, language: str = "de") -> str:
     """Return an everyday-language headline for the given status."""
+    if language.startswith("en"):
+        return _HEADLINES_EN[status]
     return _HEADLINES[status]
 
 
@@ -103,7 +111,7 @@ def emoji_for_status(status: TrafficLight) -> str:
 
 
 # ---------------------------------------------------------------------------
-# Severity labels (German, no technical jargon)
+# Severity labels — German (default) and English variants
 # ---------------------------------------------------------------------------
 
 _SEVERITY_LABELS: dict[str, str] = {
@@ -114,9 +122,27 @@ _SEVERITY_LABELS: dict[str, str] = {
     "info": "Info",
 }
 
+_SEVERITY_LABELS_EN: dict[str, str] = {
+    "critical": "Critical",
+    "high": "High",
+    "medium": "Medium",
+    "low": "Low",
+    "info": "Info",
+}
 
-def severity_label(severity: str) -> str:
-    """German everyday label for a severity value."""
+
+def severity_label(severity: str, language: str = "de") -> str:
+    """Everyday label for a severity value.
+
+    Parameters
+    ----------
+    severity:
+        Raw severity string (e.g. ``"high"``).
+    language:
+        ``"en"`` for English labels; ``"de"`` (default) for German labels.
+    """
+    if language.startswith("en"):
+        return _SEVERITY_LABELS_EN.get(severity, severity)
     return _SEVERITY_LABELS.get(severity, severity)
 
 
@@ -131,8 +157,36 @@ def is_calibrated(thresholds: dict[str, float] | None) -> bool:
 
 
 # ---------------------------------------------------------------------------
-# Plain-language signal descriptions (German, all scoring-active signals)
+# Plain-language signal descriptions — German (default) and English variants
 # ---------------------------------------------------------------------------
+
+SIGNAL_PLAIN_TEXT_EN: dict[str, str] = {
+    "pattern_fragmentation": "The same concept is solved multiple ways across the module.",
+    "architecture_violation": "Code accesses layers it should not depend on directly.",
+    "mutant_duplicate": "Near-identical code blocks diverge in subtle ways.",
+    "explainability_deficit": "Complex code lacks documentation or clear naming.",
+    "doc_impl_drift": "Documentation no longer matches the actual implementation.",
+    "system_misalignment": "New code introduces conventions that conflict with the module norm.",
+    "broad_exception_monoculture": "Exceptions are caught too broadly, silencing specific errors.",
+    "test_polarity_deficit": "Tests only cover the happy path — failure cases are not tested.",
+    "guard_clause_deficit": "Missing early returns create deep nesting that is hard to follow.",
+    "naming_contract_violation": "Names are inconsistent with project naming conventions.",
+    "bypass_accumulation": "Growing number of bypassed quality checks signals deferred debt.",
+    "exception_contract_drift": "Raised exceptions diverge from the declared error contract.",
+    "cohesion_deficit": "A file or class handles too many unrelated responsibilities.",
+    "co_change_coupling": "Files that always change together hide an implicit shared dependency.",
+    "fan_out_explosion": "A module imports too many others, creating fragile coupling.",
+    "hardcoded_secret": "Credentials or secrets are hardcoded in source files.",
+    "phantom_reference": "Code references functions or modules that no longer exist.",
+    "temporal_volatility": "Certain files change unusually often.",
+    "ts_architecture": "TypeScript code has structural problems.",
+    "cognitive_complexity": "Functions are nested too deeply and are hard to reason about.",
+    "circular_import": "Modules import each other, creating fragile load-order dependencies.",
+    "dead_code_accumulation": "Unreachable code clutters the codebase.",
+    "missing_authorization": "Certain endpoints may lack an authorization check.",
+    "insecure_default": "Security-relevant settings use insecure default values.",
+    "type_safety_bypass": "Type checks are bypassed in multiple places.",
+}
 
 SIGNAL_PLAIN_TEXT: dict[str, str] = {
     # --- 15 original core signals (excluding temporal_volatility = report-only) ---
@@ -239,12 +293,63 @@ SCORING_ACTIVE_SIGNALS: frozenset[str] = frozenset({
 })
 
 
-def plain_text_for_signal(signal_type: str) -> str:
+def plain_text_for_signal(signal_type: str, language: str = "de") -> str:
     """Return the plain-language description for a signal type.
+
+    Parameters
+    ----------
+    signal_type:
+        Signal type string (e.g. ``"pattern_fragmentation"``).
+    language:
+        ``"en"`` for English descriptions; ``"de"`` (default) for German.
 
     Falls back to the raw signal type name if no mapping exists.
     """
+    if language.startswith("en"):
+        return SIGNAL_PLAIN_TEXT_EN.get(signal_type, signal_type)
     return SIGNAL_PLAIN_TEXT.get(signal_type, signal_type)
+
+
+# ---------------------------------------------------------------------------
+# Profile-aware score context
+# ---------------------------------------------------------------------------
+
+# Typical healthy score ranges per profile (derived from benchmark data).
+_PROFILE_CONTEXT: dict[str, dict[str, str]] = {
+    "vibe-coding": {
+        "range": "0.20–0.50",
+        "note_en": (
+            "Vibe-coding profile: AI-assisted projects typically score "
+            "0.20–0.50 on first scan."
+        ),
+        "note_de": (
+            "Vibe-Coding Profil: KI-unterstützte Projekte liegen beim ersten "
+            "Scan meist bei 0.20–0.50."
+        ),
+    },
+    "default": {
+        "range": "0.25–0.55",
+        "note_en": "Default profile: fresh projects typically score 0.25–0.55 on first scan.",
+        "note_de": "Standard-Profil: Neue Projekte liegen beim ersten Scan meist bei 0.25–0.55.",
+    },
+    "strict": {
+        "range": "0.30–0.65",
+        "note_en": "Strict profile: scores above 0.45 warrant attention.",
+        "note_de": "Striktes Profil: Scores über 0.45 sollten beachtet werden.",
+    },
+}
+
+
+def profile_score_context(profile_name: str, language: str = "en") -> str | None:
+    """Return a short contextual note about the score range for a given profile.
+
+    Returns ``None`` when no context is available for the profile.
+    """
+    ctx = _PROFILE_CONTEXT.get(profile_name)
+    if ctx is None:
+        return None
+    key = "note_de" if language.startswith("de") else "note_en"
+    return ctx[key]
 
 
 # ---------------------------------------------------------------------------

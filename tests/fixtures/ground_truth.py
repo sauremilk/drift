@@ -7224,6 +7224,235 @@ PFS_TS_TRUE_NEGATIVE = GroundTruthFixture(
 )
 
 
+# ── TypeScript ground-truth fixtures (Phase 4 — HSC/CXS/ISD/MAZ TS ports) ──
+
+HSC_TS_GITHUB_TOKEN_TP = GroundTruthFixture(
+    name="hsc_ts_github_token_tp",
+    description="Hardcoded GitHub PAT in TypeScript → should fire HSC",
+    files={
+        "src/config.ts": textwrap.dedent("""\
+            const GITHUB_TOKEN = "ghp_ABCDEFghijklmnopqrstuvwxyz0123456789";
+            export const API_URL = "https://api.github.com";
+        """),
+    },
+    expected=[
+        ExpectedFinding(
+            signal_type=SignalType.HARDCODED_SECRET,
+            file_path="src/config.ts",
+            should_detect=True,
+            description="ghp_ prefix is a high-confidence GitHub PAT",
+        ),
+    ],
+)
+
+HSC_TS_ENV_READ_TN = GroundTruthFixture(
+    name="hsc_ts_env_read_tn",
+    description="Secret loaded from process.env → should NOT fire HSC",
+    files={
+        "src/config.ts": textwrap.dedent("""\
+            const API_KEY = process.env.API_KEY || "";
+            const SECRET_TOKEN = process.env.SECRET_TOKEN;
+        """),
+    },
+    expected=[
+        ExpectedFinding(
+            signal_type=SignalType.HARDCODED_SECRET,
+            file_path="src/config.ts",
+            should_detect=False,
+            description="process.env reads are dynamic, not hardcoded",
+        ),
+    ],
+)
+
+CXS_TS_DEEP_NESTING_TP = GroundTruthFixture(
+    name="cxs_ts_deep_nesting_tp",
+    description="Deeply nested TS function → CC >> 15, should fire CXS",
+    kind=FixtureKind.POSITIVE,
+    files={
+        "src/processor.ts": textwrap.dedent("""\
+            export function processBatch(orders: any[], config: any): any[] {
+                const results: any[] = [];
+                for (const order of orders) {
+                    if (order.status === "pending") {
+                        for (const item of order.items) {
+                            if (item.quantity > 0) {
+                                if (item.price > config.minPrice) {
+                                    while (!config.isReady()) {
+                                        if (config.retry) {
+                                            try {
+                                                config.reconnect();
+                                            } catch (e) {
+                                                if (config.fallback) {
+                                                    results.push(null);
+                                                } else {
+                                                    throw e;
+                                                }
+                                            }
+                                        } else {
+                                            break;
+                                        }
+                                    }
+                                    results.push(item);
+                                }
+                            }
+                        }
+                    }
+                }
+                return results;
+            }
+        """),
+    },
+    expected=[
+        ExpectedFinding(
+            signal_type=SignalType.COGNITIVE_COMPLEXITY,
+            file_path="src/processor.ts",
+            should_detect=True,
+            description="Deep nesting (4+ levels) produces CC well above threshold",
+        ),
+    ],
+)
+
+CXS_TS_FLAT_CODE_TN = GroundTruthFixture(
+    name="cxs_ts_flat_code_tn",
+    description="Flat TS function with low complexity → should NOT fire CXS",
+    files={
+        "src/utils.ts": textwrap.dedent("""\
+            export function formatName(first: string, last: string): string {
+                const trimmedFirst = first.trim();
+                const trimmedLast = last.trim();
+                const full = `${trimmedFirst} ${trimmedLast}`;
+                return full;
+            }
+        """),
+    },
+    expected=[
+        ExpectedFinding(
+            signal_type=SignalType.COGNITIVE_COMPLEXITY,
+            file_path="src/utils.ts",
+            should_detect=False,
+            description="Flat code with no nesting should have low CC",
+        ),
+    ],
+)
+
+ISD_TS_CORS_WILDCARD_TP = GroundTruthFixture(
+    name="isd_ts_cors_wildcard_tp",
+    description="Express app with cors({ origin: '*' }) → should fire ISD",
+    files={
+        "src/app.ts": textwrap.dedent("""\
+            import express from 'express';
+            import cors from 'cors';
+
+            const app = express();
+            app.use(cors({ origin: '*' }));
+            app.get('/api/data', (req, res) => res.json({ ok: true }));
+        """),
+    },
+    expected=[
+        ExpectedFinding(
+            signal_type=SignalType.INSECURE_DEFAULT,
+            file_path="src/app.ts",
+            should_detect=True,
+            description="cors({ origin: '*' }) allows any domain",
+        ),
+    ],
+)
+
+ISD_TS_REJECT_UNAUTH_TP = GroundTruthFixture(
+    name="isd_ts_reject_unauth_tp",
+    description="rejectUnauthorized: false in TS → should fire ISD",
+    files={
+        "src/client.ts": textwrap.dedent("""\
+            import https from 'https';
+
+            const agent = new https.Agent({ rejectUnauthorized: false });
+        """),
+    },
+    expected=[
+        ExpectedFinding(
+            signal_type=SignalType.INSECURE_DEFAULT,
+            file_path="src/client.ts",
+            should_detect=True,
+            description="rejectUnauthorized: false disables TLS verification",
+        ),
+    ],
+)
+
+ISD_TS_SECURE_TN = GroundTruthFixture(
+    name="isd_ts_secure_tn",
+    description="Express app with proper CORS config → should NOT fire ISD",
+    files={
+        "src/app.ts": textwrap.dedent("""\
+            import express from 'express';
+            import cors from 'cors';
+
+            const app = express();
+            app.use(cors({ origin: ['https://example.com'] }));
+        """),
+    },
+    expected=[
+        ExpectedFinding(
+            signal_type=SignalType.INSECURE_DEFAULT,
+            file_path="src/app.ts",
+            should_detect=False,
+            description="Specific origin list is secure CORS config",
+        ),
+    ],
+)
+
+MAZ_TS_EXPRESS_NO_AUTH_TP = GroundTruthFixture(
+    name="maz_ts_express_no_auth_tp",
+    description="Express route without auth middleware → should fire MAZ",
+    files={
+        "src/routes.ts": textwrap.dedent("""\
+            import { Router } from 'express';
+
+            const router = Router();
+            router.get('/api/users', (req, res) => {
+                res.json([]);
+            });
+            router.post('/api/users', (req, res) => {
+                res.json({ created: true });
+            });
+            export default router;
+        """),
+    },
+    expected=[
+        ExpectedFinding(
+            signal_type=SignalType.MISSING_AUTHORIZATION,
+            file_path="src/routes.ts",
+            should_detect=True,
+            description="Express routes without auth middleware",
+        ),
+    ],
+)
+
+MAZ_TS_EXPRESS_AUTH_TN = GroundTruthFixture(
+    name="maz_ts_express_auth_tn",
+    description="Express route with auth middleware → should NOT fire MAZ",
+    files={
+        "src/routes.ts": textwrap.dedent("""\
+            import { Router } from 'express';
+            import { authenticate } from './middleware/auth';
+
+            const router = Router();
+            router.get('/api/users', authenticate, (req, res) => {
+                res.json([]);
+            });
+            export default router;
+        """),
+    },
+    expected=[
+        ExpectedFinding(
+            signal_type=SignalType.MISSING_AUTHORIZATION,
+            file_path="src/routes.ts",
+            should_detect=False,
+            description="Express route with auth middleware should not fire",
+        ),
+    ],
+)
+
+
 # Append NBV + BAT + PHR fixtures to ALL_FIXTURES
 ALL_FIXTURES.extend(
     [
@@ -7380,6 +7609,16 @@ ALL_FIXTURES.extend(
         MDS_TS_TRUE_NEGATIVE,
         PFS_TS_TRUE_POSITIVE,
         PFS_TS_TRUE_NEGATIVE,
+        # ── TypeScript ground-truth fixtures (Phase 4 — HSC/CXS/ISD/MAZ TS) ──
+        HSC_TS_GITHUB_TOKEN_TP,
+        HSC_TS_ENV_READ_TN,
+        CXS_TS_DEEP_NESTING_TP,
+        CXS_TS_FLAT_CODE_TN,
+        ISD_TS_CORS_WILDCARD_TP,
+        ISD_TS_REJECT_UNAUTH_TP,
+        ISD_TS_SECURE_TN,
+        MAZ_TS_EXPRESS_NO_AUTH_TP,
+        MAZ_TS_EXPRESS_AUTH_TN,
     ]
 )
 

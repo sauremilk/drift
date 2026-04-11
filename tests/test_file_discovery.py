@@ -10,6 +10,8 @@ These tests matter because file discovery bugs cause silent omissions —
 files that should be analysed are skipped without warning.
 """
 
+import json
+
 import pytest
 
 from drift.ingestion.file_discovery import (
@@ -266,3 +268,66 @@ class TestDiscoverFiles:
 
         assert len(files) == 1
         assert calls["count"] == 1
+
+    def test_discovery_cache_hit_skips_glob(self, tmp_path, monkeypatch):
+        (tmp_path / "a.py").write_text("x = 1")
+        monkeypatch.setattr(
+            "drift.ingestion.file_discovery._current_git_head",
+            lambda _repo: "head-a",
+        )
+
+        first = discover_files(tmp_path, cache_dir=".drift-cache")
+        assert {f.path.as_posix() for f in first} == {"a.py"}
+
+        def _fail_glob(self, _pattern):
+            raise AssertionError("glob should not run on discovery cache hit")
+
+        monkeypatch.setattr("pathlib.Path.glob", _fail_glob)
+        second = discover_files(tmp_path, cache_dir=".drift-cache")
+        assert {f.path.as_posix() for f in second} == {"a.py"}
+
+    def test_discovery_cache_invalidates_on_head_change(self, tmp_path, monkeypatch):
+        (tmp_path / "a.py").write_text("x = 1")
+        heads = iter(["head-a", "head-b"])
+        monkeypatch.setattr(
+            "drift.ingestion.file_discovery._current_git_head",
+            lambda _repo: next(heads),
+        )
+
+        first = discover_files(tmp_path, cache_dir=".drift-cache")
+        assert {f.path.as_posix() for f in first} == {"a.py"}
+
+        (tmp_path / "b.py").write_text("y = 2")
+        second = discover_files(tmp_path, cache_dir=".drift-cache")
+        assert {f.path.as_posix() for f in second} == {"a.py", "b.py"}
+
+    def test_discovery_cache_recovers_from_corrupt_manifest(self, tmp_path, monkeypatch):
+        (tmp_path / "a.py").write_text("x = 1")
+        cache_dir = tmp_path / ".drift-cache"
+        cache_dir.mkdir()
+        manifest = cache_dir / "file_discovery_manifest.json"
+        manifest.write_text("{invalid json", encoding="utf-8")
+
+        monkeypatch.setattr(
+            "drift.ingestion.file_discovery._current_git_head",
+            lambda _repo: "head-a",
+        )
+
+        files = discover_files(tmp_path, cache_dir=".drift-cache")
+        assert {f.path.as_posix() for f in files} == {"a.py"}
+        loaded = json.loads(manifest.read_text(encoding="utf-8"))
+        assert loaded["version"] == 1
+
+    def test_discovery_cache_uses_mtime_fallback_without_git(self, tmp_path, monkeypatch):
+        (tmp_path / "a.py").write_text("x = 1")
+        monkeypatch.setattr(
+            "drift.ingestion.file_discovery._current_git_head",
+            lambda _repo: None,
+        )
+
+        first = discover_files(tmp_path, cache_dir=".drift-cache")
+        assert {f.path.as_posix() for f in first} == {"a.py"}
+
+        (tmp_path / "b.py").write_text("y = 2")
+        second = discover_files(tmp_path, cache_dir=".drift-cache")
+        assert {f.path.as_posix() for f in second} == {"a.py", "b.py"}

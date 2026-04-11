@@ -5,7 +5,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from drift.config import DriftConfig
-from drift.models import ClassInfo, FunctionInfo, ImportInfo, ParseResult, SignalType
+from drift.models import ClassInfo, FunctionInfo, ImportInfo, ParseResult, Severity, SignalType
 from drift.signals.dead_code_accumulation import DeadCodeAccumulationSignal
 
 
@@ -263,3 +263,21 @@ class TestDCATrueNegative:
         findings = signal.analyze([pr_script], {}, DriftConfig())
 
         assert len(findings) == 0
+
+
+class TestDCATestFileHandling:
+    def test_test_file_is_reduced_not_excluded_by_default(self) -> None:
+        pr_test = ParseResult(
+            file_path=Path("tests/helpers.py"),
+            language="python",
+            functions=[
+                _func("unused_a", "tests/helpers.py", 10),
+                _func("unused_b", "tests/helpers.py", 20),
+            ],
+            imports=[],
+        )
+
+        findings = DeadCodeAccumulationSignal().analyze([pr_test], {}, DriftConfig())
+        assert len(findings) == 1
+        assert findings[0].severity == Severity.LOW
+        assert findings[0].metadata.get("finding_context") == "test"

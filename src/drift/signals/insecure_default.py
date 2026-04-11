@@ -3,12 +3,18 @@
 Detects insecure configuration defaults commonly left behind by AI code
 generators and tutorial copy-paste:
 
+Python:
 - ``DEBUG = True`` in non-test files
 - ``ALLOWED_HOSTS = ["*"]`` / ``ALLOWED_HOSTS = []``
 - ``CORS_ALLOW_ALL_ORIGINS = True`` / ``CORS_ORIGIN_ALLOW_ALL = True``
 - ``SESSION_COOKIE_SECURE = False`` / ``CSRF_COOKIE_SECURE = False``
 - ``SECURE_SSL_REDIRECT = False``
 - ``verify=False`` in requests/httpx calls (SSL verification disabled)
+
+TypeScript/JavaScript:
+- ``cors({ origin: '*' })`` or ``cors({ origin: true })``
+- ``secure: false`` in cookie/session configuration
+- ``rejectUnauthorized: false`` disabling TLS verification
 
 Maps to CWE-1188 (Initialization with an Insecure Default).
 
@@ -209,6 +215,8 @@ class InsecureDefaultSignal(BaseSignal):
     def name(self) -> str:
         return "Insecure Default"
 
+    _TS_LANGS = frozenset({"typescript", "tsx", "javascript", "jsx"})
+
     def analyze(
         self,
         parse_results: list[ParseResult],
@@ -218,26 +226,118 @@ class InsecureDefaultSignal(BaseSignal):
         findings: list[Finding] = []
 
         for pr in parse_results:
-            if pr.language != "python":
-                continue
             if is_test_file(pr.file_path):
                 continue
-            # Skip conftest.py (test infrastructure)
-            if pr.file_path.name == "conftest.py":
-                continue
 
-            repo_path = self._repo_path or Path(".")
-            try:
-                source = (repo_path / pr.file_path).read_text(
-                    encoding="utf-8", errors="replace"
-                )
-                tree = ast.parse(source, filename=str(pr.file_path))
-            except (SyntaxError, OSError):
-                continue
-
-            self._check_tree(tree, pr.file_path, source, findings)
+            if pr.language == "python":
+                # Skip conftest.py (test infrastructure)
+                if pr.file_path.name == "conftest.py":
+                    continue
+                self._analyze_python(pr, findings)
+            elif pr.language in self._TS_LANGS:
+                self._analyze_typescript(pr, findings)
 
         return findings
+
+    # ------------------------------------------------------------------
+    # Python analysis (AST-based)
+    # ------------------------------------------------------------------
+
+    def _analyze_python(
+        self,
+        pr: ParseResult,
+        findings: list[Finding],
+    ) -> None:
+        repo_path = self._repo_path or Path(".")
+        try:
+            source = (repo_path / pr.file_path).read_text(
+                encoding="utf-8", errors="replace"
+            )
+            tree = ast.parse(source, filename=str(pr.file_path))
+        except (SyntaxError, OSError):
+            return
+
+        self._check_tree(tree, pr.file_path, source, findings)
+
+    # ------------------------------------------------------------------
+    # TypeScript / JavaScript analysis (regex-based)
+    # ------------------------------------------------------------------
+
+    # Patterns for TS/JS insecure defaults (line-level regex)
+    _TS_CORS_WILDCARD_RE = re.compile(
+        r"""cors\s*\(\s*\{[^}]*origin\s*:\s*['"]?\*['"]?""",
+        re.IGNORECASE,
+    )
+    _TS_CORS_ALLOW_ALL_RE = re.compile(
+        r"""cors\s*\(\s*\{[^}]*origin\s*:\s*true""",
+        re.IGNORECASE,
+    )
+    _TS_REJECT_UNAUTH_RE = re.compile(
+        r"""rejectUnauthorized\s*:\s*false""",
+    )
+    _TS_COOKIE_INSECURE_RE = re.compile(
+        r"""secure\s*:\s*false""",
+    )
+
+    def _analyze_typescript(
+        self,
+        pr: ParseResult,
+        findings: list[Finding],
+    ) -> None:
+        repo_path = self._repo_path or Path(".")
+        try:
+            source = (repo_path / pr.file_path).read_text(
+                encoding="utf-8", errors="replace"
+            )
+        except OSError:
+            return
+
+        if _has_ignore_security_directive(source):
+            return
+
+        for lineno, line in enumerate(source.splitlines(), start=1):
+            if self._TS_CORS_WILDCARD_RE.search(line):
+                findings.append(self._make_finding(
+                    "insecure_cors",
+                    "CORS allows all origins",
+                    "cors({ origin: '*' }) permits any domain to make cross-origin "
+                    "requests, potentially exposing authenticated APIs.",
+                    "Set origin to a specific list of allowed domains.",
+                    0.7, pr.file_path, lineno,
+                ))
+            elif self._TS_CORS_ALLOW_ALL_RE.search(line):
+                findings.append(self._make_finding(
+                    "insecure_cors",
+                    "CORS allows all origins",
+                    "cors({ origin: true }) permits any domain to make cross-origin "
+                    "requests.",
+                    "Set origin to a specific list of allowed domains.",
+                    0.7, pr.file_path, lineno,
+                ))
+
+            if self._TS_REJECT_UNAUTH_RE.search(line):
+                findings.append(self._make_finding(
+                    "insecure_ssl_verify",
+                    "TLS verification disabled",
+                    "rejectUnauthorized: false disables TLS certificate validation, "
+                    "making the connection vulnerable to man-in-the-middle attacks.",
+                    "Remove rejectUnauthorized: false or set to true. "
+                    "For self-signed certs, use a custom CA.",
+                    0.7, pr.file_path, lineno,
+                ))
+
+            if self._TS_COOKIE_INSECURE_RE.search(line):
+                # Only flag if it looks like session/cookie config context.
+                lower_line = line.lower()
+                if any(kw in lower_line for kw in ("cookie", "session", "express-session")):
+                    findings.append(self._make_finding(
+                        "insecure_cookie",
+                        "Insecure cookie configuration",
+                        "secure: false sends cookies over unencrypted HTTP, "
+                        "exposing them to network interception.",
+                        "Set secure: true in production cookie configuration.",
+                        0.6, pr.file_path, lineno,
+                    ))
 
     def _check_tree(
         self,

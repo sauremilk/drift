@@ -544,6 +544,8 @@ class DriftConfig(BaseModel):
             "**/docs/**",
             "**/docs_src/**",
             "**/examples/**",
+            "**/benchmarks/**",
+            "**/benchmark_results/**",
             "**/tests/**",
             "**/scripts/**",
             "**/site/**",
@@ -553,6 +555,21 @@ class DriftConfig(BaseModel):
     weights: SignalWeights = Field(default_factory=SignalWeights)
     thresholds: ThresholdsConfig = Field(default_factory=ThresholdsConfig)
     cache_dir: str = ".drift-cache"
+    test_file_handling: str | None = Field(
+        default=None,
+        description=(
+            "Global handling for findings in test files: "
+            "exclude | reduce_severity | include. "
+            "When null, each signal uses its built-in default."
+        ),
+    )
+    signal_cache_dependency_scopes_enabled: bool = Field(
+        default=False,
+        description=(
+            "Enable dependency-aware signal cache keying "
+            "(file_local/module_wide/repo_wide/git_dependent)."
+        ),
+    )
     fail_on: str = "high"
     context_dampening: float = 0.5
     fail_on_delta: float | None = None
