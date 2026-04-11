@@ -1,5 +1,12 @@
 # FMEA Matrix
 
+## 2026-04-12 - Issue #249: COD FP bei Plugin-Registrierung und typed utility modules
+
+| Signal | Failure Mode | Cause | Effect | Detection | Mitigation | S | O | D | RPN | Status |
+|---|---|---|---|---|---|---:|---:|---:|---:|---|
+| COD | FP: `register*`-Pluginmodule sowie `format.ts`/`test-helpers.ts` in `extensions/*/src` werden als Cohesion Deficit gemeldet | COD gewichtet isolierte Token, aber beruecksichtigt action-prefix-Familien und dateinamensbasierte Domain-Kohasion unzureichend | Unnoetige LOW/MEDIUM-Findings und sinkende Signal-Glaubwuerdigkeit in plugin-lastigen TS-Monorepos | Neue Regressionen in `tests/test_cohesion_deficit.py` (`test_cod_plugin_register_family_module_is_not_flagged`, `test_cod_plugin_create_family_helpers_are_not_flagged`, `test_cod_filename_domain_token_dampens_format_module`) | Neue Daempfung ueber `shared_action_prefix_ratio`, `filename_token_cohesion_ratio` und zusaetzliche Plugin-Workspace-Daempfung fuer `extensions/*/src` | 7 | 8 | 2 | 112 | Mitigated |
+| COD | FN-Risiko: echte Inkohaerenz in Plugin-/Utility-Modulen wird zu stark abgewertet | Neue Prefix-/Filename-Heuristik kann in Randfaellen auch problematische Module daempfen | Potenziell spaetere Priorisierung echter Refactorings in betroffenen Modulen | Bestehende COD-TP/TN- und Ground-Truth-Tests bleiben aktiv; neue Regressionen sichern den Zielscope | Daempfung ist eng begrenzt (`>=0.6` action-prefix, `>=0.5` filename cohesion) und nicht global suppressiv | 4 | 3 | 4 | 48 | Mitigated |
+
 ## 2026-04-12 - Issue #250: MAZ FP bei outbound API-Client-Funktionen (TS unknown framework)
 
 | Signal | Failure Mode | Cause | Effect | Detection | Mitigation | S | O | D | RPN | Status |

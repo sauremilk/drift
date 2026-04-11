@@ -1,5 +1,30 @@
 # Fault Tree Analysis
 
+## 2026-04-12 - Issue #249: COD false positives on plugin registration and typed utility modules
+
+### Top Event (TE-COD-249)
+COD reports intentional plugin/utility module patterns as semantic cohesion deficits.
+
+### FT-1: false-positive branch
+
+```
+          TE-FP: plugin/utility module reported as cohesion deficit
+                         |
+                      OR-Gate
+               +---------+---------+
+              IE-1      IE-2
+```
+
+- **IE-1 (MCS)**: Action-family modules (`register*`, `format*`, `create*`) expose multiple subtargets but share one domain concern.
+  - Mitigation: Add `shared_action_prefix_ratio` dampening for dominant action-prefix families.
+- **IE-2 (MCS)**: Filename/domain-aligned utility modules (`format.ts`, `test-helpers.ts`) can look token-diverse despite cohesive module intent.
+  - Mitigation: Add filename-token cohesion dampening and extra plugin-workspace dampening for `extensions/*/src`.
+
+### FT-2: false-negative guard
+
+- **IE-3 (Guard)**: New dampening can under-prioritize true cohesion deficits that match prefix/filename patterns accidentally.
+  - Mitigation: Apply bounded thresholds (`>=0.6` action-prefix, `>=0.5` filename cohesion) and keep COD TP/TN and ground-truth regressions active.
+
 ## 2026-04-12 - Issue #250: MAZ outbound API-client false positives (TS unknown framework)
 
 ### Top Event (TE-MAZ-250)

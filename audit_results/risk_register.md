@@ -1,5 +1,23 @@
 # Risk Register
 
+## 2026-04-12 - Issue #249: COD dampening for plugin registration and typed utility modules
+
+- Risk ID: RISK-SIGNAL-2026-04-12-249
+- Component: `src/drift/signals/cohesion_deficit.py`, `tests/test_cohesion_deficit.py`
+- Type: Signal precision hardening (false-positive reduction)
+- Description: Cohesion Deficit (COD) now applies targeted dampening for cohesive action-prefix families (`register*`, `format*`, `create*`), filename-domain alignment, and plugin workspace patterns under `extensions/*/src`.
+- Trigger: `drift analyze` on plugin-oriented TypeScript monorepos with registration/helper/format modules that share domain intent but low raw token overlap.
+- Impact: High-positive. Reduces COD false positives for plugin/provider ecosystems and improves finding actionability.
+- Mitigation:
+  - Added `shared_action_prefix_ratio` heuristic for dominant action-family modules.
+  - Added `filename_token_cohesion_ratio` heuristic for filename-domain alignment.
+  - Added bounded plugin workspace dampening (`extensions/*/src`) when one of the cohesion hints is strong.
+  - Added Issue-249 regressions in `tests/test_cohesion_deficit.py` for register-family, create-family, and format-module patterns.
+- Verification:
+  - `python -m pytest tests/test_cohesion_deficit.py -q --tb=short`
+  - `python -m ruff check src/drift/signals/cohesion_deficit.py tests/test_cohesion_deficit.py`
+- Residual risk: Low-Medium. Some true deficits that match these patterns may be down-ranked; thresholds are conservative and bounded to explicit cohesion hints.
+
 ## 2026-04-12 - Issue #250: MAZ suppresses outbound API-client FPs in unknown TS frameworks
 
 - Risk ID: RISK-SIGNAL-2026-04-12-250

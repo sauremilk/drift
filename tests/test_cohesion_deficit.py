@@ -151,6 +151,60 @@ def test_cod_utility_filename_still_flags_clear_deficit() -> None:
     assert findings[0].metadata["utility_filename_hint"] is True
 
 
+def test_cod_plugin_register_family_module_is_not_flagged() -> None:
+    """Plugin registration families under extensions/*/src should not trigger COD."""
+    file_path = "extensions/anthropic/src/provider_registration.ts"
+    parse_result = ParseResult(
+        file_path=Path(file_path),
+        language="typescript",
+        functions=[
+            _function("registerProvider", file_path, 10),
+            _function("registerModels", file_path, 20),
+            _function("registerTools", file_path, 30),
+            _function("registerActions", file_path, 40),
+        ],
+    )
+
+    findings = CohesionDeficitSignal().analyze([parse_result], {}, DriftConfig())
+    assert findings == []
+
+
+def test_cod_plugin_create_family_helpers_are_not_flagged() -> None:
+    """create*-heavy plugin helpers are one concern and should avoid COD FPs."""
+    file_path = "extensions/memory-wiki/src/test-helpers.ts"
+    parse_result = ParseResult(
+        file_path=Path(file_path),
+        language="typescript",
+        functions=[
+            _function("createMemoryWikiTestHarness", file_path, 10),
+            _function("createTempDir", file_path, 20),
+            _function("createVault", file_path, 30),
+            _function("createPluginApi", file_path, 40),
+        ],
+    )
+
+    findings = CohesionDeficitSignal().analyze([parse_result], {}, DriftConfig())
+    assert findings == []
+
+
+def test_cod_filename_domain_token_dampens_format_module() -> None:
+    """Filename domain token (format.ts) should dampen typed utility module noise."""
+    file_path = "extensions/discord/src/format.ts"
+    parse_result = ParseResult(
+        file_path=Path(file_path),
+        language="typescript",
+        functions=[
+            _function("formatEmbed", file_path, 10),
+            _function("formatMessage", file_path, 20),
+            _function("formatAttachment", file_path, 30),
+            _function("formatComponent", file_path, 40),
+        ],
+    )
+
+    findings = CohesionDeficitSignal().analyze([parse_result], {}, DriftConfig())
+    assert findings == []
+
+
 # ---------------------------------------------------------------------------
 # Parametrized ground-truth fixture tests
 # ---------------------------------------------------------------------------

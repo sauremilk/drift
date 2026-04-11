@@ -80,6 +80,10 @@ _UTILITY_FILENAME_HINTS: frozenset[str] = frozenset(
     {"util", "utils", "helper", "helpers", "constant", "constants"}
 )
 
+_COHESIVE_ACTION_PREFIXES: frozenset[str] = frozenset(
+    {"register", "format", "create"}
+)
+
 
 def _is_test_like(path: Path) -> bool:
     p = path.as_posix().lower()
@@ -204,6 +208,45 @@ def _has_utility_filename_hint(path: Path) -> bool:
     return any(hint in stem for hint in _UTILITY_FILENAME_HINTS)
 
 
+def _leading_token(name: str) -> str:
+    tokens = _CAMEL_PART_RE.findall(name.split(".")[-1])
+    if not tokens:
+        return ""
+    return tokens[0].lower()
+
+
+def _shared_action_prefix_ratio(units: list[_SemanticUnit]) -> float:
+    if not units:
+        return 0.0
+
+    prefix_count: dict[str, int] = {}
+    for unit in units:
+        prefix = _leading_token(unit.name)
+        if prefix not in _COHESIVE_ACTION_PREFIXES:
+            continue
+        prefix_count[prefix] = prefix_count.get(prefix, 0) + 1
+
+    if not prefix_count:
+        return 0.0
+    return max(prefix_count.values()) / len(units)
+
+
+def _filename_token_cohesion_ratio(path: Path, units: list[_SemanticUnit]) -> float:
+    stem_tokens = _name_tokens(path.stem)
+    if not stem_tokens or not units:
+        return 0.0
+
+    covered = sum(1 for unit in units if unit.tokens & stem_tokens)
+    return covered / len(units)
+
+
+def _is_plugin_workspace_source(path: Path) -> bool:
+    parts = [part.lower() for part in path.parts]
+    if len(parts) < 3:
+        return False
+    return parts[0] == "extensions" and "src" in parts[2:]
+
+
 @register_signal
 class CohesionDeficitSignal(BaseSignal):
     """Detect semantically incoherent modules/files."""
@@ -251,6 +294,11 @@ class CohesionDeficitSignal(BaseSignal):
 
             is_logger_like = _is_logger_like_module(pr, units)
             has_utility_filename_hint = _has_utility_filename_hint(pr.file_path)
+            shared_action_prefix_ratio = _shared_action_prefix_ratio(units)
+            filename_token_cohesion_ratio = _filename_token_cohesion_ratio(
+                pr.file_path, units
+            )
+            is_plugin_workspace_source = _is_plugin_workspace_source(pr.file_path)
 
             best_similarities: list[float] = []
             isolated_names: list[str] = []
@@ -278,6 +326,19 @@ class CohesionDeficitSignal(BaseSignal):
                 module_pattern_dampening *= 0.35
             if has_utility_filename_hint and not is_logger_like:
                 # Utility modules can contain loosely related helpers by convention.
+                module_pattern_dampening *= 0.8
+            if shared_action_prefix_ratio >= 0.6:
+                # Action families like register*/format*/create* can still be cohesive.
+                module_pattern_dampening *= 0.55
+            if filename_token_cohesion_ratio >= 0.5:
+                # format.ts/serializer.ts-like modules often reflect a single domain concern.
+                module_pattern_dampening *= 0.7
+            if (
+                is_plugin_workspace_source
+                and (shared_action_prefix_ratio >= 0.6 or filename_token_cohesion_ratio >= 0.5)
+                and not is_logger_like
+            ):
+                # Extension workspaces frequently group one plugin concern per module.
                 module_pattern_dampening *= 0.8
 
             # Small member sets are noisier: ramp up confidence with module size.
@@ -331,6 +392,13 @@ class CohesionDeficitSignal(BaseSignal):
                         "module_pattern_dampening": round(module_pattern_dampening, 3),
                         "logger_like_module": is_logger_like,
                         "utility_filename_hint": has_utility_filename_hint,
+                        "shared_action_prefix_ratio": round(
+                            shared_action_prefix_ratio, 3
+                        ),
+                        "filename_token_cohesion_ratio": round(
+                            filename_token_cohesion_ratio, 3
+                        ),
+                        "plugin_workspace_source": is_plugin_workspace_source,
                         "member_scale": round(member_scale, 3),
                     },
                 )
