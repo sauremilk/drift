@@ -272,6 +272,138 @@ class TestCoChangeCouplingSignal:
         assert first.file_path == Path("extensions/bluebubbles/src/config-schema.ts")
         assert Path("extensions/nostr/src/config-schema.ts") in first.related_files
 
+    def test_parallel_runtime_variants_are_suppressed(self) -> None:
+        parse_results = [
+            _pr("src/agents/bash-tools.exec-host-gateway.ts"),
+            _pr("src/agents/bash-tools.exec-host-node.ts"),
+            _pr("src/agents/contract.ts"),
+        ]
+        commits = [
+            _commit(
+                1,
+                [
+                    "src/agents/bash-tools.exec-host-gateway.ts",
+                    "src/agents/bash-tools.exec-host-node.ts",
+                ],
+            ),
+            _commit(
+                2,
+                [
+                    "src/agents/bash-tools.exec-host-gateway.ts",
+                    "src/agents/bash-tools.exec-host-node.ts",
+                ],
+            ),
+            _commit(
+                3,
+                [
+                    "src/agents/bash-tools.exec-host-gateway.ts",
+                    "src/agents/bash-tools.exec-host-node.ts",
+                ],
+            ),
+            _commit(
+                4,
+                [
+                    "src/agents/bash-tools.exec-host-gateway.ts",
+                    "src/agents/bash-tools.exec-host-node.ts",
+                ],
+            ),
+            _commit(
+                5,
+                [
+                    "src/agents/bash-tools.exec-host-gateway.ts",
+                    "src/agents/bash-tools.exec-host-node.ts",
+                ],
+            ),
+            _commit(6, ["src/agents/contract.ts"]),
+            _commit(7, ["src/agents/contract.ts"]),
+            _commit(8, ["src/agents/contract.ts"]),
+        ]
+
+        findings = _run_signal(parse_results, commits)
+        assert findings == []
+
+    def test_cross_extension_template_entrypoints_are_suppressed(self) -> None:
+        parse_results = [
+            _pr("extensions/sglang/src/index.ts"),
+            _pr("extensions/vllm/src/index.ts"),
+            _pr("extensions/vllm/src/types.ts"),
+        ]
+        commits = [
+            _commit(1, ["extensions/sglang/src/index.ts", "extensions/vllm/src/index.ts"]),
+            _commit(2, ["extensions/sglang/src/index.ts", "extensions/vllm/src/index.ts"]),
+            _commit(3, ["extensions/sglang/src/index.ts", "extensions/vllm/src/index.ts"]),
+            _commit(4, ["extensions/sglang/src/index.ts", "extensions/vllm/src/index.ts"]),
+            _commit(5, ["extensions/sglang/src/index.ts", "extensions/vllm/src/index.ts"]),
+            _commit(6, ["extensions/vllm/src/types.ts"]),
+            _commit(7, ["extensions/vllm/src/types.ts"]),
+            _commit(8, ["extensions/vllm/src/types.ts"]),
+        ]
+
+        findings = _run_signal(parse_results, commits)
+        assert findings == []
+
+    def test_relative_type_import_counts_as_explicit_dependency(self) -> None:
+        parse_results = [
+            _pr(
+                "src/agents/pi-embedded-runner/run.ts",
+                imports=[
+                    ImportInfo(
+                        source_file=Path("src/agents/pi-embedded-runner/run.ts"),
+                        imported_module="./types.js",
+                        imported_names=["EmbeddedPiAgentMeta", "EmbeddedPiRunResult"],
+                        line_number=1,
+                        is_relative=True,
+                    )
+                ],
+            ),
+            _pr("src/agents/pi-embedded-runner/types.ts"),
+            _pr("src/agents/pi-embedded-runner/helpers.ts"),
+        ]
+
+        commits = [
+            _commit(
+                1,
+                [
+                    "src/agents/pi-embedded-runner/run.ts",
+                    "src/agents/pi-embedded-runner/types.ts",
+                ],
+            ),
+            _commit(
+                2,
+                [
+                    "src/agents/pi-embedded-runner/run.ts",
+                    "src/agents/pi-embedded-runner/types.ts",
+                ],
+            ),
+            _commit(
+                3,
+                [
+                    "src/agents/pi-embedded-runner/run.ts",
+                    "src/agents/pi-embedded-runner/types.ts",
+                ],
+            ),
+            _commit(
+                4,
+                [
+                    "src/agents/pi-embedded-runner/run.ts",
+                    "src/agents/pi-embedded-runner/types.ts",
+                ],
+            ),
+            _commit(
+                5,
+                [
+                    "src/agents/pi-embedded-runner/run.ts",
+                    "src/agents/pi-embedded-runner/types.ts",
+                ],
+            ),
+            _commit(6, ["src/agents/pi-embedded-runner/helpers.ts"]),
+            _commit(7, ["src/agents/pi-embedded-runner/helpers.ts"]),
+            _commit(8, ["src/agents/pi-embedded-runner/helpers.ts"]),
+        ]
+
+        findings = _run_signal(parse_results, commits)
+        assert findings == []
+
 
 # ---------------------------------------------------------------------------
 # Parametrized ground-truth fixture tests

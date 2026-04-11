@@ -1,5 +1,24 @@
 # Risk Register
 
+## 2026-04-12 - Issue #243: CCC suppresses parallel implementation FPs and honors explicit TS type imports
+
+- Risk ID: RISK-SIGNAL-2026-04-12-243
+- Component: `src/drift/signals/co_change_coupling.py`, `tests/test_co_change_coupling.py`
+- Type: Signal precision hardening (false-positive reduction)
+- Description: Co-Change Coupling (CCC) now suppresses known intentional parallel-implementation patterns (runtime variant siblings and cross-extension template entrypoints) and treats resolved relative TypeScript type imports as explicit dependencies.
+- Trigger: `drift analyze` on plugin/runtime-heavy TypeScript monorepos where contract-level co-changes dominate (`*-gateway`/`*-node`, `extensions/*/src/index.ts`) and where explicit imports use runtime specifiers (`./types.js` from `.ts`).
+- Impact: High-positive. Reduces dominant CCC false-positive clusters and improves finding actionability and trust.
+- Mitigation:
+  - Added bounded parallel-pattern suppressions:
+    - same-directory runtime sibling variants via normalized filename tokens
+    - cross-extension template entrypoints for `src/index.{ts,js,tsx,jsx}`
+  - Extended relative import resolver to normalize relative paths and map JS runtime extensions to TS source candidates for known in-repo files.
+  - Added regression tests for all three Issue #243 FP classes.
+- Verification:
+  - `python -m pytest tests/test_co_change_coupling.py -q --tb=short`
+  - `python -m ruff check src/drift/signals/co_change_coupling.py tests/test_co_change_coupling.py`
+- Residual risk: Low-Medium. Some true hidden-coupling cases that intentionally mimic variant/template naming may be under-reported; suppression scope is intentionally narrow and guarded by non-template cross-extension detection tests.
+
 ## 2026-04-12 - Issue #242: DCA plugin entrypoint FP reduction (`components`/`plugin-sdk`)
 
 - Risk ID: RISK-SIGNAL-2026-04-12-242

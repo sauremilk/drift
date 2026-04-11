@@ -6,6 +6,8 @@ without an explicit import relationship.
 
 from __future__ import annotations
 
+import posixpath
+import re
 from collections import defaultdict
 from itertools import combinations
 from pathlib import Path
@@ -41,6 +43,18 @@ _AUTOMATION_MARKERS = (
     "release-please",
     "automation",
 )
+
+_JS_TS_EXTENSIONS = (".ts", ".tsx", ".mts", ".cts", ".js", ".jsx", ".mjs", ".cjs")
+_RUNTIME_VARIANT_TOKENS = {
+    "gateway",
+    "node",
+    "browser",
+    "server",
+    "client",
+    "edge",
+    "native",
+    "worker",
+}
 
 
 def _find_nearest_subpackage_root(file_path: str, repo_root: Path | None) -> str | None:
@@ -119,24 +133,127 @@ def _resolve_non_relative_targets(imp: ImportInfo, module_index: dict[str, set[s
     return targets
 
 
-def _resolve_relative_targets(source_file: Path, imp: ImportInfo) -> set[str]:
-    """Resolve relative imports with conservative local path heuristics."""
-    targets: set[str] = set()
-    base = source_file.parent
-    raw = imp.imported_module.strip()
+def _expand_relative_module_path(source_file: Path, raw_module: str) -> Path | None:
+    """Resolve a relative module string to a normalized candidate path."""
+    raw = raw_module.strip()
+    if not raw:
+        return None
+
+    if raw.startswith("./") or raw.startswith("../"):
+        merged = posixpath.join(source_file.parent.as_posix(), raw)
+        return Path(posixpath.normpath(merged))
+
+    leading_dots = len(raw) - len(raw.lstrip("."))
+    if leading_dots == 0:
+        return None
+
+    anchor = source_file.parent
+    for _ in range(max(leading_dots - 1, 0)):
+        anchor = anchor.parent
+
     module_part = raw.lstrip(".")
+    if not module_part:
+        return anchor
 
-    if module_part:
-        rel = Path(module_part.replace(".", "/"))
-        targets.add((base / f"{rel.as_posix()}.py").as_posix())
-        targets.add((base / rel / "__init__.py").as_posix())
+    return anchor / Path(module_part.replace(".", "/"))
 
-    for imported_name in imp.imported_names:
-        rel_name = imported_name.replace(".", "/")
-        targets.add((base / f"{rel_name}.py").as_posix())
 
+def _candidate_targets_from_relative_module(module_path: Path, source_ext: str) -> set[str]:
+    """Build conservative candidate file paths for relative imports."""
+    targets: set[str] = set()
+    posix = module_path.as_posix()
+    suffix = module_path.suffix.lower()
+
+    if suffix:
+        targets.add(posix)
+        if suffix in {".js", ".jsx", ".mjs", ".cjs"}:
+            targets.update(
+                {
+                    f"{module_path.with_suffix('.ts').as_posix()}",
+                    f"{module_path.with_suffix('.tsx').as_posix()}",
+                }
+            )
+        return targets
+
+    candidates = {".py"}
+    if source_ext in _JS_TS_EXTENSIONS:
+        candidates.update(_JS_TS_EXTENSIONS)
+
+    for ext in candidates:
+        targets.add(f"{posix}{ext}")
+
+    targets.add((module_path / "__init__.py").as_posix())
+    targets.add((module_path / "index.ts").as_posix())
+    targets.add((module_path / "index.js").as_posix())
     return targets
 
+
+def _resolve_relative_targets(
+    source_file: Path,
+    imp: ImportInfo,
+    known_files: set[str],
+) -> set[str]:
+    """Resolve relative imports with conservative local path heuristics."""
+    targets: set[str] = set()
+    source = Path(source_file.as_posix())
+    source_ext = source.suffix.lower()
+
+    resolved_module = _expand_relative_module_path(source, imp.imported_module)
+    if resolved_module is not None:
+        targets.update(_candidate_targets_from_relative_module(resolved_module, source_ext))
+
+    imported_name_base = resolved_module if resolved_module is not None else source.parent
+    for imported_name in imp.imported_names:
+        imported_path = imported_name.replace(".", "/")
+        named_base = imported_name_base / imported_path
+        targets.update(_candidate_targets_from_relative_module(named_base, source_ext))
+
+    return {t for t in targets if t in known_files}
+
+
+def _is_parallel_runtime_variant_pair(file_a: str, file_b: str) -> bool:
+    """Suppress sibling runtime variants (e.g. *-gateway.ts vs *-node.ts)."""
+    path_a = Path(file_a)
+    path_b = Path(file_b)
+    if path_a.parent != path_b.parent or path_a.suffix != path_b.suffix:
+        return False
+
+    tokens_a = [t for t in re.split(r"[-_.]", path_a.stem) if t]
+    tokens_b = [t for t in re.split(r"[-_.]", path_b.stem) if t]
+    if not tokens_a or not tokens_b:
+        return False
+
+    filtered_a = [t for t in tokens_a if t not in _RUNTIME_VARIANT_TOKENS]
+    filtered_b = [t for t in tokens_b if t not in _RUNTIME_VARIANT_TOKENS]
+    removed_a = len(filtered_a) != len(tokens_a)
+    removed_b = len(filtered_b) != len(tokens_b)
+    return removed_a and removed_b and filtered_a == filtered_b
+
+
+def _is_cross_extension_parallel_template_pair(file_a: str, file_b: str) -> bool:
+    """Suppress cross-extension template entrypoint coupling in plugin repos."""
+    parts_a = [p for p in Path(file_a).as_posix().split("/") if p]
+    parts_b = [p for p in Path(file_b).as_posix().split("/") if p]
+    if len(parts_a) < 4 or len(parts_b) < 4:
+        return False
+    if parts_a[0] != "extensions" or parts_b[0] != "extensions":
+        return False
+    if parts_a[1] == parts_b[1]:
+        return False
+
+    suffix_a = "/".join(parts_a[2:])
+    suffix_b = "/".join(parts_b[2:])
+    if suffix_a != suffix_b:
+        return False
+
+    return suffix_a in {"src/index.ts", "src/index.js", "src/index.tsx", "src/index.jsx"}
+
+
+def _is_parallel_implementation_pair(file_a: str, file_b: str) -> bool:
+    """Return True for known intentional parallel-implementation patterns."""
+    return _is_parallel_runtime_variant_pair(
+        file_a, file_b
+    ) or _is_cross_extension_parallel_template_pair(file_a, file_b)
 
 def _explicit_dependency_pairs(parse_results: list[ParseResult]) -> set[tuple[str, str]]:
     """Build undirected explicit dependency pairs from import metadata."""
@@ -148,7 +265,7 @@ def _explicit_dependency_pairs(parse_results: list[ParseResult]) -> set[tuple[st
         source = pr.file_path.as_posix()
         for imp in pr.imports:
             if imp.is_relative:
-                resolved = _resolve_relative_targets(pr.file_path, imp)
+                resolved = _resolve_relative_targets(pr.file_path, imp, known_files)
             else:
                 resolved = _resolve_non_relative_targets(imp, module_index)
 
@@ -263,6 +380,8 @@ class CoChangeCouplingSignal(BaseSignal):
             if pair in explicit_pairs:
                 continue
             if _shares_monorepo_subpackage(pair[0], pair[1], repo_root):
+                continue
+            if _is_parallel_implementation_pair(pair[0], pair[1]):
                 continue
 
             total_a = file_weights[pair[0]]

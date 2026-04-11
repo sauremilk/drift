@@ -1,5 +1,59 @@
 # Fault Tree Analysis
 
+## 2026-04-12 - Issue #244: MDS false positives on cross-plugin workspace duplication
+
+### Top Event (TE-MDS-244)
+MDS reports deliberate cross-plugin workspace duplicates as severe architectural drift.
+
+### FT-1: false-positive branch
+
+```
+          TE-FP: intentional plugin/workspace duplication reported as severe drift
+                         |
+                      OR-Gate
+               +---------+---------+
+              IE-1      IE-2
+```
+
+- **IE-1 (MCS)**: Exact duplicate grouping marks copies in different `extensions/<name>` or `plugins/<name>` packages as `HIGH` by default.
+  - Mitigation: Detect cross-workspace duplicate groups and cap to `INFO` with low score.
+- **IE-2 (MCS)**: Near-duplicate path uses similarity-only severity assignment and ignores plugin isolation boundaries.
+  - Mitigation: Apply cross-workspace pair heuristic and cap severity/score for these pairs.
+
+### FT-2: false-negative guard
+
+- **IE-3 (Guard)**: Broad suppression may hide real harmful duplication that should still be acted on.
+  - Mitigation: Heuristic is strictly bounded to *different* plugin scopes; same-workspace duplicates remain actionable and covered by regression tests.
+
+## 2026-04-12 - Issue #243: CCC false positives for parallel implementations and explicit type imports
+
+### Top Event (TE-CCC-243)
+CCC reports expected parallel patterns or explicit type-import relationships as hidden coupling.
+
+### FT-1: false-positive branch
+
+```
+          TE-FP: expected/explicit coupling reported as hidden coupling
+                         |
+                      OR-Gate
+               +---------+---------+
+              IE-1      IE-2
+                         |
+                        IE-3
+```
+
+- **IE-1 (MCS)**: Sibling runtime-variant files (`*-gateway`, `*-node`, etc.) co-change on shared contract updates without direct imports.
+  - Mitigation: Runtime-variant suppression for same-directory sibling pairs with normalized variant-token stems.
+- **IE-2 (MCS)**: Cross-extension plugin template entrypoints (`extensions/*/src/index.ts`) co-change by design when SDK contracts evolve.
+  - Mitigation: Suppress cross-extension pairs only for identical template entrypoint suffixes (`src/index.{ts,js,tsx,jsx}`).
+- **IE-3 (MCS)**: Relative TypeScript `import type` edges (e.g. `./types.js`) were unresolved by Python-centric relative resolver logic.
+  - Mitigation: Relative resolver now normalizes relative paths and applies bounded JS-runtime -> TS-source extension aliases against known in-repo files.
+
+### FT-2: false-negative guard
+
+- **IE-4 (Guard)**: New pattern suppressions may hide real hidden coupling in edge cases that match variant/template shape.
+  - Mitigation: Scope remains narrowly bounded; cross-extension non-template pairs stay reportable and are covered by regression tests.
+
 ## 2026-04-12 - Issue #242: DCA plugin entrypoint false positives
 
 ### Top Event (TE-DCA-242)

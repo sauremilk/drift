@@ -1,5 +1,20 @@
 # FMEA Matrix
 
+## 2026-04-12 - Issue #244: MDS FP bei absichtlicher Cross-Plugin-Duplikation
+
+| Signal | Failure Mode | Cause | Effect | Detection | Mitigation | S | O | D | RPN | Status |
+|---|---|---|---|---|---|---:|---:|---:|---:|---|
+| MDS | FP: identische/nahe Duplikate ueber verschiedene `extensions/*` oder `plugins/*` als HIGH/MEDIUM gemeldet | MDS behandelte absichtliche Workspace-Isolation wie gewoehnliches Copy-Paste und kannte keine Plugin-Scope-Heuristik | Hohe Noise-Last und sinkende Glaubwuerdigkeit in Plugin-Monorepos | Neue Regressionen in `tests/test_mutant_duplicates_edge_cases.py` (`test_analyze_caps_cross_plugin_exact_duplicates_to_info_issue_244`) | Neue Workspace-Isolation-Heuristik: Cross-Plugin-Paare/-Gruppen werden auf INFO + niedrigen Score gecappt und mit Metadata markiert | 7 | 8 | 2 | 112 | Mitigated |
+| MDS | FN-Risiko: echte, schaedliche Duplikation zwischen Plugins wird niedriger priorisiert | INFO-Cap fuer Cross-Plugin-Scope kann reale Kopplungsprobleme zwischen Plugins abschwaechen | Potenziell spaetere Priorisierung echter Cross-Plugin-Refactorings | Gegenregression fuer gleiches Workspace-Paket bleibt HIGH (`test_analyze_keeps_same_workspace_exact_duplicates_actionable_issue_244`) | Heuristik ist eng auf unterschiedliche Plugin-Scopes begrenzt; intra-workspace und nicht-plugin Pfade bleiben unveraendert | 4 | 3 | 4 | 48 | Mitigated |
+
+## 2026-04-12 - Issue #243: CCC FP bei Parallel-Implementierungen und expliziten type-imports
+
+| Signal | Failure Mode | Cause | Effect | Detection | Mitigation | S | O | D | RPN | Status |
+|---|---|---|---|---|---|---:|---:|---:|---:|---|
+| CCC | FP: legitime Parallel-Implementierungen als hidden coupling gemeldet (`*-gateway` <-> `*-node`, `extensions/*/src/index.ts`) | CCC unterscheidet nicht zwischen impliziter Kopplung und absichtlicher Contract-Parallelitaet (Runtime-Varianten, Plugin-Template-Entrypoints) | Hohe FP-Rate in Plugin-/Agenten-Repos, reduzierte Glaubwuerdigkeit und Triage-Last | Neue Regressionen in `tests/test_co_change_coupling.py` (`test_parallel_runtime_variants_are_suppressed`, `test_cross_extension_template_entrypoints_are_suppressed`) | Gezielte Suppression fuer Runtime-Variant-Paare im gleichen Ordner und fuer cross-extension `src/index.{ts,js,tsx,jsx}` Template-Entrypoints | 7 | 8 | 2 | 112 | Mitigated |
+| CCC | FP: explizite TS `import type`-Kopplung als hidden coupling gemeldet (`./types.js` -> `types.ts`) | Relative Import-Aufloesung war Python-zentriert und mappt TS/JS Runtime-Specifier nicht robust auf In-Repo-Quellen | Sichtbare, explizite Abhaengigkeiten werden faelschlich als versteckte Kopplung klassifiziert | Neue Regression `test_relative_type_import_counts_as_explicit_dependency` | Relative Resolver erweitert: normierte relative Pfade + Extension-Alias fuer `.js/.jsx/.mjs/.cjs` -> `.ts/.tsx` bei bekannten In-Repo-Dateien | 7 | 7 | 2 | 98 | Mitigated |
+| CCC | FN-Risiko: echte hidden coupling zwischen aehnlichen Varianten oder Plugin-Entrypoints bleibt ungemeldet | Neue Suppressionen koennen Randfaelle mit realer Architektur-Erosion in denselben Mustern reduzieren | Potenzielle Unterberichtung einzelner echter Defekte | Bestehender Guard-Test fuer cross-extension non-template Paar bleibt aktiv (`test_monorepo_cross_extension_pair_still_detects_hidden_coupling`) | Suppression eng begrenzt auf definierte Muster (runtime-token sibling variants, `extensions/*/src/index.*`), sonst unveraenderte CCC-Logik | 4 | 3 | 4 | 48 | Mitigated |
+
 ## 2026-04-12 - Issue #242: DCA FP bei Plugin-Entrypoints (components/plugin-sdk)
 
 | Signal | Failure Mode | Cause | Effect | Detection | Mitigation | S | O | D | RPN | Status |
