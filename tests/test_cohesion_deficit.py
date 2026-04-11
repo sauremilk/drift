@@ -106,6 +106,51 @@ def test_cod_ignores_tiny_files() -> None:
     assert findings == []
 
 
+def test_cod_logger_module_is_not_flagged() -> None:
+    """Logger facade modules should not be treated as cohesion deficits."""
+    file_path = "sdk/logger.ts"
+    parse_result = ParseResult(
+        file_path=Path(file_path),
+        language="typescript",
+        functions=[
+            _function("noop", file_path, 10),
+            _function("setMatrixConsoleLogging", file_path, 20),
+            _function("formatMessage", file_path, 30),
+            _function("trace", file_path, 40),
+            _function("debug", file_path, 50),
+            _function("info", file_path, 60),
+            _function("warn", file_path, 70),
+            _function("error", file_path, 80),
+            _function("setLogger", file_path, 90),
+            _function("log", file_path, 100),
+        ],
+    )
+
+    findings = CohesionDeficitSignal().analyze([parse_result], {}, DriftConfig())
+    assert findings == []
+
+
+def test_cod_utility_filename_still_flags_clear_deficit() -> None:
+    """Utility filename hints should dampen noise but keep clear deficits detectable."""
+    file_path = "helpers/misc_utils.py"
+    parse_result = ParseResult(
+        file_path=Path(file_path),
+        language="python",
+        functions=[
+            _function("parse_invoice_xml", file_path, 10),
+            _function("send_slack_alert", file_path, 30),
+            _function("resize_profile_image", file_path, 50),
+            _function("compile_tax_report", file_path, 70),
+            _function("decrypt_api_secret", file_path, 90),
+            _function("provision_ci_runner", file_path, 110),
+        ],
+    )
+
+    findings = CohesionDeficitSignal().analyze([parse_result], {}, DriftConfig())
+    assert len(findings) == 1
+    assert findings[0].metadata["utility_filename_hint"] is True
+
+
 # ---------------------------------------------------------------------------
 # Parametrized ground-truth fixture tests
 # ---------------------------------------------------------------------------

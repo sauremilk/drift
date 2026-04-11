@@ -72,6 +72,14 @@ _INDEX_NAMES: frozenset[str] = frozenset(
     {"__init__.py", "index.ts", "index.tsx", "index.js", "index.jsx"},
 )
 
+_LOGGER_LEVEL_NAMES: frozenset[str] = frozenset(
+    {"trace", "debug", "info", "warn", "warning", "error", "fatal", "log"}
+)
+
+_UTILITY_FILENAME_HINTS: frozenset[str] = frozenset(
+    {"util", "utils", "helper", "helpers", "constant", "constants"}
+)
+
 
 def _is_test_like(path: Path) -> bool:
     p = path.as_posix().lower()
@@ -162,6 +170,40 @@ def _collect_units(parse_result: ParseResult) -> list[_SemanticUnit]:
     return units
 
 
+def _name_tokens(name: str) -> set[str]:
+    return _tokenize_name(name)
+
+
+def _is_logger_like_module(parse_result: ParseResult, units: list[_SemanticUnit]) -> bool:
+    stem_tokens = _name_tokens(parse_result.file_path.stem)
+    if "logger" in stem_tokens:
+        return True
+
+    scored_names = [u.name.split(".")[-1].lower() for u in units]
+    if not scored_names:
+        return False
+
+    logger_like_count = 0
+    for name in scored_names:
+        tokens = _name_tokens(name)
+        if tokens & _LOGGER_LEVEL_NAMES:
+            logger_like_count += 1
+            continue
+        if "logger" in tokens or name.startswith("log"):
+            logger_like_count += 1
+
+    return (logger_like_count / len(scored_names)) >= 0.5
+
+
+def _has_utility_filename_hint(path: Path) -> bool:
+    stem = path.stem.lower()
+    split_tokens = [part for part in _TOKEN_SPLIT_RE.split(stem) if part]
+    for token in split_tokens:
+        if token in _UTILITY_FILENAME_HINTS:
+            return True
+    return any(hint in stem for hint in _UTILITY_FILENAME_HINTS)
+
+
 @register_signal
 class CohesionDeficitSignal(BaseSignal):
     """Detect semantically incoherent modules/files."""
@@ -207,6 +249,9 @@ class CohesionDeficitSignal(BaseSignal):
             if len(units) < min_units:
                 continue
 
+            is_logger_like = _is_logger_like_module(pr, units)
+            has_utility_filename_hint = _has_utility_filename_hint(pr.file_path)
+
             best_similarities: list[float] = []
             isolated_names: list[str] = []
 
@@ -227,10 +272,27 @@ class CohesionDeficitSignal(BaseSignal):
             # 65% isolation, 35% global incoherence.
             raw_score = (0.65 * isolation_ratio) + (0.35 * diversity)
 
+            module_pattern_dampening = 1.0
+            if is_logger_like:
+                # Logger facades intentionally expose independent severity entrypoints.
+                module_pattern_dampening *= 0.35
+            if has_utility_filename_hint and not is_logger_like:
+                # Utility modules can contain loosely related helpers by convention.
+                module_pattern_dampening *= 0.8
+
             # Small member sets are noisier: ramp up confidence with module size.
             member_scale = min(1.0, (len(units) - 2) / 4)
             # Keep COD conservative for CI gating: severe but non-critical by default.
-            score = round(min(0.79, raw_score * member_scale * repo_dampening), 3)
+            score = round(
+                min(
+                    0.79,
+                    raw_score
+                    * member_scale
+                    * repo_dampening
+                    * module_pattern_dampening,
+                ),
+                3,
+            )
 
             if score < detection_threshold:
                 continue
@@ -266,6 +328,9 @@ class CohesionDeficitSignal(BaseSignal):
                         "mean_best_similarity": round(mean_best_similarity, 3),
                         "isolation_ratio": round(isolation_ratio, 3),
                         "repo_dampening": round(repo_dampening, 3),
+                        "module_pattern_dampening": round(module_pattern_dampening, 3),
+                        "logger_like_module": is_logger_like,
+                        "utility_filename_hint": has_utility_filename_hint,
                         "member_scale": round(member_scale, 3),
                     },
                 )

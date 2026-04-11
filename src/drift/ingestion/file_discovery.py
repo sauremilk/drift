@@ -331,6 +331,8 @@ def discover_files(
             "**/build/**",
             "**/site-packages/**",
             "**/.pixi/**",
+            "**/benchmarks/**",
+            "**/benchmark_results/**",
             "**/tests/**",
             "**/scripts/**",
         ]
