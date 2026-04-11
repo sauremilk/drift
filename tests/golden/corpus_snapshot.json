@@ -1671,6 +1671,8 @@
         "framework_context_hints": [],
         "module": "src/myapp/models",
         "num_variants": 2,
+        "plugin_context_dampened": false,
+        "plugin_context_hints": [],
         "total_instances": 2,
         "variant_count": 2
       },
