@@ -396,6 +396,11 @@ def _is_test_prefixed_secret_var(var_name: str) -> bool:
     return bool(_TEST_SECRET_VAR_PREFIX_RE.match(var_name))
 
 
+def _is_dynamic_template_literal(quote: str, string_val: str) -> bool:
+    """Return True for JS/TS template literals that interpolate runtime values."""
+    return quote == "`" and "${" in string_val
+
+
 @register_signal
 class HardcodedSecretSignal(BaseSignal):
     """Detect hardcoded secrets and credentials in source code."""
@@ -507,7 +512,7 @@ class HardcodedSecretSignal(BaseSignal):
             var_name, _quote, string_val = m.group(1), m.group(2), m.group(3)
 
             finding = self._evaluate_ts_assignment(
-                var_name, string_val, pr.file_path, lineno,
+                var_name, _quote, string_val, pr.file_path, lineno,
                 min_entropy, min_length, line,
             )
             if finding:
@@ -518,6 +523,7 @@ class HardcodedSecretSignal(BaseSignal):
     def _evaluate_ts_assignment(
         self,
         var_name: str,
+        quote: str,
         string_val: str,
         file_path: Path,
         lineno: int,
@@ -531,6 +537,9 @@ class HardcodedSecretSignal(BaseSignal):
             return None
 
         if _is_test_prefixed_secret_var(var_name):
+            return None
+
+        if _is_dynamic_template_literal(quote, string_val):
             return None
 
         # Check known API token prefixes first (high confidence).

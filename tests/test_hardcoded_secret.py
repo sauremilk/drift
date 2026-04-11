@@ -633,6 +633,54 @@ class TestHSCTrueNegatives:
         findings = signal.analyze([pr], {}, DriftConfig())
         assert len(findings) == 0
 
+    def test_ts_gateway_token_with_randomuuid_template_not_flagged(self, tmp_path: Path) -> None:
+        _write_source(
+            tmp_path,
+            "extensions/qa-lab/src/gateway-child.ts",
+            '''\
+            const gatewayToken = `qa-suite-${randomUUID()}`;
+            ''',
+        )
+        signal = HardcodedSecretSignal(repo_path=tmp_path)
+        pr = ParseResult(
+            file_path=Path("extensions/qa-lab/src/gateway-child.ts"),
+            language="typescript",
+        )
+        findings = signal.analyze([pr], {}, DriftConfig())
+        assert len(findings) == 0
+
+    def test_ts_display_token_composite_template_not_flagged(self, tmp_path: Path) -> None:
+        _write_source(
+            tmp_path,
+            "src/agents/tool-display-common.ts",
+            '''\
+            const token = `${entry.label}:${entry.value}`;
+            ''',
+        )
+        signal = HardcodedSecretSignal(repo_path=tmp_path)
+        pr = ParseResult(
+            file_path=Path("src/agents/tool-display-common.ts"),
+            language="typescript",
+        )
+        findings = signal.analyze([pr], {}, DriftConfig())
+        assert len(findings) == 0
+
+    def test_ts_jwt_token_assembly_template_not_flagged(self, tmp_path: Path) -> None:
+        _write_source(
+            tmp_path,
+            "src/infra/push-apns.ts",
+            '''\
+            const token = `${signingInput}.${toBase64UrlBytes(signature)}`;
+            ''',
+        )
+        signal = HardcodedSecretSignal(repo_path=tmp_path)
+        pr = ParseResult(
+            file_path=Path("src/infra/push-apns.ts"),
+            language="typescript",
+        )
+        findings = signal.analyze([pr], {}, DriftConfig())
+        assert len(findings) == 0
+
     def test_config_profile_id_constant_not_flagged(self, tmp_path: Path) -> None:
         _write_source(
             tmp_path,
