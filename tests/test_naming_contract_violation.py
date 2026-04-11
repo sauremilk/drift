@@ -196,6 +196,28 @@ export function checkAuth(token?: string): void {
         ]
         assert nbv_findings == []
 
+    @needs_tree_sitter
+    def test_check_ts_bare_return_non_void_no_crash_and_finding(self, tmp_path: Path):
+        pr = _write_and_parse_ts(
+            tmp_path,
+            "src/validators.ts",
+            """\
+export function checkAuth(token?: string): string {
+    if (!token) {
+        return;
+    }
+    return "ok";
+}
+""",
+        )
+
+        findings = _run([pr], repo_path=tmp_path)
+        nbv_findings = [
+            f for f in findings if f.signal_type == SignalType.NAMING_CONTRACT_VIOLATION
+        ]
+        assert len(nbv_findings) == 1
+        assert nbv_findings[0].metadata.get("prefix_rule") == "check_"
+
 
 # ===================================================================
 # ensure_* — expects raise

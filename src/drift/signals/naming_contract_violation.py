@@ -264,10 +264,13 @@ def _ts_has_rejection_path(root: Any, src: bytes, fn_info: FunctionInfo) -> bool
 
         if node.type == "return_statement":
             value_children = [c for c in node.children if c.type not in ("return", ";")]
-            if not value_children and allows_bare_return:
-                # In validate/check-style TS functions, bare early return is
-                # commonly used to signal rejection/failure.
-                return True
+            if not value_children:
+                if allows_bare_return:
+                    # In validate/check-style TS functions, bare early return is
+                    # commonly used to signal rejection/failure.
+                    return True
+                # Bare return in non-void contracts is not a valid rejection path.
+                continue
 
             value = value_children[0]
             if value.type in ("false", "null", "undefined"):
