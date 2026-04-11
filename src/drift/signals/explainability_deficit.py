@@ -24,12 +24,25 @@ HIGH_COMPLEXITY = 10
 MEDIUM_COMPLEXITY = 5
 
 
-def _explanation_score(func: FunctionInfo, has_test: bool) -> float:
+def _has_self_documenting_ts_signature(func: FunctionInfo) -> bool:
+    """Return True when TS/TSX signatures already communicate intent well."""
+    return func.language in ("typescript", "tsx") and bool(func.parameters)
+
+
+def _explanation_score(
+    func: FunctionInfo,
+    has_test: bool,
+    *,
+    self_documenting_signature: bool = False,
+) -> float:
     """Calculate how well-explained a function is (0.0=unexplained, 1.0=well-explained)."""
     evidence = 0.0
     max_evidence = 4.0
 
     if func.has_docstring:
+        evidence += 1.0
+    elif self_documenting_signature:
+        # In TS/TSX, typed signatures often provide the core API explanation.
         evidence += 1.0
 
     if has_test:
@@ -42,6 +55,9 @@ def _explanation_score(func: FunctionInfo, has_test: bool) -> float:
     # Return type annotation suggests intentional design
     if func.return_type:
         evidence += 1.0
+    elif self_documenting_signature:
+        # TS frequently relies on inferred return types from typed parameters/body.
+        evidence += 0.5
 
     return min(1.0, evidence / max_evidence)
 
@@ -159,8 +175,13 @@ class ExplainabilityDeficitSignal(BaseSignal):
 
             # Check if there's a corresponding test
             has_test = base_name in test_targets
+            self_documenting_signature = _has_self_documenting_ts_signature(func)
 
-            explanation = _explanation_score(func, has_test)
+            explanation = _explanation_score(
+                func,
+                has_test,
+                self_documenting_signature=self_documenting_signature,
+            )
             deficit = 1.0 - explanation
 
             # Weight by complexity
@@ -176,6 +197,9 @@ class ExplainabilityDeficitSignal(BaseSignal):
             visibility_factor = 0.7 if is_private else 1.0
             # Combine complexity-weighted deficit with LOC and visibility.
             weighted_score = weighted_score * (0.7 + 0.3 * loc_factor) * visibility_factor
+            if self_documenting_signature:
+                # Reduce false positives for typed TS/TSX signatures where JSDoc is optional.
+                weighted_score *= 0.75
             if path_context == "test" and handling == "reduce_severity":
                 weighted_score *= 0.5
 
@@ -207,21 +231,21 @@ class ExplainabilityDeficitSignal(BaseSignal):
             desc_parts = [
                 f"Complexity: {func.complexity}, LOC: {func.loc}.",
             ]
-            if not func.has_docstring:
+            if not func.has_docstring and not self_documenting_signature:
                 desc_parts.append("No docstring.")
             if not has_test:
                 desc_parts.append("No corresponding test found.")
-            if not func.return_type:
+            if not func.return_type and not self_documenting_signature:
                 desc_parts.append("No return type annotation.")
             if ai_related:
                 desc_parts.append("File contains AI-attributed commits.")
 
             missing = []
-            if not func.has_docstring:
+            if not func.has_docstring and not self_documenting_signature:
                 missing.append("Docstring")
             if not has_test:
                 missing.append("Tests")
-            if not func.return_type:
+            if not func.return_type and not self_documenting_signature:
                 missing.append("Return-Type")
             fix = (
                 (
@@ -251,6 +275,7 @@ class ExplainabilityDeficitSignal(BaseSignal):
                         "has_docstring": func.has_docstring,
                         "has_test": has_test,
                         "has_return_type": func.return_type is not None,
+                        "self_documenting_signature": self_documenting_signature,
                         "explanation_score": round(explanation, 3),
                         "finding_context": path_context,
                     },

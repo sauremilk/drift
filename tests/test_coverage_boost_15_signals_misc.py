@@ -13,7 +13,10 @@ from unittest.mock import patch
 
 from drift.config import DriftConfig
 from drift.models import FunctionInfo, ParseResult, Severity
-from drift.signals.explainability_deficit import ExplainabilityDeficitSignal, _explanation_score
+from drift.signals.explainability_deficit import (
+    ExplainabilityDeficitSignal,
+    _explanation_score,
+)
 from drift.signals.naming_contract_violation import NamingContractViolationSignal, _has_create_path
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
@@ -27,6 +30,7 @@ def _make_fn(
     loc: int = 15,
     has_docstring: bool = False,
     decorators: list[str] | None = None,
+    parameters: list[str] | None = None,
     language: str = "python",
     return_type: str | None = None,
 ) -> FunctionInfo:
@@ -38,7 +42,7 @@ def _make_fn(
         language=language,
         complexity=complexity,
         loc=loc,
-        parameters=["a", "b"],
+        parameters=parameters or ["a", "b"],
         has_docstring=has_docstring,
         decorators=decorators or [],
         return_type=return_type,
@@ -171,6 +175,73 @@ def test_exd_test_file_reduce_severity_mode(tmp_path: Path) -> None:
     assert len(findings) == 1
     assert findings[0].severity == Severity.LOW
     assert findings[0].metadata.get("finding_context") == "test"
+
+
+def test_exd_typescript_typed_signature_not_flagged_without_jsdoc(tmp_path: Path) -> None:
+    """Issue #248: typed TS signatures should not require JSDoc to avoid FP inflation."""
+    fn = _make_fn(
+        "createBrowserTool",
+        file_path="extensions/browser/src/browser-tool.ts",
+        language="typescript",
+        complexity=12,
+        loc=30,
+        has_docstring=False,
+        parameters=["config: BrowserToolConfig"],
+        return_type="Tool",
+    )
+    pr = ParseResult(
+        file_path=Path("extensions/browser/src/browser-tool.ts"),
+        language="typescript",
+        functions=[fn],
+    )
+    signal = ExplainabilityDeficitSignal(repo_path=tmp_path)
+    findings = signal.analyze([pr], {}, DriftConfig())
+    assert findings == []
+
+
+def test_exd_typescript_inferred_return_not_penalized(tmp_path: Path) -> None:
+    """Issue #248: TS functions with typed params may rely on return type inference."""
+    fn = _make_fn(
+        "formatDiscordEmbed",
+        file_path="extensions/discord/src/format.ts",
+        language="typescript",
+        complexity=11,
+        loc=26,
+        has_docstring=False,
+        parameters=["data: EmbedData"],
+        return_type=None,
+    )
+    pr = ParseResult(
+        file_path=Path("extensions/discord/src/format.ts"),
+        language="typescript",
+        functions=[fn],
+    )
+    signal = ExplainabilityDeficitSignal(repo_path=tmp_path)
+    findings = signal.analyze([pr], {}, DriftConfig())
+    assert findings == []
+
+
+def test_exd_javascript_still_requires_explainability_evidence(tmp_path: Path) -> None:
+    """Ensure Issue #248 hardening stays TS/TSX-specific and does not mute JS findings."""
+    fn = _make_fn(
+        "renderMenu",
+        file_path="src/ui/menu.js",
+        language="javascript",
+        complexity=12,
+        loc=28,
+        has_docstring=False,
+        parameters=["items"],
+        return_type=None,
+    )
+    pr = ParseResult(
+        file_path=Path("src/ui/menu.js"),
+        language="javascript",
+        functions=[fn],
+    )
+    signal = ExplainabilityDeficitSignal(repo_path=tmp_path)
+    findings = signal.analyze([pr], {}, DriftConfig())
+    assert len(findings) == 1
+    assert findings[0].metadata.get("self_documenting_signature") is False
 
 
 # ── doc_impl_drift: _get_mistune with import failure ─────────────────────────
