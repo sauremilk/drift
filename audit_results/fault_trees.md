@@ -1,5 +1,55 @@
 # Fault Tree Analysis
 
+## 2026-04-12 - Issue #242: DCA plugin entrypoint false positives
+
+### Top Event (TE-DCA-242)
+DCA reports plugin entrypoint exports (components/plugin-sdk) as dead code.
+
+### FT-1: false-positive branch
+
+```
+          TE-FP: plugin entrypoint export reported as unused
+                         |
+                      OR-Gate
+               +---------+---------+
+              IE-1      IE-2
+```
+
+- **IE-1 (MCS)**: Static import graph cannot observe host-registry wiring or framework-driven dynamic rendering for plugin UI component modules.
+  - Mitigation: Entrypoint dampening heuristic for `extensions/*` and `plugins/*` paths with `components` signals.
+- **IE-2 (MCS)**: Plugin SDK entry modules (`plugin-sdk/*`) are consumed by external plugin hosts and are not always imported inside the same repository.
+  - Mitigation: Entrypoint dampening for `plugin-sdk` path tokens plus explicit metadata marker.
+
+### FT-2: false-negative guard
+
+- **IE-3 (Guard)**: Dampening can under-prioritize truly unused exports in plugin entrypoint files.
+  - Mitigation: Scope is bounded to extension/plugin entrypoint indicators only; findings are not fully suppressed (MEDIUM cap, no drop).
+
+## 2026-04-12 - Issue #241: AVS hidden coupling FP on TypeScript ESM imports
+
+### Top Event (TE-AVS-241)
+AVS reports hidden coupling although a static import relationship exists in TypeScript ESM code.
+
+### FT-1: false-positive branch
+
+```
+          TE-FP: hidden coupling reported despite real import edge
+                         |
+                      OR-Gate
+               +---------+---------+
+              IE-1      IE-2
+```
+
+- **IE-1 (MCS)**: Relative TS import specifier uses runtime extension (`../module.js`) while repository source file is `../module.ts`.
+  - Mitigation: Extension alias candidates for relative ESM specifiers (`.js/.jsx/.mjs/.cjs` -> `.ts/.tsx/.mts/.cts`).
+- **IE-2 (MCS)**: Resolver only checked module-like aliases and skipped normalized path-like lookups for relative imports.
+  - Mitigation: Build and consult `path_to_file` index in `build_import_graph()` for normalized relative path candidates.
+
+### FT-2: false-negative guard
+
+- **IE-3 (Guard)**: Extension alias expansion could pick an unintended sibling file when multiple extension variants coexist.
+  - Mitigation: Candidate resolution is limited to relative imports and known in-repo file paths; regression tests assert canonical `.js -> .ts` and `.mjs/.cjs -> .mts/.cts` mappings.
+
 ## 2026-04-12 - Issue #238: HSC false positives bei dynamischen Template-Literalen
 
 ### Top Event (TE-HSC-238)

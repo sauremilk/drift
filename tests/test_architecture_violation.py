@@ -72,6 +72,74 @@ def test_build_import_graph_resolves_relative_imports_to_internal_edges():
     assert graph.has_edge("src/pkg/api/routes.py", "src/pkg/api/service.py")
 
 
+def test_build_import_graph_resolves_ts_esm_js_specifier_to_ts_target():
+    results = [
+        ParseResult(
+            file_path=Path("src/commands/chutes-oauth.ts"),
+            language="typescript",
+            imports=[
+                ImportInfo(
+                    source_file=Path("src/commands/chutes-oauth.ts"),
+                    imported_module="../agents/chutes-oauth.js",
+                    imported_names=["ChutesOAuthProvider"],
+                    line_number=5,
+                    is_relative=True,
+                )
+            ],
+        ),
+        ParseResult(
+            file_path=Path("src/agents/chutes-oauth.ts"),
+            language="typescript",
+            imports=[],
+        ),
+    ]
+
+    graph, _ = build_import_graph(results)
+
+    assert graph.has_edge("src/commands/chutes-oauth.ts", "src/agents/chutes-oauth.ts")
+    assert graph.nodes.get("../agents/chutes-oauth.js", {}).get("external") is not True
+
+
+def test_build_import_graph_resolves_ts_esm_mjs_and_cjs_specifiers():
+    results = [
+        ParseResult(
+            file_path=Path("src/commands/loaders.ts"),
+            language="typescript",
+            imports=[
+                ImportInfo(
+                    source_file=Path("src/commands/loaders.ts"),
+                    imported_module="../agents/esm-loader.mjs",
+                    imported_names=["esmLoader"],
+                    line_number=4,
+                    is_relative=True,
+                ),
+                ImportInfo(
+                    source_file=Path("src/commands/loaders.ts"),
+                    imported_module="../agents/cjs-loader.cjs",
+                    imported_names=["cjsLoader"],
+                    line_number=5,
+                    is_relative=True,
+                ),
+            ],
+        ),
+        ParseResult(
+            file_path=Path("src/agents/esm-loader.mts"),
+            language="typescript",
+            imports=[],
+        ),
+        ParseResult(
+            file_path=Path("src/agents/cjs-loader.cts"),
+            language="typescript",
+            imports=[],
+        ),
+    ]
+
+    graph, _ = build_import_graph(results)
+
+    assert graph.has_edge("src/commands/loaders.ts", "src/agents/esm-loader.mts")
+    assert graph.has_edge("src/commands/loaders.ts", "src/agents/cjs-loader.cts")
+
+
 def test_external_imports_marked():
     results = [
         _pr("app/main.py", [_imp("app/main.py", "flask")]),

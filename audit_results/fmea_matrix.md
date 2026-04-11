@@ -1,5 +1,19 @@
 # FMEA Matrix
 
+## 2026-04-12 - Issue #242: DCA FP bei Plugin-Entrypoints (components/plugin-sdk)
+
+| Signal | Failure Mode | Cause | Effect | Detection | Mitigation | S | O | D | RPN | Status |
+|---|---|---|---|---|---|---:|---:|---:|---:|---|
+| DCA | FP: Plugin-Entrypoint-Exporte (`components`, `plugin-sdk`) als ungenutzt gemeldet | DCA nutzt statischen Importgraph; Host-Registry-/Framework-Wiring fuer Extension-Komponenten und SDK-Entrypoints ist oft indirekt und statisch nicht aufloesbar | Kritische/hohe Noise-Findings in Plugin-Monorepos, reduzierte Signal-Glaubwuerdigkeit | Neue Regressionen in `tests/test_dead_code_accumulation.py` (`TestDCARuntimePluginEntrypointHeuristic`) | Erweiterte Entrypoint-Heuristik fuer `extensions|plugins` + `components`/`plugin-sdk`-Pfade mit Score-Daempfung und Severity-Cap auf MEDIUM; Metadata-Flag zur Nachvollziehbarkeit | 7 | 8 | 2 | 112 | Mitigated |
+| DCA | FN-Risiko: echte ungenutzte Exporte in Plugin-Entrypoints werden niedriger priorisiert | Heuristische Daempfung greift auf dateipfadbasierten Entrypoint-Signalen und kann reale Dead-Exports abschwaechen | Potenziell spaetere Bereinigung einzelner echter Dead-Exports in Plugin-Entrypoints | Bestehende Gegenregression fuer Nicht-Entrypoint-Dateien (`test_extensions_non_config_file_is_not_dampened`) bleibt aktiv | Scope bleibt auf `extensions|plugins` mit `components`/`plugin-sdk`-Indikatoren begrenzt; keine komplette Suppression, nur Daempfung/Cap | 4 | 3 | 4 | 48 | Mitigated |
+
+## 2026-04-12 - Issue #241: AVS TS ESM relative import extension mapping
+
+| Signal | Failure Mode | Cause | Effect | Detection | Mitigation | S | O | D | RPN | Status |
+|---|---|---|---|---|---|---:|---:|---:|---:|---|
+| AVS | FP: hidden coupling finding emitted although static import exists (`../x.js` from `.ts`) | Import resolver treated TS ESM runtime extension specifier literally and failed to map to source file extension (`.js` vs `.ts`) | False architectural drift findings and reduced AVS credibility in modern NodeNext/Node16 TS repos | New regressions in `tests/test_architecture_violation.py` for `.js -> .ts` and `.mjs/.cjs -> .mts/.cts` | Add relative path candidate resolver with extension alias mapping and path-index lookup in `build_import_graph()` | 7 | 8 | 2 | 112 | Mitigated |
+| AVS | FN-risk: wrong sibling file could be resolved under broad aliasing | Multiple similarly named files with mixed extensions may compete for one import specifier | Potential under-reporting if edge resolves to an unintended file | Existing AVS co-change and import-edge tests remain active; mappings constrained to known file index | Keep mapping bounded to relative imports and explicit extension aliases only; no global non-relative rewrite | 4 | 3 | 4 | 48 | Mitigated |
+
 ## 2026-04-12 - Issue #238: HSC FP bei dynamischen Template-Literalen
 
 | Signal | Failure Mode | Cause | Effect | Detection | Mitigation | S | O | D | RPN | Status |

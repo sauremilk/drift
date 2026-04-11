@@ -18,6 +18,7 @@ from __future__ import annotations
 
 import fnmatch
 import logging
+import posixpath
 from pathlib import Path, PurePosixPath
 from typing import TYPE_CHECKING, Any
 
@@ -124,6 +125,59 @@ def _relative_import_candidates(source_file: Path, imp: ImportInfo) -> list[str]
     return unique
 
 
+def _relative_path_candidates(source_file: Path, module_spec: str) -> list[str]:
+    """Build path-like candidates for relative import specifiers.
+
+    Handles TS/JS ESM conventions such as ``./foo.js`` pointing at
+    ``./foo.ts`` as well as extension-less relative specifiers.
+    """
+    spec = (module_spec or "").strip()
+    if not spec.startswith("."):
+        return []
+
+    source_dir = PurePosixPath(source_file.as_posix()).parent
+    joined = source_dir.as_posix() + "/" + spec
+    base = posixpath.normpath(joined)
+
+    ext_aliases: dict[str, tuple[str, ...]] = {
+        ".js": (".js", ".ts", ".tsx"),
+        ".jsx": (".jsx", ".tsx"),
+        ".mjs": (".mjs", ".mts"),
+        ".cjs": (".cjs", ".cts"),
+    }
+
+    p = PurePosixPath(base)
+    candidates: list[str] = [p.as_posix()]
+    suffix = p.suffix.lower()
+    if suffix in ext_aliases:
+        stem = p.with_suffix("").as_posix()
+        candidates.extend(stem + ext for ext in ext_aliases[suffix])
+    elif suffix == "":
+        stem = p.as_posix()
+        candidates.extend(
+            stem + ext
+            for ext in (
+                ".py",
+                ".ts",
+                ".tsx",
+                ".js",
+                ".jsx",
+                ".mts",
+                ".cts",
+                ".mjs",
+                ".cjs",
+            )
+        )
+
+    unique: list[str] = []
+    seen: set[str] = set()
+    for candidate in candidates:
+        if candidate and candidate not in seen:
+            seen.add(candidate)
+            unique.append(candidate)
+    return unique
+
+
 def build_import_graph(
     parse_results: list[ParseResult],
 ) -> tuple[nx.DiGraph, list[ImportInfo]]:
@@ -140,9 +194,18 @@ def build_import_graph(
     # Build a direct module -> file lookup once to avoid repeated linear scans
     # over all known files for every import in large repositories.
     module_to_file: dict[str, str] = {}
+    path_to_file: dict[str, str] = {}
     for pr in parse_results:
+        file_posix = pr.file_path.as_posix()
+        path_to_file.setdefault(file_posix, file_posix)
+        path_to_file.setdefault(pr.file_path.with_suffix("").as_posix(), file_posix)
+        parts = pr.file_path.parts
+        if len(parts) >= 2 and parts[0].lower() in _SOURCE_ROOT_PREFIXES:
+            trimmed = Path(*parts[1:])
+            path_to_file.setdefault(trimmed.as_posix(), file_posix)
+            path_to_file.setdefault(trimmed.with_suffix("").as_posix(), file_posix)
         for module_alias in _module_aliases_for_path(pr.file_path):
-            module_to_file.setdefault(module_alias, pr.file_path.as_posix())
+            module_to_file.setdefault(module_alias, file_posix)
 
     for pr in parse_results:
         src = pr.file_path.as_posix()
@@ -154,9 +217,18 @@ def build_import_graph(
             # Try to resolve the import to a known file
             target_module = imp.imported_module
             target_file = module_to_file.get(target_module)
+            if target_file is None:
+                target_file = path_to_file.get(target_module)
             if target_file is None and imp.is_relative:
                 for candidate in _relative_import_candidates(pr.file_path, imp):
                     resolved = module_to_file.get(candidate)
+                    if resolved is not None:
+                        target_module = candidate
+                        target_file = resolved
+                        break
+            if target_file is None and imp.is_relative:
+                for candidate in _relative_path_candidates(pr.file_path, target_module):
+                    resolved = path_to_file.get(candidate)
                     if resolved is not None:
                         target_module = candidate
                         target_file = resolved

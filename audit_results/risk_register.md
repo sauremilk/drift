@@ -1,5 +1,22 @@
 # Risk Register
 
+## 2026-04-12 - Issue #241: AVS TS ESM relative import extension mapping
+
+- Risk ID: RISK-SIGNAL-2026-04-12-241
+- Component: `src/drift/signals/architecture_violation.py`, `tests/test_architecture_violation.py`
+- Type: Signal precision hardening (false-positive reduction)
+- Description: AVS import graph resolution now maps TypeScript ESM relative runtime specifiers (`.js`, `.jsx`, `.mjs`, `.cjs`) to matching source extensions (`.ts`, `.tsx`, `.mts`, `.cts`) and resolves path-like relative imports against known internal files.
+- Trigger: `drift analyze` on TS/JS ESM repositories that import local source modules using runtime extensions (for example `../agents/chutes-oauth.js` from `.ts` files).
+- Impact: High-positive. Reduces AVS hidden-coupling false positives where a real static import edge exists but was previously unresolved.
+- Mitigation:
+  - New AVS helper `_relative_path_candidates()` normalizes relative path specs and applies extension alias candidates.
+  - `build_import_graph()` now resolves both module-like and path-like imports via `module_to_file` and `path_to_file` indices.
+  - Regressions added for `.js -> .ts` and `.mjs/.cjs -> .mts/.cts` mappings.
+- Verification:
+  - `python -m pytest tests/test_architecture_violation.py -q --tb=short`
+  - `python -m ruff check src/drift/signals/architecture_violation.py tests/test_architecture_violation.py`
+- Residual risk: Low-Medium. Aggressive extension aliasing may resolve to an unintended sibling file in edge cases with mixed source/runtime mirrors; scope is bounded to relative specifiers and known in-repo files.
+
 ## 2026-04-12 - Issue #240: NBV TS naming-contract FP reduction (`try*` nullable getter)
 
 - Risk ID: RISK-SIGNAL-2026-04-12-240
