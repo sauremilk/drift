@@ -196,6 +196,36 @@ class TestTypeScriptParser:
         assert len(endpoint_patterns) == 1
         assert endpoint_patterns[0].fingerprint.get("has_auth") is True
 
+    def test_enclosing_function_throw_auth_guard_is_detected(self, tmp_path: Path) -> None:
+        from drift.ingestion.ts_parser import parse_typescript_file
+
+        ts_code = textwrap.dedent("""\
+            import express from "express";
+
+            const router = express.Router();
+
+            export async function startBrowserBridgeServer(options: {
+                authToken?: string;
+                authPassword?: string;
+            }) {
+                const { authToken, authPassword } = options;
+                if (!authToken && !authPassword) {
+                    throw new Error("bridge server requires auth token or password");
+                }
+
+                router.get("/bridge/status", (_req, res) => {
+                    res.status(200).send("ok");
+                });
+            }
+        """)
+        (tmp_path / "bridge-server.ts").write_text(ts_code, encoding="utf-8")
+        result = parse_typescript_file(Path("bridge-server.ts"), tmp_path, "typescript")
+
+        endpoint_patterns = [p for p in result.patterns if p.category.value == "api_endpoint"]
+        assert len(endpoint_patterns) == 1
+        assert endpoint_patterns[0].function_name == "startBrowserBridgeServer"
+        assert endpoint_patterns[0].fingerprint.get("has_auth") is True
+
     def test_parse_tsx(self, tmp_path: Path) -> None:
         from drift.ingestion.ts_parser import parse_typescript_file
 

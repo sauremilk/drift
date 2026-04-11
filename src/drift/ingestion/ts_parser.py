@@ -669,6 +669,26 @@ _TS_AUTH_MARKERS: frozenset[str] = frozenset({
     "requirepermission", "requirepermissions", "requirerole", "requireroles",
 })
 
+_TS_AUTH_GUARD_CONDITION_MARKERS: frozenset[str] = frozenset({
+    "auth",
+    "token",
+    "password",
+    "secret",
+    "credential",
+    "apikey",
+    "api_key",
+    "bearer",
+    "jwt",
+    "session",
+})
+
+_TS_FUNCTION_NODE_TYPES: frozenset[str] = frozenset({
+    "function_declaration",
+    "function_expression",
+    "arrow_function",
+    "method_definition",
+})
+
 
 def _looks_like_ts_auth(text: str) -> bool:
     """Return True if *text* looks like an auth middleware/guard reference."""
@@ -740,6 +760,59 @@ def _has_auth_in_handler_body(handler_node: Any, source: bytes) -> bool:
             break
 
     return has_auth_symbol and has_reject_hint
+
+
+def _looks_like_ts_auth_guard_condition(text: str) -> bool:
+    """Return True when a condition resembles an auth-presence guard."""
+    normalized = re.sub(r"[^a-z0-9]", "", text.lower())
+    if not normalized:
+        return False
+    has_auth_marker = any(marker in normalized for marker in _TS_AUTH_GUARD_CONDITION_MARKERS)
+    if not has_auth_marker:
+        return False
+    lowered = text.lower()
+    has_presence_check = (
+        "!" in text
+        or "null" in lowered
+        or "undefined" in lowered
+        or "missing" in lowered
+    )
+    return has_presence_check
+
+
+def _contains_throw_statement(node: Any) -> bool:
+    """Return True if a subtree contains a throw statement."""
+    return any(child.type == "throw_statement" for child in _walk(node))
+
+
+def _nearest_enclosing_function(node: Any) -> Any | None:
+    """Return nearest enclosing TS function-like node for a call/decorator node."""
+    current = node.parent
+    while current is not None:
+        if current.type in _TS_FUNCTION_NODE_TYPES:
+            return current
+        current = current.parent
+    return None
+
+
+def _has_auth_throw_guard_in_enclosing_function(node: Any, source: bytes) -> bool:
+    """Detect throw-based auth guards in the endpoint's enclosing function scope."""
+    enclosing_fn = _nearest_enclosing_function(node)
+    if enclosing_fn is None:
+        return False
+
+    for child in _walk(enclosing_fn):
+        if child.type != "if_statement":
+            continue
+        condition = _child_by_field(child, "condition")
+        consequence = _child_by_field(child, "consequence")
+        if condition is None or consequence is None:
+            continue
+        if not _looks_like_ts_auth_guard_condition(_node_text(condition, source)):
+            continue
+        if _contains_throw_statement(consequence):
+            return True
+    return False
 
 
 def _has_auth_decorator_ts(
@@ -817,6 +890,8 @@ def _extract_api_patterns(
             _has_auth_in_call_args(node, source)
             or _has_auth_decorator_ts(node, source, root)
         )
+        if not has_auth:
+            has_auth = _has_auth_throw_guard_in_enclosing_function(node, source)
         if not has_auth and args_node is not None:
             args = [c for c in args_node.children if c.type not in ("(", ")", ",")]
             if args:
