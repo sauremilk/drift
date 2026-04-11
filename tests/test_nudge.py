@@ -251,9 +251,7 @@ class TestNudgeAPI:
             call_count["n"] += 1
             return _stub_analysis()
 
-        monkeypatch.setattr(
-            "drift.analyzer.analyze_repo", _counting_analyze
-        )
+        monkeypatch.setattr("drift.analyzer.analyze_repo", _counting_analyze)
 
         # Second call — should NOT trigger analyze_repo
         result = nudge(tmp_path, changed_files=[])
@@ -298,12 +296,8 @@ class TestNudgeAPI:
             file_hashes={rel.as_posix(): baseline_hash},
             score=0.2,
         )
-        baseline_parse = {
-            rel.as_posix(): ParseResult(file_path=rel, language="python")
-        }
-        BaselineManager.instance().store(
-            tmp_path.resolve(), baseline, [], baseline_parse
-        )
+        baseline_parse = {rel.as_posix(): ParseResult(file_path=rel, language="python")}
+        BaselineManager.instance().store(tmp_path.resolve(), baseline, [], baseline_parse)
 
         monkeypatch.setattr(
             DriftConfig,
@@ -363,12 +357,8 @@ class TestNudgeAPI:
             file_hashes={rel.as_posix(): baseline_hash},
             score=0.2,
         )
-        baseline_parse = {
-            rel.as_posix(): ParseResult(file_path=rel, language="python")
-        }
-        BaselineManager.instance().store(
-            tmp_path.resolve(), baseline, [], baseline_parse
-        )
+        baseline_parse = {rel.as_posix(): ParseResult(file_path=rel, language="python")}
+        BaselineManager.instance().store(tmp_path.resolve(), baseline, [], baseline_parse)
 
         # Modify file after baseline snapshot.
         abs_file.write_text("def a():\n    return 2\n", encoding="utf-8")
@@ -447,9 +437,7 @@ class TestNudgeAPI:
         )
         monkeypatch.setattr(
             "drift.analyzer.analyze_repo",
-            lambda *a, **kw: _stub_analysis(
-                findings=findings, drift_score=drift_score
-            ),
+            lambda *a, **kw: _stub_analysis(findings=findings, drift_score=drift_score),
         )
         monkeypatch.setattr(
             "drift.ingestion.file_discovery.discover_files",
@@ -479,9 +467,7 @@ class TestSafeToCommitHardrule:
         _baseline_store.clear()
         BaselineManager.reset_instance()
 
-    def test_safe_when_no_issues(
-        self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
-    ) -> None:
+    def test_safe_when_no_issues(self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
         """No new critical findings + low delta → safe_to_commit=True."""
         TestNudgeAPI._mock_nudge_deps(monkeypatch, tmp_path)
         result = nudge(tmp_path, changed_files=[])
@@ -702,11 +688,13 @@ class TestMcpDriftNudge:
         TestNudgeAPI._mock_nudge_deps(monkeypatch, tmp_path)
         from drift.mcp_server import drift_nudge
 
-        raw = asyncio.run(drift_nudge(
-            path=str(tmp_path),
-            changed_files="src/a.py, src/b.py",
-            uncommitted=True,
-        ))
+        raw = asyncio.run(
+            drift_nudge(
+                path=str(tmp_path),
+                changed_files="src/a.py, src/b.py",
+                uncommitted=True,
+            )
+        )
         parsed = json.loads(raw)
         assert "src/a.py" in parsed["changed_files"]
         assert "src/b.py" in parsed["changed_files"]
@@ -826,9 +814,7 @@ class TestGitEventInvalidation:
         yield
         BaselineManager.reset_instance()
 
-    def test_head_change_invalidates(
-        self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
-    ) -> None:
+    def test_head_change_invalidates(self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
         """HEAD commit change → baseline invalidated."""
         from drift.incremental import _GitState
 
@@ -848,9 +834,7 @@ class TestGitEventInvalidation:
                 changed_file_count=0,
             )
 
-        monkeypatch.setattr(
-            "drift.incremental._capture_git_state", _fake_capture
-        )
+        monkeypatch.setattr("drift.incremental._capture_git_state", _fake_capture)
 
         mgr = BaselineManager.instance()
         mgr.store(
@@ -883,9 +867,7 @@ class TestGitEventInvalidation:
                 changed_file_count=0,
             )
 
-        monkeypatch.setattr(
-            "drift.incremental._capture_git_state", _fake_capture
-        )
+        monkeypatch.setattr("drift.incremental._capture_git_state", _fake_capture)
 
         mgr = BaselineManager.instance()
         mgr.store(
@@ -921,9 +903,7 @@ class TestGitEventInvalidation:
                 changed_file_count=_MAX_CHANGED_FILES_BEFORE_INVALIDATION + 1,
             )
 
-        monkeypatch.setattr(
-            "drift.incremental._capture_git_state", _fake_capture
-        )
+        monkeypatch.setattr("drift.incremental._capture_git_state", _fake_capture)
 
         mgr = BaselineManager.instance()
         mgr.store(
@@ -1052,17 +1032,13 @@ class TestNudgeUsesBaselineManager:
                 changed_file_count=0,
             )
 
-        monkeypatch.setattr(
-            "drift.incremental._capture_git_state", _fake_capture
-        )
+        monkeypatch.setattr("drift.incremental._capture_git_state", _fake_capture)
 
         def _counting_analyze(*a, **kw):
             call_count["analyze_count"] += 1
             return _stub_analysis()
 
-        monkeypatch.setattr(
-            "drift.analyzer.analyze_repo", _counting_analyze
-        )
+        monkeypatch.setattr("drift.analyzer.analyze_repo", _counting_analyze)
 
         # First call → creates baseline (1 analyze call)
         nudge(tmp_path, changed_files=[])
@@ -1120,9 +1096,7 @@ class TestNudgeUsesBaselineManager:
                 changed_file_count=0,
             )
 
-        monkeypatch.setattr(
-            "drift.incremental._capture_git_state", _fake_capture
-        )
+        monkeypatch.setattr("drift.incremental._capture_git_state", _fake_capture)
 
         nudge(tmp_path, changed_files=[])
         result = nudge(tmp_path, changed_files=[])
@@ -1155,9 +1129,7 @@ class TestNudgeUsesBaselineManager:
                 changed_file_count=_MAX_CHANGED_FILES_BEFORE_INVALIDATION + 1,
             )
 
-        monkeypatch.setattr(
-            "drift.incremental._capture_git_state", _fake_capture
-        )
+        monkeypatch.setattr("drift.incremental._capture_git_state", _fake_capture)
 
         nudge(tmp_path, changed_files=[])
         result = nudge(tmp_path, changed_files=[])

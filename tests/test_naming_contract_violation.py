@@ -13,6 +13,7 @@ from drift.signals.naming_contract_violation import NamingContractViolationSigna
 # Helpers
 # ---------------------------------------------------------------------------
 
+
 def _cfg(**overrides: object) -> DriftConfig:
     thresholds = {}
     for k, v in overrides.items():
@@ -369,10 +370,10 @@ class UserService:
         pr = _write_and_parse(
             tmp_path,
             "src/stubs.py",
-            '''\
+            """\
 def validate_x(v):
     return v
-''',
+""",
         )
         # Default min LOC = 3; this function is 2 lines
         findings = _run([pr], repo_path=tmp_path)

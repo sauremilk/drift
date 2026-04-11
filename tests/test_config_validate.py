@@ -19,8 +19,7 @@ def runner() -> CliRunner:
 def valid_config(tmp_path: Path) -> Path:
     cfg = tmp_path / "drift.yaml"
     cfg.write_text(
-        "weights:\n  pattern_fragmentation: 0.16\n  architecture_violation: 0.16\n"
-        "fail_on: none\n",
+        "weights:\n  pattern_fragmentation: 0.16\n  architecture_violation: 0.16\nfail_on: none\n",
         encoding="utf-8",
     )
     return tmp_path
@@ -82,8 +81,7 @@ class TestConfigValidate:
     def test_invalid_config_shows_yaml_context(self, runner: CliRunner, tmp_path: Path) -> None:
         cfg = tmp_path / "drift.yaml"
         cfg.write_text(
-            "weights:\n  pattern_fragmentation: 0.16\n"
-            "  architecture_violation: not_a_number\n",
+            "weights:\n  pattern_fragmentation: 0.16\n  architecture_violation: not_a_number\n",
             encoding="utf-8",
         )
         result = runner.invoke(main, ["config", "validate", "--repo", str(tmp_path)])
@@ -92,16 +90,12 @@ class TestConfigValidate:
         assert "│" in result.output
 
     def test_extreme_weights_warn(self, runner: CliRunner, extreme_weights_config: Path) -> None:
-        result = runner.invoke(
-            main, ["config", "validate", "--repo", str(extreme_weights_config)]
-        )
+        result = runner.invoke(main, ["config", "validate", "--repo", str(extreme_weights_config)])
         assert result.exit_code == 0
         assert "warning" in result.output.lower() or "⚠" in result.output
 
     def test_negative_weight_warn(self, runner: CliRunner, negative_weight_config: Path) -> None:
-        result = runner.invoke(
-            main, ["config", "validate", "--repo", str(negative_weight_config)]
-        )
+        result = runner.invoke(main, ["config", "validate", "--repo", str(negative_weight_config)])
         assert result.exit_code == 0
         assert "negative" in result.output.lower()
 

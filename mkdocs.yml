@@ -116,6 +116,7 @@ nav:
   - Guides:
     - Quickstart: getting-started/quickstart.md
     - Agent Workflow: getting-started/prompts.md
+    - Configuration Levels: guides/configuration-levels.md
     - Guided Mode (Vibe-Coders): guides/guided-mode.md
     - Cursor MCP Setup: guides/cursor-mcp-setup.md
     - Feedback & Calibration: guides/feedback-calibration.md

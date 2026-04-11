@@ -33,7 +33,7 @@ from drift.errors import EXIT_FINDINGS_ABOVE_THRESHOLD
     "--format",
     "-f",
     "output_format",
-    type=click.Choice(["rich", "json", "sarif", "csv", "agent-tasks", "github"]),
+    type=click.Choice(["rich", "json", "sarif", "csv", "markdown", "agent-tasks", "github"]),
     default="rich",
     help="Output format.",
 )
@@ -169,6 +169,13 @@ from drift.errors import EXIT_FINDINGS_ABOVE_THRESHOLD
     default=None,
     help="Group findings by dimension: signal, severity, directory, or module.",
 )
+@click.option(
+    "--no-first-run",
+    "no_first_run",
+    is_flag=True,
+    default=False,
+    help="Disable the compact first-run output even when no drift.yaml exists.",
+)
 def analyze(
     repo: Path,
     path: str | None,
@@ -196,6 +203,7 @@ def analyze(
     progress_format: str,
     explain: bool,
     group_by: str | None,
+    no_first_run: bool,
 ) -> None:
     """Detailed drift analysis \u2014 produces comprehensive findings for investigation and triage.
 
@@ -375,6 +383,11 @@ def analyze(
 
         tasks_text = analysis_to_agent_tasks_json(analysis)
         _emit_machine_output(tasks_text, output_file)
+    elif output_format == "markdown":
+        from drift.output.markdown_report import analysis_to_markdown
+
+        md_text = analysis_to_markdown(analysis, max_findings=max_findings)
+        _emit_machine_output(md_text, output_file)
     elif output_format == "github":
         from drift.output.github_format import findings_to_github_annotations
 
@@ -382,6 +395,13 @@ def analyze(
         _emit_machine_output(gh_text, output_file)
     else:
         from drift.output.rich_output import render_full_report, render_recommendations
+
+        # Auto-detect first-run: no drift.yaml and no .drift/ in repo
+        is_first_run = (
+            not no_first_run
+            and not (repo / "drift.yaml").exists()
+            and not (repo / ".drift").exists()
+        )
 
         render_full_report(
             analysis,
@@ -392,6 +412,7 @@ def analyze(
             language=cfg.language,
             explain=explain,
             group_by=group_by,
+            first_run=is_first_run,
         )
 
         if show_suppressed and analysis.suppressed_count:

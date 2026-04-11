@@ -45,13 +45,13 @@ def test_parse_imports(tmp_path: Path, sample_python_source: str):
 
 
 def test_import_scope_marks_module_level_and_local_imports(tmp_path: Path):
-    source = '''\
+    source = """\
 import os
 
 def load_model():
     import torch
     return torch
-'''
+"""
     (tmp_path / "sample.py").write_text(source)
     result = parse_python_file(Path("sample.py"), tmp_path)
 
@@ -64,9 +64,7 @@ def test_parse_error_handling_patterns(tmp_path: Path, sample_python_source: str
     (tmp_path / "sample.py").write_text(sample_python_source)
     result = parse_python_file(Path("sample.py"), tmp_path)
 
-    error_patterns = [
-        p for p in result.patterns if p.category == PatternCategory.ERROR_HANDLING
-    ]
+    error_patterns = [p for p in result.patterns if p.category == PatternCategory.ERROR_HANDLING]
     # Two try/except blocks in the sample code
     assert len(error_patterns) >= 2
 
@@ -92,9 +90,7 @@ def optional_import():
     (tmp_path / "fallback_assign.py").write_text(source)
     result = parse_python_file(Path("fallback_assign.py"), tmp_path)
 
-    error_patterns = [
-        p for p in result.patterns if p.category == PatternCategory.ERROR_HANDLING
-    ]
+    error_patterns = [p for p in result.patterns if p.category == PatternCategory.ERROR_HANDLING]
     assert len(error_patterns) == 1
     handlers = error_patterns[0].fingerprint.get("handlers", [])
     assert handlers
@@ -166,9 +162,7 @@ def get_user(user_id: int):
     (tmp_path / "models.py").write_text(source)
     result = parse_python_file(Path("models.py"), tmp_path)
 
-    ret_patterns = [
-        p for p in result.patterns if p.category == PatternCategory.RETURN_PATTERN
-    ]
+    ret_patterns = [p for p in result.patterns if p.category == PatternCategory.RETURN_PATTERN]
     assert len(ret_patterns) == 1
     strategies = ret_patterns[0].fingerprint["strategies"]
     assert "return_none" in strategies
@@ -187,9 +181,7 @@ def multiply(a: int, b: int) -> int:
     (tmp_path / "math_utils.py").write_text(source)
     result = parse_python_file(Path("math_utils.py"), tmp_path)
 
-    ret_patterns = [
-        p for p in result.patterns if p.category == PatternCategory.RETURN_PATTERN
-    ]
+    ret_patterns = [p for p in result.patterns if p.category == PatternCategory.RETURN_PATTERN]
     assert len(ret_patterns) == 0
 
 
@@ -206,9 +198,7 @@ def get_data(key: str):
     (tmp_path / "models.py").write_text(source)
     result = parse_python_file(Path("models.py"), tmp_path)
 
-    ret_patterns = [
-        p for p in result.patterns if p.category == PatternCategory.RETURN_PATTERN
-    ]
+    ret_patterns = [p for p in result.patterns if p.category == PatternCategory.RETURN_PATTERN]
     assert len(ret_patterns) == 1
     strategies = ret_patterns[0].fingerprint["strategies"]
     assert "raise" in strategies
@@ -227,9 +217,7 @@ def outer():
     (tmp_path / "nested.py").write_text(source)
     result = parse_python_file(Path("nested.py"), tmp_path)
 
-    ret_patterns = [
-        p for p in result.patterns if p.category == PatternCategory.RETURN_PATTERN
-    ]
+    ret_patterns = [p for p in result.patterns if p.category == PatternCategory.RETURN_PATTERN]
     # outer has only return_value, inner has only raise → neither has ≥2 strategies
     outer_patterns = [p for p in ret_patterns if p.function_name == "outer"]
     assert len(outer_patterns) == 0
@@ -247,9 +235,7 @@ def handle(data):
     (tmp_path / "handler.py").write_text(source)
     result = parse_python_file(Path("handler.py"), tmp_path)
 
-    ret_patterns = [
-        p for p in result.patterns if p.category == PatternCategory.RETURN_PATTERN
-    ]
+    ret_patterns = [p for p in result.patterns if p.category == PatternCategory.RETURN_PATTERN]
     assert len(ret_patterns) == 1
     strategies = ret_patterns[0].fingerprint["strategies"]
     assert "raise" in strategies
@@ -280,9 +266,7 @@ def get_user_result(user_id: int) -> tuple:
     (tmp_path / "user.py").write_text(source)
     result = parse_python_file(Path("user.py"), tmp_path)
 
-    ret_patterns = [
-        p for p in result.patterns if p.category == PatternCategory.RETURN_PATTERN
-    ]
+    ret_patterns = [p for p in result.patterns if p.category == PatternCategory.RETURN_PATTERN]
     # get_user: [return_none, return_value] → pattern emitted
     # get_user_or_raise: [raise, return_value] → pattern emitted
     # get_user_result: [return_tuple] (only 1 strategy) → no pattern

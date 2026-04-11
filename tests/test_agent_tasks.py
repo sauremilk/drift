@@ -282,12 +282,28 @@ class TestJsonSchema:
         # Task fields
         task = data["tasks"][0]
         required_fields = [
-            "id", "signal_type", "severity", "priority", "title",
-            "description", "action", "file_path", "start_line", "end_line",
-            "related_files", "complexity", "expected_effect",
-            "success_criteria", "depends_on", "metadata",
-            "automation_fit", "review_risk", "change_scope",
-            "verification_strength", "constraints", "repair_maturity",
+            "id",
+            "signal_type",
+            "severity",
+            "priority",
+            "title",
+            "description",
+            "action",
+            "file_path",
+            "start_line",
+            "end_line",
+            "related_files",
+            "complexity",
+            "expected_effect",
+            "success_criteria",
+            "depends_on",
+            "metadata",
+            "automation_fit",
+            "review_risk",
+            "change_scope",
+            "verification_strength",
+            "constraints",
+            "repair_maturity",
         ]
         for field in required_fields:
             assert field in task, f"Missing field: {field}"
@@ -484,6 +500,7 @@ class TestAutomationClassification:
         # AVS base is "medium"; with explicit high complexity it drops to low
         # Simulate by checking the classifier directly
         from drift.output.agent_tasks import _classify_task as clf
+
         t = tasks[0]
         t.complexity = "high"
         t.depends_on = []  # reset
@@ -591,8 +608,9 @@ class TestConstraints:
         assert len(task["constraints"]) >= 4
 
     def test_generate_constraints_direct(self) -> None:
-        f = _make_finding(signal_type=SignalType.ARCHITECTURE_VIOLATION,
-                          title="Layer violation", metadata={})
+        f = _make_finding(
+            signal_type=SignalType.ARCHITECTURE_VIOLATION, title="Layer violation", metadata={}
+        )
         constraints = _generate_constraints(f)
         assert any("layer" in c.lower() for c in constraints)
 

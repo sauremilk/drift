@@ -163,9 +163,7 @@ class TestDebtCorrelationSchema:
     """Validate the debt_correlation fixture has expected structure."""
 
     def test_fixture_structure(self) -> None:
-        data = json.loads(
-            (FIXTURES_DIR / "debt_correlation.json").read_text(encoding="utf-8")
-        )
+        data = json.loads((FIXTURES_DIR / "debt_correlation.json").read_text(encoding="utf-8"))
         assert "repos" in data
         assert len(data["repos"]) >= 3
 

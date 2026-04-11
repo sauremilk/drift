@@ -214,10 +214,18 @@ class TestBatchGroups:
         assert c.batch_group is None
 
     def test_different_signals_different_groups(self) -> None:
-        a = _task("a", signal=SignalType.PATTERN_FRAGMENTATION,
-                  batch_eligible=True, fix_template_class="inline")
-        b = _task("b", signal=SignalType.ARCHITECTURE_VIOLATION,
-                  batch_eligible=True, fix_template_class="inline")
+        a = _task(
+            "a",
+            signal=SignalType.PATTERN_FRAGMENTATION,
+            batch_eligible=True,
+            fix_template_class="inline",
+        )
+        b = _task(
+            "b",
+            signal=SignalType.ARCHITECTURE_VIOLATION,
+            batch_eligible=True,
+            fix_template_class="inline",
+        )
         g = build_task_graph([a, b])
         assert len(g.batch_groups) == 0  # each group has only 1 member → filtered
 

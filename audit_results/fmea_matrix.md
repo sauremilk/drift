@@ -1,5 +1,14 @@
 # FMEA Matrix
 
+## 2026-04-11 - ADR-041: PHR Runtime Import Attribute Validation
+
+| Signal | Failure Mode | Cause | Effect | Detection | Mitigation | S | O | D | RPN | Status |
+|---|---|---|---|---|---|---:|---:|---:|---:|---|
+| PHR | FP: version-mismatch → attribute existed in older version | Module installed but different version than project expects; `hasattr` returns False for removed/renamed attribute | False phantom for version-transitional APIs | `phr_runtime_valid_attr_tn` fixture + metadata `runtime_validated: true` | Confidence metadata; users can suppress via `drift:ignore`; opt-in only | 4 | 3 | 5 | 60 | Open (bounded) |
+| PHR | FP: import timeout → attribute check skipped, phantom stands | Slow module init exceeds 5s daemon thread timeout | Existing Phase B finding stays unvalidated (no false-positive added, but no FP removed) | Timeout logged; metadata shows `runtime_validated: false` | Configurable timeout via daemon thread; sys.modules fast path for cached imports | 3 | 2 | 3 | 18 | Mitigated |
+| PHR | FN: module raises on import → attribute not checkable | Third-party package has broken `__init__.py` or missing dependency | Real missing attribute not detected via runtime path | N/A (inherent limitation of import-based validation) | Graceful fallback: import failure returns None, Phase B finding unchanged | 3 | 2 | 5 | 30 | Accepted |
+| PHR | FN: platform-conditional attribute absent on analysis host | Attribute exists on Linux but not Windows (or vice versa) | Under-reporting on cross-platform projects when analysis runs on different OS | N/A (inherent environment dependency) | Accept: same limitation as Phase B env-dependency; metadata `confidence: env_dependent` | 3 | 3 | 7 | 63 | Accepted |
+
 ## 2026-04-10 - ADR-040: PHR Third-Party Import Resolver
 
 | Signal | Failure Mode | Cause | Effect | Detection | Mitigation | S | O | D | RPN | Status |

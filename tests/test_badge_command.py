@@ -61,3 +61,58 @@ class TestBadgeCommand:
         for score in boundary_samples:
             expected_color = severity_to_color[severity_for_score(score)]
             assert _badge_color_for_score(score) == expected_color
+
+
+class TestBadgeSvgFormat:
+    """Test ``drift badge --format svg``."""
+
+    def test_svg_output_to_stdout(self, tmp_repo: Path) -> None:
+        runner = CliRunner()
+        result = runner.invoke(main, ["badge", "--repo", str(tmp_repo), "--format", "svg"])
+        assert result.exit_code == 0
+        assert "<svg" in result.output
+        assert "drift score" in result.output
+
+    def test_svg_output_to_file(self, tmp_repo: Path) -> None:
+        out_file = tmp_repo / "badge.svg"
+        runner = CliRunner()
+        result = runner.invoke(
+            main,
+            ["badge", "--repo", str(tmp_repo), "--format", "svg", "--output", str(out_file)],
+        )
+        assert result.exit_code == 0
+        assert out_file.exists()
+        svg = out_file.read_text(encoding="utf-8")
+        assert "<svg" in svg
+        assert "drift score" in svg
+
+
+class TestBadgeSvgRenderer:
+    """Unit tests for the SVG rendering module."""
+
+    def test_render_produces_valid_svg(self) -> None:
+        from drift.output.badge_svg import render_badge_svg
+
+        svg = render_badge_svg("drift score", "0.42", "yellow")
+        assert svg.startswith("<svg")
+        assert "drift score" in svg
+        assert "0.42" in svg
+        assert 'aria-label="drift score: 0.42"' in svg
+
+    def test_render_uses_hex_for_named_color(self) -> None:
+        from drift.output.badge_svg import render_badge_svg
+
+        svg = render_badge_svg("test", "1.00", "critical")
+        assert "#e05d44" in svg
+
+    def test_render_accepts_raw_hex_color(self) -> None:
+        from drift.output.badge_svg import render_badge_svg
+
+        svg = render_badge_svg("test", "0.10", "#abc")
+        assert "#abc" in svg
+
+    def test_render_brightgreen_for_low(self) -> None:
+        from drift.output.badge_svg import render_badge_svg
+
+        svg = render_badge_svg("drift score", "0.15", "brightgreen")
+        assert "#4c1" in svg

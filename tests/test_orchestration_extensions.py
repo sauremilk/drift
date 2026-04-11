@@ -322,7 +322,8 @@ class TestPlanValidation:
 class TestTaskContracts:
     def test_contract_has_allowed_files(self):
         task = {
-            "id": "t1", "signal": "PFS",
+            "id": "t1",
+            "signal": "PFS",
             "file": "src/api.py",
             "related_files": ["src/models.py"],
         }

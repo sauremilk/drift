@@ -426,7 +426,7 @@ class TestTpdSignalTs:
         code = f"""
 import {{ describe, it, expect }} from 'vitest';
 describe('processor', () => {{
-{''.join(tests)}
+{"".join(tests)}
 }});
 """
         test_dir = tmp_path / "tests"
@@ -465,7 +465,7 @@ describe('processor', () => {{
         code = f"""
 import {{ describe, it, expect }} from 'vitest';
 describe('compute', () => {{
-{''.join(tests)}
+{"".join(tests)}
 }});
 """
         test_dir = tmp_path / "tests"
@@ -530,7 +530,7 @@ describe('small suite', () => {
 
         code = f"""
 describe('worker', () => {{
-{''.join(tests)}
+{"".join(tests)}
 }});
 """
         test_dir = tmp_path / "tests"
@@ -539,7 +539,8 @@ describe('worker', () => {{
         test_file.write_text(code, encoding="utf-8")
 
         pr = _ts_pr(
-            Path("tests/worker.test.js"), language="javascript",
+            Path("tests/worker.test.js"),
+            language="javascript",
         )
 
         signal = TestPolarityDeficitSignal(repo_path=tmp_path)

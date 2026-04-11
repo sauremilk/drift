@@ -77,7 +77,8 @@ class TestRiskRegisterContentValidation:
 
     def test_valid_risk_register(self, tmp_path: Path):
         rr = tmp_path / "risk_register.md"
-        rr.write_text(textwrap.dedent("""\
+        rr.write_text(
+            textwrap.dedent("""\
             # Risk Register
             ## Entry 1
             - Risk ID: RISK-001
@@ -86,7 +87,9 @@ class TestRiskRegisterContentValidation:
             - Description: PFS flags utility modules
             - Mitigation: Threshold adjustment
             - Residual risk: Low
-        """), encoding="utf-8")
+        """),
+            encoding="utf-8",
+        )
         issues = check_risk_audit._validate_risk_register_content(str(rr))
         assert issues == []
 
@@ -102,7 +105,8 @@ class TestFaultTreesContentValidation:
 
     def test_valid_fault_trees(self, tmp_path: Path):
         ft = tmp_path / "fault_trees.md"
-        ft.write_text(textwrap.dedent("""\
+        ft.write_text(
+            textwrap.dedent("""\
             # Fault Tree Analysis
             ### Top Event: TE-1 — False positive in production
             ```
@@ -112,7 +116,9 @@ class TestFaultTreesContentValidation:
             ```
             ### Minimal Cut Set
             | MCS | Components |
-        """), encoding="utf-8")
+        """),
+            encoding="utf-8",
+        )
         issues = check_risk_audit._validate_fault_trees_content(str(ft))
         assert issues == []
 
@@ -128,7 +134,8 @@ class TestSTRIDEContentValidation:
 
     def test_valid_stride(self, tmp_path: Path):
         stride = tmp_path / "stride.md"
-        stride.write_text(textwrap.dedent("""\
+        stride.write_text(
+            textwrap.dedent("""\
             # STRIDE Threat Model
             ## Trust Boundary: CLI → File System
             - STRIDE review:
@@ -138,7 +145,9 @@ class TestSTRIDEContentValidation:
               - I (Information Disclosure): No secrets in output
               - D (Denial of Service): Bounded resource usage
               - E (Elevation of Privilege): No privilege escalation path
-        """), encoding="utf-8")
+        """),
+            encoding="utf-8",
+        )
         issues = check_risk_audit._validate_stride_content(str(stride))
         assert issues == []
 

@@ -10,11 +10,7 @@ def test_build_relative_import_graph_resolves_one_hop_barrel_index() -> None:
 
     graph = build_relative_import_graph(repo_path)
 
-    edges = {
-        (source, target)
-        for source, targets in graph.items()
-        for target in targets
-    }
+    edges = {(source, target) for source, targets in graph.items() for target in targets}
 
     assert ("src/app.ts", "src/button.tsx") in edges
     assert all(not target.endswith("index.ts") for _, target in edges)
@@ -25,11 +21,7 @@ def test_build_relative_import_graph_resolves_one_hop_barrel_index_tsx() -> None
 
     graph = build_relative_import_graph(repo_path)
 
-    edges = {
-        (source, target)
-        for source, targets in graph.items()
-        for target in targets
-    }
+    edges = {(source, target) for source, targets in graph.items() for target in targets}
 
     assert ("src/app_tsx.ts", "src/view/card.tsx") in edges
     assert all(not target.endswith("index.tsx") for _, target in edges)

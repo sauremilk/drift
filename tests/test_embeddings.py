@@ -17,6 +17,7 @@ from drift.embeddings import (  # noqa: E501
 def _reset_service_singleton() -> None:
     reset_embedding_service()
 
+
 # ---------------------------------------------------------------------------
 # Graceful degradation without sentence-transformers
 # ---------------------------------------------------------------------------
@@ -137,6 +138,150 @@ class TestEmbeddingServiceWithModel:
 
 class TestEmbeddingCacheVersioning:
     def test_cache_dir_contains_model_and_version(self, tmp_path):
+        from drift.embeddings import _CACHE_VERSION, EmbeddingCache
+
+        cache = EmbeddingCache(tmp_path, model_name="test-model")
+        assert cache._dir is not None
+        assert "test-model" in str(cache._dir)
+        assert f"v{_CACHE_VERSION}" in str(cache._dir)
+
+
+# ---------------------------------------------------------------------------
+# EmbeddingCache — get/put/get_batch
+# ---------------------------------------------------------------------------
+
+
+class TestEmbeddingCacheMethods:
+    def test_get_returns_none_for_missing_key(self, tmp_path):
+        from drift.embeddings import EmbeddingCache
+
+        cache = EmbeddingCache(tmp_path, model_name="m")
+        result = cache.get("nonexistent text")
+        assert result is None
+
+    def test_put_skipped_when_cache_disabled(self, tmp_path):
+        from drift.embeddings import EmbeddingCache
+
+        cache = EmbeddingCache(tmp_path, model_name="m")
+        cache._dir = None  # simulate disabled cache
+        # Should not raise
+        vec = np.array([1.0, 2.0], dtype=np.float32)
+        cache.put("test", vec)
+
+    def test_get_returns_none_when_cache_disabled(self, tmp_path):
+        from drift.embeddings import EmbeddingCache
+
+        cache = EmbeddingCache(tmp_path, model_name="m")
+        cache._dir = None
+        assert cache.get("test") is None
+
+    def test_get_batch_returns_all_misses_for_empty_cache(self, tmp_path):
+        from drift.embeddings import EmbeddingCache
+
+        cache = EmbeddingCache(tmp_path, model_name="m")
+        hits_idx, hits_vec, misses = cache.get_batch(["a", "b", "c"])
+        assert hits_idx == []
+        assert hits_vec == []
+        assert misses == [0, 1, 2]
+
+
+# ---------------------------------------------------------------------------
+# EmbeddingService — cosine_similarity_matrix
+# ---------------------------------------------------------------------------
+
+
+class TestCosineSimMatrix:
+    def test_cosine_similarity_matrix_identity(self):
+        svc = EmbeddingService()
+        a = np.array([[1.0, 0.0], [0.0, 1.0]], dtype=np.float32)
+        result = svc.cosine_similarity_matrix(a, a)
+        assert result.shape == (2, 2)
+        assert result[0, 0] == pytest.approx(1.0, abs=1e-5)
+        assert result[0, 1] == pytest.approx(0.0, abs=1e-5)
+
+
+# ---------------------------------------------------------------------------
+# EmbeddingService — build_index numpy fallback
+# ---------------------------------------------------------------------------
+
+
+class TestBuildIndexFallback:
+    def test_build_index_small_list_returns_ndarray(self):
+        svc = EmbeddingService()
+        vecs = [
+            np.array([1.0, 0.0, 0.0], dtype=np.float32),
+            np.array([0.0, 1.0, 0.0], dtype=np.float32),
+        ]
+        index = svc.build_index(vecs)
+        assert index is not None
+        assert isinstance(index, np.ndarray)
+
+    def test_build_index_empty_ndarray_returns_none(self):
+        svc = EmbeddingService()
+        empty = np.array([], dtype=np.float32).reshape(0, 3)
+        assert svc.build_index(empty) is None
+
+
+# ---------------------------------------------------------------------------
+# EmbeddingService — search_index numpy fallback
+# ---------------------------------------------------------------------------
+
+
+class TestSearchIndexFallback:
+    def test_numpy_fallback_search(self):
+        svc = EmbeddingService()
+        vecs = np.array(
+            [[1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.9, 0.1, 0.0]],
+            dtype=np.float32,
+        )
+        query = np.array([1.0, 0.0, 0.0], dtype=np.float32)
+        results = svc.search_index(vecs, query, top_k=2)
+        assert len(results) == 2
+        indices = [r[0] for r in results]
+        assert 0 in indices
+
+    def test_search_index_empty_returns_empty(self):
+        svc = EmbeddingService()
+        empty = np.array([], dtype=np.float32).reshape(0, 3)
+        results = svc.search_index(empty, np.array([1.0, 0.0, 0.0], dtype=np.float32))
+        assert results == []
+
+    def test_search_non_ndarray_returns_empty(self):
+        svc = EmbeddingService()
+        results = svc.search_index("not_an_array", np.array([1.0], dtype=np.float32))
+        assert results == []
+
+
+# ---------------------------------------------------------------------------
+# embed_texts returns None list when model unavailable
+# ---------------------------------------------------------------------------
+
+
+class TestEmbedTextsDegraded:
+    def test_embed_texts_empty_returns_empty(self):
+        svc = EmbeddingService()
+        assert svc.embed_texts([]) == []
+
+    def test_embed_texts_returns_nones_without_model(self):
+        if _EMBEDDINGS_AVAILABLE:
+            pytest.skip("sentence-transformers installed")
+        svc = EmbeddingService()
+        result = svc.embed_texts(["hello", "world"])
+        assert result == [None, None]
+
+
+# ---------------------------------------------------------------------------
+# get_embedding_service / embeddings_available
+# ---------------------------------------------------------------------------
+
+
+class TestEmbeddingsAvailable:
+    def test_embeddings_available_returns_bool(self):
+        from drift.embeddings import embeddings_available
+
+        assert isinstance(embeddings_available(), bool)
+
+    def test_cache_dir_includes_model_and_version(self, tmp_path):
         from drift.embeddings import _CACHE_VERSION, EmbeddingCache
 
         cache = EmbeddingCache(tmp_path, model_name="all-MiniLM-L6-v2")

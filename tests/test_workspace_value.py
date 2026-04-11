@@ -115,23 +115,23 @@ class TestBenchmarkCorpus:
     @pytest.mark.parametrize(
         "path",
         [
-            "src/myapp/service_a.py",   # MDS
-            "src/myapp/service_b.py",   # MDS
+            "src/myapp/service_a.py",  # MDS
+            "src/myapp/service_b.py",  # MDS
             "src/myapp/handler_v1.py",  # MDS
             "src/myapp/handler_v2.py",  # MDS
-            "src/myapp/handlers/auth.py",       # PFS
-            "src/myapp/handlers/orders.py",     # PFS
-            "src/myapp/handlers/payments.py",   # PFS
-            "src/myapp/handlers/shipping.py",   # PFS
-            "src/myapp/models/enriched.py",     # AVS
-            "src/myapp/utils/helpers.py",       # AVS
-            "src/myapp/outlier_module.py",      # SMS
-            "src/myapp/connectors/db.py",       # BEM
+            "src/myapp/handlers/auth.py",  # PFS
+            "src/myapp/handlers/orders.py",  # PFS
+            "src/myapp/handlers/payments.py",  # PFS
+            "src/myapp/handlers/shipping.py",  # PFS
+            "src/myapp/models/enriched.py",  # AVS
+            "src/myapp/utils/helpers.py",  # AVS
+            "src/myapp/outlier_module.py",  # SMS
+            "src/myapp/connectors/db.py",  # BEM
             "src/myapp/processors/pricing.py",  # EDS
             "src/myapp/processors/transform.py",  # EDS
             "src/myapp/processors/validator.py",  # GCD
-            "tests/test_api.py",                # TPD
-            "src/myapp/utils/naming.py",        # NBV
+            "tests/test_api.py",  # TPD
+            "src/myapp/utils/naming.py",  # NBV
         ],
     )
     def test_corpus_file_exists(self, path):
@@ -144,12 +144,10 @@ class TestBenchmarkCorpus:
         b = (BENCHMARKS_CORPUS / "src/myapp/service_b.py").read_text()
         # Extract function bodies (skip module docstring).
         a_funcs = [
-            line for line in a.splitlines()
-            if line.startswith("def ") or line.startswith("    ")
+            line for line in a.splitlines() if line.startswith("def ") or line.startswith("    ")
         ]
         b_funcs = [
-            line for line in b.splitlines()
-            if line.startswith("def ") or line.startswith("    ")
+            line for line in b.splitlines() if line.startswith("def ") or line.startswith("    ")
         ]
         assert a_funcs == b_funcs
 
@@ -179,14 +177,22 @@ class TestAgentLoopBenchmark:
             "GIT_COMMITTER_EMAIL": "t@t",
         }
         subprocess.run(
-            ["git", "init"], cwd=str(ws), capture_output=True, env=env,
+            ["git", "init"],
+            cwd=str(ws),
+            capture_output=True,
+            env=env,
         )
         subprocess.run(
-            ["git", "add", "."], cwd=str(ws), capture_output=True, env=env,
+            ["git", "add", "."],
+            cwd=str(ws),
+            capture_output=True,
+            env=env,
         )
         subprocess.run(
             ["git", "commit", "-m", "init"],
-            cwd=str(ws), capture_output=True, env=env,
+            cwd=str(ws),
+            capture_output=True,
+            env=env,
         )
         return ws
 

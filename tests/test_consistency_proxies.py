@@ -25,6 +25,7 @@ from drift.signals.test_polarity_deficit import TestPolarityDeficitSignal
 # Helpers
 # ---------------------------------------------------------------------------
 
+
 def _cfg(**overrides: object) -> DriftConfig:
     """Return a default DriftConfig with optional threshold overrides."""
     thresholds = {}
@@ -197,15 +198,11 @@ class TestTPD:
         assert self._run([pr]) == []
 
     def test_all_positive_assertions_triggers(self, tmp_path: Path):
-        source = (
-            "import unittest\n"
-            "class TestFoo(unittest.TestCase):\n"
-            + "".join(
-                f"    def test_{i}(self):\n"
-                f"        self.assertEqual({i}, {i})\n"
-                f"        self.assertTrue(True)\n"
-                for i in range(8)
-            )
+        source = "import unittest\nclass TestFoo(unittest.TestCase):\n" + "".join(
+            f"    def test_{i}(self):\n"
+            f"        self.assertEqual({i}, {i})\n"
+            f"        self.assertTrue(True)\n"
+            for i in range(8)
         )
         pr = _write_module(tmp_path, "tests/test_foo.py", source)
         findings = self._run([pr])
@@ -237,10 +234,7 @@ class TestTPD:
         source = (
             "import pytest\n"
             + "".join(
-                f"def test_pos_{i}():\n"
-                f"    assert {i} == {i}\n"
-                f"    assert True\n"
-                for i in range(5)
+                f"def test_pos_{i}():\n    assert {i} == {i}\n    assert True\n" for i in range(5)
             )
             + "def test_neg():\n"
             "    with pytest.raises(ValueError):\n"
@@ -273,25 +267,16 @@ class TestTPD:
         assert len(findings) == 1
 
     def test_small_test_suite_skipped(self, tmp_path: Path):
-        source = (
-            "def test_one():\n"
-            "    assert True\n"
-            "def test_two():\n"
-            "    assert True\n"
-        )
+        source = "def test_one():\n    assert True\ndef test_two():\n    assert True\n"
         pr = _write_module(tmp_path, "tests/test_small.py", source)
         assert self._run([pr]) == []
 
     def test_score_scales_with_suite_size(self, tmp_path: Path):
-        source = (
-            "import unittest\n"
-            "class TestBig(unittest.TestCase):\n"
-            + "".join(
-                f"    def test_{i}(self):\n"
-                f"        self.assertEqual({i}, {i})\n"
-                f"        self.assertTrue(True)\n"
-                for i in range(12)
-            )
+        source = "import unittest\nclass TestBig(unittest.TestCase):\n" + "".join(
+            f"    def test_{i}(self):\n"
+            f"        self.assertEqual({i}, {i})\n"
+            f"        self.assertTrue(True)\n"
+            for i in range(12)
         )
         pr = _write_module(tmp_path, "tests/test_big.py", source)
         findings = self._run([pr])

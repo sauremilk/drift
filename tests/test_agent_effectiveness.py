@@ -31,9 +31,7 @@ class TestAgentObjective:
         assert obj.goal == ""
         assert obj.out_of_scope == []
         assert obj.success_criteria == []
-        assert (
-            obj.effectiveness_thresholds.low_effect_resolved_per_changed_file == 0.25
-        )
+        assert obj.effectiveness_thresholds.low_effect_resolved_per_changed_file == 0.25
 
     def test_full_config(self):
         obj = AgentObjective(
@@ -74,9 +72,7 @@ class TestDriftConfigAgent:
         assert cfg.agent is None
 
     def test_agent_from_dict(self):
-        cfg = DriftConfig(
-            agent=AgentObjective(goal="test goal", out_of_scope=["vendor/"])
-        )
+        cfg = DriftConfig(agent=AgentObjective(goal="test goal", out_of_scope=["vendor/"]))
         assert cfg.agent is not None
         assert cfg.agent.goal == "test goal"
         assert cfg.agent.out_of_scope == ["vendor/"]

@@ -43,7 +43,9 @@ def _run(
         return old_sources.get(file_posix)
 
     def _fake_git_show_batch(
-        _repo_path: Path, _ref: str, file_posix_list: list[str],
+        _repo_path: Path,
+        _ref: str,
+        file_posix_list: list[str],
     ) -> dict[str, str | None]:
         return {fp: old_sources.get(fp) for fp in file_posix_list}
 

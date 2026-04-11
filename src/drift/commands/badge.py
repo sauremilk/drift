@@ -39,14 +39,23 @@ def _badge_color_for_score(score: float) -> str:
     help="shields.io badge style.",
 )
 @click.option(
+    "--format",
+    "fmt",
+    type=click.Choice(["url", "svg"]),
+    default="url",
+    help="Output format: shields.io URL or self-contained SVG.",
+)
+@click.option(
     "--output",
     "-o",
     type=click.Path(path_type=Path),
     default=None,
-    help="Write badge SVG URL to file (for CI artifacts).",
+    help="Write badge (URL or SVG) to file.",
 )
-def badge(repo: Path, since: int, config: Path | None, style: str, output: Path | None) -> None:
-    """Generate a shields.io badge URL for the repository drift score."""
+def badge(
+    repo: Path, since: int, config: Path | None, style: str, fmt: str, output: Path | None
+) -> None:
+    """Generate a shields.io badge URL or SVG for the repository drift score."""
     from urllib.parse import quote
 
     from drift.analyzer import analyze_repo
@@ -59,6 +68,17 @@ def badge(repo: Path, since: int, config: Path | None, style: str, output: Path 
 
     score = analysis.drift_score
     color = _badge_color_for_score(score)
+
+    if fmt == "svg":
+        from drift.output.badge_svg import render_badge_svg
+
+        svg = render_badge_svg("drift score", f"{score:.2f}", color)
+        if output:
+            output.write_text(svg, encoding="utf-8")
+            console.print(f"Badge SVG written to {output}")
+        else:
+            click.echo(svg)
+        return
 
     label = quote("drift score")
     value = quote(f"{score:.2f}")

@@ -403,16 +403,21 @@ class TestBaselineFlagOnAnalyze:
             main,
             [
                 "check",
-                "--repo", str(repo),
-                "--baseline", str(baseline_file),
-                "--json", "--compact",
-                "-o", str(out_file),
+                "--repo",
+                str(repo),
+                "--baseline",
+                str(baseline_file),
+                "--json",
+                "--compact",
+                "-o",
+                str(out_file),
                 "--exit-zero",
             ],
         )
         assert result.exit_code == 0
 
         import json as _json
+
         payload = _json.loads(out_file.read_text(encoding="utf-8"))
         assert payload["suppressed_count"] == 1
         assert len(payload["findings_compact"]) == 1
@@ -458,16 +463,21 @@ class TestBaselineFlagOnAnalyze:
             main,
             [
                 "check",
-                "--repo", str(repo),
-                "--baseline", str(baseline_file),
-                "--json", "--compact",
-                "-o", str(out_file),
+                "--repo",
+                str(repo),
+                "--baseline",
+                str(baseline_file),
+                "--json",
+                "--compact",
+                "-o",
+                str(out_file),
                 "--exit-zero",
             ],
         )
         assert result.exit_code == 0
 
         import json as _json
+
         payload = _json.loads(out_file.read_text(encoding="utf-8"))
         assert payload["baseline"]["applied"] is True
         assert payload["baseline"]["new_findings_count"] == 1

@@ -107,11 +107,7 @@ def _prepare_fixtures(
                     if override and override.defect_correlated_commits is not None
                     else 0
                 ),
-                last_modified=(
-                    now
-                    if is_new
-                    else now - datetime.timedelta(days=60)
-                ),
+                last_modified=(now if is_new else now - datetime.timedelta(days=60)),
                 first_seen=(
                     now - datetime.timedelta(days=3)
                     if is_new

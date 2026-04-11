@@ -1,5 +1,44 @@
 # Fault Tree Analysis
 
+## 2026-04-11 - ADR-041: PHR Runtime Import Attribute Validation
+
+### Top Event (TE-PHR-041)
+PHR runtime attribute check produces false positives or misses real missing attributes.
+
+### FT-1: False positive branch — runtime attribute FP
+
+```
+          TE-FP: hasattr returns False for valid attribute
+                        |
+                     OR-Gate
+              +------+------+
+             IE-1   IE-2   IE-3
+```
+
+- **IE-1 (MCS)**: Version mismatch — module installed but attribute removed/renamed in current version
+  - Mitigation: metadata `runtime_validated: true`; finding includes module and attribute name for triage
+- **IE-2 (MCS)**: Module `__getattr__` not invoked by `hasattr` (lazy module proxy)
+  - Mitigation: `hasattr()` does invoke `__getattr__` per Python data model; no known stdlib/popular package breaks this
+- **IE-3 (MCS)**: Import timeout → attribute check skipped, Phase B phantom stands
+  - Mitigation: Configurable timeout (5s default); daemon thread; sys.modules fast path
+
+### FT-2: False negative branch — missed missing attribute
+
+```
+          TE-FN: real missing attribute not detected
+                        |
+                     OR-Gate
+              +------+------+
+             IE-4   IE-5   IE-6
+```
+
+- **IE-4 (MCS)**: Module raises exception on import → `_import_module_safe` returns None
+  - Accept: Broken packages cannot be validated; Phase B finding unchanged
+- **IE-5 (MCS)**: Platform-conditional attribute (exists on Linux, absent on Windows)
+  - Accept: Same limitation as Phase B; analysis reflects host environment
+- **IE-6 (MCS)**: Feature disabled (opt-in default) → no runtime check runs
+  - Accept: By design; users must explicitly enable `phr_runtime_validation: true`
+
 ## 2026-04-10 - ADR-040: PHR Third-Party Import Resolver
 
 ### Top Event (TE-PHR-040)

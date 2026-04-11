@@ -100,9 +100,7 @@ def _run_signals_on_fixture(
                 else (1 if is_new else 10)
             ),
             unique_authors=(
-                override.unique_authors
-                if override and override.unique_authors is not None
-                else 1
+                override.unique_authors if override and override.unique_authors is not None else 1
             ),
             ai_attributed_commits=(
                 override.ai_attributed_commits
@@ -200,16 +198,11 @@ class _CoverageResults:
                 tp_fixtures = [
                     f
                     for f in fixtures
-                    if any(
-                        e.signal_type == signal_type and e.should_detect
-                        for e in f.expected
-                    )
+                    if any(e.signal_type == signal_type and e.should_detect for e in f.expected)
                 ]
                 aggregated: list[Finding] = []
                 for fix in tp_fixtures:
-                    findings = _run_signals_on_fixture(
-                        fix, tmp_path, signal_filter={signal_type}
-                    )
+                    findings = _run_signals_on_fixture(fix, tmp_path, signal_filter={signal_type})
                     aggregated.extend(findings)
 
                 analysis = _build_analysis(aggregated)
@@ -220,8 +213,7 @@ class _CoverageResults:
 
                 if not heading_found:
                     actionable = [
-                        f for f in aggregated
-                        if f.signal_type == signal_type and f.score >= 0.4
+                        f for f in aggregated if f.signal_type == signal_type and f.score >= 0.4
                     ]
                     if not actionable:
                         inst.miss_reason[signal_type] = "no findings above score threshold"
@@ -235,8 +227,7 @@ class _CoverageResults:
                     f
                     for f in fixtures
                     if all(
-                        not (e.signal_type == signal_type and e.should_detect)
-                        for e in f.expected
+                        not (e.signal_type == signal_type and e.should_detect) for e in f.expected
                     )
                 ]
                 for tn_fix in tn_fixtures:

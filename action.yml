@@ -85,6 +85,9 @@ outputs:
   grade:
     description: "Letter grade (A–F) derived from the drift score."
     value: ${{ steps.drift-json.outputs.grade }}
+  badge-svg:
+    description: "Absolute path to the generated SVG badge file."
+    value: ${{ steps.drift-badge.outputs.badge-svg }}
 
 runs:
   using: "composite"
@@ -253,6 +256,18 @@ runs:
         echo "severity=${SEVERITY}" >> "${GITHUB_OUTPUT}"
         echo "finding-count=${COUNT}" >> "${GITHUB_OUTPUT}"
         echo "grade=${GRADE}" >> "${GITHUB_OUTPUT}"
+
+    # Generate self-contained SVG badge (no external HTTP needed).
+    - name: Generate drift badge SVG
+      id: drift-badge
+      if: always()
+      shell: bash
+      run: |
+        BADGE_FILE="${RUNNER_TEMP}/drift-badge.svg"
+        drift badge --repo "${{ inputs.repo }}" --format svg --output "${BADGE_FILE}" 2>/dev/null || true
+        if [ -f "${BADGE_FILE}" ]; then
+          echo "badge-svg=${BADGE_FILE}" >> "${GITHUB_OUTPUT}"
+        fi
 
     # Post PR summary comment. Updates existing comment if one exists.
     - name: Post PR comment

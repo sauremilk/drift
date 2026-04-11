@@ -154,9 +154,7 @@ def test_rollback_local_release_state_restores_commit_tag_and_files(monkeypatch)
 
     monkeypatch.setattr(module.subprocess, "run", _fake_run)
 
-    module.rollback_local_release_state(
-        "abc123", "v1.5.0", created_commit=True, created_tag=True
-    )
+    module.rollback_local_release_state("abc123", "v1.5.0", created_commit=True, created_tag=True)
 
     assert calls == [
         ["git", "tag", "-d", "v1.5.0"],

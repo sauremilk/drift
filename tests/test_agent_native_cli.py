@@ -381,6 +381,4 @@ def test_success_criteria_signal_specific() -> None:
         assert len(criteria) > 0
         # At least one criterion beyond the generic base
         non_generic = [c for c in criteria if c != generic_only]
-        assert len(non_generic) > 0, (
-            f"Signal {st.value} only returns generic criteria"
-        )
+        assert len(non_generic) > 0, f"Signal {st.value} only returns generic criteria"

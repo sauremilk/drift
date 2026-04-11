@@ -284,9 +284,7 @@ class TestExternalRepos:
         """Whether cached clones should be refreshed before analysis."""
         return bool(request.config.getoption("--refresh-smoke-cache", default=False))
 
-    @pytest.fixture(
-        scope="session", params=EXTERNAL_REPOS, ids=[r[0] for r in EXTERNAL_REPOS]
-    )
+    @pytest.fixture(scope="session", params=EXTERNAL_REPOS, ids=[r[0] for r in EXTERNAL_REPOS])
     def repo_analysis(
         self,
         request: pytest.FixtureRequest,

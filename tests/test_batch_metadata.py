@@ -168,12 +168,14 @@ class TestApiResponseBatchFields:
         """_task_to_api_dict includes batch metadata fields."""
         from drift.api_helpers import _task_to_api_dict
 
-        task = _make_task(metadata={
-            "batch_eligible": True,
-            "pattern_instance_count": 3,
-            "affected_files_for_pattern": ["a.py", "b.py", "c.py"],
-            "fix_template_class": "broad_exception_monoculture",
-        })
+        task = _make_task(
+            metadata={
+                "batch_eligible": True,
+                "pattern_instance_count": 3,
+                "affected_files_for_pattern": ["a.py", "b.py", "c.py"],
+                "fix_template_class": "broad_exception_monoculture",
+            }
+        )
         d = _task_to_api_dict(task)
         assert d["batch_eligible"] is True
         assert d["pattern_instance_count"] == 3

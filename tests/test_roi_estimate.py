@@ -68,10 +68,13 @@ class TestBuildEstimate:
 # CLI integration tests (mocked analysis)
 # ---------------------------------------------------------------------------
 
+
 def _make_fake_analysis(findings=None):
     """Return a minimal mock RepoAnalysis."""
+
     class FakeAnalysis:
         drift_score = 0.42
+
     analysis = FakeAnalysis()
     analysis.findings = findings or []
     return analysis
@@ -86,8 +89,9 @@ class _FakeDriftConfig:
 class TestRoiEstimateCLI:
     def test_json_output_empty_findings(self, tmp_path: Path) -> None:
         runner = CliRunner()
-        with patch("drift.analyzer.analyze_repo", return_value=_make_fake_analysis()), patch(
-            "drift.config.DriftConfig", _FakeDriftConfig
+        with (
+            patch("drift.analyzer.analyze_repo", return_value=_make_fake_analysis()),
+            patch("drift.config.DriftConfig", _FakeDriftConfig),
         ):
             result = runner.invoke(
                 main, ["roi-estimate", "--format", "json", "--repo", str(tmp_path)]
@@ -111,9 +115,10 @@ class TestRoiEstimateCLI:
             FakeFinding("cohesion_deficit", "src/c.py"),
         ]
         runner = CliRunner()
-        with patch(
-            "drift.analyzer.analyze_repo", return_value=_make_fake_analysis(findings)
-        ), patch("drift.config.DriftConfig", _FakeDriftConfig):
+        with (
+            patch("drift.analyzer.analyze_repo", return_value=_make_fake_analysis(findings)),
+            patch("drift.config.DriftConfig", _FakeDriftConfig),
+        ):
             result = runner.invoke(
                 main, ["roi-estimate", "--format", "json", "--repo", str(tmp_path)]
             )
@@ -124,8 +129,9 @@ class TestRoiEstimateCLI:
 
     def test_rich_output_no_findings(self, tmp_path: Path) -> None:
         runner = CliRunner()
-        with patch("drift.analyzer.analyze_repo", return_value=_make_fake_analysis()), patch(
-            "drift.config.DriftConfig", _FakeDriftConfig
+        with (
+            patch("drift.analyzer.analyze_repo", return_value=_make_fake_analysis()),
+            patch("drift.config.DriftConfig", _FakeDriftConfig),
         ):
             result = runner.invoke(main, ["roi-estimate", "--repo", str(tmp_path)])
         assert result.exit_code == 0
@@ -142,9 +148,10 @@ class TestRoiEstimateCLI:
             FakeFinding("mutant_duplicate", "src/b.py"),
         ]
         runner = CliRunner()
-        with patch(
-            "drift.analyzer.analyze_repo", return_value=_make_fake_analysis(findings)
-        ), patch("drift.config.DriftConfig", _FakeDriftConfig):
+        with (
+            patch("drift.analyzer.analyze_repo", return_value=_make_fake_analysis(findings)),
+            patch("drift.config.DriftConfig", _FakeDriftConfig),
+        ):
             result = runner.invoke(main, ["roi-estimate", "--repo", str(tmp_path)])
         assert result.exit_code == 0
         assert "ROI Estimate" in result.output

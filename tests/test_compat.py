@@ -288,9 +288,7 @@ class TestOutputFormatAlias:
         assert result.exit_code == 0
 
         # --output-format should not raise "no such option"
-        result = runner.invoke(
-            check, ["--output-format", "json", "--help"], catch_exceptions=False
-        )
+        result = runner.invoke(check, ["--output-format", "json", "--help"], catch_exceptions=False)
         assert result.exit_code == 0
 
     def test_github_format_in_choices(self):
@@ -377,10 +375,14 @@ class TestCheckSelectFilter:
             main,
             [
                 "check",
-                "--repo", str(repo),
-                "--select", "PFS",
-                "--json", "--compact",
-                "-o", str(out_file),
+                "--repo",
+                str(repo),
+                "--select",
+                "PFS",
+                "--json",
+                "--compact",
+                "-o",
+                str(out_file),
                 "--exit-zero",
             ],
         )

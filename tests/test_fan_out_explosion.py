@@ -36,10 +36,7 @@ class TestFOETruePositive:
 
     def test_many_imports_detected(self) -> None:
         path = "services/monolith.py"
-        imports = [
-            _imp(path, f"package_{i}.module_{i}")
-            for i in range(25)
-        ]
+        imports = [_imp(path, f"package_{i}.module_{i}") for i in range(25)]
         pr = _pr(path, imports)
 
         signal = FanOutExplosionSignal()

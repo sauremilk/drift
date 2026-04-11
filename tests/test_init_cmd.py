@@ -109,9 +109,7 @@ class TestInitCommand:
 
     def test_init_vibe_coding_profile(self, tmp_path: Path) -> None:
         runner = CliRunner()
-        result = runner.invoke(
-            main, ["init", "--profile", "vibe-coding", "--repo", str(tmp_path)]
-        )
+        result = runner.invoke(main, ["init", "--profile", "vibe-coding", "--repo", str(tmp_path)])
         assert result.exit_code == 0
         data = yaml.safe_load((tmp_path / "drift.yaml").read_text())
         assert data["weights"]["mutant_duplicate"] == 0.20
@@ -120,9 +118,7 @@ class TestInitCommand:
 
     def test_init_strict_profile(self, tmp_path: Path) -> None:
         runner = CliRunner()
-        result = runner.invoke(
-            main, ["init", "--profile", "strict", "--repo", str(tmp_path)]
-        )
+        result = runner.invoke(main, ["init", "--profile", "strict", "--repo", str(tmp_path)])
         assert result.exit_code == 0
         data = yaml.safe_load((tmp_path / "drift.yaml").read_text())
         assert data["fail_on"] == "medium"
@@ -174,18 +170,14 @@ class TestInitCommand:
 
     def test_init_claude_dry_run_lists_snippet(self, tmp_path: Path) -> None:
         runner = CliRunner()
-        result = runner.invoke(
-            main, ["init", "--claude", "--dry-run", "--repo", str(tmp_path)]
-        )
+        result = runner.invoke(main, ["init", "--claude", "--dry-run", "--repo", str(tmp_path)])
         assert result.exit_code == 0
         assert "claude_desktop_config.json" in result.output
         assert not (tmp_path / "claude_desktop_config.json").exists()
 
     def test_init_full_json_includes_claude_snippet(self, tmp_path: Path) -> None:
         runner = CliRunner()
-        result = runner.invoke(
-            main, ["init", "--full", "--json", "--repo", str(tmp_path)]
-        )
+        result = runner.invoke(main, ["init", "--full", "--json", "--repo", str(tmp_path)])
         assert result.exit_code == 0
         payload = json.loads(result.output)
         paths = {item["path"] for item in payload["would_create"]}
@@ -195,9 +187,7 @@ class TestInitCommand:
         runner = CliRunner()
         runner.invoke(main, ["init", "--claude", "--repo", str(tmp_path)])
 
-        result = runner.invoke(
-            main, ["init", "--claude", "--dry-run", "--repo", str(tmp_path)]
-        )
+        result = runner.invoke(main, ["init", "--claude", "--dry-run", "--repo", str(tmp_path)])
         assert result.exit_code == 0
         assert "skip" in result.output.lower()
         assert "would skip" in result.output.lower()
@@ -206,15 +196,11 @@ class TestInitCommand:
         runner = CliRunner()
         runner.invoke(main, ["init", "--full", "--repo", str(tmp_path)])
 
-        result = runner.invoke(
-            main, ["init", "--full", "--json", "--repo", str(tmp_path)]
-        )
+        result = runner.invoke(main, ["init", "--full", "--json", "--repo", str(tmp_path)])
         assert result.exit_code == 0
 
         payload = json.loads(result.output)
-        drift_yaml = next(
-            item for item in payload["would_create"] if item["path"] == "drift.yaml"
-        )
+        drift_yaml = next(item for item in payload["would_create"] if item["path"] == "drift.yaml")
         assert drift_yaml["action"] == "skip"
         assert drift_yaml["would_skip"] is True
         assert drift_yaml["would_overwrite"] is False
@@ -293,27 +279,21 @@ class TestInitCommand:
         from drift.config import DriftConfig
 
         runner = CliRunner()
-        runner.invoke(
-            main, ["init", "-p", "vibe-coding", "--repo", str(tmp_path)]
-        )
+        runner.invoke(main, ["init", "-p", "vibe-coding", "--repo", str(tmp_path)])
         cfg = DriftConfig.load(tmp_path, tmp_path / "drift.yaml")
         assert cfg.weights.mutant_duplicate == 0.20
         assert cfg.thresholds.similarity_threshold == 0.75
 
     def test_init_vibe_coding_has_policies(self, tmp_path: Path) -> None:
         runner = CliRunner()
-        runner.invoke(
-            main, ["init", "-p", "vibe-coding", "--repo", str(tmp_path)]
-        )
+        runner.invoke(main, ["init", "-p", "vibe-coding", "--repo", str(tmp_path)])
         data = yaml.safe_load((tmp_path / "drift.yaml").read_text())
         assert "policies" in data
         assert len(data["policies"]["layer_boundaries"]) >= 2
 
     def test_init_workflow_strict_uses_medium(self, tmp_path: Path) -> None:
         runner = CliRunner()
-        runner.invoke(
-            main, ["init", "-p", "strict", "--ci", "--repo", str(tmp_path)]
-        )
+        runner.invoke(main, ["init", "-p", "strict", "--ci", "--repo", str(tmp_path)])
         wf = (tmp_path / ".github" / "workflows" / "drift.yml").read_text()
         assert 'fail-on: "medium"' in wf
 
@@ -330,7 +310,5 @@ class TestInitCommand:
 
     def test_init_vibe_coding_mentions_escalation(self, tmp_path: Path) -> None:
         runner = CliRunner()
-        result = runner.invoke(
-            main, ["init", "-p", "vibe-coding", "--repo", str(tmp_path)]
-        )
+        result = runner.invoke(main, ["init", "-p", "vibe-coding", "--repo", str(tmp_path)])
         assert "fail_on" in result.output or "escalate" in result.output.lower()

@@ -1,5 +1,38 @@
 # Risk Register
 
+## 2026-04-11 - ADR-046: Markdown CLI format + Guidance footer
+
+- Risk ID: RISK-OUTPUT-2026-04-11-046
+- Component: `src/drift/commands/analyze.py`, `src/drift/output/rich_output.py`
+- Type: Output path extension (additive, non-breaking)
+- Description: `drift analyze --format markdown` is now wired to the existing `analysis_to_markdown()` formatter. Additionally, `render_full_report()` appends a "What's Next?" guidance footer when no `drift.yaml` exists in the analyzed repo. No scoring, finding-generation, or signal changes. Both are additive surfaces reusing existing infrastructure.
+- Trigger: User runs `drift analyze --format markdown` or views rich output in an unconfigured repo.
+- Impact: Low. Misrendered markdown output could confuse PR comments; the guidance footer could show for configured repos if detection logic drifts. No trust boundary crossed.
+- Mitigation:
+  - Markdown formatter was already complete and tested indirectly via `drift brief` and copilot-context.
+  - Guidance footer detection uses same config-presence check as existing first-run logic.
+  - CLI integration test + guidance footer tests added in `tests/test_preflight_and_report.py`.
+  - `--quiet` mode and non-rich formats are unaffected.
+- Residual risk: Minimal. Additive output path, no new dependencies, well-tested formatter.
+
+## 2026-04-11 - ADR-041: PHR Runtime Import Attribute Validation
+
+- Risk ID: RISK-SIGNAL-2026-04-11-041
+- Component: `src/drift/signals/phantom_reference.py`, `src/drift/config.py`
+- Type: Signal enhancement (opt-in, non-breaking)
+- Description: PHR gains optional runtime attribute validation. When `phr_runtime_validation: true`, `importlib.import_module()` is called on third-party modules to verify `hasattr(mod, name)` for `from X import Y` patterns. This crosses a new trust boundary (analysis process → third-party package code) but is gated behind an explicit opt-in flag.
+- Trigger: User sets `thresholds.phr_runtime_validation: true` in `drift.yaml` and runs analysis on a project with third-party imports.
+- Impact: Medium. Module import executes third-party `__init__.py` code; malicious or buggy packages could cause side effects. Timeout prevents hangs. Disabled by default.
+- Mitigation:
+  - Opt-in only (`phr_runtime_validation: false` default)
+  - Daemon thread with 5s timeout prevents blocking
+  - `sys.modules` fast path avoids re-import of cached modules
+  - Skips project-internal modules, TYPE_CHECKING imports, and try/except-guarded imports
+  - No `exec`/`eval`/`compile` in drift code path
+  - Ground-truth fixtures: `phr_runtime_missing_attr_tp`, `phr_runtime_valid_attr_tn`, `phr_runtime_guarded_tn`
+  - Precision/recall: 25/25 PHR fixtures passing, 169/169 total fixtures green
+- Residual risk: Low. Primary residual risk is version-mismatch false positives (module installed but different version). Bounded by metadata and opt-in gating.
+
 ## 2026-04-10 - Output channel extension: session report + TUI visualize
 
 - Risk ID: RISK-OUTPUT-2026-04-10-SESSION-TUI

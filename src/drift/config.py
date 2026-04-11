@@ -78,6 +78,9 @@ class ThresholdsConfig(BaseModel):
     diff_baseline_recommend_max_new_findings: int = 100
     diff_baseline_recommend_max_out_of_scope_findings: int = 50
 
+    # PHR runtime validation (ADR-041)
+    phr_runtime_validation: bool = False  # opt-in: import + hasattr check
+
     # Security-by-default thresholds
     hsc_min_entropy: float = 3.5  # Shannon entropy per char for secret detection
     hsc_min_length: int = 16  # minimum string length for entropy-based detection

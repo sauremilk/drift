@@ -89,7 +89,10 @@ class TestRenderInstructionsFormat:
     def test_drift_score_in_footer(self) -> None:
         items = [_make_nc()]
         md = render_negative_context_markdown(
-            items, fmt="instructions", drift_score=0.42, severity=Severity.MEDIUM,
+            items,
+            fmt="instructions",
+            drift_score=0.42,
+            severity=Severity.MEDIUM,
         )
         assert "0.42" in md
         assert "medium" in md
@@ -324,7 +327,7 @@ class TestDuplicateRuleDeduplication:
         assert md.count("hardcoded_secret, high") == 1
         assert "(2 occurrences)" in md
         assert "Pattern variants:" in md
-        assert "`token = \"ghp_123\"`" in md
+        assert '`token = "ghp_123"`' in md
         assert "`src/a.py`" in md
         assert "`src/b.py`" in md
 
@@ -395,6 +398,7 @@ class TestMCPInstructionsEnrichment:
     def test_base_instructions_without_file(self, tmp_path: Path) -> None:
         """Without .drift-negative-context.md, returns base instructions."""
         import os
+
         original = os.getcwd()
         try:
             os.chdir(tmp_path)
@@ -402,6 +406,7 @@ class TestMCPInstructionsEnrichment:
                 _BASE_INSTRUCTIONS,
                 _load_negative_context_instructions,
             )
+
             result = _load_negative_context_instructions()
             assert result == _BASE_INSTRUCTIONS
         finally:
@@ -427,6 +432,7 @@ class TestMCPInstructionsEnrichment:
         try:
             os.chdir(tmp_path)
             from drift.mcp_server import _load_negative_context_instructions
+
             result = _load_negative_context_instructions()
             assert "KNOWN ANTI-PATTERNS" in result
             assert "Use bare except Exception: pass" in result
@@ -448,6 +454,7 @@ class TestMCPInstructionsEnrichment:
                 _BASE_INSTRUCTIONS,
                 _load_negative_context_instructions,
             )
+
             result = _load_negative_context_instructions()
             assert result == _BASE_INSTRUCTIONS
         finally:
@@ -468,6 +475,7 @@ class TestMCPInstructionsEnrichment:
         try:
             os.chdir(tmp_path)
             from drift.mcp_server import _load_negative_context_instructions
+
             result = _load_negative_context_instructions()
             assert "anti-pattern-9" in result
             assert "anti-pattern-10" not in result
@@ -606,8 +614,7 @@ class TestMCPSchemaDescriptions:
         for tool in catalog:
             for param in tool["parameters"]:
                 assert "description" in param, (
-                    f"Parameter '{param['name']}' in tool '{tool['name']}' "
-                    f"has no description"
+                    f"Parameter '{param['name']}' in tool '{tool['name']}' has no description"
                 )
 
     def test_catalog_descriptions_are_nonempty(self) -> None:
@@ -617,8 +624,7 @@ class TestMCPSchemaDescriptions:
         for tool in catalog:
             for param in tool["parameters"]:
                 assert param.get("description", "").strip(), (
-                    f"Parameter '{param['name']}' in tool '{tool['name']}' "
-                    f"has empty description"
+                    f"Parameter '{param['name']}' in tool '{tool['name']}' has empty description"
                 )
 
 
@@ -633,7 +639,10 @@ class TestScoreConsistency:
     def test_raw_format_rounds_score_to_3_decimals(self) -> None:
         items = [_make_nc()]
         md = render_negative_context_markdown(
-            items, fmt="raw", drift_score=0.5383, severity=Severity.MEDIUM,
+            items,
+            fmt="raw",
+            drift_score=0.5383,
+            severity=Severity.MEDIUM,
         )
         payload = json.loads(md)
         assert payload["drift_score"] == 0.538
@@ -641,20 +650,29 @@ class TestScoreConsistency:
     def test_instructions_format_shows_3_decimals(self) -> None:
         items = [_make_nc()]
         md = render_negative_context_markdown(
-            items, fmt="instructions", drift_score=0.5383, severity=Severity.MEDIUM,
+            items,
+            fmt="instructions",
+            drift_score=0.5383,
+            severity=Severity.MEDIUM,
         )
         assert "0.538" in md
 
     def test_prompt_format_shows_3_decimals(self) -> None:
         items = [_make_nc()]
         md = render_negative_context_markdown(
-            items, fmt="prompt", drift_score=0.5383, severity=Severity.MEDIUM,
+            items,
+            fmt="prompt",
+            drift_score=0.5383,
+            severity=Severity.MEDIUM,
         )
         assert "0.538" in md
 
     def test_empty_raw_rounds_score(self) -> None:
         md = render_negative_context_markdown(
-            [], fmt="raw", drift_score=0.5149, severity=Severity.MEDIUM,
+            [],
+            fmt="raw",
+            drift_score=0.5149,
+            severity=Severity.MEDIUM,
         )
         payload = json.loads(md)
         assert payload["drift_score"] == 0.515

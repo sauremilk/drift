@@ -89,7 +89,6 @@ def test_cod_true_negative_fixture() -> None:
     assert findings == []
 
 
-
 def test_cod_ignores_tiny_files() -> None:
     """Small files with too few semantic units are ignored to reduce noise."""
     file_path = "helpers/tiny.py"

@@ -12,6 +12,7 @@ from drift.task_spec import ArchitectureLayer, TaskSpec, validate_task_spec
 
 # ── TaskSpec model tests ───────────────────────────────────────────
 
+
 class TestTaskSpecModel:
     """Core model construction and auto-inference."""
 
@@ -85,13 +86,23 @@ class TestTaskSpecModel:
 
     def test_all_architecture_layers_exist(self):
         expected = {
-            "signals", "ingestion", "scoring", "output", "commands",
-            "config", "plugins", "tests", "scripts", "docs", "prompts",
+            "signals",
+            "ingestion",
+            "scoring",
+            "output",
+            "commands",
+            "config",
+            "plugins",
+            "tests",
+            "scripts",
+            "docs",
+            "prompts",
         }
         assert {layer.value for layer in ArchitectureLayer} == expected
 
 
 # ── validate_task_spec tests ───────────────────────────────────────
+
 
 class TestValidateTaskSpec:
     """Semantic validation beyond schema."""
@@ -150,6 +161,7 @@ class TestValidateTaskSpec:
 
 # ── YAML/JSON serialization round-trip ─────────────────────────────
 
+
 class TestTaskSpecSerialization:
     """Ensure specs can be saved and reloaded."""
 
@@ -187,6 +199,7 @@ class TestTaskSpecSerialization:
 
 
 # ── validate_task_spec.py CLI tests ────────────────────────────────
+
 
 class TestValidateTaskSpecCLI:
     """Test the CLI script via subprocess."""

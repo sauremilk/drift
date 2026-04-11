@@ -11,9 +11,7 @@ import pytest
 class TestIssue138NegativeContextErrorEnvelope:
     """#138: drift_negative_context must wrap exceptions in MCP error envelope."""
 
-    def test_negative_context_wraps_runtime_error(
-        self, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
+    def test_negative_context_wraps_runtime_error(self, monkeypatch: pytest.MonkeyPatch) -> None:
         from drift import mcp_server
 
         def _boom(*_a: object, **_kw: object) -> None:
@@ -29,9 +27,7 @@ class TestIssue138NegativeContextErrorEnvelope:
         assert result["tool"] == "drift_negative_context"
         assert "boom-negctx" in result["message"]
 
-    def test_negative_context_timeout_still_works(
-        self, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
+    def test_negative_context_timeout_still_works(self, monkeypatch: pytest.MonkeyPatch) -> None:
         """Timeout handling must remain unchanged."""
         import time
 

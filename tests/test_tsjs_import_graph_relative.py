@@ -10,11 +10,7 @@ def test_build_relative_import_graph_resolves_relative_ts_and_tsx() -> None:
 
     graph = build_relative_import_graph(repo_path)
 
-    edges = {
-        (source, target)
-        for source, targets in graph.items()
-        for target in targets
-    }
+    edges = {(source, target) for source, targets in graph.items() for target in targets}
 
     expected_edges = {
         ("app.ts", "lib/util.ts"),

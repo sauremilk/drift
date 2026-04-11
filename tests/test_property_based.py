@@ -68,6 +68,7 @@ _glob_pattern = st.one_of(
 # 1. Config YAML parser: never raises unexpected exceptions
 # ---------------------------------------------------------------------------
 
+
 @given(content=st.text(max_size=512))
 @settings(
     max_examples=50,
@@ -101,6 +102,7 @@ def test_config_model_validate_never_raises_unexpected(data: dict) -> None:
 # 2. Pattern matching: always returns a bool, never crashes
 # ---------------------------------------------------------------------------
 
+
 @given(path_str=_file_path_str, patterns=st.lists(_glob_pattern, max_size=6))
 @settings(max_examples=100, suppress_health_check=[HealthCheck.too_slow])
 def test_matches_any_always_returns_bool(path_str: str, patterns: list[str]) -> None:
@@ -111,9 +113,7 @@ def test_matches_any_always_returns_bool(path_str: str, patterns: list[str]) -> 
 
 @given(path_str=st.text(max_size=200), patterns=st.just([]))
 @settings(max_examples=50)
-def test_matches_any_empty_patterns_always_false(
-    path_str: str, patterns: list[str]
-) -> None:
+def test_matches_any_empty_patterns_always_false(path_str: str, patterns: list[str]) -> None:
     """Empty pattern list must always return False."""
     assert _matches_any(path_str, patterns) is False
 
@@ -121,6 +121,7 @@ def test_matches_any_empty_patterns_always_false(
 # ---------------------------------------------------------------------------
 # 3. File discovery: terminates and returns a list for any valid repo path
 # ---------------------------------------------------------------------------
+
 
 @given(
     include=st.lists(_glob_pattern, min_size=1, max_size=3),
@@ -133,14 +134,10 @@ def test_matches_any_empty_patterns_always_false(
         HealthCheck.function_scoped_fixture,
     ],
 )
-def test_discover_files_terminates_on_empty_repo(
-    include: list[str], exclude: list[str]
-) -> None:
+def test_discover_files_terminates_on_empty_repo(include: list[str], exclude: list[str]) -> None:
     """discover_files on an empty directory must terminate and return a list."""
     with tempfile.TemporaryDirectory() as td:
-        result = discover_files(
-            Path(td), include=include, exclude=exclude, max_files=100
-        )
+        result = discover_files(Path(td), include=include, exclude=exclude, max_files=100)
         assert isinstance(result, list)
 
 

@@ -26,8 +26,13 @@ class TestExplainSignalData:
     def test_each_signal_has_required_keys(self, abbr: str) -> None:
         info = _SIGNAL_INFO[abbr]
         required = (
-            "signal_type", "name", "weight", "description",
-            "detects", "example", "fix_hint",
+            "signal_type",
+            "name",
+            "weight",
+            "description",
+            "detects",
+            "example",
+            "fix_hint",
         )
         for key in required:
             assert key in info, f"{abbr} missing key: {key}"
@@ -191,8 +196,9 @@ class TestDriftErrorExitCodes:
         from drift.errors import DriftConfigError
 
         def _raise(*a, **kw):
-            raise DriftConfigError("DRIFT-1001", "bad config",
-                                   config_path="drift.yaml", field="x", reason="r", line=1)
+            raise DriftConfigError(
+                "DRIFT-1001", "bad config", config_path="drift.yaml", field="x", reason="r", line=1
+            )
 
         monkeypatch.setattr(cli, "main", _raise)
 
@@ -207,8 +213,7 @@ class TestDriftErrorExitCodes:
         from drift.errors import DriftSystemError
 
         def _raise(*a, **kw):
-            raise DriftSystemError("DRIFT-2001", "missing repo",
-                                   path="/nonexistent")
+            raise DriftSystemError("DRIFT-2001", "missing repo", path="/nonexistent")
 
         monkeypatch.setattr(cli, "main", _raise)
 
@@ -223,8 +228,9 @@ class TestDriftErrorExitCodes:
         from drift.errors import DriftAnalysisError
 
         def _raise(*a, **kw):
-            raise DriftAnalysisError("DRIFT-3001", "parse failed",
-                                     path="bad.py", line=1, reason="syntax")
+            raise DriftAnalysisError(
+                "DRIFT-3001", "parse failed", path="bad.py", line=1, reason="syntax"
+            )
 
         monkeypatch.setattr(cli, "main", _raise)
 
@@ -286,8 +292,9 @@ class TestErrorRegistry:
         from drift.errors import ERROR_REGISTRY
 
         info = ERROR_REGISTRY["DRIFT-1001"]
-        msg = info.format(config_path="drift.yaml", field="weights.pfs",
-                          reason="expects float", line=12)
+        msg = info.format(
+            config_path="drift.yaml", field="weights.pfs", reason="expects float", line=12
+        )
         assert "[DRIFT-1001]" in msg
         assert "weights.pfs" in msg
         assert "→" in msg
@@ -295,8 +302,7 @@ class TestErrorRegistry:
     def test_drift_error_detail_includes_context(self) -> None:
         from drift.errors import DriftConfigError
 
-        exc = DriftConfigError("DRIFT-1001", "bad value",
-                               context="  → 12 │   pfs: bad")
+        exc = DriftConfigError("DRIFT-1001", "bad value", context="  → 12 │   pfs: bad")
         assert "→ 12" in exc.detail
         assert "DRIFT-1001" in exc.detail
 
@@ -467,6 +473,6 @@ class TestWarningsSuppression:
                             found = True
                             break
                 if found:
-                        found = True
-                        break
+                    found = True
+                    break
         assert found, "cli.py must contain warnings.filterwarnings for SyntaxWarning"

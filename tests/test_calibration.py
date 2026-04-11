@@ -89,7 +89,8 @@ class TestFeedbackPersistence:
         with fp.open("a", encoding="utf-8") as f:
             f.write("NOT-JSON\n")
         record_feedback(  # type: ignore[arg-type]
-            fp, _fe(signal="c", file="d", verdict="fp"),
+            fp,
+            _fe(signal="c", file="d", verdict="fp"),
         )
 
         loaded = load_feedback(fp)
@@ -136,9 +137,7 @@ class TestProfileBuilder:
         from drift.config import SignalWeights
 
         sig = "pattern_fragmentation"
-        events = [
-            _fe(signal=sig, file=f"f{i}.py") for i in range(25)
-        ]
+        events = [_fe(signal=sig, file=f"f{i}.py") for i in range(25)]
         defaults = SignalWeights()
         result = build_profile(events, defaults, min_samples=20)
 
@@ -152,10 +151,7 @@ class TestProfileBuilder:
         from drift.config import SignalWeights
 
         sig = "pattern_fragmentation"
-        events = [
-            _fe(signal=sig, file=f"f{i}.py", verdict="fp")
-            for i in range(25)
-        ]
+        events = [_fe(signal=sig, file=f"f{i}.py", verdict="fp") for i in range(25)]
         defaults = SignalWeights()
         result = build_profile(events, defaults, min_samples=20)
 
@@ -170,12 +166,8 @@ class TestProfileBuilder:
         from drift.config import SignalWeights
 
         sig = "pattern_fragmentation"
-        events = [
-            _fe(signal=sig, file=f"tp{i}.py")
-            for i in range(15)
-        ] + [
-            _fe(signal=sig, file=f"fp{i}.py", verdict="fp")
-            for i in range(5)
+        events = [_fe(signal=sig, file=f"tp{i}.py") for i in range(15)] + [
+            _fe(signal=sig, file=f"fp{i}.py", verdict="fp") for i in range(5)
         ]
         defaults = SignalWeights()
         result = build_profile(events, defaults, min_samples=20)
@@ -207,10 +199,7 @@ class TestProfileBuilder:
         from drift.config import SignalWeights
 
         sig = "pattern_fragmentation"
-        events = [
-            _fe(signal=sig, file=f"fp{i}.py", verdict="fp")
-            for i in range(25)
-        ]
+        events = [_fe(signal=sig, file=f"fp{i}.py", verdict="fp") for i in range(25)]
         defaults = SignalWeights()
         result = build_profile(events, defaults, min_samples=20)
         diff = result.weight_diff(defaults)
@@ -224,12 +213,8 @@ class TestProfileBuilder:
         from drift.config import SignalWeights
 
         sig = "architecture_violation"
-        events = [
-            _fe(signal=sig, file=f"tp{i}.py")
-            for i in range(10)
-        ] + [
-            _fe(signal=sig, file=f"fn{i}.py", verdict="fn")
-            for i in range(10)
+        events = [_fe(signal=sig, file=f"tp{i}.py") for i in range(10)] + [
+            _fe(signal=sig, file=f"fn{i}.py", verdict="fn") for i in range(10)
         ]
         defaults = SignalWeights()
         result_boost = build_profile(events, defaults, min_samples=20, fn_boost_factor=0.5)
@@ -443,12 +428,18 @@ class TestFindingIdWithStartLine:
         from drift.calibration.feedback import FeedbackEvent
 
         e1 = FeedbackEvent(
-            signal_type="pfs", file_path="a.py", verdict="tp",
-            source="user", start_line=10,
+            signal_type="pfs",
+            file_path="a.py",
+            verdict="tp",
+            source="user",
+            start_line=10,
         )
         e2 = FeedbackEvent(
-            signal_type="pfs", file_path="a.py", verdict="tp",
-            source="user", start_line=42,
+            signal_type="pfs",
+            file_path="a.py",
+            verdict="tp",
+            source="user",
+            start_line=42,
         )
         assert e1.finding_id != e2.finding_id
 
@@ -457,7 +448,10 @@ class TestFindingIdWithStartLine:
         from drift.calibration.feedback import FeedbackEvent, _compute_finding_id
 
         e = FeedbackEvent(
-            signal_type="x", file_path="y.py", verdict="fp", source="user",
+            signal_type="x",
+            file_path="y.py",
+            verdict="fp",
+            source="user",
         )
         legacy_id = _compute_finding_id("x", "y.py")
         assert e.finding_id == legacy_id
@@ -583,8 +577,12 @@ class TestThresholdAdapter:
 
         m = SignalFeedbackMetrics("pfs", tp=1, fp=0, fn=99)
         result = adapt_threshold(
-            "pfs", 0.15, m, enabled=True,
-            min_threshold=0.1, min_observations=1,
+            "pfs",
+            0.15,
+            m,
+            enabled=True,
+            min_threshold=0.1,
+            min_observations=1,
         )
         assert result.adapted_threshold >= 0.1
         assert result.clamped
@@ -595,8 +593,12 @@ class TestThresholdAdapter:
 
         m = SignalFeedbackMetrics("pfs", tp=1, fp=99, fn=0)
         result = adapt_threshold(
-            "pfs", 0.9, m, enabled=True,
-            max_threshold=0.95, min_observations=1,
+            "pfs",
+            0.9,
+            m,
+            enabled=True,
+            max_threshold=0.95,
+            min_observations=1,
         )
         assert result.adapted_threshold <= 0.95
 
@@ -606,7 +608,11 @@ class TestThresholdAdapter:
 
         m = SignalFeedbackMetrics("pfs", tp=1, fp=1, fn=0)
         result = adapt_threshold(
-            "pfs", 0.5, m, enabled=True, min_observations=10,
+            "pfs",
+            0.5,
+            m,
+            enabled=True,
+            min_observations=10,
         )
         assert result.adapted_threshold == 0.5
 

@@ -198,8 +198,7 @@ class TestMcpStdioTransportSafety:
 
         assert not violations, (
             "subprocess.run() without stdin=DEVNULL or input= found "
-            "(would deadlock MCP stdio on Windows):\n"
-            + "\n".join(f"  - {v}" for v in violations)
+            "(would deadlock MCP stdio on Windows):\n" + "\n".join(f"  - {v}" for v in violations)
         )
 
     def test_eager_imports_called_before_event_loop(self) -> None:
@@ -399,9 +398,7 @@ class TestMcpStrictGuardrails:
     def _write_agent_config(repo_path: Path, *, strict: bool) -> None:
         strict_value = "true" if strict else "false"
         (repo_path / "drift.yaml").write_text(
-            "agent:\n"
-            "  goal: \"strict orchestration test\"\n"
-            f"  strict_guardrails: {strict_value}\n",
+            f'agent:\n  goal: "strict orchestration test"\n  strict_guardrails: {strict_value}\n',
             encoding="utf-8",
         )
 
@@ -451,8 +448,7 @@ class TestMcpStrictGuardrails:
         session = SessionManager.instance().get(sid)
         assert session is not None
         assert any(
-            t.get("tool") == tool_name
-            and "strict_guardrail_block" in str(t.get("advisory", ""))
+            t.get("tool") == tool_name and "strict_guardrail_block" in str(t.get("advisory", ""))
             for t in session.trace
         )
 
@@ -496,4 +492,3 @@ class TestMcpStrictGuardrails:
         assert result["blocked_tool"] == "drift_session_end"
         assert any(r["reason"] == "open_tasks_remaining" for r in result["block_reasons"])
         assert result["recovery_tool_call"]["tool"] == "drift_task_status"
-

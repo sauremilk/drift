@@ -312,6 +312,51 @@ _register(
 )
 
 
+# ---------------------------------------------------------------------------
+# Quick profile — fast first-run scan for new users
+# ---------------------------------------------------------------------------
+_register(
+    Profile(
+        name="quick",
+        description=(
+            "Fast first-run scan for new users. Disables git-dependent and "
+            "expensive signals, raises thresholds to reduce noise, and lowers "
+            "file discovery limits for speed. Recommended: "
+            "drift analyze . --config drift.yaml --max-findings 5"
+        ),
+        weights={
+            # Keep only the top AST-based signals
+            "pattern_fragmentation": 0.25,
+            "architecture_violation": 0.20,
+            "mutant_duplicate": 0.20,
+            "explainability_deficit": 0.15,
+            "broad_exception_monoculture": 0.05,
+            "naming_contract_violation": 0.05,
+            "guard_clause_deficit": 0.03,
+            "bypass_accumulation": 0.03,
+            "doc_impl_drift": 0.02,
+            "test_polarity_deficit": 0.02,
+            # Disable git-dependent / expensive signals
+            "temporal_volatility": 0.0,
+            "system_misalignment": 0.0,
+            "exception_contract_drift": 0.0,
+            "cohesion_deficit": 0.0,
+            "co_change_coupling": 0.0,
+        },
+        thresholds={
+            "similarity_threshold": 0.85,
+            "min_function_loc": 15,
+            "min_complexity": 8,
+            "recency_days": 14,
+            "volatility_z_threshold": 1.5,
+            "max_discovery_files": 2000,
+        },
+        auto_calibrate=False,
+        fail_on="none",
+    )
+)
+
+
 def get_profile(name: str) -> Profile:
     """Look up a profile by name. Raises ``KeyError`` if unknown."""
     if name not in PROFILES:

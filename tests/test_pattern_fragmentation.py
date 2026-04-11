@@ -187,8 +187,7 @@ def test_identical_decorator_patterns_no_finding():
         "return_patterns": ["jsonify"],
     }
     patterns = [
-        _make_pattern(PatternCategory.API_ENDPOINT, "routes", f"route_{i}", fp)
-        for i in range(5)
+        _make_pattern(PatternCategory.API_ENDPOINT, "routes", f"route_{i}", fp) for i in range(5)
     ]
     findings = PatternFragmentationSignal().analyze(_wrap(patterns), {}, None)
     assert findings == [], "Identical decorator patterns must not produce any PFS finding"
@@ -227,7 +226,10 @@ def test_return_pattern_two_variants_detected():
     patterns = [
         _make_pattern(PatternCategory.RETURN_PATTERN, "models", "get_user", fp_none_raise),
         _make_pattern(
-            PatternCategory.RETURN_PATTERN, "models", "get_user_or_raise", fp_tuple_value,
+            PatternCategory.RETURN_PATTERN,
+            "models",
+            "get_user_or_raise",
+            fp_tuple_value,
         ),
     ]
     findings = PatternFragmentationSignal().analyze(_wrap(patterns), {}, None)

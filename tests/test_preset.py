@@ -84,7 +84,7 @@ class TestProfileRegistry:
     def test_all_profiles_registered(self) -> None:
         from drift.profiles import PROFILES
 
-        expected = {"default", "vibe-coding", "strict", "fastapi", "library", "monorepo"}
+        expected = {"default", "vibe-coding", "strict", "fastapi", "library", "monorepo", "quick"}
         assert expected == set(PROFILES.keys())
 
     def test_fastapi_has_layer_policies(self) -> None:
@@ -107,6 +107,15 @@ class TestProfileRegistry:
         p = get_profile("monorepo")
         assert p.thresholds["max_discovery_files"] == 20000
 
+    def test_quick_disables_expensive_signals(self) -> None:
+        from drift.profiles import get_profile
+
+        p = get_profile("quick")
+        assert p.weights["temporal_volatility"] == 0.0
+        assert p.weights["co_change_coupling"] == 0.0
+        assert p.thresholds["max_discovery_files"] == 2000
+        assert p.auto_calibrate is False
+
     def test_get_profile_unknown_raises(self) -> None:
         from drift.profiles import get_profile
 
@@ -117,6 +126,6 @@ class TestProfileRegistry:
         from drift.profiles import list_profiles
 
         profiles = list_profiles()
-        assert len(profiles) >= 6
+        assert len(profiles) >= 7
         names = [p.name for p in profiles]
         assert "fastapi" in names

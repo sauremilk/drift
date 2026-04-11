@@ -50,9 +50,7 @@ class TestParsePythonFileIOResilience:
     def test_valid_file_still_works(self, tmp_path: Path) -> None:
         """Normal file parsing is unaffected by the error handling."""
         repo_path = tmp_path
-        (tmp_path / "valid.py").write_text(
-            "def hello():\n    pass\n", encoding="utf-8"
-        )
+        (tmp_path / "valid.py").write_text("def hello():\n    pass\n", encoding="utf-8")
         file_path = Path("valid.py")
 
         result = parse_python_file(file_path, repo_path)
@@ -86,9 +84,7 @@ class TestParseTypescriptFileIOResilience:
 
     def test_ts_valid_file_stub(self, tmp_path: Path) -> None:
         """Normal TS file via stub is unaffected by error handling."""
-        (tmp_path / "app.ts").write_text(
-            'import { foo } from "./bar";\n', encoding="utf-8"
-        )
+        (tmp_path / "app.ts").write_text('import { foo } from "./bar";\n', encoding="utf-8")
         result = _parse_typescript_stub(Path("app.ts"), tmp_path)
 
         assert result.file_path == Path("app.ts")

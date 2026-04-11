@@ -420,9 +420,7 @@ class TestSetupCommand:
         from drift.commands.setup import setup
 
         runner = CliRunner()
-        result = runner.invoke(
-            setup, ["--repo", str(tmp_path), "--non-interactive"]
-        )
+        result = runner.invoke(setup, ["--repo", str(tmp_path), "--non-interactive"])
         assert result.exit_code == 0
         config_file = tmp_path / "drift.yaml"
         assert config_file.exists()
@@ -437,9 +435,7 @@ class TestSetupCommand:
         from drift.commands.setup import setup
 
         runner = CliRunner()
-        result = runner.invoke(
-            setup, ["--repo", str(tmp_path), "--non-interactive", "--json"]
-        )
+        result = runner.invoke(setup, ["--repo", str(tmp_path), "--non-interactive", "--json"])
         assert result.exit_code == 0
         payload = json.loads(result.output)
         assert payload["profile"] == "vibe-coding"
@@ -471,3 +467,52 @@ class TestProfileGuidedFields:
 
         prof = get_profile("vibe-coding")
         assert prof.output_language == "de"
+
+
+# ===========================================================================
+# First-run render mode
+# ===========================================================================
+
+
+class TestFirstRunRenderMode:
+    def test_first_run_skips_module_table_and_shows_next_steps(self) -> None:
+        from io import StringIO
+
+        from rich.console import Console
+
+        from drift.models import Severity
+        from drift.output.rich_output import render_full_report
+
+        finding = _FakeFinding(
+            signal_type="pattern_fragmentation",
+            file_path=Path("src/app/service.py"),
+            start_line=10,
+        )
+        analysis = _FakeAnalysis(drift_score=0.4, findings=[finding])
+        # Add minimal attributes expected by render_summary
+        analysis.severity = Severity.MEDIUM  # type: ignore[attr-defined]
+        analysis.grade = ("C", "medium")  # type: ignore[attr-defined]
+        analysis.trend = None  # type: ignore[attr-defined]
+        analysis.total_files = 10  # type: ignore[attr-defined]
+        analysis.total_functions = 50  # type: ignore[attr-defined]
+        analysis.ai_attributed_ratio = 0.0  # type: ignore[attr-defined]
+        analysis.ai_tools_detected = []  # type: ignore[attr-defined]
+        analysis.suppressed_count = 0  # type: ignore[attr-defined]
+        analysis.context_tagged_count = 0  # type: ignore[attr-defined]
+        analysis.analysis_duration_seconds = 1.0  # type: ignore[attr-defined]
+        analysis.is_degraded = False  # type: ignore[attr-defined]
+        analysis.degradation_causes = []  # type: ignore[attr-defined]
+        analysis.degradation_components = []  # type: ignore[attr-defined]
+        analysis.repo_path = Path(".")  # type: ignore[attr-defined]
+        analysis.module_scores = []  # type: ignore[attr-defined]
+
+        buf = StringIO()
+        console = Console(file=buf, force_terminal=True, width=120)
+
+        render_full_report(analysis, console, first_run=True, language="en")
+        output = buf.getvalue()
+
+        # Next-Steps panel must be present
+        assert "Next Steps" in output or "drift setup" in output
+        # Module table must NOT be present
+        assert "Module Drift Ranking" not in output

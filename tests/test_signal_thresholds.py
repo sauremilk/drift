@@ -214,8 +214,7 @@ class TestGCDThresholds:
             "handlers/__init__.py": "",
             # 4 functions with only 1 param + high complexity
             "handlers/single.py": "\n\n".join(
-                _unguarded_func(f"handle_{i}", ["data"], 6)
-                for i in range(4)
+                _unguarded_func(f"handle_{i}", ["data"], 6) for i in range(4)
             ),
         }
         findings = _run_signal(tmp_path, files, SignalType.GUARD_CLAUSE_DEFICIT)
@@ -238,13 +237,10 @@ class TestGCDThresholds:
         # 4 functions: 1 guarded (25% ratio) + 3 unguarded
         files["services/guarded.py"] = _guarded_func("process", ["x", "y"])
         for i in range(3):
-            files[f"services/worker_{i}.py"] = _unguarded_func(
-                f"run_{i}", ["a", "b"], 6
-            )
+            files[f"services/worker_{i}.py"] = _unguarded_func(f"run_{i}", ["a", "b"], 6)
         findings = _run_signal(tmp_path, files, SignalType.GUARD_CLAUSE_DEFICIT)
         module_findings = [
-            f for f in findings
-            if "deficit" in f.title.lower() and "services" in str(f.file_path)
+            f for f in findings if "deficit" in f.title.lower() and "services" in str(f.file_path)
         ]
         # 1/4 guarded = 25% > 15% threshold → module should be SKIPPED
         assert len(module_findings) == 0, (
@@ -273,17 +269,14 @@ class TestGCDThresholds:
             )
         findings = _run_signal(tmp_path, files, SignalType.GUARD_CLAUSE_DEFICIT)
         module_findings = [
-            f for f in findings
-            if "deficit" in f.title.lower() and "api" in str(f.file_path)
+            f for f in findings if "deficit" in f.title.lower() and "api" in str(f.file_path)
         ]
         assert len(module_findings) >= 1, "Unguarded module should produce finding"
         sev = module_findings[0].severity
         score = module_findings[0].score
         assert sev == Severity.MEDIUM, f"Expected MEDIUM, got {sev}"
         # With /20: score = 0.3. With mutation /200: score = 0.03
-        assert score >= 0.1, (
-            f"Score {score} suspiciously low — normalization may be wrong"
-        )
+        assert score >= 0.1, f"Score {score} suspiciously low — normalization may be wrong"
 
     def test_nesting_score_formula(self, tmp_path: Path) -> None:
         """Deep nesting should produce score starting at 0.3.
@@ -371,13 +364,10 @@ class TestMDSThresholds:
         findings = _run_signal(tmp_path, files, SignalType.MUTANT_DUPLICATE)
         # Size ratio is very low → should NOT produce MDS finding between these
         dup_findings = [
-            f for f in findings
-            if "small" in str(f.file_path) or "big" in str(f.file_path)
+            f for f in findings if "small" in str(f.file_path) or "big" in str(f.file_path)
         ]
         # The mutation would allow matching these despite 4x+ size difference
-        assert len(dup_findings) == 0, (
-            "Functions with extreme size difference should not match"
-        )
+        assert len(dup_findings) == 0, "Functions with extreme size difference should not match"
 
     def test_loc_ratio_filter(self, tmp_path: Path) -> None:
         """Functions with >2x LOC difference should NOT match.
@@ -416,9 +406,7 @@ class TestMDSThresholds:
         findings = _run_signal(tmp_path, files, SignalType.MUTANT_DUPLICATE)
         # LOC ratio < 0.5 → should be filtered
         # After mutation (< 0.01) they would pass the filter → sim=1.0 → finding
-        assert len(findings) == 0, (
-            "Functions with >2x LOC difference should be filtered"
-        )
+        assert len(findings) == 0, "Functions with >2x LOC difference should be filtered"
 
     def test_exact_duplicates_produce_findings(self, tmp_path: Path) -> None:
         """Multiple exact duplicate pairs → multiple findings."""
@@ -582,10 +570,7 @@ class TestMDSThresholds:
             "worker_b.py": func_b,
         }
         findings = _run_signal(tmp_path, files, SignalType.MUTANT_DUPLICATE)
-        near_dup = [
-            f for f in findings
-            if f.metadata.get("similarity", 1.0) < 0.9
-        ]
+        near_dup = [f for f in findings if f.metadata.get("similarity", 1.0) < 0.9]
         assert len(near_dup) >= 1, (
             f"Expected near-duplicate finding with sim < 0.9, got {len(near_dup)} "
             f"(all findings: {[(f.metadata.get('similarity'), f.severity) for f in findings]})"
@@ -643,12 +628,12 @@ class TestPFSThresholds:
             """),
         }
         findings = _run_signal(
-            tmp_path, files, SignalType.PATTERN_FRAGMENTATION,
+            tmp_path,
+            files,
+            SignalType.PATTERN_FRAGMENTATION,
         )
         pfs = [f for f in findings if "handlers" in str(f.file_path)]
-        assert len(pfs) >= 1, (
-            "Two different error-handling styles in one module should trigger PFS"
-        )
+        assert len(pfs) >= 1, "Two different error-handling styles in one module should trigger PFS"
 
     def test_severity_levels_match_score(self, tmp_path: Path) -> None:
         """PFS findings should have severity consistent with score thresholds.
@@ -704,7 +689,9 @@ class TestPFSThresholds:
             """),
         }
         findings = _run_signal(
-            tmp_path, files, SignalType.PATTERN_FRAGMENTATION,
+            tmp_path,
+            files,
+            SignalType.PATTERN_FRAGMENTATION,
         )
         for f in findings:
             # Verify severity matches the score thresholds
@@ -750,14 +737,15 @@ class TestPFSThresholds:
             """),
         }
         findings = _run_signal(
-            tmp_path, files, SignalType.PATTERN_FRAGMENTATION,
+            tmp_path,
+            files,
+            SignalType.PATTERN_FRAGMENTATION,
         )
         pfs = [f for f in findings if "services" in str(f.file_path)]
         assert len(pfs) >= 1, "Two variants should produce PFS finding"
         # 2 variants → frag_score = 1 - 1/2 = 0.5 → MEDIUM
         assert pfs[0].severity == Severity.MEDIUM, (
-            f"Expected MEDIUM for 2-variant pattern, got {pfs[0].severity} "
-            f"(score={pfs[0].score})"
+            f"Expected MEDIUM for 2-variant pattern, got {pfs[0].severity} (score={pfs[0].score})"
         )
 
     def test_spread_boost_crosses_high_boundary(self, tmp_path: Path) -> None:
@@ -800,15 +788,16 @@ class TestPFSThresholds:
             "workers/w4.py": c_template.format(name="c2"),
         }
         findings = _run_signal(
-            tmp_path, files, SignalType.PATTERN_FRAGMENTATION,
+            tmp_path,
+            files,
+            SignalType.PATTERN_FRAGMENTATION,
         )
         pfs = [f for f in findings if "workers" in str(f.file_path)]
         assert len(pfs) >= 1, "3-variant module with spread boost should trigger PFS"
         # Normal: 0.667 * 1.08 = 0.72 → HIGH
         # Mutation pfs_005 (> 20): no boost → 0.667 → MEDIUM
         assert pfs[0].severity == Severity.HIGH, (
-            f"Expected HIGH with spread boost, got {pfs[0].severity} "
-            f"(score={pfs[0].score})"
+            f"Expected HIGH with spread boost, got {pfs[0].severity} (score={pfs[0].score})"
         )
 
     def test_spread_multiplier_sensitivity(self, tmp_path: Path) -> None:
@@ -851,15 +840,16 @@ class TestPFSThresholds:
             "svc/s4.py": b_template.format(name="b2") + "\n" + c_template.format(name="c1"),
         }
         findings = _run_signal(
-            tmp_path, files, SignalType.PATTERN_FRAGMENTATION,
+            tmp_path,
+            files,
+            SignalType.PATTERN_FRAGMENTATION,
         )
         pfs = [f for f in findings if "svc" in str(f.file_path)]
         assert len(pfs) >= 1, "3-variant module should trigger PFS"
         # Normal: 0.667 * 1.04 = 0.694 → MEDIUM
         # Mutation pfs_006 (0.4): 0.667 * 1.4 = 0.934 → HIGH
         assert pfs[0].severity == Severity.MEDIUM, (
-            f"Expected MEDIUM with small spread, got {pfs[0].severity} "
-            f"(score={pfs[0].score})"
+            f"Expected MEDIUM with small spread, got {pfs[0].severity} (score={pfs[0].score})"
         )
 
 
@@ -883,17 +873,11 @@ class TestAVSThresholds:
             "__init__.py": "",
             "core/__init__.py": "",
             "utils/__init__.py": "",
-            "core/engine.py": (
-                "from utils.helpers import helper_a\n"
-                "\ndef run():\n    pass\n"
-            ),
+            "core/engine.py": ("from utils.helpers import helper_a\n\ndef run():\n    pass\n"),
             "utils/helpers.py": "def helper_a():\n    pass\n",
             "utils/tools.py": "def tool_b():\n    pass\n",
             # Violation: utils importing from core (upward)
-            "utils/bridge.py": (
-                "from core.engine import run\n"
-                "\ndef bridge():\n    run()\n"
-            ),
+            "utils/bridge.py": ("from core.engine import run\n\ndef bridge():\n    run()\n"),
         }
         cfg = DriftConfig(
             include=["**/*.py"],
@@ -910,12 +894,13 @@ class TestAVSThresholds:
             ),
         )
         findings = _run_signal(
-            tmp_path, files, SignalType.ARCHITECTURE_VIOLATION, config=cfg,
+            tmp_path,
+            files,
+            SignalType.ARCHITECTURE_VIOLATION,
+            config=cfg,
         )
         # The upward import from utils→core should be detected
-        assert len(findings) >= 1, (
-            "Explicit layer boundary violation should trigger AVS"
-        )
+        assert len(findings) >= 1, "Explicit layer boundary violation should trigger AVS"
 
     def test_hub_nodes_strict_percentile(self) -> None:
         """_compute_hub_nodes at 90th percentile identifies only extreme hubs.
@@ -928,21 +913,17 @@ class TestAVSThresholds:
         sources = [f"src_{i}" for i in range(7)]
         for s in sources:
             g.add_edge(s, "hub_A")
-        g.add_edge("mid_B", "hub_A")       # hub_A total: 8 incoming
+        g.add_edge("mid_B", "hub_A")  # hub_A total: 8 incoming
         for s in sources[:4]:
-            g.add_edge(s, "mid_B")          # mid_B total: 4 incoming
+            g.add_edge(s, "mid_B")  # mid_B total: 4 incoming
         for s in sources[:2]:
-            g.add_edge(s, "low_C")          # low_C total: 2 incoming
+            g.add_edge(s, "low_C")  # low_C total: 2 incoming
 
         # With default percentile (0.90), only hub_A should be a hub
         hubs = _compute_hub_nodes(g)
         assert "hub_A" in hubs, "Extreme hub must be detected"
-        assert "mid_B" not in hubs, (
-            "Mid-tier node should NOT be a hub at 90th percentile"
-        )
-        assert "low_C" not in hubs, (
-            "Low-tier node should NOT be a hub at 90th percentile"
-        )
+        assert "mid_B" not in hubs, "Mid-tier node should NOT be a hub at 90th percentile"
+        assert "low_C" not in hubs, "Low-tier node should NOT be a hub at 90th percentile"
 
     def test_embedding_layer_inference_threshold(self) -> None:
         """Embedding similarity at 0.7 must infer a layer (threshold is 0.5).
@@ -971,8 +952,9 @@ class TestAVSThresholds:
         proto = {0: np.array([0.9, 0.1, 0.0])}
 
         layer = _infer_layer_with_embeddings(
-            Path("mypackage/handler.py"), pr, emb, proto,
+            Path("mypackage/handler.py"),
+            pr,
+            emb,
+            proto,
         )
-        assert layer == 0, (
-            "Embedding with sim=0.7 (above 0.5 threshold) should infer layer 0"
-        )
+        assert layer == 0, "Embedding with sim=0.7 (above 0.5 threshold) should infer layer 0"

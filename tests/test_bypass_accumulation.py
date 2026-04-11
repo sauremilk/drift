@@ -12,6 +12,7 @@ from drift.signals.bypass_accumulation import BypassAccumulationSignal
 # Helpers
 # ---------------------------------------------------------------------------
 
+
 def _cfg(**overrides: object) -> DriftConfig:
     thresholds = {}
     for k, v in overrides.items():
@@ -158,7 +159,10 @@ class TestEdgeCases:
         code = "x = 1  # type: ignore\n" * 60
         p = _write_file(tmp_path, "tests/test_module.py", code)
         findings = _run(
-            [_make_pr(p)], repo_path=tmp_path, bat_min_loc=5, bat_density_threshold=0.01,
+            [_make_pr(p)],
+            repo_path=tmp_path,
+            bat_min_loc=5,
+            bat_density_threshold=0.01,
         )
         assert findings == []
 
@@ -191,6 +195,7 @@ class TestEdgeCases:
         )
         assert len(findings) == 1
         from drift.models import Severity
+
         assert findings[0].severity == Severity.HIGH
 
     def test_multiple_files_median_context(self, tmp_path: Path):
@@ -242,7 +247,9 @@ class TestTypeScriptBypass:
         code = _lines(50) + "\nconst x = foo(); // @ts-ignore\n" + _lines(10)
         p = _write_file(tmp_path, "src/module.ts", code)
         findings = _run(
-            [_make_ts_pr(p)], repo_path=tmp_path, bat_density_threshold=0.01,
+            [_make_ts_pr(p)],
+            repo_path=tmp_path,
+            bat_density_threshold=0.01,
         )
         assert len(findings) == 1
         assert findings[0].metadata["markers_by_category"]["type_safety"] >= 1
@@ -251,7 +258,9 @@ class TestTypeScriptBypass:
         code = _lines(50) + "\n// @ts-expect-error deliberate\nconst x = 1;\n" + _lines(10)
         p = _write_file(tmp_path, "src/module.ts", code)
         findings = _run(
-            [_make_ts_pr(p)], repo_path=tmp_path, bat_density_threshold=0.01,
+            [_make_ts_pr(p)],
+            repo_path=tmp_path,
+            bat_density_threshold=0.01,
         )
         assert len(findings) == 1
         assert findings[0].metadata["markers_by_category"]["type_safety"] >= 1
@@ -260,7 +269,9 @@ class TestTypeScriptBypass:
         code = _lines(50) + "\n// eslint-disable-next-line no-any\nconst x = 1;\n" + _lines(10)
         p = _write_file(tmp_path, "src/module.ts", code)
         findings = _run(
-            [_make_ts_pr(p)], repo_path=tmp_path, bat_density_threshold=0.01,
+            [_make_ts_pr(p)],
+            repo_path=tmp_path,
+            bat_density_threshold=0.01,
         )
         assert len(findings) == 1
         assert findings[0].metadata["markers_by_category"]["lint"] >= 1
@@ -269,7 +280,9 @@ class TestTypeScriptBypass:
         code = _lines(50) + "\nconst x = foo() as any;\n" + _lines(10)
         p = _write_file(tmp_path, "src/module.ts", code)
         findings = _run(
-            [_make_ts_pr(p)], repo_path=tmp_path, bat_density_threshold=0.01,
+            [_make_ts_pr(p)],
+            repo_path=tmp_path,
+            bat_density_threshold=0.01,
         )
         assert len(findings) == 1
         assert findings[0].metadata["markers_by_category"]["type_safety"] >= 1
@@ -278,10 +291,17 @@ class TestTypeScriptBypass:
         code = "// @ts-ignore\n" * 60
         p = _write_file(tmp_path, "src/module.spec.ts", code)
         pr = ParseResult(
-            file_path=p, language="typescript", functions=[], classes=[], imports=[],
+            file_path=p,
+            language="typescript",
+            functions=[],
+            classes=[],
+            imports=[],
         )
         findings = _run(
-            [pr], repo_path=tmp_path, bat_min_loc=5, bat_density_threshold=0.01,
+            [pr],
+            repo_path=tmp_path,
+            bat_min_loc=5,
+            bat_density_threshold=0.01,
         )
         assert findings == []
 
@@ -289,7 +309,9 @@ class TestTypeScriptBypass:
         code = "// @ts-nocheck\n" + _lines(59)
         p = _write_file(tmp_path, "src/module.ts", code)
         findings = _run(
-            [_make_ts_pr(p)], repo_path=tmp_path, bat_density_threshold=0.01,
+            [_make_ts_pr(p)],
+            repo_path=tmp_path,
+            bat_density_threshold=0.01,
         )
         assert len(findings) == 1
         assert findings[0].metadata["markers_by_category"]["type_safety"] >= 1

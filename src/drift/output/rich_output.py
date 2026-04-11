@@ -289,6 +289,41 @@ def _render_first_run_panel(
     console.print(Panel(body, title=f"[bold]{title}[/bold]", border_style=_TEAL))
 
 
+def _render_first_run_next_steps(
+    analysis: RepoAnalysis,
+    *,
+    console: Console,
+    language: str | None = None,
+) -> None:
+    """Render a compact next-steps panel for first-run mode."""
+    is_german = (language or "").lower().startswith("de")
+    total = len(analysis.findings)
+
+    if is_german:
+        title = "Naechste Schritte"
+        lines = [
+            f"[bold]{total}[/bold] Befunde erkannt — oben sind die wichtigsten 3.",
+            "",
+            "[bold]1.[/bold] drift setup          — Konfiguration erstellen",
+            "[bold]2.[/bold] drift analyze         — Alle Befunde anzeigen",
+            "[bold]3.[/bold] drift mcp --serve     — KI-Agent-Integration starten",
+            "[bold]4.[/bold] drift check --fail-on high  — Als CI-Gate verwenden",
+        ]
+    else:
+        lines = [
+            f"[bold]{total}[/bold] findings detected — the top 3 are shown above.",
+            "",
+            "[bold]1.[/bold] drift setup          — generate a config file",
+            "[bold]2.[/bold] drift analyze         — see all findings",
+            "[bold]3.[/bold] drift mcp --serve     — start AI agent integration",
+            "[bold]4.[/bold] drift check --fail-on high  — use as CI gate",
+        ]
+        title = "Next Steps"
+
+    body = Text.from_markup("\n".join(lines))
+    console.print(Panel(body, title=f"[bold]{title}[/bold]", border_style=_TEAL))
+
+
 def render_summary(
     analysis: RepoAnalysis,
     console: Console | None = None,
@@ -709,6 +744,30 @@ def _format_module_detail(module: ModuleScore) -> Text:
     return text
 
 
+def _render_guidance_footer(console: Console, *, language: str | None = None) -> None:
+    """Render a subtle 'what's next' footer for unconfigured repos."""
+    is_german = (language or "").lower().startswith("de")
+    if is_german:
+        title = "Naechste Schritte"
+        lines = [
+            "[bold]1.[/bold] drift init              — Konfiguration erstellen",
+            "[bold]2.[/bold] drift init --mcp         — KI-Agent-Integration aktivieren",
+            "[bold]3.[/bold] drift init --ci           — CI-Gate einrichten",
+            "[bold]4.[/bold] drift trend              — Delta ueber Zeit verfolgen",
+        ]
+    else:
+        title = "What's Next"
+        lines = [
+            "[bold]1.[/bold] drift init              — create a drift.yaml config",
+            "[bold]2.[/bold] drift init --mcp         — enable AI agent integration",
+            "[bold]3.[/bold] drift init --ci           — set up CI gate",
+            "[bold]4.[/bold] drift trend              — track changes over time",
+        ]
+    body = Text.from_markup("\n".join(lines))
+    console.print()
+    console.print(Panel(body, title=f"[dim bold]{title}[/dim bold]", border_style="dim"))
+
+
 def render_full_report(
     analysis: RepoAnalysis,
     console: Console | None = None,
@@ -719,6 +778,7 @@ def render_full_report(
     explain: bool = False,
     language: str | None = None,
     group_by: str | None = None,
+    first_run: bool = False,
 ) -> None:
     """Render the complete analysis report."""
     if console is None:
@@ -726,6 +786,11 @@ def render_full_report(
 
     render_summary(analysis, console, language=language)
     console.print()
+
+    if first_run:
+        _render_first_run_next_steps(analysis, console=console, language=language)
+        return
+
     render_module_table(analysis, console)
     console.print()
     render_findings(
@@ -754,6 +819,15 @@ def render_full_report(
             border_style=_TEAL,
         ),
     )
+
+    # Guidance footer for unconfigured repos — show actionable next steps
+    _repo_root = analysis.repo_path
+    if (
+        _repo_root
+        and not (_repo_root / "drift.yaml").exists()
+        and not (_repo_root / ".drift").exists()
+    ):
+        _render_guidance_footer(console, language=language)
 
 
 # ---------------------------------------------------------------------------

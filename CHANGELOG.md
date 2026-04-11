@@ -14,6 +14,9 @@
 - Add PHR to signal abbreviation mapping for drift_nudge/diff resolution.
 - Add `min_confidence` parameter to `generate_guardrails()` for filtering low-confidence negative-context items from agent guidance.
 - Add dedicated PHANTOM_REFERENCE generator in negative context pipeline, replacing generic fallback with signal-specific anti-pattern guidance (confidence ≥ 0.6).
+- Add opt-in PHR runtime attribute validation via `importlib.import_module()` + `hasattr()` — verifies that `from X import Y` targets an existing attribute on installed packages (ADR-041). Enable with `thresholds.phr_runtime_validation: true`.
+- Add 3 new PHR runtime ground-truth fixtures (1 TP missing-attribute, 2 TN for valid-attribute and try/except-guarded imports).
+- Add FMEA, fault tree, STRIDE threat model, and risk register entries for PHR runtime validation (ADR-041).
 
 ### Changed
 

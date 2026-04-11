@@ -54,6 +54,7 @@ COD = SignalType.COHESION_DEFICIT
 
 # --- Task 1: Signal diversity ---
 
+
 class TestDiverseFindings:
     def test_diverse_selects_multiple_signals(self):
         """diverse strategy includes findings from >= 3 signals."""
@@ -68,10 +69,7 @@ class TestDiverseFindings:
         assert len(signal_types) >= 3
 
     def test_diverse_respects_max(self):
-        findings = [
-            _make_finding(PFS, 0.9, 0.9 - i * 0.01)
-            for i in range(20)
-        ]
+        findings = [_make_finding(PFS, 0.9, 0.9 - i * 0.01) for i in range(20)]
         result = _diverse_findings(findings, 5)
         assert len(result) <= 5
 
@@ -104,13 +102,9 @@ class TestDiverseFindings:
     def test_top_severity_preserves_old_behavior(self, monkeypatch):
         """top-severity returns pure score-sorted findings."""
 
-        findings = (
-            [
-                _make_finding(PFS, 0.9, 0.95 - i * 0.01)
-                for i in range(10)
-            ]
-            + [_make_finding(AVS, 0.8, 0.5)]
-        )
+        findings = [_make_finding(PFS, 0.9, 0.95 - i * 0.01) for i in range(10)] + [
+            _make_finding(AVS, 0.8, 0.5)
+        ]
         analysis = SimpleNamespace(
             findings=findings,
             drift_score=0.5,
@@ -120,14 +114,21 @@ class TestDiverseFindings:
             ai_attributed_ratio=0.1,
             trend=None,
         )
-        monkeypatch.setattr(_scan_mod, "_finding_concise",
+        monkeypatch.setattr(
+            _scan_mod,
+            "_finding_concise",
             lambda f: {"title": f.title},
         )
-        monkeypatch.setattr(_scan_mod, "_fix_first_concise",
+        monkeypatch.setattr(
+            _scan_mod,
+            "_fix_first_concise",
             lambda analysis, max_items=5: [],
         )
         result = _format_scan_response(
-            analysis, config=DriftConfig(), max_findings=5, strategy="top-severity",
+            analysis,
+            config=DriftConfig(),
+            max_findings=5,
+            strategy="top-severity",
         )
         assert result["findings_returned"] == 5
 
@@ -138,10 +139,7 @@ class TestDiverseFindings:
         from drift.config import DriftConfig
 
         findings = (
-            [
-                _make_finding(PFS, 0.9, 0.9 - i * 0.01)
-                for i in range(10)
-            ]
+            [_make_finding(PFS, 0.9, 0.9 - i * 0.01) for i in range(10)]
             + [_make_finding(AVS, 0.85, 0.85)]
             + [_make_finding(MDS, 0.75, 0.75)]
             + [_make_finding(COD, 0.65, 0.65)]
@@ -156,23 +154,31 @@ class TestDiverseFindings:
             trend=None,
         )
         monkeypatch.setattr(
-            DriftConfig, "load",
+            DriftConfig,
+            "load",
             staticmethod(lambda *a, **kw: object()),
         )
         monkeypatch.setattr(
-            analyzer_module, "analyze_repo",
+            analyzer_module,
+            "analyze_repo",
             lambda *a, **kw: analysis,
         )
-        monkeypatch.setattr(_scan_mod, "_emit_api_telemetry",
+        monkeypatch.setattr(
+            _scan_mod,
+            "_emit_api_telemetry",
             lambda **kw: None,
         )
-        monkeypatch.setattr(_scan_mod, "_finding_concise",
+        monkeypatch.setattr(
+            _scan_mod,
+            "_finding_concise",
             lambda f: {
                 "signal": api_module.signal_abbrev(f.signal_type),
                 "title": f.title,
             },
         )
-        monkeypatch.setattr(_scan_mod, "_fix_first_concise",
+        monkeypatch.setattr(
+            _scan_mod,
+            "_fix_first_concise",
             lambda analysis, max_items=5: [],
         )
 
@@ -207,15 +213,10 @@ class TestDiverseFindings:
         import drift.api as api_module
 
         dia_findings = [
-            _make_finding(SignalType.DOC_IMPL_DRIFT, 0.45, 0.45 - i * 0.01)
-            for i in range(3)
+            _make_finding(SignalType.DOC_IMPL_DRIFT, 0.45, 0.45 - i * 0.01) for i in range(3)
         ]
-        high_findings = [
-            _make_finding(PFS, 0.95, 0.95 - i * 0.01)
-            for i in range(4)
-        ] + [
-            _make_finding(AVS, 0.9, 0.9 - i * 0.01)
-            for i in range(3)
+        high_findings = [_make_finding(PFS, 0.95, 0.95 - i * 0.01) for i in range(4)] + [
+            _make_finding(AVS, 0.9, 0.9 - i * 0.01) for i in range(3)
         ]
         analysis = SimpleNamespace(
             findings=high_findings + dia_findings,
@@ -226,10 +227,14 @@ class TestDiverseFindings:
             ai_attributed_ratio=0.1,
             trend=None,
         )
-        monkeypatch.setattr(_scan_mod, "_finding_concise",
+        monkeypatch.setattr(
+            _scan_mod,
+            "_finding_concise",
             lambda f: {"signal": api_module.signal_abbrev(f.signal_type), "title": f.title},
         )
-        monkeypatch.setattr(_scan_mod, "_fix_first_concise",
+        monkeypatch.setattr(
+            _scan_mod,
+            "_fix_first_concise",
             lambda analysis, max_items=5: [],
         )
 
@@ -267,10 +272,14 @@ class TestDiverseFindings:
             ai_attributed_ratio=0.0,
             trend=None,
         )
-        monkeypatch.setattr(_scan_mod, "_finding_concise",
+        monkeypatch.setattr(
+            _scan_mod,
+            "_finding_concise",
             lambda f: {"signal": api_module.signal_abbrev(f.signal_type), "title": f.title},
         )
-        monkeypatch.setattr(_scan_mod, "_fix_first_concise",
+        monkeypatch.setattr(
+            _scan_mod,
+            "_fix_first_concise",
             lambda analysis, max_items=5: [],
         )
 
@@ -303,10 +312,14 @@ class TestDiverseFindings:
             ai_attributed_ratio=0.0,
             trend=None,
         )
-        monkeypatch.setattr(_scan_mod, "_finding_concise",
+        monkeypatch.setattr(
+            _scan_mod,
+            "_finding_concise",
             lambda f: {"signal": api_module.signal_abbrev(f.signal_type), "title": f.title},
         )
-        monkeypatch.setattr(_scan_mod, "_fix_first_concise",
+        monkeypatch.setattr(
+            _scan_mod,
+            "_fix_first_concise",
             lambda analysis, max_items=5: [],
         )
 
@@ -323,9 +336,11 @@ class TestDiverseFindings:
 
 # --- Task 2: fix_first dedup by (file, signal) ---
 
+
 class TestFixFirstDedup:
     def test_fix_first_deduplicates_file_signal_pairs(
-        self, monkeypatch,
+        self,
+        monkeypatch,
     ):
         """fix_first contains each (file, signal) at most once."""
         import drift.api as api_module
@@ -343,10 +358,7 @@ class TestFixFirstDedup:
         pairs = [(item["file"], item["signal"]) for item in result]
         assert len(pairs) == len(set(pairs))
         # The 3 PFS findings for same file should collapse to 1
-        pfs_same = [
-            it for it in result
-            if it["file"] == same_file and it["signal"] == "PFS"
-        ]
+        pfs_same = [it for it in result if it["file"] == same_file and it["signal"] == "PFS"]
         assert len(pfs_same) == 1
 
 
@@ -417,12 +429,15 @@ class TestNonOperationalContextFiltering:
         )
 
         monkeypatch.setattr(
-            DriftConfig, "load",
+            DriftConfig,
+            "load",
             staticmethod(lambda *a, **kw: DriftConfig()),
         )
         monkeypatch.setattr(analyzer_module, "analyze_repo", lambda *a, **kw: analysis)
         monkeypatch.setattr(_scan_mod, "_emit_api_telemetry", lambda **kw: None)
-        monkeypatch.setattr(_scan_mod, "_finding_concise",
+        monkeypatch.setattr(
+            _scan_mod,
+            "_finding_concise",
             lambda f: {"file": f.file_path.as_posix() if f.file_path else None},
         )
 
@@ -456,12 +471,15 @@ class TestNonOperationalContextFiltering:
         )
 
         monkeypatch.setattr(
-            DriftConfig, "load",
+            DriftConfig,
+            "load",
             staticmethod(lambda *a, **kw: DriftConfig()),
         )
         monkeypatch.setattr(analyzer_module, "analyze_repo", lambda *a, **kw: analysis)
         monkeypatch.setattr(_scan_mod, "_emit_api_telemetry", lambda **kw: None)
-        monkeypatch.setattr(_scan_mod, "_finding_concise",
+        monkeypatch.setattr(
+            _scan_mod,
+            "_finding_concise",
             lambda f: {"file": f.file_path.as_posix() if f.file_path else None},
         )
 
@@ -496,7 +514,8 @@ class TestNonOperationalContextFiltering:
         )
 
         monkeypatch.setattr(
-            DriftConfig, "load",
+            DriftConfig,
+            "load",
             staticmethod(lambda *a, **kw: DriftConfig()),
         )
         monkeypatch.setattr(analyzer_module, "analyze_repo", lambda *a, **kw: analysis)
@@ -527,7 +546,8 @@ class TestNonOperationalContextFiltering:
         )
 
         monkeypatch.setattr(
-            DriftConfig, "load",
+            DriftConfig,
+            "load",
             staticmethod(lambda *a, **kw: DriftConfig()),
         )
         monkeypatch.setattr(analyzer_module, "analyze_repo", lambda *a, **kw: analysis)
@@ -786,6 +806,7 @@ class TestNonOperationalContextFiltering:
 
 # --- Task 3: diff --uncommitted scope ---
 
+
 class TestDiffUncommittedScope:
     def test_uncommitted_overrides_diff_ref_to_head(self, monkeypatch):
         """uncommitted=True must set diff_ref='HEAD', not 'HEAD~1'."""
@@ -809,14 +830,18 @@ class TestDiffUncommittedScope:
             return analysis
 
         monkeypatch.setattr(
-            DriftConfig, "load",
+            DriftConfig,
+            "load",
             staticmethod(lambda *a, **kw: object()),
         )
         monkeypatch.setattr(
-            analyzer_module, "analyze_diff", _fake_analyze_diff,
+            analyzer_module,
+            "analyze_diff",
+            _fake_analyze_diff,
         )
         monkeypatch.setattr(
-            api_module, "_emit_api_telemetry",
+            api_module,
+            "_emit_api_telemetry",
             lambda **kw: None,
         )
 
@@ -826,7 +851,9 @@ class TestDiffUncommittedScope:
         assert result["diff_ref"] == "HEAD"
 
     def test_uncommitted_only_analyzes_wt_changes(
-        self, monkeypatch, tmp_path,
+        self,
+        monkeypatch,
+        tmp_path,
     ):
         """uncommitted mode should scope to working-tree changes only."""
         import drift.analyzer as analyzer_module
@@ -835,7 +862,11 @@ class TestDiffUncommittedScope:
         from drift.config import DriftConfig
 
         wt_finding = _make_finding(
-            PFS, 0.8, 0.8, file="src/changed.py", line=10,
+            PFS,
+            0.8,
+            0.8,
+            file="src/changed.py",
+            line=10,
         )
         analysis = SimpleNamespace(
             findings=[wt_finding],
@@ -852,17 +883,23 @@ class TestDiffUncommittedScope:
             return analysis
 
         monkeypatch.setattr(
-            DriftConfig, "load",
+            DriftConfig,
+            "load",
             staticmethod(lambda *a, **kw: object()),
         )
         monkeypatch.setattr(
-            analyzer_module, "analyze_diff", _fake_analyze_diff,
+            analyzer_module,
+            "analyze_diff",
+            _fake_analyze_diff,
         )
         monkeypatch.setattr(
-            api_module, "_emit_api_telemetry",
+            api_module,
+            "_emit_api_telemetry",
             lambda **kw: None,
         )
-        monkeypatch.setattr(_scan_mod, "_finding_concise",
+        monkeypatch.setattr(
+            _scan_mod,
+            "_finding_concise",
             lambda f: {
                 "title": f.title,
                 "file": f.file_path.as_posix(),
@@ -875,6 +912,7 @@ class TestDiffUncommittedScope:
 
 
 # --- Task 4: Warning for invalid target_path ---
+
 
 class TestTargetPathWarning:
     def test_scan_warns_on_nonexistent_target_path(self, monkeypatch):
@@ -893,18 +931,23 @@ class TestTargetPathWarning:
             trend=None,
         )
         monkeypatch.setattr(
-            DriftConfig, "load",
+            DriftConfig,
+            "load",
             staticmethod(lambda *a, **kw: object()),
         )
         monkeypatch.setattr(
-            analyzer_module, "analyze_repo",
+            analyzer_module,
+            "analyze_repo",
             lambda *a, **kw: analysis,
         )
         monkeypatch.setattr(
-            api_module, "_emit_api_telemetry",
+            api_module,
+            "_emit_api_telemetry",
             lambda **kw: None,
         )
-        monkeypatch.setattr(_scan_mod, "_fix_first_concise",
+        monkeypatch.setattr(
+            _scan_mod,
+            "_fix_first_concise",
             lambda analysis, max_items=5: [],
         )
 
@@ -914,6 +957,7 @@ class TestTargetPathWarning:
 
 
 # --- Task 5: top_signals respects --select filter ---
+
 
 class TestTopSignalsFilter:
     def test_top_signals_filtered_by_select(self, monkeypatch):
@@ -937,24 +981,31 @@ class TestTopSignalsFilter:
             trend=None,
         )
         monkeypatch.setattr(
-            DriftConfig, "load",
+            DriftConfig,
+            "load",
             staticmethod(lambda *a, **kw: object()),
         )
         monkeypatch.setattr(
-            analyzer_module, "analyze_repo",
+            analyzer_module,
+            "analyze_repo",
             lambda *a, **kw: analysis,
         )
         monkeypatch.setattr(
-            api_module, "_emit_api_telemetry",
+            api_module,
+            "_emit_api_telemetry",
             lambda **kw: None,
         )
-        monkeypatch.setattr(_scan_mod, "_finding_concise",
+        monkeypatch.setattr(
+            _scan_mod,
+            "_finding_concise",
             lambda f: {
                 "signal": api_module.signal_abbrev(f.signal_type),
                 "title": f.title,
             },
         )
-        monkeypatch.setattr(_scan_mod, "_fix_first_concise",
+        monkeypatch.setattr(
+            _scan_mod,
+            "_fix_first_concise",
             lambda analysis, max_items=5: [],
         )
         monkeypatch.setattr(
@@ -988,10 +1039,14 @@ class TestScanSignalFiltering:
             ai_attributed_ratio=0.1,
             trend=None,
         )
-        monkeypatch.setattr(_scan_mod, "_finding_concise",
+        monkeypatch.setattr(
+            _scan_mod,
+            "_finding_concise",
             lambda f: {"signal": api_module.signal_abbrev(f.signal_type), "title": f.title},
         )
-        monkeypatch.setattr(_scan_mod, "_fix_first_concise",
+        monkeypatch.setattr(
+            _scan_mod,
+            "_fix_first_concise",
             lambda analysis, max_items=5: [],
         )
 
@@ -1024,10 +1079,14 @@ class TestScanSignalFiltering:
             ai_attributed_ratio=0.0,
             trend=None,
         )
-        monkeypatch.setattr(_scan_mod, "_finding_concise",
+        monkeypatch.setattr(
+            _scan_mod,
+            "_finding_concise",
             lambda f: {"signal": api_module.signal_abbrev(f.signal_type), "title": f.title},
         )
-        monkeypatch.setattr(_scan_mod, "_fix_first_concise",
+        monkeypatch.setattr(
+            _scan_mod,
+            "_fix_first_concise",
             lambda analysis, max_items=5: [],
         )
 
@@ -1065,21 +1124,28 @@ class TestScanSignalFiltering:
             captured["ignore"] = ignore
 
         monkeypatch.setattr(
-            DriftConfig, "load",
+            DriftConfig,
+            "load",
             staticmethod(lambda *a, **kw: object()),
         )
         monkeypatch.setattr(
-            analyzer_module, "analyze_repo",
+            analyzer_module,
+            "analyze_repo",
             lambda *a, **kw: analysis,
         )
         monkeypatch.setattr(
-            api_module, "_emit_api_telemetry",
+            api_module,
+            "_emit_api_telemetry",
             lambda **kw: None,
         )
-        monkeypatch.setattr(_scan_mod, "_finding_concise",
+        monkeypatch.setattr(
+            _scan_mod,
+            "_finding_concise",
             lambda f: {"signal": api_module.signal_abbrev(f.signal_type), "title": f.title},
         )
-        monkeypatch.setattr(_scan_mod, "_fix_first_concise",
+        monkeypatch.setattr(
+            _scan_mod,
+            "_fix_first_concise",
             lambda analysis, max_items=5: [],
         )
         monkeypatch.setattr("drift.config.apply_signal_filter", _fake_apply_signal_filter)
@@ -1111,18 +1177,23 @@ class TestAgentInstruction:
             trend=None,
         )
         monkeypatch.setattr(
-            DriftConfig, "load",
+            DriftConfig,
+            "load",
             staticmethod(lambda *a, **kw: object()),
         )
         monkeypatch.setattr(
-            analyzer_module, "analyze_repo",
+            analyzer_module,
+            "analyze_repo",
             lambda *a, **kw: analysis,
         )
         monkeypatch.setattr(
-            api_module, "_emit_api_telemetry",
+            api_module,
+            "_emit_api_telemetry",
             lambda **kw: None,
         )
-        monkeypatch.setattr(_scan_mod, "_fix_first_concise",
+        monkeypatch.setattr(
+            _scan_mod,
+            "_fix_first_concise",
             lambda analysis, max_items=5: [],
         )
 
@@ -1146,15 +1217,18 @@ class TestAgentInstruction:
             trend=None,
         )
         monkeypatch.setattr(
-            DriftConfig, "load",
+            DriftConfig,
+            "load",
             staticmethod(lambda *a, **kw: object()),
         )
         monkeypatch.setattr(
-            analyzer_module, "analyze_repo",
+            analyzer_module,
+            "analyze_repo",
             lambda *a, **kw: analysis,
         )
         monkeypatch.setattr(
-            api_module, "_emit_api_telemetry",
+            api_module,
+            "_emit_api_telemetry",
             lambda **kw: None,
         )
         monkeypatch.setattr(
@@ -1189,15 +1263,18 @@ class TestAgentInstruction:
             is_degraded=False,
         )
         monkeypatch.setattr(
-            DriftConfig, "load",
+            DriftConfig,
+            "load",
             staticmethod(lambda *a, **kw: object()),
         )
         monkeypatch.setattr(
-            analyzer_module, "analyze_diff",
+            analyzer_module,
+            "analyze_diff",
             lambda *a, **kw: analysis,
         )
         monkeypatch.setattr(
-            api_module, "_emit_api_telemetry",
+            api_module,
+            "_emit_api_telemetry",
             lambda **kw: None,
         )
 
@@ -1247,15 +1324,18 @@ class TestAgentInstruction:
             is_degraded=False,
         )
         monkeypatch.setattr(
-            DriftConfig, "load",
+            DriftConfig,
+            "load",
             staticmethod(lambda *a, **kw: object()),
         )
         monkeypatch.setattr(
-            analyzer_module, "analyze_diff",
+            analyzer_module,
+            "analyze_diff",
             lambda *a, **kw: analysis,
         )
         monkeypatch.setattr(
-            api_module, "_emit_api_telemetry",
+            api_module,
+            "_emit_api_telemetry",
             lambda **kw: None,
         )
 
@@ -1287,15 +1367,18 @@ class TestAgentInstruction:
             is_degraded=False,
         )
         monkeypatch.setattr(
-            DriftConfig, "load",
+            DriftConfig,
+            "load",
             staticmethod(lambda *a, **kw: object()),
         )
         monkeypatch.setattr(
-            analyzer_module, "analyze_diff",
+            analyzer_module,
+            "analyze_diff",
             lambda *a, **kw: analysis,
         )
         monkeypatch.setattr(
-            api_module, "_emit_api_telemetry",
+            api_module,
+            "_emit_api_telemetry",
             lambda **kw: None,
         )
 

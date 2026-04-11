@@ -153,7 +153,9 @@ class TestDetectAIAttributionWithBoost:
     # Co-author signal: boost has NO effect (co-author is always 0.95)
     def test_coauthor_unaffected_by_boost(self) -> None:
         is_ai, conf = _detect_ai_attribution(
-            "Add feature", ["GitHub Copilot"], indicator_boost=0.20,
+            "Add feature",
+            ["GitHub Copilot"],
+            indicator_boost=0.20,
         )
         assert is_ai is True
         assert conf == pytest.approx(0.95)
@@ -161,7 +163,9 @@ class TestDetectAIAttributionWithBoost:
     # Tier 1 without boost: unchanged behavior (0.40)
     def test_tier1_no_boost(self) -> None:
         is_ai, conf = _detect_ai_attribution(
-            "Implement user auth handler", [], indicator_boost=0.0,
+            "Implement user auth handler",
+            [],
+            indicator_boost=0.0,
         )
         assert is_ai is True
         assert conf == pytest.approx(0.40)
@@ -169,7 +173,9 @@ class TestDetectAIAttributionWithBoost:
     # Tier 1 with boost: 0.40 + 0.20 = 0.60
     def test_tier1_with_boost(self) -> None:
         is_ai, conf = _detect_ai_attribution(
-            "Implement user auth handler", [], indicator_boost=0.20,
+            "Implement user auth handler",
+            [],
+            indicator_boost=0.20,
         )
         assert is_ai is True
         assert conf == pytest.approx(0.60)
@@ -177,7 +183,9 @@ class TestDetectAIAttributionWithBoost:
     # Tier 1 with boost: 0.40 + 0.10 = 0.50
     def test_tier1_with_single_tool_boost(self) -> None:
         is_ai, conf = _detect_ai_attribution(
-            "Implement user auth handler", [], indicator_boost=0.10,
+            "Implement user auth handler",
+            [],
+            indicator_boost=0.10,
         )
         assert is_ai is True
         assert conf == pytest.approx(0.50)
@@ -185,7 +193,9 @@ class TestDetectAIAttributionWithBoost:
     # Conventional commit without boost: no effect (skipped entirely)
     def test_conventional_commit_no_boost(self) -> None:
         is_ai, conf = _detect_ai_attribution(
-            "feat(ui): add dark mode toggle", [], indicator_boost=0.0,
+            "feat(ui): add dark mode toggle",
+            [],
+            indicator_boost=0.0,
         )
         assert is_ai is False
         assert conf == 0.0
@@ -193,7 +203,9 @@ class TestDetectAIAttributionWithBoost:
     # Conventional commit with 1 tool boost: 0.40 + 0.10 = 0.50
     def test_conventional_commit_one_tool(self) -> None:
         is_ai, conf = _detect_ai_attribution(
-            "feat(ui): add dark mode toggle", [], indicator_boost=0.10,
+            "feat(ui): add dark mode toggle",
+            [],
+            indicator_boost=0.10,
         )
         assert is_ai is True
         assert conf == pytest.approx(0.50)
@@ -201,7 +213,9 @@ class TestDetectAIAttributionWithBoost:
     # Conventional commit with 3+ tools boost: 0.40 + 0.20 = 0.60
     def test_conventional_commit_three_tools(self) -> None:
         is_ai, conf = _detect_ai_attribution(
-            "feat(ui): add dark mode toggle", [], indicator_boost=0.20,
+            "feat(ui): add dark mode toggle",
+            [],
+            indicator_boost=0.20,
         )
         assert is_ai is True
         assert conf == pytest.approx(0.60)
@@ -209,7 +223,9 @@ class TestDetectAIAttributionWithBoost:
     # Conventional fix: pattern
     def test_conventional_fix(self) -> None:
         is_ai, conf = _detect_ai_attribution(
-            "fix(backend): resolve null pointer", [], indicator_boost=0.15,
+            "fix(backend): resolve null pointer",
+            [],
+            indicator_boost=0.15,
         )
         assert is_ai is True
         assert conf == pytest.approx(0.55)
@@ -217,7 +233,9 @@ class TestDetectAIAttributionWithBoost:
     # Conventional refactor:
     def test_conventional_refactor(self) -> None:
         is_ai, conf = _detect_ai_attribution(
-            "refactor: extract validation logic", [], indicator_boost=0.20,
+            "refactor: extract validation logic",
+            [],
+            indicator_boost=0.20,
         )
         assert is_ai is True
         assert conf == pytest.approx(0.60)
@@ -232,7 +250,9 @@ class TestDetectAIAttributionWithBoost:
     # Tier 2 with boost: 0.15 + 0.20 = 0.35
     def test_tier2_with_boost(self) -> None:
         is_ai, conf = _detect_ai_attribution(
-            "Add user tests", [], indicator_boost=0.20,
+            "Add user tests",
+            [],
+            indicator_boost=0.20,
         )
         # Tier 2 never sets is_ai=True (always False from base logic)
         assert is_ai is False
@@ -241,7 +261,9 @@ class TestDetectAIAttributionWithBoost:
     # Tier 2 without boost: unchanged (0.15)
     def test_tier2_no_boost(self) -> None:
         is_ai, conf = _detect_ai_attribution(
-            "Add user tests", [], indicator_boost=0.0,
+            "Add user tests",
+            [],
+            indicator_boost=0.0,
         )
         assert is_ai is False
         assert conf == pytest.approx(0.15)
@@ -250,7 +272,9 @@ class TestDetectAIAttributionWithBoost:
     def test_boost_cap_at_095(self) -> None:
         # Tier 1 (0.40) + extreme boost (0.80) → capped at 0.95
         _is_ai, conf = _detect_ai_attribution(
-            "Implement user auth handler", [], indicator_boost=0.80,
+            "Implement user auth handler",
+            [],
+            indicator_boost=0.80,
         )
         assert conf == pytest.approx(0.95)
         assert conf <= 0.95
@@ -258,7 +282,9 @@ class TestDetectAIAttributionWithBoost:
     # No pattern + boost: still 0.0 (bare messages don't get boosted)
     def test_no_pattern_no_signal(self) -> None:
         is_ai, conf = _detect_ai_attribution(
-            "did some stuff", [], indicator_boost=0.20,
+            "did some stuff",
+            [],
+            indicator_boost=0.20,
         )
         assert is_ai is False
         assert conf == 0.0
@@ -266,7 +292,9 @@ class TestDetectAIAttributionWithBoost:
     # WIP message: no match
     def test_wip_message_no_match(self) -> None:
         is_ai, conf = _detect_ai_attribution(
-            "wip: auto-save 2026-02-27 00:01", [], indicator_boost=0.20,
+            "wip: auto-save 2026-02-27 00:01",
+            [],
+            indicator_boost=0.20,
         )
         assert is_ai is False
         assert conf == 0.0
@@ -292,6 +320,7 @@ class TestManualRatioConfig:
         import yaml
 
         from drift.config import DriftConfig
+
         raw = yaml.safe_load("""
 policies:
   ai_attribution:
@@ -345,9 +374,11 @@ class TestResultAssemblyManualRatio:
             SignalOutput,
         )
 
-        config = DriftConfig.model_validate({
-            "policies": {"ai_attribution": {"manual_ratio": 0.95}},
-        })
+        config = DriftConfig.model_validate(
+            {
+                "policies": {"ai_attribution": {"manual_ratio": 0.95}},
+            }
+        )
 
         # Create minimal artifacts with 0 ai commits
         parsed = ParsedInputs(
@@ -399,16 +430,24 @@ class TestResultAssemblyManualRatio:
         config = DriftConfig()
 
         commit_ai = CommitInfo(
-            hash="abc123", author="dev", email="dev@test.com",
+            hash="abc123",
+            author="dev",
+            email="dev@test.com",
             timestamp=datetime.datetime.now(tz=datetime.UTC),
-            message="feat: add feature", files_changed=["f.py"],
-            is_ai_attributed=True, ai_confidence=0.60,
+            message="feat: add feature",
+            files_changed=["f.py"],
+            is_ai_attributed=True,
+            ai_confidence=0.60,
         )
         commit_human = CommitInfo(
-            hash="def456", author="dev", email="dev@test.com",
+            hash="def456",
+            author="dev",
+            email="dev@test.com",
             timestamp=datetime.datetime.now(tz=datetime.UTC),
-            message="update readme", files_changed=["README.md"],
-            is_ai_attributed=False, ai_confidence=0.0,
+            message="update readme",
+            files_changed=["README.md"],
+            is_ai_attributed=False,
+            ai_confidence=0.0,
         )
 
         parsed = ParsedInputs(
@@ -418,8 +457,11 @@ class TestResultAssemblyManualRatio:
             ai_tools_detected=["copilot"],
         )
         scored = ScoredFindings(
-            findings=[], repo_score=0.0, module_scores=[],
-            suppressed_count=0, context_tagged_count=0,
+            findings=[],
+            repo_score=0.0,
+            module_scores=[],
+            suppressed_count=0,
+            context_tagged_count=0,
         )
         artifacts = PipelineArtifacts(
             parsed=parsed,
@@ -430,8 +472,11 @@ class TestResultAssemblyManualRatio:
 
         assembly = ResultAssemblyPhase()
         result = assembly.run(
-            Path("/tmp/test"), [], artifacts,
-            started_at=time.monotonic(), config=config,
+            Path("/tmp/test"),
+            [],
+            artifacts,
+            started_at=time.monotonic(),
+            config=config,
         )
 
         # 1 of 2 commits is AI → 0.5

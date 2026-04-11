@@ -152,8 +152,7 @@ def test_vendored_directory_is_classified_as_library(tmp_path: Path) -> None:
     vendored = tmp_path / "third_party" / "helpers.py"
     vendored.parent.mkdir(parents=True, exist_ok=True)
     vendored.write_text(
-        "def helper() -> int:\n"
-        "    return 1\n",
+        "def helper() -> int:\n    return 1\n",
         encoding="utf-8",
     )
 

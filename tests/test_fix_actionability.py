@@ -64,10 +64,12 @@ SPECIFICITY_PATTERNS = [
     re.compile(r"\d+"),  # Contains a number (line, count, complexity)
     re.compile(r"\b[A-Za-z_]\w*\.(py|ts|js|yaml|yml|json|md|toml|cfg)\b"),  # File reference
     re.compile(r"\b[a-z_]\w*\("),  # Function/method reference like func(
-    re.compile(r"\b(Complexity|Commits?|Authors?|Autoren|Pattern|Docstring|Tests?|"
-               r"Return-Type|Import|Dependency|Abhängigkeit|Service\s+Layer|"
-               r"Service-Schicht|Interface)\b",
-               re.UNICODE),  # Technical terms
+    re.compile(
+        r"\b(Complexity|Commits?|Authors?|Autoren|Pattern|Docstring|Tests?|"
+        r"Return-Type|Import|Dependency|Abhängigkeit|Service\s+Layer|"
+        r"Service-Schicht|Interface)\b",
+        re.UNICODE,
+    ),  # Technical terms
     re.compile(r"[A-Z][a-z]+[A-Z]"),  # CamelCase identifier
     re.compile(r"\b\d+×\b"),  # "3×" pattern count
 ]
@@ -149,7 +151,8 @@ def deterministic_fixture_findings(tmp_path_factory: pytest.TempPathFactory) -> 
     (svc / "__init__.py").write_text("")
 
     # Pattern fragmentation: two different error handling styles
-    (svc / "handler_a.py").write_text(textwrap.dedent("""\
+    (svc / "handler_a.py").write_text(
+        textwrap.dedent("""\
         def process_order(order_id: str) -> dict:
             try:
                 result = lookup(order_id)
@@ -162,8 +165,10 @@ def deterministic_fixture_findings(tmp_path_factory: pytest.TempPathFactory) -> 
 
         def lookup(oid: str) -> dict:
             return {"id": oid}
-    """))
-    (svc / "handler_b.py").write_text(textwrap.dedent("""\
+    """)
+    )
+    (svc / "handler_b.py").write_text(
+        textwrap.dedent("""\
         def process_refund(refund_id):
             try:
                 result = find_refund(refund_id)
@@ -174,10 +179,12 @@ def deterministic_fixture_findings(tmp_path_factory: pytest.TempPathFactory) -> 
 
         def find_refund(rid):
             return {"id": rid}
-    """))
+    """)
+    )
 
     # Explainability deficit: complex function without docs
-    (svc / "complex_logic.py").write_text(textwrap.dedent("""\
+    (svc / "complex_logic.py").write_text(
+        textwrap.dedent("""\
         def calculate_risk_score(transactions, user_profile, market_data,
                                  seasonal_factors=None, override_rules=None):
             score = 0.0
@@ -202,7 +209,8 @@ def deterministic_fixture_findings(tmp_path_factory: pytest.TempPathFactory) -> 
                         elif rule.get("type") == "floor":
                             score = max(score, rule["value"])
             return min(max(score, 0.0), 1.0)
-    """))
+    """)
+    )
 
     # Parse and run signals
     config = DriftConfig(
@@ -264,7 +272,8 @@ class TestFixTextPresence:
     ) -> None:
         """All MEDIUM+ findings from deterministic fixtures must have fix text."""
         medium_plus = [
-            f for f in deterministic_fixture_findings
+            f
+            for f in deterministic_fixture_findings
             if f.severity in (Severity.CRITICAL, Severity.HIGH, Severity.MEDIUM)
         ]
         # Deterministic fixture: no findings means a regression in signal setup.
@@ -317,9 +326,7 @@ class TestFixTextActionability:
         )
 
     @pytest.mark.slow
-    def test_self_analysis_actionability_rate(
-        self, self_analysis_findings: list[Finding]
-    ) -> None:
+    def test_self_analysis_actionability_rate(self, self_analysis_findings: list[Finding]) -> None:
         """Optional self-analysis health-check: >=90% of fix texts should be actionable.
 
         Baseline (2026-03): 76%. Achieved (2026-03): 100%.
@@ -336,9 +343,7 @@ class TestFixTextActionability:
             f"Actionability rate {rate:.0%} < 90% ({actionable_count}/{len(with_fix)})"
         )
 
-    def test_no_fix_is_purely_vague(
-        self, deterministic_fixture_findings: list[Finding]
-    ) -> None:
+    def test_no_fix_is_purely_vague(self, deterministic_fixture_findings: list[Finding]) -> None:
         """No fix text should consist entirely of vague advice."""
         vague_fixes = []
         for f in deterministic_fixture_findings:
@@ -348,18 +353,15 @@ class TestFixTextActionability:
             if sentences and all(VAGUE_ONLY.match(s) for s in sentences):
                 vague_fixes.append(f"  [{f.signal_type}] Fix: {f.fix}")
 
-        assert not vague_fixes, (
-            f"{len(vague_fixes)} fix text(s) are purely vague:\n"
-            + "\n".join(vague_fixes[:5])
+        assert not vague_fixes, f"{len(vague_fixes)} fix text(s) are purely vague:\n" + "\n".join(
+            vague_fixes[:5]
         )
 
 
 class TestFixTextSpecificity:
     """Fix texts must contain concrete references, not just templates."""
 
-    def test_fixes_contain_identifiers(
-        self, deterministic_fixture_findings: list[Finding]
-    ) -> None:
+    def test_fixes_contain_identifiers(self, deterministic_fixture_findings: list[Finding]) -> None:
         """Fix texts should reference specific files, functions, or counts."""
         with_fix = [f for f in deterministic_fixture_findings if f.fix]
         # Deterministic fixture: no findings with fix text is a hard failure.
@@ -369,10 +371,7 @@ class TestFixTextSpecificity:
         for f in with_fix:
             has_specificity = any(p.search(f.fix) for p in SPECIFICITY_PATTERNS)
             if not has_specificity:
-                generic.append(
-                    f"  [{f.signal_type}] {f.title}\n"
-                    f"    Fix: {f.fix[:120]}"
-                )
+                generic.append(f"  [{f.signal_type}] {f.title}\n    Fix: {f.fix[:120]}")
 
         assert not generic, (
             f"{len(generic)}/{len(with_fix)} fix texts lack specific references:\n"
@@ -402,8 +401,8 @@ class TestFixTextSpecificity:
         print("Fix-Text Actionability Report (Self-Analysis)")
         print(f"{'=' * 60}")
         print(f"  Total findings:     {total}")
-        print(f"  With fix text:      {with_fix_count} ({with_fix_count/total:.0%})")
-        print(f"  Actionable:         {actionable} ({actionable/with_fix_count:.0%})")
+        print(f"  With fix text:      {with_fix_count} ({with_fix_count / total:.0%})")
+        print(f"  Actionable:         {actionable} ({actionable / with_fix_count:.0%})")
         if issues_summary:
             print("\n  Common issues:")
             for issue, count in sorted(issues_summary.items(), key=lambda x: -x[1]):

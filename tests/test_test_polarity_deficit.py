@@ -177,8 +177,7 @@ def test_tpd_ignores_unexpected_source_segment_exception(tmp_path: Path, monkeyp
     findings = signal.analyze([pr], {}, DriftConfig())
 
     assert any(
-        f.signal_type == SignalType.TEST_POLARITY_DEFICIT
-        and "Happy-path-only" in f.title
+        f.signal_type == SignalType.TEST_POLARITY_DEFICIT and "Happy-path-only" in f.title
         for f in findings
     )
 
@@ -215,7 +214,6 @@ def test_tpd_fallback_discovers_tests_when_parse_results_are_empty(tmp_path: Pat
     findings = signal.analyze([], {}, DriftConfig())
 
     assert any(
-        f.signal_type == SignalType.TEST_POLARITY_DEFICIT
-        and "Happy-path-only" in f.title
+        f.signal_type == SignalType.TEST_POLARITY_DEFICIT and "Happy-path-only" in f.title
         for f in findings
     )

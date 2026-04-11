@@ -1,5 +1,35 @@
 # STRIDE Threat Model
 
+## 2026-04-11 - ADR-046: Markdown CLI format + Guidance footer
+
+- Scope: `drift analyze --format markdown` wires the existing `analysis_to_markdown()` formatter to CLI output. Rich output gains a "What's Next?" guidance footer for unconfigured repos. No new input paths, no scoring changes.
+- Input path changes: No.
+- Output path changes: Yes — one new CLI format target (markdown via `_emit_machine_output`), one new Rich panel (`_render_guidance_footer`) appended to `render_full_report`.
+- External interface changes: Additive only. New `--format markdown` choice value. Existing formats and `--quiet` behavior unchanged.
+- Trust boundary: No new trust boundary. Markdown formatter renders in-process analysis data exclusively. No external calls, no file reads beyond what `analyze_repo` already performs.
+- STRIDE review:
+	- S (Spoofing): No identity or authentication boundary change.
+	- T (Tampering): No risk. Output-only addition using existing pre-computed analysis data.
+	- R (Repudiation): Improved — markdown output provides shareable, self-contained audit artifact for PR comments and wikis.
+	- I (Information Disclosure): No new data classes exposed. Markdown report renders same fields as Rich and JSON outputs.
+	- D (Denial of Service): No risk. Formatter is pure string composition with no external calls.
+	- E (Elevation of Privilege): No privilege change.
+
+## 2026-04-11 - ADR-041: PHR Runtime Import Attribute Validation
+
+- Scope: Optional runtime attribute validation for the Phantom Reference Signal (PHR). When `phr_runtime_validation: true`, PHR calls `importlib.import_module()` followed by `hasattr(mod, name)` to verify that `from X import Y` targets an existing attribute on an installed third-party module. Gated behind opt-in config flag (default: false). No scoring or output changes.
+- Input path changes: Yes — new runtime import path. `import_module()` executes third-party package `__init__.py` code to load the module into the analysis process.
+- Output path changes: No — findings use existing PHR finding structure with an additional `runtime_validated` metadata flag.
+- External interface changes: Additive only. New config key `thresholds.phr_runtime_validation` (default false). Existing behavior unchanged when disabled.
+- Trust boundary: **New trust boundary**: drift analysis process ↔ third-party package code via `importlib.import_module()`. Unlike `find_spec()` (Phase B, ADR-040) which only checks metadata, `import_module()` actually executes module initialization code.
+- STRIDE review:
+	- S (Spoofing): No identity or authentication boundary change.
+	- T (Tampering): **Medium risk**. A malicious or compromised third-party package could execute arbitrary code during `import_module()`. Mitigations: (1) opt-in only — disabled by default, (2) daemon thread with 5s timeout, (3) no `exec`/`eval`/`compile` in drift's own code, (4) skips project-internal and TYPE_CHECKING imports, (5) sys.modules fast path avoids re-import of already-loaded modules. Residual risk accepted because the user explicitly opts in and the imported packages are already present in the analyzed project's dependency tree.
+	- R (Repudiation): Improved — runtime validation provides ground-truth evidence for phantom reference findings, reducing false positives from version-mismatch scenarios.
+	- I (Information Disclosure): Low risk. Module import may trigger side effects that log or transmit data, but this is inherent to the package being analyzed and already occurs when the project runs normally.
+	- D (Denial of Service): Low risk. Daemon thread with configurable timeout (default 5s) prevents hanging imports from blocking analysis. Module imports that exceed the timeout return None and the attribute check is skipped gracefully.
+	- E (Elevation of Privilege): No privilege change. Import runs with same OS-level permissions as drift CLI user. No subprocess or network calls initiated by drift itself.
+
 ## 2026-04-10 - Output channel extension: session report + TUI visualize
 
 - Scope: Additive CLI output surfaces for session effectiveness rendering (`drift session-report`) and optional interactive dashboard rendering (`drift visualize`) via `textual`.

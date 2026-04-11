@@ -21,18 +21,20 @@ from tests.fixtures.ground_truth import (
 # ── Tier A: Ground-truth fixture completeness ──────────────────────────────
 
 # Core signals that MUST have both TP and TN fixtures.
-_CORE_SIGNALS: frozenset[SignalType] = frozenset({
-    SignalType.PATTERN_FRAGMENTATION,
-    SignalType.ARCHITECTURE_VIOLATION,
-    SignalType.MUTANT_DUPLICATE,
-    SignalType.EXPLAINABILITY_DEFICIT,
-    SignalType.TEMPORAL_VOLATILITY,
-    SignalType.SYSTEM_MISALIGNMENT,
-    SignalType.DOC_IMPL_DRIFT,
-    SignalType.BROAD_EXCEPTION_MONOCULTURE,
-    SignalType.TEST_POLARITY_DEFICIT,
-    SignalType.GUARD_CLAUSE_DEFICIT,
-})
+_CORE_SIGNALS: frozenset[SignalType] = frozenset(
+    {
+        SignalType.PATTERN_FRAGMENTATION,
+        SignalType.ARCHITECTURE_VIOLATION,
+        SignalType.MUTANT_DUPLICATE,
+        SignalType.EXPLAINABILITY_DEFICIT,
+        SignalType.TEMPORAL_VOLATILITY,
+        SignalType.SYSTEM_MISALIGNMENT,
+        SignalType.DOC_IMPL_DRIFT,
+        SignalType.BROAD_EXCEPTION_MONOCULTURE,
+        SignalType.TEST_POLARITY_DEFICIT,
+        SignalType.GUARD_CLAUSE_DEFICIT,
+    }
+)
 
 
 def test_all_core_signals_have_tp_fixture() -> None:
@@ -89,15 +91,12 @@ def test_fixture_kind_index_covers_all_fixtures() -> None:
 
 def test_boundary_and_confounder_fixtures_exist() -> None:
     """At least one boundary and one confounder fixture must exist."""
-    assert len(FIXTURES_BY_KIND[FixtureKind.BOUNDARY]) >= 1, (
-        "No BOUNDARY fixtures registered"
-    )
-    assert len(FIXTURES_BY_KIND[FixtureKind.CONFOUNDER]) >= 1, (
-        "No CONFOUNDER fixtures registered"
-    )
+    assert len(FIXTURES_BY_KIND[FixtureKind.BOUNDARY]) >= 1, "No BOUNDARY fixtures registered"
+    assert len(FIXTURES_BY_KIND[FixtureKind.CONFOUNDER]) >= 1, "No CONFOUNDER fixtures registered"
 
 
 # ── Tier B: Mutation benchmark model consistency ────────────────────────────
+
 
 def test_mutation_entity_model_importable() -> None:
     """MutationEntity dataclass must be importable."""
@@ -122,6 +121,7 @@ def test_entity_id_generation() -> None:
 
 
 # ── Tier C: Label key stability ──────────────────────────────────────────
+
 
 def test_finding_keys_v2_includes_signal_and_location() -> None:
     """Key v2 must contain signal + file + line for collision resistance."""

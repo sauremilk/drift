@@ -91,9 +91,7 @@ def _ctx(repo_path: Path, embedding_service: object | None = None) -> AnalysisCo
         repo_path=repo_path,
         config=DriftConfig(),
         embedding_service=(
-            embedding_service
-            if embedding_service is None
-            else cast_to_embedding(embedding_service)
+            embedding_service if embedding_service is None else cast_to_embedding(embedding_service)
         ),
         commits=commits,
     )

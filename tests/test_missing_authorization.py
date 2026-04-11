@@ -169,8 +169,11 @@ class TestMAZTrueNegatives:
             imports=[_imp("api.py", "django.http")],
             patterns=[
                 _endpoint_pattern(
-                    "get_users", "api.py", 10,
-                    has_auth=True, auth_mechanism="decorator",
+                    "get_users",
+                    "api.py",
+                    10,
+                    has_auth=True,
+                    auth_mechanism="decorator",
                 )
             ],
         )
@@ -186,8 +189,11 @@ class TestMAZTrueNegatives:
             imports=[_imp("api.py", "fastapi")],
             patterns=[
                 _endpoint_pattern(
-                    "get_users", "api.py", 10,
-                    has_auth=True, auth_mechanism="body_name",
+                    "get_users",
+                    "api.py",
+                    10,
+                    has_auth=True,
+                    auth_mechanism="body_name",
                 )
             ],
         )
@@ -452,8 +458,7 @@ class TestMAZEdgeCases:
             file_path=Path(file_path),
             language="python",
             functions=[
-                _func(name, file_path, idx * 10)
-                for idx, name in enumerate(endpoint_names, start=1)
+                _func(name, file_path, idx * 10) for idx, name in enumerate(endpoint_names, start=1)
             ],
             imports=[_imp(file_path, "fastapi")],
             patterns=[

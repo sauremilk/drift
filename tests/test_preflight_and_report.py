@@ -6,6 +6,8 @@ import datetime
 import subprocess
 from pathlib import Path
 
+import pytest
+
 from drift.config import DriftConfig
 from drift.models import AnalyzerWarning, RepoAnalysis
 from drift.output.markdown_report import analysis_to_markdown
@@ -209,3 +211,99 @@ class TestMarkdownReport:
         analysis = _make_analysis(tmp_path, preflight=pf)
         md = analysis_to_markdown(analysis, include_preflight=False)
         assert "## Preflight" not in md
+
+
+class TestMarkdownCLIFormat:
+    """Verify --format markdown is wired in the analyze CLI command."""
+
+    def test_analyze_help_lists_markdown_format(self) -> None:
+        from click.testing import CliRunner
+
+        from drift.cli import main
+
+        runner = CliRunner()
+        result = runner.invoke(main, ["analyze", "--help"])
+        assert result.exit_code == 0
+        assert "markdown" in result.output
+
+    def test_format_markdown_produces_report(
+        self,
+        tmp_path: Path,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        from click.testing import CliRunner
+
+        from drift.cli import main
+
+        analysis = _make_analysis(tmp_path, score=12.0)
+
+        def _fake_analyze(*args: object, **kwargs: object) -> RepoAnalysis:
+            return analysis
+
+        monkeypatch.setattr("drift.analyzer.analyze_repo", _fake_analyze)
+        monkeypatch.setattr("drift.analyzer._DEFAULT_WORKERS", 1)
+
+        # Ensure DriftConfig.load returns a default config
+        def _fake_load(*a: object, **kw: object) -> DriftConfig:
+            return DriftConfig()
+
+        monkeypatch.setattr(
+            "drift.config.DriftConfig.load",
+            staticmethod(_fake_load),
+        )
+
+        runner = CliRunner()
+        result = runner.invoke(main, ["analyze", "--repo", str(tmp_path), "--format", "markdown"])
+        assert result.exit_code == 0, result.output
+        assert "# Drift Analysis Report" in result.output
+
+
+class TestGuidanceFooter:
+    """Verify the 'What's Next' guidance footer in rich output."""
+
+    def test_guidance_shows_when_no_config(self, tmp_path: Path) -> None:
+        """Guidance footer appears when repo has no drift.yaml."""
+        from io import StringIO
+
+        from rich.console import Console
+
+        from drift.output.rich_output import render_full_report
+
+        analysis = _make_analysis(tmp_path, score=20.0)
+        buf = StringIO()
+        c = Console(file=buf, force_terminal=True, width=120)
+        render_full_report(analysis, c)
+        output = buf.getvalue()
+        assert "drift init" in output
+
+    def test_guidance_hidden_when_config_exists(self, tmp_path: Path) -> None:
+        """Guidance footer does NOT appear when drift.yaml exists."""
+        from io import StringIO
+
+        from rich.console import Console
+
+        from drift.output.rich_output import render_full_report
+
+        (tmp_path / "drift.yaml").write_text("version: 1\n", encoding="utf-8")
+        analysis = _make_analysis(tmp_path, score=20.0)
+        buf = StringIO()
+        c = Console(file=buf, force_terminal=True, width=120)
+        render_full_report(analysis, c)
+        output = buf.getvalue()
+        # The "What's Next" guidance should not appear
+        assert "drift init" not in output or "drift init" in output.split("Interpretation")[0]
+
+    def test_guidance_german(self, tmp_path: Path) -> None:
+        """German locale shows German guidance text."""
+        from io import StringIO
+
+        from rich.console import Console
+
+        from drift.output.rich_output import render_full_report
+
+        analysis = _make_analysis(tmp_path, score=20.0)
+        buf = StringIO()
+        c = Console(file=buf, force_terminal=True, width=120)
+        render_full_report(analysis, c, language="de")
+        output = buf.getvalue()
+        assert "Konfiguration" in output

@@ -746,6 +746,11 @@
           "title": "Nbv Min Function Loc",
           "type": "integer"
         },
+        "phr_runtime_validation": {
+          "default": false,
+          "title": "Phr Runtime Validation",
+          "type": "boolean"
+        },
         "recency_days": {
           "default": 14,
           "title": "Recency Days",

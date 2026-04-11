@@ -78,12 +78,15 @@ def _build_scenarios() -> list[Scenario]:
         target="god",
         expected_detect=True,
         parse_results=[
-            _pr("core/hub.py", [
-                _imp("core/hub.py", "services.a"),
-                _imp("core/hub.py", "services.b"),
-                _imp("core/hub.py", "services.c"),
-                _imp("core/hub.py", "services.d"),
-            ]),
+            _pr(
+                "core/hub.py",
+                [
+                    _imp("core/hub.py", "services.a"),
+                    _imp("core/hub.py", "services.b"),
+                    _imp("core/hub.py", "services.c"),
+                    _imp("core/hub.py", "services.d"),
+                ],
+            ),
             _pr("services/a.py", [_imp("services/a.py", "core.hub")]),
             _pr("services/b.py", [_imp("services/b.py", "core.hub")]),
             _pr("services/c.py", [_imp("services/c.py", "core.hub")]),

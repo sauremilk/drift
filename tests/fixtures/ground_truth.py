@@ -875,8 +875,7 @@ PFS_DECORATOR_TN = GroundTruthFixture(
             file_path="routes/",
             should_detect=False,
             description=(
-                "Consistent decorator pattern (framework routes) "
-                "must not produce a PFS finding"
+                "Consistent decorator pattern (framework routes) must not produce a PFS finding"
             ),
         ),
     ],
@@ -2485,9 +2484,7 @@ BAT_TINY_FILE_TN = GroundTruthFixture(
     description="File <50 LOC even with high marker density → should NOT fire BAT",
     files={
         "small/__init__.py": "",
-        "small/tiny.py": "\n".join(
-            [f"x = {i}  # type: ignore" for i in range(10)]
-        ),
+        "small/tiny.py": "\n".join([f"x = {i}  # type: ignore" for i in range(10)]),
     },
     expected=[
         ExpectedFinding(
@@ -2794,16 +2791,24 @@ TVS_CONFOUNDER_TN = GroundTruthFixture(
     ],
     file_history_overrides={
         "app/hot_a.py": FileHistoryOverride(
-            total_commits=40, unique_authors=5, change_frequency_30d=15.0,
+            total_commits=40,
+            unique_authors=5,
+            change_frequency_30d=15.0,
         ),
         "app/hot_b.py": FileHistoryOverride(
-            total_commits=38, unique_authors=5, change_frequency_30d=14.0,
+            total_commits=38,
+            unique_authors=5,
+            change_frequency_30d=14.0,
         ),
         "app/hot_c.py": FileHistoryOverride(
-            total_commits=42, unique_authors=6, change_frequency_30d=16.0,
+            total_commits=42,
+            unique_authors=6,
+            change_frequency_30d=16.0,
         ),
         "app/hot_d.py": FileHistoryOverride(
-            total_commits=39, unique_authors=5, change_frequency_30d=15.0,
+            total_commits=39,
+            unique_authors=5,
+            change_frequency_30d=15.0,
         ),
     },
 )
@@ -3682,10 +3687,7 @@ BAT_CONFOUNDER_FEATURE_TOGGLE_TN = GroundTruthFixture(
             "FEATURE_DARK_MODE = False  # Dark mode is experimental\n"
             "FEATURE_BETA_API = True  # Beta API for early adopters\n"
             "\n"
-            + "\n".join([
-                f"SETTING_{i} = {i}  # Configuration value {i}"
-                for i in range(45)
-            ])
+            + "\n".join([f"SETTING_{i} = {i}  # Configuration value {i}" for i in range(45)])
             + "\n"
         ),
     },
@@ -3707,11 +3709,12 @@ BAT_CONFOUNDER_TYPE_STUB_TN = GroundTruthFixture(
         "stubs/__init__.py": "",
         "stubs/config.py": (
             "# Configuration module\n"
-            + "\n".join([
-                f"def get_setting_{i}(key: str) -> str:\n"
-                f"    return str(key) + '_{i}'"
-                for i in range(30)
-            ])
+            + "\n".join(
+                [
+                    f"def get_setting_{i}(key: str) -> str:\n    return str(key) + '_{i}'"
+                    for i in range(30)
+                ]
+            )
             + "\n"
         ),
     },
@@ -3733,10 +3736,7 @@ BAT_CONFOUNDER_NOQA_CONFIG_TN = GroundTruthFixture(
         "project/__init__.py": "",
         "project/setup_config.py": (
             "# Project setup configuration\n"
-            + "\n".join([
-                f"OPTION_{i} = {i}"
-                for i in range(50)
-            ])
+            + "\n".join([f"OPTION_{i} = {i}" for i in range(50)])
             + "\nLONG_LINE = 'this is a very long configuration string'  # noqa: E501\n"
         ),
     },
@@ -4027,9 +4027,7 @@ NBV_REPOSITORY_PATTERN_TN = GroundTruthFixture(
             signal_type=SignalType.NAMING_CONTRACT_VIOLATION,
             file_path="repos/user_repo.py",
             should_detect=False,
-            description=(
-                "get_user returns Optional — repository pattern, not a naming violation"
-            ),
+            description=("get_user returns Optional — repository pattern, not a naming violation"),
         ),
     ],
 )
@@ -4512,8 +4510,7 @@ CCC_BOUNDARY_TP = GroundTruthFixture(
             file_path="inventory/stock.py",
             should_detect=True,
             description=(
-                "At minimum 8-commit threshold — hidden coupling between "
-                "inventory and shipping"
+                "At minimum 8-commit threshold — hidden coupling between inventory and shipping"
             ),
         ),
     ],
@@ -4542,8 +4539,7 @@ CCC_LARGE_COMMIT_TN = GroundTruthFixture(
             email="dev@example.com",
             timestamp=_dt.datetime(2026, 5, 1 + i, tzinfo=_dt.UTC),
             message=f"chore: bulk refactor #{i}",
-            files_changed=["pkg/alpha.py", "pkg/beta.py"]
-            + [f"pkg/mod_{j}.py" for j in range(25)],
+            files_changed=["pkg/alpha.py", "pkg/beta.py"] + [f"pkg/mod_{j}.py" for j in range(25)],
         )
         for i in range(12)
     ],
@@ -4695,8 +4691,7 @@ ECM_CONFOUNDER_TN = GroundTruthFixture(
             file_path="auth/login.py",
             should_detect=False,
             description=(
-                "Same raises (AuthError) in both versions — body change, "
-                "contract unchanged"
+                "Same raises (AuthError) in both versions — body change, contract unchanged"
             ),
         ),
     ],
@@ -4732,8 +4727,7 @@ PHR_TRUE_POSITIVE = GroundTruthFixture(
             file_path="services/auth.py",
             should_detect=True,
             description=(
-                "sanitize_input and validate_token are called but never "
-                "defined or imported"
+                "sanitize_input and validate_token are called but never defined or imported"
             ),
         ),
     ],
@@ -4774,8 +4768,7 @@ PHR_STAR_IMPORT_TN = GroundTruthFixture(
     name="phr_star_import_tn",
     kind=FixtureKind.CONFOUNDER,
     description=(
-        "Star import means we cannot verify names → should NOT fire PHR "
-        "(conservative skip)"
+        "Star import means we cannot verify names → should NOT fire PHR (conservative skip)"
     ),
     files={
         "lib/__init__.py": textwrap.dedent("""\
@@ -4983,8 +4976,7 @@ PHR_DECORATOR_PHANTOM_TP = GroundTruthFixture(
             file_path="webapp/routes.py",
             should_detect=True,
             description=(
-                "require_auth and rate_limit are never defined/imported "
-                "- phantom decorators"
+                "require_auth and rate_limit are never defined/imported - phantom decorators"
             ),
         ),
     ],
@@ -5093,8 +5085,7 @@ PHR_SINGLE_CHAR_BOUNDARY = GroundTruthFixture(
             file_path="math_utils/calc.py",
             should_detect=False,
             description=(
-                "Single-char names (a, b, c) are skipped - "
-                "too common for meaningful detection"
+                "Single-char names (a, b, c) are skipped - too common for meaningful detection"
             ),
         ),
     ],
@@ -5155,9 +5146,7 @@ PHR_MISSING_PACKAGE_TP = GroundTruthFixture(
             signal_type=SignalType.PHANTOM_REFERENCE,
             file_path="app/pipeline.py",
             should_detect=True,
-            description=(
-                "nonexistent_ai_helper is not installed → phantom third-party import"
-            ),
+            description=("nonexistent_ai_helper is not installed → phantom third-party import"),
         ),
     ],
 )
@@ -5277,6 +5266,84 @@ PHR_MODULE_NOT_FOUND_ERROR_TN = GroundTruthFixture(
 
 
 # ---------------------------------------------------------------------------
+# PHR runtime attribute validation fixtures (ADR-041)
+# ---------------------------------------------------------------------------
+
+PHR_RUNTIME_MISSING_ATTR_TP = GroundTruthFixture(
+    name="phr_runtime_missing_attr_tp",
+    kind=FixtureKind.POSITIVE,
+    description="from os import nonexistent_func → module exists, attribute doesn't → PHR",
+    files={
+        "svc/__init__.py": "",
+        "svc/handler.py": textwrap.dedent("""\
+            from os import nonexistent_func
+
+            def run():
+                return nonexistent_func()
+        """),
+    },
+    expected=[
+        ExpectedFinding(
+            signal_type=SignalType.PHANTOM_REFERENCE,
+            file_path="svc/handler.py",
+            should_detect=True,
+            description="os.nonexistent_func does not exist at runtime",
+        ),
+    ],
+)
+
+PHR_RUNTIME_VALID_ATTR_TN = GroundTruthFixture(
+    name="phr_runtime_valid_attr_tn",
+    kind=FixtureKind.CONFOUNDER,
+    description="from os.path import join → exists at runtime → should NOT fire PHR",
+    files={
+        "svc/__init__.py": "",
+        "svc/paths.py": textwrap.dedent("""\
+            from os.path import join, exists
+
+            def full_path(base, name):
+                return join(base, name) if exists(base) else name
+        """),
+    },
+    expected=[
+        ExpectedFinding(
+            signal_type=SignalType.PHANTOM_REFERENCE,
+            file_path="svc/paths.py",
+            should_detect=False,
+            description="os.path.join and os.path.exists are real attributes",
+        ),
+    ],
+)
+
+PHR_RUNTIME_GUARDED_TN = GroundTruthFixture(
+    name="phr_runtime_guarded_tn",
+    kind=FixtureKind.CONFOUNDER,
+    description="try: from os import nonexistent except ImportError → guarded → no PHR",
+    files={
+        "svc/__init__.py": "",
+        "svc/compat.py": textwrap.dedent("""\
+            try:
+                from os import nonexistent_func
+            except ImportError:
+                def nonexistent_func():
+                    return None
+
+            def run():
+                return nonexistent_func()
+        """),
+    },
+    expected=[
+        ExpectedFinding(
+            signal_type=SignalType.PHANTOM_REFERENCE,
+            file_path="svc/compat.py",
+            should_detect=False,
+            description="Import guarded by try/except ImportError → conditional",
+        ),
+    ],
+)
+
+
+# ---------------------------------------------------------------------------
 # HSC scoring-promotion fixtures (ADR-040)
 # ---------------------------------------------------------------------------
 
@@ -5346,8 +5413,7 @@ HSC_ENV_READ_TN = GroundTruthFixture(
 HSC_PLACEHOLDER_TN = GroundTruthFixture(
     name="hsc_placeholder_tn",
     description=(
-        "Non-secret config values in file with secret-like variable names "
-        "→ should NOT fire HSC"
+        "Non-secret config values in file with secret-like variable names → should NOT fire HSC"
     ),
     kind=FixtureKind.CONFOUNDER,
     files={
@@ -5366,8 +5432,7 @@ HSC_PLACEHOLDER_TN = GroundTruthFixture(
             file_path="config/defaults.py",
             should_detect=False,
             description=(
-                "Non-secret config values (host, port, timeout) do not match "
-                "secret heuristics"
+                "Non-secret config values (host, port, timeout) do not match secret heuristics"
             ),
         ),
     ],
@@ -5589,9 +5654,7 @@ AVS_MODELS_OMNILAYER_TN = GroundTruthFixture(
 # AVS: DTO models used across layers — should not fire
 AVS_CONFOUNDER_DTO_TN = GroundTruthFixture(
     name="avs_confounder_dto_tn",
-    description=(
-        "DTO models used across all layers — Omnilayer behavior expected"
-    ),
+    description=("DTO models used across all layers — Omnilayer behavior expected"),
     kind=FixtureKind.CONFOUNDER,
     files={
         "models/__init__.py": "",
@@ -5628,10 +5691,7 @@ AVS_CONFOUNDER_DTO_TN = GroundTruthFixture(
 # DIA: Default auxiliary dir (scripts/) — should not report as undocumented
 DIA_CUSTOM_AUXILIARY_TN = GroundTruthFixture(
     name="dia_custom_auxiliary_tn",
-    description=(
-        "scripts/ is a default auxiliary dir — "
-        "should NOT fire DIA undocumented-dir"
-    ),
+    description=("scripts/ is a default auxiliary dir — should NOT fire DIA undocumented-dir"),
     files={
         "README.md": textwrap.dedent("""\
             # My Project
@@ -5653,10 +5713,7 @@ DIA_CUSTOM_AUXILIARY_TN = GroundTruthFixture(
             signal_type=SignalType.DOC_IMPL_DRIFT,
             file_path="scripts/",
             should_detect=False,
-            description=(
-                "scripts/ is a default auxiliary dir — "
-                "not expected in README"
-            ),
+            description=("scripts/ is a default auxiliary dir — not expected in README"),
         ),
     ],
 )
@@ -5712,10 +5769,7 @@ MDS_CONFOUNDER_PROTOCOL_METHODS_TN = GroundTruthFixture(
 # MDS: Thin wrapper delegating to another function — should not fire
 MDS_CONFOUNDER_THIN_WRAPPER_TN = GroundTruthFixture(
     name="mds_confounder_thin_wrapper_tn",
-    description=(
-        "Thin wrapper function delegating to implementation — "
-        "should NOT fire MDS"
-    ),
+    description=("Thin wrapper function delegating to implementation — should NOT fire MDS"),
     kind=FixtureKind.CONFOUNDER,
     files={
         "utils/__init__.py": "",
@@ -5740,8 +5794,7 @@ MDS_CONFOUNDER_THIN_WRAPPER_TN = GroundTruthFixture(
             file_path="utils/core.py",
             should_detect=False,
             description=(
-                "process_items is a thin wrapper for _do_process — "
-                "intentional delegation"
+                "process_items is a thin wrapper for _do_process — intentional delegation"
             ),
         ),
     ],
@@ -6092,8 +6145,7 @@ CCC_CONFOUNDER_BURST_TN = GroundTruthFixture(
                 hash=f"burst{i:04d}",
                 author="dev",
                 email="dev@example.com",
-                timestamp=_dt.datetime(2026, 1, 1, tzinfo=_dt.UTC)
-                + _dt.timedelta(hours=i * 2),
+                timestamp=_dt.datetime(2026, 1, 1, tzinfo=_dt.UTC) + _dt.timedelta(hours=i * 2),
                 message=f"fix: burst commit #{i}",
                 files_changed=["svc/auth.py", "svc/logging.py"],
             )
@@ -6152,8 +6204,7 @@ COD_CONFOUNDER_SINGLE_METHOD_TN = GroundTruthFixture(
 COD_CONFOUNDER_PROPERTY_ONLY_TN = GroundTruthFixture(
     name="cod_confounder_property_only_tn",
     description=(
-        "Class with 5 @property methods sharing domain vocabulary → cohesive, "
-        "should NOT fire COD"
+        "Class with 5 @property methods sharing domain vocabulary → cohesive, should NOT fire COD"
     ),
     kind=FixtureKind.CONFOUNDER,
     files={
@@ -6263,8 +6314,7 @@ ISD_DJANGO_INSECURE_TP = GroundTruthFixture(
             file_path="myproject/settings.py",
             should_detect=True,
             description=(
-                "DEBUG=True + ALLOWED_HOSTS=['*'] + CORS all origins → "
-                "multiple ISD findings"
+                "DEBUG=True + ALLOWED_HOSTS=['*'] + CORS all origins → multiple ISD findings"
             ),
         ),
     ],
@@ -6323,8 +6373,7 @@ ISD_SECURE_DJANGO_TN = GroundTruthFixture(
 ISD_VERIFY_FALSE_LOCALHOST_TN = GroundTruthFixture(
     name="isd_verify_false_localhost_tn",
     description=(
-        "verify=False targeting localhost → reduced severity, still detected "
-        "but loopback-scoped"
+        "verify=False targeting localhost → reduced severity, still detected but loopback-scoped"
     ),
     kind=FixtureKind.BOUNDARY,
     files={
@@ -6372,137 +6421,143 @@ ISD_IGNORE_DIRECTIVE_TN = GroundTruthFixture(
 
 
 # Append NBV + BAT + PHR fixtures to ALL_FIXTURES
-ALL_FIXTURES.extend([
-    NBV_VALIDATE_TP,
-    NBV_ENSURE_TP,
-    NBV_IS_HAS_TP,
-    NBV_GET_OR_CREATE_TP,
-    NBV_TRY_TP,
-    NBV_TRUE_NEGATIVE,
-    NBV_STUB_TN,
-    BAT_TRUE_POSITIVE,
-    BAT_HIGH_DENSITY_TP,
-    BAT_TRUE_NEGATIVE,
-    BAT_TINY_FILE_TN,
-    BAT_TEST_FILE_TN,
-    # ── Boundary & Confounder fixtures ──
-    MDS_BOUNDARY_TP,
-    MDS_CONFOUNDER_TN,
-    EDS_BOUNDARY_TP,
-    EDS_BOUNDARY_TN,
-    EDS_CONFOUNDER_TN,
-    TVS_BOUNDARY_TP,
-    TVS_CONFOUNDER_TN,
-    SMS_BOUNDARY_TP,
-    SMS_CONFOUNDER_TN,
-    DIA_BOUNDARY_TP,
-    TPD_BOUNDARY_TP,
-    TPD_CONFOUNDER_TN,
-    GCD_BOUNDARY_TP,
-    COD_BOUNDARY_TP,
-    COD_CONFOUNDER_TN,
-    NBV_BOUNDARY_TP,
-    NBV_CONFOUNDER_TN,
-    BAT_BOUNDARY_TP,
-    # ── New CONFOUNDER fixtures (FP-Strategie) ──
-    BEM_CONFOUNDER_FLASK_TN,
-    BEM_CONFOUNDER_CELERY_TN,
-    BEM_CONFOUNDER_LOGGING_TN,
-    BEM_CONFOUNDER_STRING_TN,
-    DIA_CONFOUNDER_BADGE_TN,
-    DIA_CONFOUNDER_HEADING_TN,
-    DIA_CONFOUNDER_API_PATH_TN,
-    GCD_CONFOUNDER_DISPATCH_TN,
-    GCD_CONFOUNDER_FUNCTIONAL_TN,
-    GCD_CONFOUNDER_SHORT_TN,
-    BAT_CONFOUNDER_FEATURE_TOGGLE_TN,
-    BAT_CONFOUNDER_TYPE_STUB_TN,
-    BAT_CONFOUNDER_NOQA_CONFIG_TN,
-    # ── Risk-Register FP mitigation fixtures (TN) ──
-    MDS_TN_PACKAGE_LAZY_GETATTR,
-    TPD_TN_NEGATIVE_ASSERT_INLINE,
-    MAZ_TN_CLI_SERVING_PATH,
-    HSC_TN_ML_TOKENIZER_CONSTANTS,
-    NBV_TN_TRY_COMPARISON_HELPER,
-    # ── New confounders + boundary/negative fixtures (drift precision) ──
-    NBV_REPOSITORY_PATTERN_TN,
-    TVS_NEW_FILE_TN,
-    EDS_PROPERTY_TN,
-    DIA_INLINE_CODE_TN,
-    AVS_TEST_MOCK_TN,
-    MDS_BOUNDARY_TN,
-    NBV_BOUNDARY_TN,
-    EDS_INIT_MEDIUM_TN,
-    # ── CCC/COD/ECM coverage fixtures (v2.7 baseline) ──
-    COD_BOUNDARY_TN,
-    CCC_TRUE_POSITIVE,
-    CCC_TRUE_NEGATIVE,
-    CCC_CONFOUNDER_TN,
-    CCC_BOUNDARY_TP,
-    CCC_LARGE_COMMIT_TN,
-    ECM_TRUE_NEGATIVE,
-    ECM_TRUE_POSITIVE,
-    ECM_CONFOUNDER_TN,
-    # ── Phantom Reference (PHR) fixtures ──
-    PHR_TRUE_POSITIVE,
-    PHR_TRUE_NEGATIVE,
-    PHR_STAR_IMPORT_TN,
-    PHR_BUILTIN_TN,
-    PHR_CROSS_FILE_TP,
-    PHR_DYNAMIC_GETATTR_TN,
-    PHR_COMPREHENSION_TN,
-    PHR_LAMBDA_PARAM_TN,
-    PHR_IMPORT_FROM_TP,
-    PHR_DECORATOR_PHANTOM_TP,
-    PHR_MULTI_PHANTOM_TP,
-    PHR_TYPE_CHECKING_TN,
-    PHR_PRIVATE_NAME_BOUNDARY,
-    PHR_SINGLE_CHAR_BOUNDARY,
-    PHR_PARENT_REEXPORT_TN,
-    # ── PHR third-party import resolver fixtures (ADR-040) ──
-    PHR_MISSING_PACKAGE_TP,
-    PHR_OPTIONAL_DEP_TN,
-    PHR_STDLIB_IMPORT_TN,
-    PHR_TYPE_CHECKING_THIRD_PARTY_TN,
-    PHR_MODULE_NOT_FOUND_ERROR_TN,
-    # ── HSC scoring-promotion fixtures (ADR-040) ──
-    HSC_GITHUB_TOKEN_TP,
-    HSC_HIGH_ENTROPY_TP,
-    HSC_ENV_READ_TN,
-    HSC_PLACEHOLDER_TN,
-    # ── FOE scoring-promotion fixtures (ADR-040) ──
-    FOE_HIGH_IMPORT_TP,
-    FOE_NORMAL_IMPORT_TN,
-    FOE_BARREL_FILE_TN,
-    # ── PHR additional fixtures (ADR-040) ──
-    PHR_CONDITIONAL_IMPORT_TN,
-    PHR_FRAMEWORK_DECORATOR_TN,
-    # ── FP-Reduction fixtures (ADR-036/037/038) ──
-    AVS_MODELS_OMNILAYER_TN,
-    AVS_CONFOUNDER_DTO_TN,
-    DIA_CUSTOM_AUXILIARY_TN,
-    MDS_CONFOUNDER_PROTOCOL_METHODS_TN,
-    MDS_CONFOUNDER_THIN_WRAPPER_TN,
-    MDS_CONFOUNDER_NAME_DIVERSE_TN,
-    # ── CXS / CCC / COD extended coverage ──
-    CXS_TP_DEEP_NESTING,
-    CXS_TN_FLAT_CODE,
-    CXS_TP_MANY_ELIF,
-    CXS_BOUNDARY_THRESHOLD,
-    CXS_CONFOUNDER_ASYNC_LOOPS,
-    CXS_CONFOUNDER_DECORATORS,
-    CCC_TP_CROSS_LAYER,
-    CCC_CONFOUNDER_BURST_TN,
-    COD_CONFOUNDER_SINGLE_METHOD_TN,
-    COD_CONFOUNDER_PROPERTY_ONLY_TN,
-    COD_BOUNDARY_PARTIAL_COHESION,
-    # ── ISD scoring-promotion fixtures (ADR-039) ──
-    ISD_DJANGO_INSECURE_TP,
-    ISD_VERIFY_FALSE_TP,
-    ISD_SECURE_DJANGO_TN,
-    ISD_VERIFY_FALSE_LOCALHOST_TN,
-    ISD_IGNORE_DIRECTIVE_TN,
-])
+ALL_FIXTURES.extend(
+    [
+        NBV_VALIDATE_TP,
+        NBV_ENSURE_TP,
+        NBV_IS_HAS_TP,
+        NBV_GET_OR_CREATE_TP,
+        NBV_TRY_TP,
+        NBV_TRUE_NEGATIVE,
+        NBV_STUB_TN,
+        BAT_TRUE_POSITIVE,
+        BAT_HIGH_DENSITY_TP,
+        BAT_TRUE_NEGATIVE,
+        BAT_TINY_FILE_TN,
+        BAT_TEST_FILE_TN,
+        # ── Boundary & Confounder fixtures ──
+        MDS_BOUNDARY_TP,
+        MDS_CONFOUNDER_TN,
+        EDS_BOUNDARY_TP,
+        EDS_BOUNDARY_TN,
+        EDS_CONFOUNDER_TN,
+        TVS_BOUNDARY_TP,
+        TVS_CONFOUNDER_TN,
+        SMS_BOUNDARY_TP,
+        SMS_CONFOUNDER_TN,
+        DIA_BOUNDARY_TP,
+        TPD_BOUNDARY_TP,
+        TPD_CONFOUNDER_TN,
+        GCD_BOUNDARY_TP,
+        COD_BOUNDARY_TP,
+        COD_CONFOUNDER_TN,
+        NBV_BOUNDARY_TP,
+        NBV_CONFOUNDER_TN,
+        BAT_BOUNDARY_TP,
+        # ── New CONFOUNDER fixtures (FP-Strategie) ──
+        BEM_CONFOUNDER_FLASK_TN,
+        BEM_CONFOUNDER_CELERY_TN,
+        BEM_CONFOUNDER_LOGGING_TN,
+        BEM_CONFOUNDER_STRING_TN,
+        DIA_CONFOUNDER_BADGE_TN,
+        DIA_CONFOUNDER_HEADING_TN,
+        DIA_CONFOUNDER_API_PATH_TN,
+        GCD_CONFOUNDER_DISPATCH_TN,
+        GCD_CONFOUNDER_FUNCTIONAL_TN,
+        GCD_CONFOUNDER_SHORT_TN,
+        BAT_CONFOUNDER_FEATURE_TOGGLE_TN,
+        BAT_CONFOUNDER_TYPE_STUB_TN,
+        BAT_CONFOUNDER_NOQA_CONFIG_TN,
+        # ── Risk-Register FP mitigation fixtures (TN) ──
+        MDS_TN_PACKAGE_LAZY_GETATTR,
+        TPD_TN_NEGATIVE_ASSERT_INLINE,
+        MAZ_TN_CLI_SERVING_PATH,
+        HSC_TN_ML_TOKENIZER_CONSTANTS,
+        NBV_TN_TRY_COMPARISON_HELPER,
+        # ── New confounders + boundary/negative fixtures (drift precision) ──
+        NBV_REPOSITORY_PATTERN_TN,
+        TVS_NEW_FILE_TN,
+        EDS_PROPERTY_TN,
+        DIA_INLINE_CODE_TN,
+        AVS_TEST_MOCK_TN,
+        MDS_BOUNDARY_TN,
+        NBV_BOUNDARY_TN,
+        EDS_INIT_MEDIUM_TN,
+        # ── CCC/COD/ECM coverage fixtures (v2.7 baseline) ──
+        COD_BOUNDARY_TN,
+        CCC_TRUE_POSITIVE,
+        CCC_TRUE_NEGATIVE,
+        CCC_CONFOUNDER_TN,
+        CCC_BOUNDARY_TP,
+        CCC_LARGE_COMMIT_TN,
+        ECM_TRUE_NEGATIVE,
+        ECM_TRUE_POSITIVE,
+        ECM_CONFOUNDER_TN,
+        # ── Phantom Reference (PHR) fixtures ──
+        PHR_TRUE_POSITIVE,
+        PHR_TRUE_NEGATIVE,
+        PHR_STAR_IMPORT_TN,
+        PHR_BUILTIN_TN,
+        PHR_CROSS_FILE_TP,
+        PHR_DYNAMIC_GETATTR_TN,
+        PHR_COMPREHENSION_TN,
+        PHR_LAMBDA_PARAM_TN,
+        PHR_IMPORT_FROM_TP,
+        PHR_DECORATOR_PHANTOM_TP,
+        PHR_MULTI_PHANTOM_TP,
+        PHR_TYPE_CHECKING_TN,
+        PHR_PRIVATE_NAME_BOUNDARY,
+        PHR_SINGLE_CHAR_BOUNDARY,
+        PHR_PARENT_REEXPORT_TN,
+        # ── PHR third-party import resolver fixtures (ADR-040) ──
+        PHR_MISSING_PACKAGE_TP,
+        PHR_OPTIONAL_DEP_TN,
+        PHR_STDLIB_IMPORT_TN,
+        PHR_TYPE_CHECKING_THIRD_PARTY_TN,
+        PHR_MODULE_NOT_FOUND_ERROR_TN,
+        # ── PHR runtime attribute validation fixtures (ADR-041) ──
+        PHR_RUNTIME_MISSING_ATTR_TP,
+        PHR_RUNTIME_VALID_ATTR_TN,
+        PHR_RUNTIME_GUARDED_TN,
+        # ── HSC scoring-promotion fixtures (ADR-040) ──
+        HSC_GITHUB_TOKEN_TP,
+        HSC_HIGH_ENTROPY_TP,
+        HSC_ENV_READ_TN,
+        HSC_PLACEHOLDER_TN,
+        # ── FOE scoring-promotion fixtures (ADR-040) ──
+        FOE_HIGH_IMPORT_TP,
+        FOE_NORMAL_IMPORT_TN,
+        FOE_BARREL_FILE_TN,
+        # ── PHR additional fixtures (ADR-040) ──
+        PHR_CONDITIONAL_IMPORT_TN,
+        PHR_FRAMEWORK_DECORATOR_TN,
+        # ── FP-Reduction fixtures (ADR-036/037/038) ──
+        AVS_MODELS_OMNILAYER_TN,
+        AVS_CONFOUNDER_DTO_TN,
+        DIA_CUSTOM_AUXILIARY_TN,
+        MDS_CONFOUNDER_PROTOCOL_METHODS_TN,
+        MDS_CONFOUNDER_THIN_WRAPPER_TN,
+        MDS_CONFOUNDER_NAME_DIVERSE_TN,
+        # ── CXS / CCC / COD extended coverage ──
+        CXS_TP_DEEP_NESTING,
+        CXS_TN_FLAT_CODE,
+        CXS_TP_MANY_ELIF,
+        CXS_BOUNDARY_THRESHOLD,
+        CXS_CONFOUNDER_ASYNC_LOOPS,
+        CXS_CONFOUNDER_DECORATORS,
+        CCC_TP_CROSS_LAYER,
+        CCC_CONFOUNDER_BURST_TN,
+        COD_CONFOUNDER_SINGLE_METHOD_TN,
+        COD_CONFOUNDER_PROPERTY_ONLY_TN,
+        COD_BOUNDARY_PARTIAL_COHESION,
+        # ── ISD scoring-promotion fixtures (ADR-039) ──
+        ISD_DJANGO_INSECURE_TP,
+        ISD_VERIFY_FALSE_TP,
+        ISD_SECURE_DJANGO_TN,
+        ISD_VERIFY_FALSE_LOCALHOST_TN,
+        ISD_IGNORE_DIRECTIVE_TN,
+    ]
+)
 
 
 FIXTURES_BY_SIGNAL: dict[SignalType, list[GroundTruthFixture]] = {}
@@ -6511,8 +6566,6 @@ for _fixture in ALL_FIXTURES:
         FIXTURES_BY_SIGNAL.setdefault(_exp.signal_type, []).append(_fixture)
 
 
-FIXTURES_BY_KIND: dict[FixtureKind, list[GroundTruthFixture]] = {
-    kind: [] for kind in FixtureKind
-}
+FIXTURES_BY_KIND: dict[FixtureKind, list[GroundTruthFixture]] = {kind: [] for kind in FixtureKind}
 for _fixture in ALL_FIXTURES:
     FIXTURES_BY_KIND[_fixture.inferred_kind].append(_fixture)

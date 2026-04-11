@@ -31,7 +31,8 @@ def _write_source(tmp_path: Path, rel_path: str, code: str) -> None:
 class TestISDTruePositives:
     def test_debug_true(self, tmp_path: Path) -> None:
         _write_source(
-            tmp_path, "settings.py",
+            tmp_path,
+            "settings.py",
             """\
             DEBUG = True
             """,
@@ -44,7 +45,8 @@ class TestISDTruePositives:
 
     def test_allowed_hosts_star(self, tmp_path: Path) -> None:
         _write_source(
-            tmp_path, "settings.py",
+            tmp_path,
+            "settings.py",
             """\
             ALLOWED_HOSTS = ["*"]
             """,
@@ -56,7 +58,8 @@ class TestISDTruePositives:
 
     def test_allowed_hosts_empty(self, tmp_path: Path) -> None:
         _write_source(
-            tmp_path, "settings.py",
+            tmp_path,
+            "settings.py",
             """\
             ALLOWED_HOSTS = []
             """,
@@ -68,7 +71,8 @@ class TestISDTruePositives:
 
     def test_cors_allow_all(self, tmp_path: Path) -> None:
         _write_source(
-            tmp_path, "settings.py",
+            tmp_path,
+            "settings.py",
             """\
             CORS_ALLOW_ALL_ORIGINS = True
             """,
@@ -80,7 +84,8 @@ class TestISDTruePositives:
 
     def test_cors_origin_allow_all(self, tmp_path: Path) -> None:
         _write_source(
-            tmp_path, "settings.py",
+            tmp_path,
+            "settings.py",
             """\
             CORS_ORIGIN_ALLOW_ALL = True
             """,
@@ -92,7 +97,8 @@ class TestISDTruePositives:
 
     def test_session_cookie_insecure(self, tmp_path: Path) -> None:
         _write_source(
-            tmp_path, "settings.py",
+            tmp_path,
+            "settings.py",
             """\
             SESSION_COOKIE_SECURE = False
             """,
@@ -104,7 +110,8 @@ class TestISDTruePositives:
 
     def test_csrf_cookie_insecure(self, tmp_path: Path) -> None:
         _write_source(
-            tmp_path, "settings.py",
+            tmp_path,
+            "settings.py",
             """\
             CSRF_COOKIE_SECURE = False
             """,
@@ -116,7 +123,8 @@ class TestISDTruePositives:
 
     def test_ssl_redirect_disabled(self, tmp_path: Path) -> None:
         _write_source(
-            tmp_path, "settings.py",
+            tmp_path,
+            "settings.py",
             """\
             SECURE_SSL_REDIRECT = False
             """,
@@ -128,7 +136,8 @@ class TestISDTruePositives:
 
     def test_verify_false(self, tmp_path: Path) -> None:
         _write_source(
-            tmp_path, "client.py",
+            tmp_path,
+            "client.py",
             """\
             import requests
             response = requests.get("https://api.example.com", verify=False)
@@ -158,7 +167,8 @@ class TestISDTruePositives:
 
     def test_multiple_insecure_defaults(self, tmp_path: Path) -> None:
         _write_source(
-            tmp_path, "settings.py",
+            tmp_path,
+            "settings.py",
             """\
             DEBUG = True
             ALLOWED_HOSTS = ["*"]
@@ -193,7 +203,8 @@ class TestISDTruePositives:
 class TestISDTrueNegatives:
     def test_debug_false(self, tmp_path: Path) -> None:
         _write_source(
-            tmp_path, "settings.py",
+            tmp_path,
+            "settings.py",
             """\
             DEBUG = False
             """,
@@ -204,7 +215,8 @@ class TestISDTrueNegatives:
 
     def test_allowed_hosts_specific(self, tmp_path: Path) -> None:
         _write_source(
-            tmp_path, "settings.py",
+            tmp_path,
+            "settings.py",
             """\
             ALLOWED_HOSTS = ["example.com", "api.example.com"]
             """,
@@ -215,7 +227,8 @@ class TestISDTrueNegatives:
 
     def test_cors_false(self, tmp_path: Path) -> None:
         _write_source(
-            tmp_path, "settings.py",
+            tmp_path,
+            "settings.py",
             """\
             CORS_ALLOW_ALL_ORIGINS = False
             """,
@@ -226,7 +239,8 @@ class TestISDTrueNegatives:
 
     def test_cookie_secure_true(self, tmp_path: Path) -> None:
         _write_source(
-            tmp_path, "settings.py",
+            tmp_path,
+            "settings.py",
             """\
             SESSION_COOKIE_SECURE = True
             """,
@@ -237,7 +251,8 @@ class TestISDTrueNegatives:
 
     def test_verify_true(self, tmp_path: Path) -> None:
         _write_source(
-            tmp_path, "client.py",
+            tmp_path,
+            "client.py",
             """\
             import requests
             response = requests.get("https://api.example.com", verify=True)
@@ -250,7 +265,8 @@ class TestISDTrueNegatives:
 
     def test_test_file_skipped(self, tmp_path: Path) -> None:
         _write_source(
-            tmp_path, "tests/test_settings.py",
+            tmp_path,
+            "tests/test_settings.py",
             """\
             DEBUG = True
             ALLOWED_HOSTS = ["*"]
@@ -263,7 +279,8 @@ class TestISDTrueNegatives:
 
     def test_conftest_skipped(self, tmp_path: Path) -> None:
         _write_source(
-            tmp_path, "conftest.py",
+            tmp_path,
+            "conftest.py",
             """\
             DEBUG = True
             """,
@@ -297,7 +314,8 @@ class TestISDTrueNegatives:
 
     def test_unrelated_variable(self, tmp_path: Path) -> None:
         _write_source(
-            tmp_path, "settings.py",
+            tmp_path,
+            "settings.py",
             """\
             APP_DEBUG = True
             SOME_HOSTS = ["*"]
@@ -316,7 +334,8 @@ class TestISDTrueNegatives:
 class TestISDEdgeCases:
     def test_metadata_includes_cwe(self, tmp_path: Path) -> None:
         _write_source(
-            tmp_path, "settings.py",
+            tmp_path,
+            "settings.py",
             """\
             DEBUG = True
             """,
@@ -328,7 +347,8 @@ class TestISDEdgeCases:
 
     def test_fix_suggestion_present(self, tmp_path: Path) -> None:
         _write_source(
-            tmp_path, "settings.py",
+            tmp_path,
+            "settings.py",
             """\
             DEBUG = True
             """,
@@ -346,7 +366,8 @@ class TestISDEdgeCases:
 
     def test_syntax_error_file_skipped(self, tmp_path: Path) -> None:
         _write_source(
-            tmp_path, "broken.py",
+            tmp_path,
+            "broken.py",
             """\
             DEBUG = True def broken
             """,
@@ -358,7 +379,8 @@ class TestISDEdgeCases:
 
     def test_severity_mapping(self, tmp_path: Path) -> None:
         _write_source(
-            tmp_path, "settings.py",
+            tmp_path,
+            "settings.py",
             """\
             DEBUG = True
             """,
@@ -383,7 +405,8 @@ class TestFrameworkSpecificDefaults:
     def test_django_settings_debug_true(self, tmp_path: Path) -> None:
         """Django settings.py with DEBUG = True at module level."""
         _write_source(
-            tmp_path, "myproject/settings.py",
+            tmp_path,
+            "myproject/settings.py",
             """\
             import os
             from pathlib import Path
@@ -403,7 +426,8 @@ class TestFrameworkSpecificDefaults:
     def test_django_settings_allowed_hosts_star(self, tmp_path: Path) -> None:
         """Django ALLOWED_HOSTS = ['*'] is a common insecure default."""
         _write_source(
-            tmp_path, "myproject/settings.py",
+            tmp_path,
+            "myproject/settings.py",
             """\
             DEBUG = False
             ALLOWED_HOSTS = ["*"]
@@ -422,7 +446,8 @@ class TestFrameworkSpecificDefaults:
     def test_django_multiple_insecure_defaults(self, tmp_path: Path) -> None:
         """Full Django settings with several insecure defaults at once."""
         _write_source(
-            tmp_path, "config/settings.py",
+            tmp_path,
+            "config/settings.py",
             """\
             import os
             from pathlib import Path
@@ -451,7 +476,8 @@ class TestFrameworkSpecificDefaults:
     def test_django_verify_false_in_view(self, tmp_path: Path) -> None:
         """Django view calling external API with verify=False."""
         _write_source(
-            tmp_path, "myapp/views.py",
+            tmp_path,
+            "myapp/views.py",
             """\
             import requests
             from django.http import JsonResponse
@@ -472,7 +498,8 @@ class TestFrameworkSpecificDefaults:
     def test_django_debug_from_env(self, tmp_path: Path) -> None:
         """DEBUG loaded from environment — should not flag."""
         _write_source(
-            tmp_path, "myproject/settings.py",
+            tmp_path,
+            "myproject/settings.py",
             """\
             import os
             DEBUG = os.environ.get("DEBUG", "False").lower() == "true"
@@ -494,7 +521,8 @@ class TestFrameworkSpecificDefaults:
         ``debug=True`` is not in scope.
         """
         _write_source(
-            tmp_path, "app/main.py",
+            tmp_path,
+            "app/main.py",
             """\
             from fastapi import FastAPI
 
@@ -513,7 +541,8 @@ class TestFrameworkSpecificDefaults:
     def test_fastapi_config_driven_debug(self, tmp_path: Path) -> None:
         """FastAPI(debug=settings.DEBUG) — config-driven, should not flag."""
         _write_source(
-            tmp_path, "app/main.py",
+            tmp_path,
+            "app/main.py",
             """\
             from fastapi import FastAPI
             from app.config import settings
@@ -529,7 +558,8 @@ class TestFrameworkSpecificDefaults:
     def test_fastapi_verify_false_in_endpoint(self, tmp_path: Path) -> None:
         """FastAPI endpoint calling httpx with verify=False → should flag."""
         _write_source(
-            tmp_path, "app/routes.py",
+            tmp_path,
+            "app/routes.py",
             """\
             import httpx
             from fastapi import APIRouter
@@ -557,7 +587,8 @@ class TestFrameworkSpecificDefaults:
         ISD detects module-level assignments and verify=False only.
         """
         _write_source(
-            tmp_path, "app.py",
+            tmp_path,
+            "app.py",
             """\
             from flask import Flask
 
@@ -579,7 +610,8 @@ class TestFrameworkSpecificDefaults:
     def test_flask_debug_module_level(self, tmp_path: Path) -> None:
         """Flask project with DEBUG = True at module level → detected."""
         _write_source(
-            tmp_path, "config.py",
+            tmp_path,
+            "config.py",
             """\
             DEBUG = True
             SECRET_KEY = "dev-secret"

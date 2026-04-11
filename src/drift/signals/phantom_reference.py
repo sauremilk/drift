@@ -18,9 +18,13 @@ from __future__ import annotations
 
 import ast
 import builtins
+import contextlib
+import importlib
 import importlib.util
 import logging
 import sys
+import threading
+import types
 from collections import defaultdict
 from pathlib import Path, PurePosixPath
 from typing import ClassVar, Literal
@@ -495,7 +499,7 @@ class PhantomReferenceSignal(BaseSignal):
                 continue
 
             file_findings = self._analyze_file(
-                pr, project_symbols, module_exports, project_modules,
+                pr, project_symbols, module_exports, project_modules, config,
             )
             findings.extend(file_findings)
 
@@ -507,6 +511,7 @@ class PhantomReferenceSignal(BaseSignal):
         project_symbols: set[str],
         module_exports: dict[str, set[str]],
         project_modules: set[str],
+        config: DriftConfig,
     ) -> list[Finding]:
         """Analyse a single file for phantom references."""
         # Re-parse the source to get the full AST
@@ -575,6 +580,16 @@ class PhantomReferenceSignal(BaseSignal):
             if name not in already_flagged:
                 phantoms.append((name, line))
                 already_flagged.add(name)
+
+        # Runtime attribute validation (ADR-041, opt-in)
+        if config.thresholds.phr_runtime_validation:
+            runtime_phantoms = self._check_import_attributes_runtime(
+                tree, project_modules, tc_ids,
+            )
+            for name, line in runtime_phantoms:
+                if name not in already_flagged:
+                    phantoms.append((name, line))
+                    already_flagged.add(name)
 
         if not phantoms:
             return []
@@ -732,3 +747,86 @@ class PhantomReferenceSignal(BaseSignal):
                         phantoms.append((root_module, lineno))
 
         return phantoms
+
+    @staticmethod
+    def _check_import_attributes_runtime(
+        tree: ast.Module,
+        project_modules: set[str],
+        type_checking_ids: set[int] | None = None,
+        *,
+        timeout: float = 5.0,
+    ) -> list[tuple[str, int]]:
+        """Validate that imported names exist as attributes on installed modules.
+
+        For ``from X import Y`` where X is installed (not project-internal),
+        actually imports X and checks ``hasattr(mod, Y)``.  Opt-in only.
+
+        Uses a daemon thread with timeout to guard against slow imports.
+
+        Decision: ADR-041
+        """
+        phantoms: list[tuple[str, int]] = []
+        tc_ids = type_checking_ids or set()
+
+        for node in ast.walk(tree):
+            if not isinstance(node, ast.ImportFrom):
+                continue
+            if id(node) in tc_ids:
+                continue
+            mod_name = node.module or ""
+            if not mod_name:
+                continue
+            root_module = mod_name.split(".")[0]
+            # Skip project-internal modules (handled by base PHR logic)
+            if root_module in project_modules:
+                continue
+            # Skip conditional imports
+            if _is_in_try_except_import_error(node, tree):
+                continue
+            # Only check modules that are actually installed
+            try:
+                spec = importlib.util.find_spec(root_module)
+            except (ModuleNotFoundError, ValueError):
+                continue  # Not installed → already caught by ADR-040
+            if spec is None:
+                continue
+
+            # Import the module with timeout
+            mod = _import_module_safe(mod_name, timeout=timeout)
+            if mod is None:
+                continue  # Timeout or error → skip, don't flag
+
+            for alias in node.names:
+                if alias.name == "*":
+                    continue
+                if not hasattr(mod, alias.name):
+                    phantoms.append((alias.name, node.lineno))
+
+        return phantoms
+
+
+def _import_module_safe(
+    module_name: str,
+    *,
+    timeout: float = 5.0,
+) -> types.ModuleType | None:
+    """Import a module with a timeout guard.
+
+    Returns the module object or None if import fails or times out.
+    Uses a daemon thread so a hanging import does not block analysis.
+    """
+    # Fast path: already imported
+    if module_name in sys.modules:
+        return sys.modules[module_name]
+
+    result: list[types.ModuleType | None] = [None]
+
+    def _do_import() -> None:
+        with contextlib.suppress(Exception):
+            result[0] = importlib.import_module(module_name)
+
+    t = threading.Thread(target=_do_import, daemon=True)
+    t.start()
+    t.join(timeout=timeout)
+
+    return result[0]

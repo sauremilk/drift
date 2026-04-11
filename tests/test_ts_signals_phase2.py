@@ -27,6 +27,7 @@ ts_available: bool
 try:
     import tree_sitter  # noqa: F401
     import tree_sitter_typescript  # noqa: F401
+
     ts_available = True
 except ImportError:
     ts_available = False
@@ -39,6 +40,7 @@ needs_tree_sitter = pytest.mark.skipif(
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
 
 def _cfg(**overrides: object) -> DriftConfig:
     thresholds = {}
@@ -193,6 +195,7 @@ function processFourth(data: any, config: object, mode: string): void {
         fp = _write_ts(tmp_path, "src/mod/guarded.ts", source)
 
         from drift.ingestion.ts_parser import parse_typescript_file
+
         pr = parse_typescript_file(fp, "typescript")
 
         findings = self._run([pr], repo_path=tmp_path)
@@ -257,6 +260,7 @@ function handleD(data: any, config: object, mode: string): void {
         fp = _write_ts(tmp_path, "src/mod/unguarded.ts", source)
 
         from drift.ingestion.ts_parser import parse_typescript_file
+
         pr = parse_typescript_file(fp, "typescript")
 
         findings = self._run([pr], repo_path=tmp_path)
@@ -293,6 +297,7 @@ function handle{i}(data: any, config: object, mode: string): void {{
 """
         fp = _write_ts(tmp_path, "src/mod/index.ts", funcs)
         from drift.ingestion.ts_parser import parse_typescript_file
+
         pr = parse_typescript_file(fp, "typescript")
 
         findings = self._run([pr], repo_path=tmp_path)
@@ -301,10 +306,7 @@ function handle{i}(data: any, config: object, mode: string): void {{
     def test_ts_test_file_excluded(self):
         """TS test files should be excluded."""
         fp = Path("src/mod/service.test.ts")
-        fns = [
-            _ts_func(f"handle_{i}", fp)
-            for i in range(4)
-        ]
+        fns = [_ts_func(f"handle_{i}", fp) for i in range(4)]
         pr = _ts_parse_result(fp, functions=fns)
         assert self._run([pr]) == []
 
@@ -406,6 +408,7 @@ function validateEmail(email: string): void {
 """
         fp = _write_ts(tmp_path, "src/validators.ts", source)
         from drift.ingestion.ts_parser import parse_typescript_file
+
         pr = parse_typescript_file(fp, "typescript")
         findings = self._run([pr], repo_path=tmp_path)
         assert findings == []
@@ -423,6 +426,7 @@ function validateInput(data: Record<string, any>, schema: object): Record<string
 """
         fp = _write_ts(tmp_path, "src/validators.ts", source)
         from drift.ingestion.ts_parser import parse_typescript_file
+
         pr = parse_typescript_file(fp, "typescript")
         findings = self._run([pr], repo_path=tmp_path)
         assert len(findings) == 1
@@ -444,6 +448,7 @@ function isValid(value: string): boolean {
 """
         fp = _write_ts(tmp_path, "src/checks.ts", source)
         from drift.ingestion.ts_parser import parse_typescript_file
+
         pr = parse_typescript_file(fp, "typescript")
         findings = self._run([pr], repo_path=tmp_path)
         assert findings == []
@@ -458,6 +463,7 @@ function isAdmin(user: Record<string, any>, context: object): string {
 """
         fp = _write_ts(tmp_path, "src/checks.ts", source)
         from drift.ingestion.ts_parser import parse_typescript_file
+
         pr = parse_typescript_file(fp, "typescript")
         findings = self._run([pr], repo_path=tmp_path)
         assert len(findings) == 1
@@ -475,6 +481,7 @@ function ensureConnected(client: any, options: any): void {
 """
         fp = _write_ts(tmp_path, "src/guards.ts", source)
         from drift.ingestion.ts_parser import parse_typescript_file
+
         pr = parse_typescript_file(fp, "typescript")
         findings = self._run([pr], repo_path=tmp_path)
         assert findings == []
@@ -493,6 +500,7 @@ function tryConnect(host: string, port: number): boolean {
 """
         fp = _write_ts(tmp_path, "src/network.ts", source)
         from drift.ingestion.ts_parser import parse_typescript_file
+
         pr = parse_typescript_file(fp, "typescript")
         findings = self._run([pr], repo_path=tmp_path)
         assert findings == []
@@ -534,6 +542,7 @@ function foo(): void {
 """
         fp = _write_ts(tmp_path, "src/mod/bare.ts", source)
         from drift.ingestion.ts_parser import parse_typescript_file
+
         pr = parse_typescript_file(fp, "typescript")
         handlers = pr.patterns[0].fingerprint["handlers"]
         assert handlers[0]["exception_type"] == "bare"
@@ -551,6 +560,7 @@ function foo(): void {
 """
         fp = _write_ts(tmp_path, "src/mod/untyped.ts", source)
         from drift.ingestion.ts_parser import parse_typescript_file
+
         pr = parse_typescript_file(fp, "typescript")
         handlers = pr.patterns[0].fingerprint["handlers"]
         assert handlers[0]["exception_type"] == "bare"
@@ -568,6 +578,7 @@ function foo(): void {
 """
         fp = _write_ts(tmp_path, "src/mod/anytype.ts", source)
         from drift.ingestion.ts_parser import parse_typescript_file
+
         pr = parse_typescript_file(fp, "typescript")
         handlers = pr.patterns[0].fingerprint["handlers"]
         assert handlers[0]["exception_type"] == "any"
@@ -585,6 +596,7 @@ function foo(): void {
 """
         fp = _write_ts(tmp_path, "src/mod/error.ts", source)
         from drift.ingestion.ts_parser import parse_typescript_file
+
         pr = parse_typescript_file(fp, "typescript")
         handlers = pr.patterns[0].fingerprint["handlers"]
         assert handlers[0]["exception_type"] == "Error"

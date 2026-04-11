@@ -279,8 +279,11 @@ class TestFindingsToNegativeContext:
         # Items should be sorted by severity descending
         severities = [nc.severity for nc in result]
         sev_rank = {
-            Severity.CRITICAL: 5, Severity.HIGH: 4,
-            Severity.MEDIUM: 3, Severity.LOW: 2, Severity.INFO: 1,
+            Severity.CRITICAL: 5,
+            Severity.HIGH: 4,
+            Severity.MEDIUM: 3,
+            Severity.LOW: 2,
+            Severity.INFO: 1,
         }
         ranks = [sev_rank[s] for s in severities]
         assert ranks == sorted(ranks, reverse=True)
@@ -302,7 +305,8 @@ class TestFindingsToNegativeContext:
         f1 = _finding(file_path="a.py", title="A")
         f2 = _finding(file_path="b.py", title="B")
         result = findings_to_negative_context(
-            [f1, f2], target_file="a.py",
+            [f1, f2],
+            target_file="a.py",
         )
         for nc in result:
             assert "a.py" in nc.affected_files

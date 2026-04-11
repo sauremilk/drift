@@ -75,9 +75,7 @@ class TestApplyPathOverrides:
             _make_finding(file_path="tests/test_a.py"),
             _make_finding(file_path="src/main.py"),
         ]
-        overrides = {
-            "tests/**": PathOverride(exclude_signals=["pattern_fragmentation"])
-        }
+        overrides = {"tests/**": PathOverride(exclude_signals=["pattern_fragmentation"])}
         result = apply_path_overrides(findings, overrides, SignalWeights())
         assert len(result) == 1
         assert result[0].file_path == Path("src/main.py")
@@ -89,9 +87,7 @@ class TestApplyPathOverrides:
                 file_path="tests/test_a.py",
             ),
         ]
-        overrides = {
-            "tests/**": PathOverride(exclude_signals=["pattern_fragmentation"])
-        }
+        overrides = {"tests/**": PathOverride(exclude_signals=["pattern_fragmentation"])}
         result = apply_path_overrides(findings, overrides, SignalWeights())
         assert len(result) == 1
 
@@ -121,12 +117,12 @@ class TestPathOverrideConfig:
     def test_path_override_loads_from_yaml(self, tmp_path: Path) -> None:
         cfg_file = tmp_path / "drift.yaml"
         cfg_file.write_text(
-            'path_overrides:\n'
+            "path_overrides:\n"
             '  "tests/**":\n'
-            '    exclude_signals:\n'
-            '      - pattern_fragmentation\n'
+            "    exclude_signals:\n"
+            "      - pattern_fragmentation\n"
             '  "legacy/**":\n'
-            '    severity_gate: critical\n',
+            "    severity_gate: critical\n",
             encoding="utf-8",
         )
         cfg = DriftConfig.load(tmp_path)
@@ -142,11 +138,11 @@ class TestPathOverrideConfig:
     def test_path_override_with_custom_weights(self, tmp_path: Path) -> None:
         cfg_file = tmp_path / "drift.yaml"
         cfg_file.write_text(
-            'path_overrides:\n'
+            "path_overrides:\n"
             '  "scripts/**":\n'
-            '    weights:\n'
-            '      pattern_fragmentation: 0.01\n'
-            '      architecture_violation: 0.01\n',
+            "    weights:\n"
+            "      pattern_fragmentation: 0.01\n"
+            "      architecture_violation: 0.01\n",
             encoding="utf-8",
         )
         cfg = DriftConfig.load(tmp_path)
@@ -166,10 +162,7 @@ class TestConfigValidatePathOverrides:
 
         cfg_file = tmp_path / "drift.yaml"
         cfg_file.write_text(
-            'path_overrides:\n'
-            '  "tests/**":\n'
-            '    exclude_signals:\n'
-            '      - nonexistent_signal\n',
+            'path_overrides:\n  "tests/**":\n    exclude_signals:\n      - nonexistent_signal\n',
             encoding="utf-8",
         )
         runner = CliRunner()

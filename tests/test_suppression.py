@@ -11,6 +11,7 @@ from drift.suppression import filter_findings, scan_suppressions
 # Helpers
 # ---------------------------------------------------------------------------
 
+
 def _make_finding(
     signal: SignalType = SignalType.ARCHITECTURE_VIOLATION,
     file_path: str = "src/app.py",
@@ -30,6 +31,7 @@ def _make_finding(
 # ---------------------------------------------------------------------------
 # scan_suppressions
 # ---------------------------------------------------------------------------
+
 
 class TestScanSuppressions:
     """Test the comment scanner."""
@@ -100,6 +102,7 @@ class TestScanSuppressions:
 # ---------------------------------------------------------------------------
 # filter_findings
 # ---------------------------------------------------------------------------
+
 
 class TestFilterFindings:
     """Test the finding filter."""

@@ -14,6 +14,7 @@ from drift.models import FileInfo, Finding, Severity, SignalType
 # Helpers
 # ---------------------------------------------------------------------------
 
+
 def _make_finding(
     file_path: str = "services/payment.py",
     start_line: int = 10,
@@ -61,45 +62,42 @@ def _write_ts_file(tmp_path: Path, rel_path: str, content: str) -> FileInfo:
 # scan_context_tags
 # ---------------------------------------------------------------------------
 
+
 class TestScanContextTags:
     def test_python_single_tag(self, tmp_path: Path) -> None:
-        fi = _write_python_file(tmp_path, "svc/handler.py", (
-            "import os\n"
-            "# drift:context migration\n"
-            "class OldHandler:\n"
-            "    pass\n"
-        ))
+        fi = _write_python_file(
+            tmp_path,
+            "svc/handler.py",
+            ("import os\n# drift:context migration\nclass OldHandler:\n    pass\n"),
+        )
         tags = scan_context_tags([fi], tmp_path)
         assert tags[("svc/handler.py", 2)] == {"migration"}
 
     def test_python_multiple_tags(self, tmp_path: Path) -> None:
-        fi = _write_python_file(tmp_path, "svc/handler.py", (
-            "# drift:context migration, legacy\n"
-            "def old_func(): pass\n"
-        ))
+        fi = _write_python_file(
+            tmp_path,
+            "svc/handler.py",
+            ("# drift:context migration, legacy\ndef old_func(): pass\n"),
+        )
         tags = scan_context_tags([fi], tmp_path)
         assert tags[("svc/handler.py", 1)] == {"migration", "legacy"}
 
     def test_typescript_tag(self, tmp_path: Path) -> None:
-        fi = _write_ts_file(tmp_path, "svc/handler.ts", (
-            "// drift:context refactoring\n"
-            "export function legacyHandler() {}\n"
-        ))
+        fi = _write_ts_file(
+            tmp_path,
+            "svc/handler.ts",
+            ("// drift:context refactoring\nexport function legacyHandler() {}\n"),
+        )
         tags = scan_context_tags([fi], tmp_path)
         assert tags[("svc/handler.ts", 1)] == {"refactoring"}
 
     def test_no_context_tags(self, tmp_path: Path) -> None:
-        fi = _write_python_file(tmp_path, "svc/clean.py", (
-            "def clean(): pass\n"
-        ))
+        fi = _write_python_file(tmp_path, "svc/clean.py", ("def clean(): pass\n"))
         tags = scan_context_tags([fi], tmp_path)
         assert len(tags) == 0
 
     def test_ignores_drift_ignore(self, tmp_path: Path) -> None:
-        fi = _write_python_file(tmp_path, "svc/ignored.py", (
-            "# drift:ignore\n"
-            "def old(): pass\n"
-        ))
+        fi = _write_python_file(tmp_path, "svc/ignored.py", ("# drift:ignore\ndef old(): pass\n"))
         tags = scan_context_tags([fi], tmp_path)
         assert len(tags) == 0
 
@@ -111,10 +109,9 @@ class TestScanContextTags:
         assert ("b.py", 1) in tags
 
     def test_tag_with_hyphens_and_underscores(self, tmp_path: Path) -> None:
-        fi = _write_python_file(tmp_path, "x.py", (
-            "# drift:context strategy-pattern, tech_debt\n"
-            "class X: pass\n"
-        ))
+        fi = _write_python_file(
+            tmp_path, "x.py", ("# drift:context strategy-pattern, tech_debt\nclass X: pass\n")
+        )
         tags = scan_context_tags([fi], tmp_path)
         assert tags[("x.py", 1)] == {"strategy-pattern", "tech_debt"}
 
@@ -132,6 +129,7 @@ class TestScanContextTags:
 # ---------------------------------------------------------------------------
 # apply_context_tags
 # ---------------------------------------------------------------------------
+
 
 class TestApplyContextTags:
     def test_tags_applied_to_overlapping_finding(self) -> None:
@@ -215,14 +213,17 @@ class TestApplyContextTags:
 # Config integration
 # ---------------------------------------------------------------------------
 
+
 class TestContextDampeningConfig:
     def test_default_dampening(self) -> None:
         from drift.config import DriftConfig
+
         cfg = DriftConfig()
         assert cfg.context_dampening == 0.5
 
     def test_custom_dampening(self) -> None:
         from drift.config import DriftConfig
+
         cfg = DriftConfig(context_dampening=0.3)
         assert cfg.context_dampening == 0.3
 
@@ -230,6 +231,7 @@ class TestContextDampeningConfig:
 # ---------------------------------------------------------------------------
 # JSON output
 # ---------------------------------------------------------------------------
+
 
 class TestJsonContextOutput:
     def test_context_tagged_count_in_json(self) -> None:
@@ -269,6 +271,7 @@ class TestJsonContextOutput:
 # ---------------------------------------------------------------------------
 # SARIF output
 # ---------------------------------------------------------------------------
+
 
 class TestSarifContextTags:
     def test_context_tags_in_sarif_result_properties(self) -> None:
@@ -313,15 +316,20 @@ class TestSarifContextTags:
 # End-to-end: scan + apply
 # ---------------------------------------------------------------------------
 
+
 class TestContextTagEndToEnd:
     def test_scan_and_apply(self, tmp_path: Path) -> None:
-        fi = _write_python_file(tmp_path, "svc/handler.py", (
-            "import os\n"                         # line 1
-            "# drift:context migration\n"         # line 2
-            "class OldHandler:\n"                 # line 3
-            "    def process(self):\n"            # line 4
-            "        pass\n"                      # line 5
-        ))
+        fi = _write_python_file(
+            tmp_path,
+            "svc/handler.py",
+            (
+                "import os\n"  # line 1
+                "# drift:context migration\n"  # line 2
+                "class OldHandler:\n"  # line 3
+                "    def process(self):\n"  # line 4
+                "        pass\n"  # line 5
+            ),
+        )
         tags = scan_context_tags([fi], tmp_path)
         finding = _make_finding(
             file_path="svc/handler.py",
@@ -335,14 +343,18 @@ class TestContextTagEndToEnd:
         assert result[0].metadata["context_tags"] == ["migration"]
 
     def test_untagged_finding_untouched(self, tmp_path: Path) -> None:
-        fi = _write_python_file(tmp_path, "svc/handler.py", (
-            "# drift:context migration\n"         # line 1
-            "class OldHandler:\n"                 # line 2
-            "    pass\n"                          # line 3
-            "\n"                                  # line 4
-            "class NewHandler:\n"                 # line 5
-            "    pass\n"                          # line 6
-        ))
+        fi = _write_python_file(
+            tmp_path,
+            "svc/handler.py",
+            (
+                "# drift:context migration\n"  # line 1
+                "class OldHandler:\n"  # line 2
+                "    pass\n"  # line 3
+                "\n"  # line 4
+                "class NewHandler:\n"  # line 5
+                "    pass\n"  # line 6
+            ),
+        )
         tags = scan_context_tags([fi], tmp_path)
         tagged_finding = _make_finding(
             file_path="svc/handler.py",
@@ -357,7 +369,9 @@ class TestContextTagEndToEnd:
             score=0.8,
         )
         result, count = apply_context_tags(
-            [tagged_finding, clean_finding], tags, dampening=0.5,
+            [tagged_finding, clean_finding],
+            tags,
+            dampening=0.5,
         )
         assert count == 1
         assert result[0].score == pytest.approx(0.4)  # dampened

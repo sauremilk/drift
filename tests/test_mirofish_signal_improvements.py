@@ -155,7 +155,9 @@ class TestPFSSpreadFactor:
             for i, fp in enumerate([fp_canonical, fp_variant_a, fp_variant_b])
         ]
         small_findings = PatternFragmentationSignal().analyze(
-            _wrap(small_patterns), {}, None,
+            _wrap(small_patterns),
+            {},
+            None,
         )
         assert len(small_findings) == 1
         small_score = small_findings[0].score
@@ -168,15 +170,15 @@ class TestPFSSpreadFactor:
             + [_make_pattern(cat, "mod", f"b{i}", fp_variant_b) for i in range(5)]
         )
         large_findings = PatternFragmentationSignal().analyze(
-            _wrap(large_patterns), {}, None,
+            _wrap(large_patterns),
+            {},
+            None,
         )
         assert len(large_findings) == 1
         large_score = large_findings[0].score
 
         # The large case should score higher due to spread factor
-        assert large_score > small_score, (
-            f"Expected large ({large_score}) > small ({small_score})"
-        )
+        assert large_score > small_score, f"Expected large ({large_score}) > small ({small_score})"
 
     def test_spread_factor_only_activates_above_threshold(self):
         """1 non-canonical instance should NOT get a spread boost."""

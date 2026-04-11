@@ -161,10 +161,7 @@ class TestAnalyzeDiffHistory:
         self._run_git(repo, "commit", "-m", "initial")
 
         target.write_text(
-            "def fn(x):\n"
-            "    if x < 0:\n"
-            "        raise ValueError('neg')\n"
-            "    return x\n",
+            "def fn(x):\n    if x < 0:\n        raise ValueError('neg')\n    return x\n",
             encoding="utf-8",
         )
         self._run_git(repo, "add", ".")
@@ -186,14 +183,16 @@ class TestAnalyzeDiffHistory:
         assert history[-1]["scope"] == "diff"
 
         # Seed a full-repo snapshot and ensure diff trend still stays scoped.
-        history.append({
-            "timestamp": "2026-01-01T00:00:00+00:00",
-            "drift_score": 0.99,
-            "signal_scores": {},
-            "total_files": 1,
-            "total_findings": 1,
-            "scope": "repo",
-        })
+        history.append(
+            {
+                "timestamp": "2026-01-01T00:00:00+00:00",
+                "drift_score": 0.99,
+                "signal_scores": {},
+                "total_files": 1,
+                "total_findings": 1,
+                "scope": "repo",
+            }
+        )
         history_file.write_text(json.dumps(history), encoding="utf-8")
 
         target.write_text(
@@ -225,31 +224,36 @@ class TestAnalyzeRepoHistoryScope:
 
         history_file = tmp_path / cfg.cache_dir / "history.json"
         history_file.parent.mkdir(parents=True, exist_ok=True)
-        history_file.write_text(json.dumps([
-            {
-                "timestamp": "2026-01-01T00:00:00+00:00",
-                "drift_score": 0.20,
-                "signal_scores": {},
-                "total_files": 1,
-                "total_findings": 1,
-            },
-            {
-                "timestamp": "2026-01-02T00:00:00+00:00",
-                "drift_score": 0.70,
-                "signal_scores": {},
-                "total_files": 1,
-                "total_findings": 1,
-                "scope": "diff",
-            },
-            {
-                "timestamp": "2026-01-03T00:00:00+00:00",
-                "drift_score": 0.30,
-                "signal_scores": {},
-                "total_files": 1,
-                "total_findings": 1,
-                "scope": "repo",
-            },
-        ]), encoding="utf-8")
+        history_file.write_text(
+            json.dumps(
+                [
+                    {
+                        "timestamp": "2026-01-01T00:00:00+00:00",
+                        "drift_score": 0.20,
+                        "signal_scores": {},
+                        "total_files": 1,
+                        "total_findings": 1,
+                    },
+                    {
+                        "timestamp": "2026-01-02T00:00:00+00:00",
+                        "drift_score": 0.70,
+                        "signal_scores": {},
+                        "total_files": 1,
+                        "total_findings": 1,
+                        "scope": "diff",
+                    },
+                    {
+                        "timestamp": "2026-01-03T00:00:00+00:00",
+                        "drift_score": 0.30,
+                        "signal_scores": {},
+                        "total_files": 1,
+                        "total_findings": 1,
+                        "scope": "repo",
+                    },
+                ]
+            ),
+            encoding="utf-8",
+        )
 
         analysis = analyze_repo(tmp_path, config=cfg, workers=1)
 
@@ -276,10 +280,12 @@ class TestDeltaConfig:
     def test_load_delta_config_from_dict(self):
         from drift.config import DriftConfig
 
-        cfg = DriftConfig.model_validate({
-            "fail_on_delta": 0.05,
-            "fail_on_delta_window": 10,
-        })
+        cfg = DriftConfig.model_validate(
+            {
+                "fail_on_delta": 0.05,
+                "fail_on_delta_window": 10,
+            }
+        )
         assert cfg.fail_on_delta == 0.05
         assert cfg.fail_on_delta_window == 10
 

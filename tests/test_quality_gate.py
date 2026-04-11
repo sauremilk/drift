@@ -57,9 +57,7 @@ class TestQualityDriftFromHistory:
         assert result is None
 
     def test_single_entry(self):
-        result = quality_drift_from_history(
-            [{"score": 50.0, "finding_count": 20}]
-        )
+        result = quality_drift_from_history([{"score": 50.0, "finding_count": 20}])
         assert result is None
 
     def test_two_entries(self):

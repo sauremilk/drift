@@ -63,9 +63,7 @@ class TestSessionReportCommand:
         session_file.write_text(json.dumps(session_data), encoding="utf-8")
 
         runner = CliRunner()
-        result = runner.invoke(
-            session_report, ["--repo", str(tmp_path), "--latest"]
-        )
+        result = runner.invoke(session_report, ["--repo", str(tmp_path), "--latest"])
         assert result.exit_code == 0
         assert "Session Report" in result.output
         assert "abc12345" in result.output

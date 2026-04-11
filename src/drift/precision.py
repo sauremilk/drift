@@ -125,6 +125,8 @@ def run_fixture(
     )
     if has_old_sources:
         config.thresholds.ecm_lookback_commits = 1
+    # Enable runtime attribute validation for PHR fixtures (ADR-041)
+    config.thresholds.phr_runtime_validation = True
 
     files = discover_files(fixture_dir, config.include, config.exclude)
     parse_results: list[ParseResult] = []

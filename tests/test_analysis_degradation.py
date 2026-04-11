@@ -154,10 +154,12 @@ def test_analyze_repo_target_path_respects_path_boundaries(tmp_path: Path) -> No
     (tmp_path / "src" / "app").mkdir(parents=True)
     (tmp_path / "src" / "app2").mkdir(parents=True)
     (tmp_path / "src" / "app" / "in_scope.py").write_text(
-        "def a():\n    return 1\n", encoding="utf-8",
+        "def a():\n    return 1\n",
+        encoding="utf-8",
     )
     (tmp_path / "src" / "app2" / "out_scope.py").write_text(
-        "def b():\n    return 2\n", encoding="utf-8",
+        "def b():\n    return 2\n",
+        encoding="utf-8",
     )
 
     analysis = analyze_repo(tmp_path, config=_config(), target_path="src/app", workers=1)

@@ -7,15 +7,15 @@ Set Height 750
 Set Theme "Catppuccin Mocha"
 Set Padding 20
 Set Framerate 24
-Set PlaybackSpeed 1.0
+Set PlaybackSpeed 1.5
 
-# Hauptbefehl - analyze auf Repo-Root
-Type "drift analyze --repo ." Sleep 400ms Enter
+# Kurzanalyse - max 5 Findings, gruppiert
+Type "drift analyze --repo . --max-findings 5 --group-by severity" Sleep 400ms Enter
 
-# Warte auf vollständige Ausgabe
-Sleep 5s
+# Warte auf vollständige Analyse (~35s Repo-Scan + Rendering)
+Sleep 45s
 
-# Zeige CI-Gate Befehl (Exit Code 1 erwartet)
-Sleep 1500ms
+# Zeige CI-Gate Befehl
+Sleep 1s
 Type "drift check --fail-on high" Sleep 400ms Enter
-Sleep 3s
+Sleep 8s

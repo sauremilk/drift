@@ -510,9 +510,7 @@ class TestIncrementalSignalRunner:
             file_path=Path("src/deleted.py"),
             start_line=1,
         )
-        old_pr = ParseResult(
-            file_path=Path("src/deleted.py"), language="python", line_count=100
-        )
+        old_pr = ParseResult(file_path=Path("src/deleted.py"), language="python", line_count=100)
         baseline = BaselineSnapshot(
             file_hashes={"src/deleted.py": "xxx"},
             score=0.3,

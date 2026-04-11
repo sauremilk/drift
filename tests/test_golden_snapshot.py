@@ -30,18 +30,22 @@ CORPUS_DIR = Path(__file__).resolve().parent.parent / "benchmarks" / "corpus"
 GOLDEN_DIR = Path(__file__).resolve().parent / "golden"
 
 # Fields that change between runs and must be stripped before comparison.
-_VOLATILE_KEYS = frozenset({
-    "analyzed_at",
-    "version",
-    "analysis_duration_seconds",
-    "repo",  # absolute workspace path differs between local and CI runners
-    "trend",  # accumulates history across runs — non-deterministic
-})
+_VOLATILE_KEYS = frozenset(
+    {
+        "analyzed_at",
+        "version",
+        "analysis_duration_seconds",
+        "repo",  # absolute workspace path differs between local and CI runners
+        "trend",  # accumulates history across runs — non-deterministic
+    }
+)
 
-_VOLATILE_SARIF_KEYS = frozenset({
-    "version",  # tool driver version
-    "trend",  # drift trend history is non-deterministic across runs
-})
+_VOLATILE_SARIF_KEYS = frozenset(
+    {
+        "version",  # tool driver version
+        "trend",  # drift trend history is non-deterministic across runs
+    }
+)
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────
@@ -50,11 +54,7 @@ _VOLATILE_SARIF_KEYS = frozenset({
 def _strip_volatile(obj: object) -> object:
     """Recursively remove volatile keys from a JSON-like structure."""
     if isinstance(obj, dict):
-        return {
-            k: _strip_volatile(v)
-            for k, v in obj.items()
-            if k not in _VOLATILE_KEYS
-        }
+        return {k: _strip_volatile(v) for k, v in obj.items() if k not in _VOLATILE_KEYS}
     if isinstance(obj, list):
         return [_strip_volatile(item) for item in obj]
     return obj
@@ -193,9 +193,7 @@ class TestSarifGoldenSnapshot:
             )
 
 
-def _dict_diff_summary(
-    expected: object, actual: object, path: str = "$"
-) -> list[str]:
+def _dict_diff_summary(expected: object, actual: object, path: str = "$") -> list[str]:
     """Return a list of human-readable diff descriptions (max 15)."""
     diffs: list[str] = []
 

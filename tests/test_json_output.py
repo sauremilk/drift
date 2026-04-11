@@ -132,11 +132,13 @@ def test_analysis_to_json_exposes_degraded_status() -> None:
     analysis.analysis_status = "degraded"
     analysis.degradation_causes = ["signal_failure"]
     analysis.degradation_components = ["signal:test"]
-    analysis.degradation_events = [{
-        "cause": "signal_failure",
-        "component": "signal:test",
-        "message": "Signal failed.",
-    }]
+    analysis.degradation_events = [
+        {
+            "cause": "signal_failure",
+            "component": "signal:test",
+            "message": "Signal failed.",
+        }
+    ]
 
     payload = json.loads(analysis_to_json(analysis))
 

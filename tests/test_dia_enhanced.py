@@ -203,8 +203,7 @@ class TestAdrScanning:
         adr_dir = repo / "docs" / "adr"
         adr_dir.mkdir(parents=True)
         (adr_dir / "001.md").write_text(
-            "# ADR 001\n\n- `controllers/` — HTTP layer\n"
-            "- `repositories/` — data access\n"
+            "# ADR 001\n\n- `controllers/` — HTTP layer\n- `repositories/` — data access\n"
         )
 
         config = DriftConfig(
@@ -220,12 +219,8 @@ class TestAdrScanning:
         signal = DocImplDriftSignal(repo_path=repo)
         findings = signal.analyze(parse_results, {}, config)
 
-        adr_findings = [
-            f for f in findings if "ADR" in f.title
-        ]
-        referenced_dirs = {
-            f.metadata.get("referenced_dir") for f in adr_findings
-        }
+        adr_findings = [f for f in findings if "ADR" in f.title]
+        referenced_dirs = {f.metadata.get("referenced_dir") for f in adr_findings}
         assert "controllers" in referenced_dirs
         assert "repositories" in referenced_dirs
 
@@ -244,9 +239,7 @@ class TestAdrScanning:
 
         adr_dir = repo / "docs" / "adr"
         adr_dir.mkdir(parents=True)
-        (adr_dir / "001.md").write_text(
-            "# ADR 001\n\n- `src/` — main source code\n"
-        )
+        (adr_dir / "001.md").write_text("# ADR 001\n\n- `src/` — main source code\n")
 
         config = DriftConfig(
             include=["**/*.py"],
@@ -261,9 +254,7 @@ class TestAdrScanning:
         signal = DocImplDriftSignal(repo_path=repo)
         findings = signal.analyze(parse_results, {}, config)
 
-        adr_findings = [
-            f for f in findings if "ADR" in f.title
-        ]
+        adr_findings = [f for f in findings if "ADR" in f.title]
         assert len(adr_findings) == 0
 
     def test_discovers_doc_decisions_directory(self, tmp_path):
@@ -281,9 +272,7 @@ class TestAdrScanning:
 
         decisions = repo / "doc" / "decisions"
         decisions.mkdir(parents=True)
-        (decisions / "0001.md").write_text(
-            "# Decision\n\n- `controllers/` handles routing\n"
-        )
+        (decisions / "0001.md").write_text("# Decision\n\n- `controllers/` handles routing\n")
 
         config = DriftConfig(
             include=["**/*.py"],
@@ -298,10 +287,7 @@ class TestAdrScanning:
         signal = DocImplDriftSignal(repo_path=repo)
         findings = signal.analyze(parse_results, {}, config)
 
-        assert any(
-            f.title == "ADR references missing directory: controllers/"
-            for f in findings
-        )
+        assert any(f.title == "ADR references missing directory: controllers/" for f in findings)
 
 
 class TestDiaLibraryContext:
@@ -447,9 +433,7 @@ class TestContainerPrefixExistence:
         signal = DocImplDriftSignal(repo_path=repo)
         findings = signal.analyze(parse_results, {}, cfg)
 
-        phantom_findings = [
-            f for f in findings if f.metadata.get("referenced_dir") == "services"
-        ]
+        phantom_findings = [f for f in findings if f.metadata.get("referenced_dir") == "services"]
         assert len(phantom_findings) == 0
 
 
@@ -505,8 +489,7 @@ class TestAdrStatusParsing:
         adr_dir = repo / "docs" / "adr"
         adr_dir.mkdir(parents=True)
         (adr_dir / "001.md").write_text(
-            "---\nstatus: superseded\n---\n"
-            "# ADR 001\n\n- `controllers/` — old HTTP layer\n"
+            "---\nstatus: superseded\n---\n# ADR 001\n\n- `controllers/` — old HTTP layer\n"
         )
 
         cfg = DriftConfig(include=["**/*.py"], exclude=["**/__pycache__/**"])
@@ -535,8 +518,7 @@ class TestAdrStatusParsing:
         adr_dir = repo / "docs" / "adr"
         adr_dir.mkdir(parents=True)
         (adr_dir / "001.md").write_text(
-            "---\nstatus: accepted\n---\n"
-            "# ADR 001\n\n- `controllers/` — HTTP layer\n"
+            "---\nstatus: accepted\n---\n# ADR 001\n\n- `controllers/` — HTTP layer\n"
         )
 
         cfg = DriftConfig(include=["**/*.py"], exclude=["**/__pycache__/**"])
@@ -564,9 +546,7 @@ class TestAdrStatusParsing:
 
         adr_dir = repo / "docs" / "adr"
         adr_dir.mkdir(parents=True)
-        (adr_dir / "001.md").write_text(
-            "# ADR 001\n\n- `controllers/` — HTTP layer\n"
-        )
+        (adr_dir / "001.md").write_text("# ADR 001\n\n- `controllers/` — HTTP layer\n")
 
         cfg = DriftConfig(include=["**/*.py"], exclude=["**/__pycache__/**"])
         files = discover_files(repo, cfg.include, cfg.exclude)
@@ -746,7 +726,8 @@ class TestAuxiliaryDirExclusion:
         findings = signal.analyze(parse_results, {}, cfg)
 
         undoc = {
-            f.metadata.get("undocumented_dir") for f in findings
+            f.metadata.get("undocumented_dir")
+            for f in findings
             if f.metadata.get("undocumented_dir")
         }
         assert "tests" not in undoc
@@ -773,7 +754,8 @@ class TestAuxiliaryDirExclusion:
         findings = signal.analyze(parse_results, {}, cfg)
 
         undoc = {
-            f.metadata.get("undocumented_dir") for f in findings
+            f.metadata.get("undocumented_dir")
+            for f in findings
             if f.metadata.get("undocumented_dir")
         }
         assert "services" in undoc
@@ -803,7 +785,8 @@ class TestAuxiliaryDirExclusion:
         findings = signal.analyze(parse_results, {}, cfg)
 
         undoc = {
-            f.metadata.get("undocumented_dir") for f in findings
+            f.metadata.get("undocumented_dir")
+            for f in findings
             if f.metadata.get("undocumented_dir")
         }
         assert "work_artifacts" not in undoc

@@ -217,6 +217,12 @@ class TestLevenshtein:
     def test_two_edits(self) -> None:
         assert _levenshtein("kitten", "sittin") == 2
 
+    def test_swap_order_does_not_matter(self) -> None:
+        assert _levenshtein("short", "longerstring") == _levenshtein("longerstring", "short")
+
+    def test_empty_b_returns_len_a(self) -> None:
+        assert _levenshtein("hello", "") == 5
+
 
 # ---------------------------------------------------------------------------
 # Symbol-based scope resolution

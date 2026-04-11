@@ -62,8 +62,14 @@ class TestAgentCard:
         assert len(card["skills"]) == 8
         skill_ids = {s["id"] for s in card["skills"]}
         expected = {
-            "scan", "diff", "explain", "fix_plan",
-            "validate", "nudge", "brief", "negative_context",
+            "scan",
+            "diff",
+            "explain",
+            "fix_plan",
+            "validate",
+            "nudge",
+            "brief",
+            "negative_context",
         }
         assert skill_ids == expected
 

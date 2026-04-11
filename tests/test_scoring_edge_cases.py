@@ -262,10 +262,14 @@ def test_breadth_multiplier_capped_at_maximum():
 
     huge_related = [f"mod/file_{i}.py" for i in range(10_000)]
     f_huge = _finding(
-        SignalType.ARCHITECTURE_VIOLATION, 0.8, related=huge_related,
+        SignalType.ARCHITECTURE_VIOLATION,
+        0.8,
+        related=huge_related,
     )
     f_small = _finding(
-        SignalType.ARCHITECTURE_VIOLATION, 0.8, related=["a.py", "b.py"],
+        SignalType.ARCHITECTURE_VIOLATION,
+        0.8,
+        related=["a.py", "b.py"],
     )
     weights = SignalWeights()
     assign_impact_scores([f_huge, f_small], weights)
@@ -293,7 +297,8 @@ def test_breadth_multiplier_not_capped_for_moderate_clusters():
     import math
 
     f = _finding(
-        SignalType.PATTERN_FRAGMENTATION, 0.5,
+        SignalType.PATTERN_FRAGMENTATION,
+        0.5,
         related=[f"mod/{i}.py" for i in range(10)],
     )
     weights = SignalWeights()

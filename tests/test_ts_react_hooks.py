@@ -56,9 +56,7 @@ class TestStaleClosure:
 @needs_tree_sitter
 class TestHookPlacement:
     def test_custom_hook_outside_hooks_dir(self) -> None:
-        pr = parse_typescript_file(
-            FIXTURES / "services" / "auth.tsx", Path("."), language="tsx"
-        )
+        pr = parse_typescript_file(FIXTURES / "services" / "auth.tsx", Path("."), language="tsx")
         hooks = _hook_patterns(pr)
         placement = [p for p in hooks if p.variant_id == "HOOK_PLACEMENT_VIOLATION"]
         assert len(placement) >= 1

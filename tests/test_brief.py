@@ -31,6 +31,7 @@ def _parse_json_from_output(output: str) -> dict:
     assert start != -1 and end != -1 and end >= start, output
     return json.loads(output[start : end + 1])
 
+
 # ---------------------------------------------------------------------------
 # API-layer tests
 # ---------------------------------------------------------------------------
@@ -40,8 +41,16 @@ class TestApiBrief:
     def test_returns_dict_with_required_keys(self, tmp_repo: Path) -> None:
         result = api_brief(tmp_repo, task="refactor the services layer")
         assert isinstance(result, dict)
-        for key in ("schema_version", "type", "task", "scope", "risk",
-                     "landscape", "guardrails", "guardrails_prompt_block"):
+        for key in (
+            "schema_version",
+            "type",
+            "task",
+            "scope",
+            "risk",
+            "landscape",
+            "guardrails",
+            "guardrails_prompt_block",
+        ):
             assert key in result, f"Missing key: {key}"
 
     def test_type_is_brief(self, tmp_repo: Path) -> None:
@@ -55,8 +64,12 @@ class TestApiBrief:
     def test_scope_has_resolution_fields(self, tmp_repo: Path) -> None:
         result = api_brief(tmp_repo, task="update services layer")
         scope = result["scope"]
-        for field in ("resolved_paths", "expanded_dependency_paths",
-                       "resolution_method", "confidence"):
+        for field in (
+            "resolved_paths",
+            "expanded_dependency_paths",
+            "resolution_method",
+            "confidence",
+        ):
             assert field in scope, f"Missing scope field: {field}"
 
     def test_risk_has_level(self, tmp_repo: Path) -> None:
@@ -90,7 +103,6 @@ class TestApiBrief:
 
 
 class TestBriefCli:
-
     @staticmethod
     def _make_runner() -> CliRunner:
         """Create a CliRunner compatible with both Click 8.1 and 8.2+."""
@@ -125,8 +137,7 @@ class TestBriefCli:
         runner = self._make_runner()
         result = runner.invoke(
             brief_cmd,
-            ["--task", "update services", "--repo", str(tmp_repo),
-             "--format", "markdown"],
+            ["--task", "update services", "--repo", str(tmp_repo), "--format", "markdown"],
         )
         assert result.exit_code in (0, 1), result.output
         assert "# Drift Brief" in result.output or "## " in result.output
@@ -159,8 +170,7 @@ class TestBriefCli:
         runner = self._make_runner()
         result = runner.invoke(
             brief_cmd,
-            ["--task", "refactor", "--repo", str(tmp_repo),
-             "--json", "--select", "PFS,BEM"],
+            ["--task", "refactor", "--repo", str(tmp_repo), "--json", "--select", "PFS,BEM"],
         )
         assert result.exit_code in (0, 1), result.output
         parsed = self._extract_json(result.output)
@@ -285,9 +295,7 @@ class TestBriefConfig:
     def test_brief_config_from_dict(self) -> None:
         from drift.config import DriftConfig
 
-        cfg = DriftConfig.model_validate({
-            "brief": {"scope_aliases": {"billing": "src/billing/"}}
-        })
+        cfg = DriftConfig.model_validate({"brief": {"scope_aliases": {"billing": "src/billing/"}}})
         assert cfg.brief.scope_aliases == {"billing": "src/billing/"}
 
 
@@ -298,7 +306,8 @@ class TestBriefConfig:
 
 class TestPreTaskSignals:
     def test_brief_uses_pre_task_signals_by_default(
-        self, tmp_repo: Path,
+        self,
+        tmp_repo: Path,
     ) -> None:
         """Without explicit --signals, brief should still return results."""
         result = api_brief(tmp_repo, task="refactor services layer")
@@ -307,7 +316,8 @@ class TestPreTaskSignals:
         assert "landscape" in result
 
     def test_explicit_signals_override_pre_task(
-        self, tmp_repo: Path,
+        self,
+        tmp_repo: Path,
     ) -> None:
         """Passing explicit signals should override the pre-task set."""
         result = api_brief(

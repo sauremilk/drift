@@ -4,9 +4,18 @@
 
 # Drift
 
-**AI writes the code. Drift keeps the architecture honest.**
+**Your architecture is drifting. Your linter won't tell you. Drift will.**
+
+24 cross-file signals · 100 % ground-truth precision · deterministic, no LLM · ~30 s for a 2 900-file codebase
+
+```bash
+pip install drift-analyzer && drift analyze .
+```
+
+<img src="demos/demo.gif" alt="drift analyze — Rich terminal output showing structural findings" width="720">
 
 [![CI](https://github.com/mick-gsk/drift/actions/workflows/ci.yml/badge.svg)](https://github.com/mick-gsk/drift/actions/workflows/ci.yml)
+[![Drift Score](https://img.shields.io/badge/drift%20score-0.50-yellow?style=flat)](benchmark_results/drift_self.json)
 [![codecov](https://codecov.io/gh/mick-gsk/drift/branch/main/graph/badge.svg)](https://codecov.io/gh/mick-gsk/drift)
 [![PyPI](https://img.shields.io/pypi/v/drift-analyzer?cacheSeconds=300)](https://pypi.org/project/drift-analyzer/)
 [![PyPI Downloads](https://img.shields.io/pypi/dm/drift-analyzer)](https://pypi.org/project/drift-analyzer/)
@@ -18,6 +27,28 @@
 [Docs](https://mick-gsk.github.io/drift/) · [Quick Start](docs-site/getting-started/quickstart.md) · [Benchmarking](docs-site/benchmarking.md) · [Trust & Limitations](docs-site/trust-evidence.md)
 
 </div>
+
+---
+
+## ⚡ Try it — zero install
+
+```bash
+uvx drift-analyzer analyze --repo .
+```
+
+> One command. No pre-install. Results in ~30 seconds.
+
+**Permanent install:** `pip install drift-analyzer` · Python 3.11+ · also via [pipx, Homebrew, Docker, GitHub Action, pre-commit →](docs-site/getting-started/installation.md)
+
+| Metric | Value | Evidence |
+|---|---|---|
+| Ground-truth precision | **100 %** (47 TP, 0 FP) | [v2.7.0 baseline](benchmark_results/v2.7.0_precision_recall_baseline.json) |
+| Ground-truth recall | **100 %** (0 FN, 114 fixtures) | [v2.7.0 baseline](benchmark_results/v2.7.0_precision_recall_baseline.json) |
+| Mutation recall | **100 %** (25/25 injected) | [mutation benchmark](benchmark_results/mutation_benchmark.json) |
+| Wild-repo precision | **77–95 %** (5 repos) | [study §5](docs/STUDY.md) |
+
+> [!NOTE]
+> **Drift eats its own dog food.** Every release runs `drift self` on its own source — same pipeline, same rules, no exceptions. Results: [drift_self.json](benchmark_results/drift_self.json)
 
 ---
 
@@ -54,16 +85,6 @@ cross-file structural drift that accumulates silently during AI-assisted develop
 
 ---
 
-## ⚡ Quick Install
-
-```bash
-pip install drift-analyzer
-```
-
-Python 3.11+. Also available via [pipx, Homebrew, Docker, GitHub Action, pre-commit →](docs-site/getting-started/installation.md)
-
----
-
 ## ⚙️ How it works
 
 **Before a session — generate guardrails:**
@@ -81,10 +102,6 @@ drift check --fail-on none         # pre-commit hook (advisory, report-only)
 drift analyze --repo . --format json  # full report
 ```
 
-<div align="center">
-  <img src="demos/demo.gif" alt="drift brief generates guardrails, drift check enforces them — terminal demo" width="720">
-</div>
-
 📖 [Full workflow guide →](docs-site/getting-started/quickstart.md)
 
 > [!TIP]
@@ -93,17 +110,44 @@ drift analyze --repo . --format json  # full report
 
 ---
 
-## 🔌 Integrations
+## 🔌 Works with
+
+| AI Tools (MCP) | CI/CD | Git Hooks | Install |
+|:---:|:---:|:---:|:---:|
+| Cursor · Claude Code · Copilot | GitHub Actions · SARIF | pre-commit · pre-push | pip · pipx · uvx · Homebrew · Docker |
+
+> **Bootstrap everything:** `drift init --mcp --ci --hooks` scaffolds config for all integrations in one command.
+
+### GitHub Actions
+
+[![Available on GitHub Marketplace](https://img.shields.io/badge/Marketplace-Drift-orange?logo=github)](https://github.com/marketplace/actions/drift-ai-code-coherence-monitor)
 
 ```yaml
-# GitHub Actions — start report-only, tighten once you trust the output
-- uses: mick-gsk/drift@v1
-  with:
-    fail-on: none               # report findings without blocking
-    upload-sarif: "true"        # findings appear as PR annotations
+# Try it — add this to .github/workflows/drift.yml
+name: Drift
+on: [push, pull_request]
+jobs:
+  drift:
+    runs-on: ubuntu-latest
+    permissions:
+      security-events: write   # for SARIF upload
+      pull-requests: write     # for PR comments
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0       # full history for temporal signals
+      - uses: mick-gsk/drift@v1
+        with:
+          fail-on: none        # report-only — tighten once you trust the output
+          upload-sarif: "true" # findings appear as PR annotations
+          comment: "true"      # summary comment on each PR
 ```
 
-**MCP / AI Tools:** Cursor, Claude Code, and Copilot call drift directly via MCP server — the agent runs a full session loop:
+**Outputs available** for downstream steps: `drift-score`, `grade`, `severity`, `finding-count`, `badge-svg`
+
+### MCP / AI Tools
+
+Cursor, Claude Code, and Copilot call drift directly via MCP server — the agent runs a full session loop:
 
 | Phase | MCP Tool | What it does |
 |---|---|---|
@@ -111,6 +155,51 @@ drift analyze --repo . --format json  # full report
 | **Code** | `drift_nudge` | Real-time `safe_to_commit` check after each edit |
 | **Verify** | `drift_diff` | Full before/after comparison before push |
 | **Learn** | `drift_feedback` | Mark findings as TP/FP — calibrates signal weights |
+
+#### Copy-paste MCP config
+
+**VS Code** — add to `.vscode/mcp.json`:
+
+```json
+{
+  "servers": {
+    "drift": {
+      "type": "stdio",
+      "command": "drift",
+      "args": ["mcp", "--serve"]
+    }
+  }
+}
+```
+
+**Claude Desktop** — add to `claude_desktop_config.json`:
+
+```json
+{
+  "mcpServers": {
+    "drift": {
+      "command": "drift",
+      "args": ["mcp", "--serve"]
+    }
+  }
+}
+```
+
+**Cursor** — add to `.cursor/mcp.json`:
+
+```json
+{
+  "mcpServers": {
+    "drift": {
+      "type": "stdio",
+      "command": "drift",
+      "args": ["mcp", "--serve"]
+    }
+  }
+}
+```
+
+Or auto-generate: `pip install drift-analyzer[mcp] && drift init --mcp`
 
 📖 [MCP setup guide →](docs-site/integrations.md)
 
@@ -163,39 +252,31 @@ If your team ships most changes via AI coding tools (Copilot, Cursor, Claude), d
 
 **From Ruff / pylint:** Drift operates one layer above single-file style. It detects when AI generates the same error handler four different ways across modules — something no linter sees.
 
+**From Semgrep / CodeQL:** Semgrep finds known vulnerability patterns in single files. Drift finds structural erosion across files — pattern fragmentation, layer violations, temporal volatility — that security scanners don't target.
+
 **From SonarQube:** Drift runs locally with zero server setup and produces deterministic, reproducible findings per signal. Add it alongside SonarQube — not instead.
 
 **From jscpd / CPD:** Drift's duplicate detection is AST-level, not text-level. It finds near-duplicates that text diff misses and places them in architectural context.
 
-<details>
-<summary><b>Full capability comparison</b></summary>
+### Capability comparison
 
-| Capability | drift | SonarQube | pylint / mypy | jscpd / CPD |
-|---|:---:|:---:|:---:|:---:|
-| Pattern Fragmentation across modules | ✔ | — | — | — |
-| Near-Duplicate Detection (AST-level) | ✔ | Partial (text) | — | ✔ (text) |
-| Architecture Violation signals | ✔ | Partial | — | — |
-| Temporal / change-history signals | ✔ | — | — | — |
-| GitHub Code Scanning via SARIF | ✔ | ✔ | — | — |
-| Zero server setup | ✔ | — | Partial | ✔ |
-| TypeScript support | Experimental ¹ | ✔ | — | ✔ |
+| Capability | drift | SonarQube | Ruff / pylint / mypy | Semgrep / CodeQL | jscpd / CPD |
+|---|:---:|:---:|:---:|:---:|:---:|
+| Pattern Fragmentation across modules | ✔ | — | — | — | — |
+| Near-Duplicate Detection (AST-level) | ✔ | Partial (text) | — | — | ✔ (text) |
+| Architecture Violation signals | ✔ | Partial | — | Partial (custom rules) | — |
+| Temporal / change-history signals | ✔ | — | — | — | — |
+| GitHub Code Scanning via SARIF | ✔ | ✔ | — | ✔ | — |
+| Bayesian per-repo calibration | ✔ | — | — | — | — |
+| MCP server for AI agents | ✔ | — | — | — | — |
+| Zero server setup | ✔ | — | ✔ | ✔ | ✔ |
+| TypeScript support | Experimental ¹ | ✔ | — | ✔ | ✔ |
 
 ✔ = within primary design scope · — = not a primary design target · Partial = limited coverage
 
 ¹ Via `drift-analyzer[typescript]`. Python is the primary analysis target.
 
 Comparison reflects primary design scope per [STUDY.md §9](docs/STUDY.md).
-</details>
-
----
-
-> [!NOTE]
-> Drift analyzes its own source code on every release — same input, same output, reproducible in CI.
-> Results: [benchmark_results/drift_self.json](benchmark_results/drift_self.json)
-
-```bash
-drift self   # or: drift analyze --repo https://github.com/mick-gsk/drift
-```
 
 ---
 
@@ -210,6 +291,7 @@ drift self   # or: drift analyze --repo https://github.com/mick-gsk/drift
 | [Benchmarking & Trust](docs-site/benchmarking.md) | Precision/Recall, methodology, artifacts |
 | [MCP & AI Tools](docs-site/integrations.md) | Cursor, Claude Code, Copilot, HTTP API |
 | [Configuration](docs-site/getting-started/configuration.md) | drift.yaml, layer boundaries, signal weights |
+| [Configuration Levels](docs-site/guides/configuration-levels.md) | Zero-Config → Preset → YAML → Calibration → MCP → CI |
 | [Calibration & Feedback](docs-site/algorithms/scoring.md) | Bayesian signal reweighting, feedback workflow |
 | [Vibe-coding Playbook](examples/vibe-coding/README.md) | 30-day rollout guide for AI-heavy teams |
 | [Contributing](CONTRIBUTING.md) | Dev setup, FP/FN reporting, signal development |
