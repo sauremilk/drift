@@ -129,6 +129,7 @@ class TestJsonOutputGolden:
             "fix",
             "remediation",
             "file",
+            "language",
             "start_line",
             "end_line",
             "symbol",
