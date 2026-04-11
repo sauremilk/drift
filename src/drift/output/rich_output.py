@@ -10,6 +10,7 @@ from rich.panel import Panel
 from rich.table import Table
 from rich.text import Text
 
+from drift.finding_rendering import build_first_run_summary
 from drift.models import Finding, ModuleScore, RepoAnalysis, Severity, SignalType
 
 # Brand accent: Deep Teal (slate/teal palette)
@@ -39,7 +40,7 @@ _SEVERITY_ICONS = {
     Severity.INFO: "○",
 }
 
-_SIGNAL_LABELS = {
+_SIGNAL_LABELS: dict[str, str] = {
     SignalType.PATTERN_FRAGMENTATION: "PFS",
     SignalType.ARCHITECTURE_VIOLATION: "AVS",
     SignalType.MUTANT_DUPLICATE: "MDS",
@@ -61,10 +62,114 @@ _SIGNAL_LABELS = {
     SignalType.HARDCODED_SECRET: "HSC",
 }
 
+# --explain: concise signal explanations (why it matters → what to do)
+_SIGNAL_EXPLANATIONS: dict[str, tuple[str, str]] = {
+    SignalType.PATTERN_FRAGMENTATION: (
+        "Multiple divergent implementations of the same pattern"
+        " increase maintenance cost and bug surface.",
+        "Consolidate into a shared abstraction or utility;"
+        " apply the dominant pattern consistently.",
+    ),
+    SignalType.ARCHITECTURE_VIOLATION: (
+        "Dependency flows against the declared layer order, eroding module boundaries.",
+        "Move the import to the correct layer or introduce an interface/adapter at the boundary.",
+    ),
+    SignalType.MUTANT_DUPLICATE: (
+        "Near-identical code blocks that diverge slightly — one fix may not reach all copies.",
+        "Extract a shared helper or base class; parameterize the differences.",
+    ),
+    SignalType.EXPLAINABILITY_DEFICIT: (
+        "Complex logic lacks comments, docstrings, or clear naming,"
+        " making review and onboarding harder.",
+        "Add a docstring explaining intent; rename variables to convey purpose.",
+    ),
+    SignalType.DOC_IMPL_DRIFT: (
+        "Documentation and implementation have diverged — readers will be misled.",
+        "Update the docstring/README to match current behavior, or fix the code to match the docs.",
+    ),
+    SignalType.TEMPORAL_VOLATILITY: (
+        "File changes unusually often, correlating with higher defect rates.",
+        "Stabilize the interface; split volatile logic from stable contracts.",
+    ),
+    SignalType.SYSTEM_MISALIGNMENT: (
+        "Naming conventions, structure, or patterns deviate from the project norm.",
+        "Rename to match project conventions; move to the expected package location.",
+    ),
+    SignalType.BROAD_EXCEPTION_MONOCULTURE: (
+        "Bare except or overly broad exception handlers swallow errors silently.",
+        "Catch specific exceptions; log or re-raise unexpected ones.",
+    ),
+    SignalType.TEST_POLARITY_DEFICIT: (
+        "Tests only cover happy paths — negative/edge cases are untested.",
+        "Add failure-case tests for invalid input, boundary values, and error paths.",
+    ),
+    SignalType.GUARD_CLAUSE_DEFICIT: (
+        "Deep nesting from missing early returns makes the function harder to follow.",
+        "Invert conditions and return early to flatten the control flow.",
+    ),
+    SignalType.COHESION_DEFICIT: (
+        "Module or class mixes unrelated responsibilities, increasing coupling.",
+        "Split into focused modules: one responsibility per class or file.",
+    ),
+    SignalType.NAMING_CONTRACT_VIOLATION: (
+        "Names violate project conventions (e.g. prefix/suffix rules), confusing readers.",
+        "Rename to match the established naming convention.",
+    ),
+    SignalType.BYPASS_ACCUMULATION: (
+        "Growing number of TODO/HACK/FIXME bypasses suggests deferred technical debt.",
+        "Resolve the underlying issue or file a tracked ticket and add a link.",
+    ),
+    SignalType.EXCEPTION_CONTRACT_DRIFT: (
+        "Declared and actually raised exceptions diverge — callers may not handle all cases.",
+        "Align raises with the documented exception contract.",
+    ),
+    SignalType.CO_CHANGE_COUPLING: (
+        "Files that always change together likely share a hidden dependency.",
+        "Extract the shared concern into a module both can import.",
+    ),
+    SignalType.COGNITIVE_COMPLEXITY: (
+        "Function exceeds cognitive complexity threshold, increasing bug risk.",
+        "Decompose into smaller helper functions; simplify branching logic.",
+    ),
+    SignalType.FAN_OUT_EXPLOSION: (
+        "Module imports too many other modules, creating fragile coupling.",
+        "Introduce a facade or mediator; reduce direct dependencies.",
+    ),
+    SignalType.CIRCULAR_IMPORT: (
+        "Circular imports create fragile load-order dependencies and block refactoring.",
+        "Break the cycle with dependency inversion or a shared interface module.",
+    ),
+    SignalType.DEAD_CODE_ACCUMULATION: (
+        "Unreachable code clutters the codebase and misleads readers.",
+        "Remove the dead code; rely on version control for history.",
+    ),
+    SignalType.MISSING_AUTHORIZATION: (
+        "Endpoint or sensitive operation lacks an authorization check.",
+        "Add an explicit authorization guard before the operation.",
+    ),
+    SignalType.INSECURE_DEFAULT: (
+        "A security-relevant setting defaults to an insecure value.",
+        "Change the default to the secure option; require explicit opt-in for weaker settings.",
+    ),
+    SignalType.HARDCODED_SECRET: (
+        "Credentials or secrets are hardcoded in source, risking exposure.",
+        "Move to environment variables or a secret manager; rotate the exposed credential.",
+    ),
+    SignalType.PHANTOM_REFERENCE: (
+        "Code references a symbol, module, or path that does not exist.",
+        "Remove the stale reference or create the missing target.",
+    ),
+    SignalType.TYPE_SAFETY_BYPASS: (
+        "Explicit type: ignore or cast bypasses the type checker, hiding potential bugs.",
+        "Fix the underlying type issue; narrow the ignore to a specific error code if unavoidable.",
+    ),
+}
 
-def _signal_label(signal_type: SignalType) -> str:
+
+def _signal_label(signal_type: str) -> str:
     """Return a stable signal label; fall back to canonical signal id."""
-    return _SIGNAL_LABELS.get(signal_type, signal_type.value)
+    signal = str(signal_type)
+    return _SIGNAL_LABELS.get(signal, signal)
 
 
 def _read_code_snippet(
@@ -148,7 +253,48 @@ def _sparkline(values: list[float], width: int = 20) -> str:
     return "".join(chars[int((v - mn) / rng * (len(chars) - 1))] for v in values[-width:])
 
 
-def render_summary(analysis: RepoAnalysis, console: Console | None = None) -> None:
+def _render_first_run_panel(
+    analysis: RepoAnalysis,
+    *,
+    console: Console,
+    language: str | None = None,
+) -> None:
+    """Render a compact first-run orientation block before deep detail tables."""
+    summary = build_first_run_summary(analysis, max_items=3, language=language)
+    is_german = (language or "").lower().startswith("de")
+    title = "Starte hier" if is_german else "Start Here"
+    next_label = "Naechster Schritt" if is_german else "Next step"
+
+    body = Text()
+    body.append(summary["headline"], style="bold")
+    body.append("\n")
+    body.append(summary["why_this_matters"], style="dim")
+
+    top_findings = summary["top_findings"]
+    if top_findings:
+        body.append("\n\n")
+        for index, finding in enumerate(top_findings, start=1):
+            signal = finding.get("signal_abbrev") or finding.get("signal") or "?"
+            title_text = finding.get("title") or ""
+            location = finding.get("file") or "repo"
+            line = finding.get("line")
+            suffix = f":{line}" if line else ""
+            body.append(f"{index}. [{signal}] {title_text}\n", style="bold")
+            body.append(f"   {location}{suffix}\n", style="dim")
+
+    body.append("\n")
+    body.append(f"{next_label}: ", style=_TEAL_BOLD)
+    body.append(summary["next_step"], style=_TEAL)
+
+    console.print(Panel(body, title=f"[bold]{title}[/bold]", border_style=_TEAL))
+
+
+def render_summary(
+    analysis: RepoAnalysis,
+    console: Console | None = None,
+    *,
+    language: str | None = None,
+) -> None:
     """Render the top-level analysis summary."""
     if console is None:
         console = Console()
@@ -156,6 +302,10 @@ def render_summary(analysis: RepoAnalysis, console: Console | None = None) -> No
     # Header
     console.print()
     header_color = _SEVERITY_COLORS.get(analysis.severity, "white")
+
+    # Letter grade (A–F) for quick comprehension
+    grade_letter, grade_label = analysis.grade
+    grade_text = f"  Grade {grade_letter} — {grade_label}"
 
     # Build trend suffix (ADR-005)
     trend = analysis.trend
@@ -184,6 +334,7 @@ def render_summary(analysis: RepoAnalysis, console: Console | None = None) -> No
             Text.assemble(
                 ("DRIFT SCORE  ", "bold"),
                 (f"{analysis.drift_score:.2f}", f"bold {header_color}"),
+                (grade_text, f"bold {header_color}"),
                 *trend_parts,
                 ("  │  ", "dim"),
                 (f"{analysis.total_files} files", ""),
@@ -246,6 +397,9 @@ def render_summary(analysis: RepoAnalysis, console: Console | None = None) -> No
             " changes to establish trend.[/dim]",
         )
 
+    console.print()
+    _render_first_run_panel(analysis, console=console, language=language)
+
 
 def render_module_table(analysis: RepoAnalysis, console: Console | None = None) -> None:
     """Render the module ranking table."""
@@ -288,6 +442,7 @@ def _format_finding_detail(
     *,
     repo_root: Path | None = None,
     show_code: bool = True,
+    explain: bool = False,
 ) -> Text:
     """Build the detail body for a single finding panel."""
     color = _SEVERITY_COLORS.get(f.severity, "white")
@@ -297,12 +452,20 @@ def _format_finding_detail(
     # Title: [SIGNAL] Description (score)
     text.append(f"[{signal_label}] {f.title} ({f.score:.2f})\n", style=f"bold {color}")
 
-    # Primary location
+    # Primary location (with terminal hyperlink if absolute path resolvable)
     if f.file_path:
         loc = f.file_path.as_posix()
         if f.start_line:
             loc += f":{f.start_line}"
-        text.append(f"  → {loc}\n", style="dim")
+        abs_path = (
+            (repo_root / f.file_path).resolve()
+            if repo_root and not f.file_path.is_absolute()
+            else f.file_path.resolve()
+        )
+        link_uri = abs_path.as_uri()
+        text.append("  → ", style="dim")
+        text.append(loc, style=f"dim link {link_uri}")
+        text.append("\n")
 
     # Code snippet with end_line support
     if show_code and f.file_path and f.start_line:
@@ -319,7 +482,15 @@ def _format_finding_detail(
     if f.related_files:
         shown = f.related_files[:10]
         for rf in shown:
-            text.append(f"  → {rf.as_posix()}\n", style="dim")
+            abs_rf = (
+                (repo_root / rf).resolve()
+                if repo_root and not rf.is_absolute()
+                else rf.resolve()
+            )
+            rf_link = abs_rf.as_uri()
+            text.append("  → ", style="dim")
+            text.append(rf.as_posix(), style=f"dim link {rf_link}")
+            text.append("\n")
         remainder = len(f.related_files) - len(shown)
         if remainder > 0:
             text.append(f"  … and {remainder} more\n", style="dim italic")
@@ -344,6 +515,29 @@ def _format_finding_detail(
     if dpr:
         text.append(f"  ⚠ {dpr}\n", style="dim italic")
 
+    # Causal attribution (ADR-034)
+    if f.attribution:
+        a = f.attribution
+        short_hash = a.commit_hash[:7] if a.commit_hash else "?"
+        date_str = a.date.isoformat() if a.date else "?"
+        parts = [f"Commit {short_hash}", a.author, date_str]
+        if a.branch_hint:
+            parts.append(a.branch_hint)
+        attr_line = " · ".join(parts)
+        if a.ai_attributed:
+            attr_line += " [AI]"
+        text.append(f"  ╰─ {attr_line}\n", style="dim cyan")
+
+    # --explain: contextual explanation panel
+    if explain:
+        explanation = _SIGNAL_EXPLANATIONS.get(f.signal_type)
+        if explanation:
+            why, action = explanation
+            text.append("  ┌─ Why: ", style="bold dim")
+            text.append(f"{why}\n", style="dim")
+            text.append("  └─ Action: ", style="bold dim")
+            text.append(f"{action}\n", style="dim")
+
     return text
 
 
@@ -355,6 +549,8 @@ def render_findings(
     *,
     repo_root: Path | None = None,
     show_code: bool = True,
+    explain: bool = False,
+    group_by: str | None = None,
 ) -> None:
     """Render a list of findings with fix recommendations and all locations."""
     if console is None:
@@ -369,7 +565,7 @@ def render_findings(
             findings,
             key=lambda f: (
                 -f.score,
-                f.signal_type.value,
+                f.signal_type,
                 f.file_path.as_posix() if f.file_path else "",
                 f.start_line or 0,
             ),
@@ -380,19 +576,77 @@ def render_findings(
             findings,
             key=lambda f: (
                 -(f.impact if f.impact > 0 else f.score),
-                f.signal_type.value,
+                f.signal_type,
                 f.file_path.as_posix() if f.file_path else "",
                 f.start_line or 0,
             ),
         )
 
-    table = Table(title="Findings", show_lines=True)
+    if group_by:
+        from drift.output.grouping import group_findings
+
+        groups = group_findings(sorted_findings, group_by)
+        total_shown = 0
+        for group_name, group_items in groups.items():
+            if total_shown >= max_items:
+                break
+            budget = max_items - total_shown
+            _render_findings_table(
+                group_items[:budget],
+                console,
+                title=f"Findings — {group_by}: {group_name}",
+                repo_root=repo_root,
+                show_code=show_code,
+                explain=explain,
+            )
+            total_shown += min(len(group_items), budget)
+            remaining_in_group = len(group_items) - budget
+            if remaining_in_group > 0:
+                console.print(
+                    f"[dim]... and {remaining_in_group} more "
+                    f"in {group_name}[/dim]"
+                )
+            console.print()
+
+        remaining = len(sorted_findings) - max_items
+        if remaining > 0:
+            console.print(
+                f"[dim]... {remaining} more findings not shown "
+                f"(increase --max-findings)[/dim]"
+            )
+        return
+
+    _render_findings_table(
+        sorted_findings[:max_items],
+        console,
+        title="Findings",
+        repo_root=repo_root,
+        show_code=show_code,
+        explain=explain,
+    )
+
+    remaining = len(sorted_findings) - max_items
+    if remaining > 0:
+        console.print(f"[dim]... and {remaining} more findings[/dim]")
+
+
+def _render_findings_table(
+    items: list[Finding],
+    console: Console,
+    *,
+    title: str = "Findings",
+    repo_root: Path | None = None,
+    show_code: bool = True,
+    explain: bool = False,
+) -> None:
+    """Render a Rich table for a list of findings."""
+    table = Table(title=title, show_lines=True)
     table.add_column("", width=2)
     table.add_column("Signal", min_width=5)
     table.add_column("Score", justify="right", min_width=6)
     table.add_column("Title / Details", min_width=50)
 
-    for f in sorted_findings[:max_items]:
+    for f in items:
         icon = _SEVERITY_ICONS.get(f.severity, "?")
         color = _SEVERITY_COLORS.get(f.severity, "white")
         signal = _signal_label(f.signal_type)
@@ -401,14 +655,12 @@ def render_findings(
             Text(icon, style=color),
             signal,
             Text(f"{f.score:.2f}", style=color),
-            _format_finding_detail(f, repo_root=repo_root, show_code=show_code),
+            _format_finding_detail(
+                f, repo_root=repo_root, show_code=show_code, explain=explain
+            ),
         )
 
     console.print(table)
-
-    remaining = len(sorted_findings) - max_items
-    if remaining > 0:
-        console.print(f"[dim]... and {remaining} more findings[/dim]")
 
 
 def render_module_detail(module: ModuleScore, console: Console | None = None) -> None:
@@ -464,12 +716,15 @@ def render_full_report(
     max_findings: int = 20,
     *,
     show_code: bool = True,
+    explain: bool = False,
+    language: str | None = None,
+    group_by: str | None = None,
 ) -> None:
     """Render the complete analysis report."""
     if console is None:
         console = Console()
 
-    render_summary(analysis, console)
+    render_summary(analysis, console, language=language)
     console.print()
     render_module_table(analysis, console)
     console.print()
@@ -480,6 +735,8 @@ def render_full_report(
         sort_by=sort_by,
         repo_root=analysis.repo_path,
         show_code=show_code,
+        explain=explain,
+        group_by=group_by,
     )
 
     # Interpretation guidance footer

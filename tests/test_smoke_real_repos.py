@@ -12,6 +12,8 @@ Usage:
 
 from __future__ import annotations
 
+import os
+import shutil
 import subprocess
 from pathlib import Path
 
@@ -28,6 +30,8 @@ from drift.output.json_output import analysis_to_json
 
 DRIFT_REPO = Path(__file__).resolve().parent.parent  # drift/ repo root
 BENCHMARK_DIR = DRIFT_REPO / "benchmark_results"
+DEFAULT_SMOKE_CACHE_DIR = DRIFT_REPO / ".tmp_smoke_repo_cache"
+PR_SMOKE_REPOS = {"requests", "fastapi", "pydantic"}
 
 
 def _save_findings_json(
@@ -51,6 +55,27 @@ def _shallow_clone(url: str, dest: Path, depth: int = 1, timeout: int = 120) -> 
         timeout=timeout,
     )
     return dest
+
+
+def _prepare_cached_clone(
+    name: str,
+    url: str,
+    cache_root: Path,
+    *,
+    timeout: int = 120,
+    refresh: bool = False,
+) -> Path:
+    """Reuse cached clones between runs; refresh only when requested."""
+    cache_root.mkdir(parents=True, exist_ok=True)
+    clone_dir = cache_root / name
+
+    if refresh and clone_dir.exists():
+        shutil.rmtree(clone_dir, ignore_errors=True)
+
+    if (clone_dir / ".git").exists():
+        return clone_dir
+
+    return _shallow_clone(url, clone_dir, timeout=timeout)
 
 
 def _assert_analysis_sane(analysis: RepoAnalysis, label: str) -> None:
@@ -244,20 +269,44 @@ class TestExternalRepos:
     """Clone and analyze real open-source repos. Requires network."""
 
     @pytest.fixture(scope="session")
-    def external_repo_root(self, tmp_path_factory: pytest.TempPathFactory) -> Path:
-        """Create one temporary root for cloned external repositories."""
-        return tmp_path_factory.mktemp("external-repos")
+    def external_repo_root(self, request: pytest.FixtureRequest) -> Path:
+        """Return the cache directory for cloned external repositories."""
+        configured = os.getenv("DRIFT_SMOKE_CACHE_DIR", "").strip()
+        return Path(configured) if configured else DEFAULT_SMOKE_CACHE_DIR
+
+    @pytest.fixture(scope="session")
+    def smoke_profile(self, request: pytest.FixtureRequest) -> str:
+        """Read the selected external smoke profile."""
+        return request.config.getoption("--smoke-profile", default="pr")
+
+    @pytest.fixture(scope="session")
+    def refresh_smoke_cache(self, request: pytest.FixtureRequest) -> bool:
+        """Whether cached clones should be refreshed before analysis."""
+        return bool(request.config.getoption("--refresh-smoke-cache", default=False))
 
     @pytest.fixture(
         scope="session", params=EXTERNAL_REPOS, ids=[r[0] for r in EXTERNAL_REPOS]
     )
     def repo_analysis(
-        self, request: pytest.FixtureRequest, external_repo_root: Path
+        self,
+        request: pytest.FixtureRequest,
+        external_repo_root: Path,
+        smoke_profile: str,
+        refresh_smoke_cache: bool,
     ) -> tuple[str, RepoAnalysis]:
         name, url, score_min, score_max, min_files, expected_signals, clone_timeout = request.param
-        clone_dir = external_repo_root / name
+
+        if smoke_profile == "pr" and name not in PR_SMOKE_REPOS:
+            pytest.skip(f"{name} excluded by smoke profile 'pr'")
+
         try:
-            _shallow_clone(url, clone_dir, timeout=clone_timeout)
+            clone_dir = _prepare_cached_clone(
+                name,
+                url,
+                external_repo_root,
+                timeout=clone_timeout,
+                refresh=refresh_smoke_cache,
+            )
         except (subprocess.CalledProcessError, subprocess.TimeoutExpired) as exc:
             pytest.skip(f"Could not clone {name}: {exc}")
 
@@ -350,5 +399,5 @@ class TestExternalRepos:
         if highs:
             print("\n  Top HIGH/CRITICAL findings (manual FP review):")
             for f in sorted(highs, key=lambda x: -x.score)[:5]:
-                print(f"    [{f.signal_type.value}] {f.title}")
+                print(f"    [{f.signal_type}] {f.title}")
                 print(f"      {f.file_path}:{f.start_line} score={f.score:.2f}")

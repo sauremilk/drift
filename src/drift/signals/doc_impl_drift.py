@@ -556,9 +556,12 @@ class DocImplDriftSignal(BaseSignal):
         # Check for undocumented source directories
         if source_dirs:
             readme_lower = readme_text.lower()
+            effective_aux = self._AUXILIARY_DIRS | frozenset(
+                d.lower() for d in getattr(getattr(config, "dia", None), "extra_auxiliary_dirs", [])
+            )
             for src_dir in sorted(source_dirs):
                 # P1: skip conventional auxiliary directories
-                if src_dir.lower() in self._AUXILIARY_DIRS:
+                if src_dir.lower() in effective_aux:
                     continue
                 if src_dir.lower() not in readme_lower:
                     findings.append(

@@ -14,6 +14,8 @@ import datetime
 from pathlib import Path
 from typing import Any
 
+import pytest
+
 import drift.signals.architecture_violation  # noqa: F401
 import drift.signals.broad_exception_monoculture  # noqa: F401
 import drift.signals.bypass_accumulation  # noqa: F401
@@ -250,6 +252,7 @@ ACTIVE_SIGNALS = [
 ]
 
 
+@pytest.mark.slow
 def test_ablation_study(tmp_path: Path) -> None:
     """Deactivate each signal and measure delta-F1."""
     prepared_fixtures = _prepare_fixtures(ALL_FIXTURES, tmp_path / "prepared")
@@ -295,6 +298,7 @@ def test_ablation_study(tmp_path: Path) -> None:
             print(f"  {sig_name}: moderate impact (delta={delta:+.3f})")
 
 
+@pytest.mark.slow
 def test_scoring_sensitivity(tmp_path: Path) -> None:
     """Test how composite score changes with weight perturbations."""
     prepared_fixtures = _prepare_fixtures(ALL_FIXTURES, tmp_path / "prepared")

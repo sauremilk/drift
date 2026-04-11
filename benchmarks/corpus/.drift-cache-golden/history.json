@@ -1,21 +1,20 @@
 [
   {
-    "timestamp": "2026-04-07T17:06:39.850649+00:00",
-    "drift_score": 0.373,
+    "timestamp": "2026-04-10T21:25:52.493691+00:00",
+    "drift_score": 0.483,
     "signal_scores": {
-      "pattern_fragmentation": 0.1445,
-      "architecture_violation": 0.1145,
-      "mutant_duplicate": 0.8532,
-      "explainability_deficit": 0.4673,
-      "doc_impl_drift": 0.2435,
-      "test_polarity_deficit": 0.1734,
-      "guard_clause_deficit": 0.4698,
-      "naming_contract_violation": 0.3469,
-      "cognitive_complexity": 0.5357,
-      "dead_code_accumulation": 0.8146
+      "cognitive_complexity": 0.4219,
+      "dead_code_accumulation": 0.6416,
+      "doc_impl_drift": 0.1917,
+      "explainability_deficit": 0.3681,
+      "guard_clause_deficit": 0.37,
+      "mutant_duplicate": 0.7723,
+      "naming_contract_violation": 0.2732,
+      "pattern_fragmentation": 0.1138,
+      "test_polarity_deficit": 0.1366
     },
     "total_files": 26,
-    "total_findings": 64,
+    "total_findings": 62,
     "scope": "repo"
   }
 ]

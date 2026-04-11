@@ -54,7 +54,7 @@ evidence = {
 for t in agent_tasks[:3]:
     evidence["sample_tasks"].append({
         "id": t.id,
-        "signal_type": t.signal_type.value,
+        "signal_type": t.signal_type,
         "severity": t.severity.value,
         "title": t.title,
         "automation_fit": t.automation_fit,

@@ -45,7 +45,7 @@ def _sanitize(value: str, max_len: int = 200) -> str:
 # Signal → Category mapping
 # ---------------------------------------------------------------------------
 
-_SIGNAL_CATEGORY: dict[SignalType, NegativeContextCategory] = {
+_SIGNAL_CATEGORY: dict[str, NegativeContextCategory] = {
     # Security
     SignalType.MISSING_AUTHORIZATION: NegativeContextCategory.SECURITY,
     SignalType.HARDCODED_SECRET: NegativeContextCategory.SECURITY,
@@ -84,25 +84,25 @@ _SIGNAL_CATEGORY: dict[SignalType, NegativeContextCategory] = {
 # ---------------------------------------------------------------------------
 
 GeneratorFn = Callable[[Finding], list[NegativeContext]]
-_GENERATORS: dict[SignalType, GeneratorFn] = {}
-_FALLBACK_ONLY_SIGNALS: frozenset[SignalType] = frozenset()
+_GENERATORS: dict[str, GeneratorFn] = {}
+_FALLBACK_ONLY_SIGNALS: frozenset[str] = frozenset()
 
 
-def _policy_covered_signal_types() -> set[SignalType]:
+def _policy_covered_signal_types() -> set[str]:
     """Return all signal types explicitly covered by NC policy."""
     return set(_GENERATORS) | set(_FALLBACK_ONLY_SIGNALS)
 
 
-def _policy_uncovered_signal_types() -> set[SignalType]:
+def _policy_uncovered_signal_types() -> set[str]:
     """Return signal types lacking both dedicated and fallback-only policy."""
-    return set(SignalType) - _policy_covered_signal_types()
+    return {str(s) for s in SignalType} - _policy_covered_signal_types()
 
 
 def _register(signal_type: SignalType) -> Callable[[GeneratorFn], GeneratorFn]:
     """Decorator to register a negative-context generator for a signal type."""
 
     def decorator(fn: GeneratorFn) -> GeneratorFn:
-        _GENERATORS[signal_type] = fn
+        _GENERATORS[str(signal_type)] = fn
         return fn
 
     return decorator
@@ -113,12 +113,12 @@ def _register(signal_type: SignalType) -> Callable[[GeneratorFn], GeneratorFn]:
 # ---------------------------------------------------------------------------
 
 
-def _neg_id(signal_type: SignalType, finding: Finding) -> str:
+def _neg_id(signal_type: str, finding: Finding) -> str:
     """Generate a deterministic anti-pattern ID."""
     fp = finding.file_path.as_posix() if finding.file_path else ""
-    blob = f"neg:{signal_type.value}:{fp}:{finding.title}"
+    blob = f"neg:{signal_type}:{fp}:{finding.title}"
     short_hash = hashlib.sha256(blob.encode()).hexdigest()[:10]
-    return f"neg-{signal_type.value[:3]}-{short_hash}"
+    return f"neg-{signal_type[:3]}-{short_hash}"
 
 
 def _affected(finding: Finding) -> list[str]:
@@ -1156,24 +1156,25 @@ def _gen_cod(finding: Finding) -> list[NegativeContext]:
 # Fallback generator for signals without specific generators
 def _gen_fallback(finding: Finding) -> list[NegativeContext]:
     """Generic fallback for signals without a specific generator."""
-    category = _SIGNAL_CATEGORY.get(finding.signal_type, NegativeContextCategory.ARCHITECTURE)
+    signal_type = str(finding.signal_type)
+    category = _SIGNAL_CATEGORY.get(signal_type, NegativeContextCategory.ARCHITECTURE)
     policy = (
         "explicit_fallback_only"
-        if finding.signal_type in _FALLBACK_ONLY_SIGNALS
+        if signal_type in _FALLBACK_ONLY_SIGNALS
         else "implicit_missing_policy"
     )
     return [NegativeContext(
-        anti_pattern_id=_neg_id(finding.signal_type, finding),
+        anti_pattern_id=_neg_id(signal_type, finding),
         category=category,
-        source_signal=finding.signal_type,
+        source_signal=signal_type,
         severity=finding.severity,
         scope=_scope_from_finding(finding),
         description=finding.description,
-        forbidden_pattern=f"# Drift signal: {finding.signal_type.value}\n# {finding.title}",
+        forbidden_pattern=f"# Drift signal: {finding.signal_type}\n# {finding.title}",
         canonical_alternative=finding.fix or "See drift_explain for remediation guidance",
         affected_files=_affected(finding),
         confidence=0.5,
-        rationale=f"Drift signal '{finding.signal_type.value}' detected.",
+        rationale=f"Drift signal '{finding.signal_type}' detected.",
         metadata={"fallback_policy": policy},
     )]
 
@@ -1216,7 +1217,7 @@ def findings_to_negative_context(
     seen_ids: set[str] = set()
 
     for finding in findings:
-        generator = _GENERATORS.get(finding.signal_type, _gen_fallback)
+        generator = _GENERATORS.get(str(finding.signal_type), _gen_fallback)
         generated = generator(finding)
 
         for item in generated:
@@ -1252,7 +1253,7 @@ def negative_context_to_dict(nc: NegativeContext) -> dict[str, Any]:
     return {
         "anti_pattern_id": nc.anti_pattern_id,
         "category": nc.category.value,
-        "source_signal": nc.source_signal.value,
+        "source_signal": nc.source_signal,
         "severity": nc.severity.value,
         "scope": nc.scope.value,
         "description": nc.description,

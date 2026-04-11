@@ -1,9 +1,10 @@
 """Check that signal/ingestion/output changes have matching audit updates.
 
-Usage: python scripts/check_risk_audit.py [--diff-base <ref>]
+Usage: python scripts/check_risk_audit.py [--diff-base <ref>] [--content-check]
 
 Exit 0  = compliant (or no signal changes detected)
 Exit 1  = signal changes found without matching audit updates
+Exit 2  = audit content validation failed (--content-check mode)
 
 This script is called by:
   - .githooks/pre-push  (local enforcement)
@@ -12,6 +13,7 @@ This script is called by:
 
 from __future__ import annotations
 
+import re
 import subprocess
 import sys
 
@@ -63,9 +65,117 @@ def _check_audit_artifacts_exist() -> list[str]:
     return missing
 
 
+# ---------------------------------------------------------------------------
+# Content validation (M4: FTA measure — structural checks beyond existence)
+# ---------------------------------------------------------------------------
+
+# FMEA: must have a markdown table with Signal | ... | RPN | Status columns
+_FMEA_TABLE_RE = re.compile(
+    r"^\|.*Signal.*\|.*Failure Mode.*\|.*RPN.*\|", re.MULTILINE | re.IGNORECASE
+)
+_FMEA_ROW_RE = re.compile(
+    r"^\|\s*[A-Za-z]\w+.*\|.*\|", re.MULTILINE  # Signal ID starting with letter, not separator
+)
+
+# Risk Register: must have structured entries with Risk ID and Mitigation
+_RISK_ID_RE = re.compile(r"Risk ID:\s*RISK-\w+", re.MULTILINE)
+_RISK_MITIGATION_RE = re.compile(r"Mitigation:", re.MULTILINE | re.IGNORECASE)
+
+# Fault Trees: must have Top Event and either MCS table or tree diagram
+_FTA_TOP_EVENT_RE = re.compile(r"Top Event|TE-\d+", re.MULTILINE | re.IGNORECASE)
+_FTA_STRUCTURE_RE = re.compile(r"MCS|AND-Gate|OR-Gate|Minimal Cut", re.MULTILINE | re.IGNORECASE)
+
+# STRIDE: must have STRIDE review section with S/T/R/I/D/E items
+_STRIDE_REVIEW_RE = re.compile(r"STRIDE review:", re.MULTILINE | re.IGNORECASE)
+_STRIDE_ITEMS_RE = re.compile(
+    r"[STRIDE]\s*\((?:Spoofing|Tampering|Repudiation|Information|Denial|Elevation)",
+    re.MULTILINE,
+)
+
+
+def _validate_fmea_content(filepath: str) -> list[str]:
+    """Check FMEA matrix has structural integrity."""
+    issues: list[str] = []
+    try:
+        content = open(filepath, encoding="utf-8").read()
+    except OSError:
+        return [f"Cannot read {filepath}"]
+
+    if not _FMEA_TABLE_RE.search(content):
+        issues.append("No FMEA table header found (expected: Signal | Failure Mode | ... | RPN)")
+    if not _FMEA_ROW_RE.search(content):
+        issues.append("No FMEA data rows found (expected signal ID rows)")
+    return issues
+
+
+def _validate_risk_register_content(filepath: str) -> list[str]:
+    """Check risk register has structured entries."""
+    issues: list[str] = []
+    try:
+        content = open(filepath, encoding="utf-8").read()
+    except OSError:
+        return [f"Cannot read {filepath}"]
+
+    if not _RISK_ID_RE.search(content):
+        issues.append("No Risk ID entries found (expected: Risk ID: RISK-...)")
+    if not _RISK_MITIGATION_RE.search(content):
+        issues.append("No Mitigation sections found")
+    return issues
+
+
+def _validate_fault_trees_content(filepath: str) -> list[str]:
+    """Check fault trees have structural elements."""
+    issues: list[str] = []
+    try:
+        content = open(filepath, encoding="utf-8").read()
+    except OSError:
+        return [f"Cannot read {filepath}"]
+
+    if not _FTA_TOP_EVENT_RE.search(content):
+        issues.append("No Top Event reference found (expected: Top Event or TE-N)")
+    if not _FTA_STRUCTURE_RE.search(content):
+        issues.append("No FTA structure found (expected: MCS, AND-Gate, OR-Gate, or Minimal Cut)")
+    return issues
+
+
+def _validate_stride_content(filepath: str) -> list[str]:
+    """Check STRIDE threat model has review structure."""
+    issues: list[str] = []
+    try:
+        content = open(filepath, encoding="utf-8").read()
+    except OSError:
+        return [f"Cannot read {filepath}"]
+
+    if not _STRIDE_REVIEW_RE.search(content):
+        issues.append("No 'STRIDE review:' section found")
+    if not _STRIDE_ITEMS_RE.search(content):
+        issues.append("No STRIDE item entries found (expected: S/T/R/I/D/E analysis)")
+    return issues
+
+
+def validate_audit_content() -> dict[str, list[str]]:
+    """Validate structural integrity of all audit artifacts.
+
+    Returns a dict mapping artifact path to list of issues (empty = valid).
+    """
+    validators = {
+        "audit_results/fmea_matrix.md": _validate_fmea_content,
+        "audit_results/risk_register.md": _validate_risk_register_content,
+        "audit_results/fault_trees.md": _validate_fault_trees_content,
+        "audit_results/stride_threat_model.md": _validate_stride_content,
+    }
+    results: dict[str, list[str]] = {}
+    for path, validator in validators.items():
+        issues = validator(path)
+        if issues:
+            results[path] = issues
+    return results
+
+
 def main() -> int:
     """Run the risk audit compliance check."""
     diff_base = None
+    content_check = "--content-check" in sys.argv
     if "--diff-base" in sys.argv:
         idx = sys.argv.index("--diff-base")
         if idx + 1 < len(sys.argv):
@@ -79,6 +189,20 @@ def main() -> int:
             print(f">>>   - {m}")
         print(">>> [risk-audit] These files are protected by POLICY §18 and must not be deleted.")
         return 1
+
+    # Gate 1b: Content validation (optional, enabled with --content-check)
+    if content_check:
+        content_issues = validate_audit_content()
+        if content_issues:
+            print(">>> [risk-audit] ERROR: Audit artifact content validation failed:")
+            for artifact, issues in content_issues.items():
+                print(f">>>   {artifact}:")
+                for issue in issues:
+                    print(f">>>     - {issue}")
+            print(">>> [risk-audit]")
+            print(">>> [risk-audit] Audit artifacts must contain structured content,")
+            print(">>> [risk-audit] not just exist as files. See POLICY §18.")
+            return 2
 
     # Gate 2: Signal changes require audit updates
     changed_files = _get_changed_files(diff_base)

@@ -1,5 +1,55 @@
 # FMEA Matrix
 
+## 2026-04-10 - ADR-040: PHR Third-Party Import Resolver
+
+| Signal | Failure Mode | Cause | Effect | Detection | Mitigation | S | O | D | RPN | Status |
+|---|---|---|---|---|---|---:|---:|---:|---:|---|
+| PHR | FP: package in CI but not in local venv → false phantom | `find_spec` depends on environment; dev/CI mismatch | False finding for correctly-imported packages | `phr_stdlib_import_tn` + `phr_optional_dep_tn` fixtures | metadata `confidence: env_dependent`; users can suppress via `drift:ignore` | 4 | 3 | 6 | 72 | Open (bounded) |
+| PHR | FP: conditional import not recognized as guarded | AST walk misidentifies try/except block structure | False phantom for optional dependency imports | `phr_optional_dep_tn` + `phr_module_not_found_error_tn` fixtures | `_is_in_try_except_import_error` checks ImportError + ModuleNotFoundError + bare except | 5 | 2 | 3 | 30 | Mitigated |
+| PHR | FN: dynamically imported module not detected | `importlib.import_module(var)` not statically resolvable | Missed phantom for dynamic plugin loading | N/A (inherent static analysis limitation) | Accept: scope is static AST-based; dynamic imports require runtime analysis | 3 | 4 | 8 | 96 | Accepted |
+| PHR | FN: installed package with missing attribute not detected | `find_spec` checks module existence only, not API surface | Under-reporting for version-mismatched dependencies | N/A (Phase C: runtime validation planned) | Accept: Phase B scope is module existence; attribute validation deferred to Phase C (ADR-041) | 4 | 3 | 8 | 96 | Accepted |
+
+## 2026-06-14 - ADR-039: Activate MAZ/PHR/HSC/ISD/FOE for Scoring
+
+| Signal | Failure Mode | Cause | Effect | Detection | Mitigation | S | O | D | RPN | Status |
+|---|---|---|---|---|---|---:|---:|---:|---:|---|
+| MAZ | FP: localhost/dev-tool handlers flagged for missing auth | Handler serves local development traffic only; MAZ fallback sees decorated handler without auth markers | Triage noise in CLI-tool/dev-server repositories | `maz_tn_cli_serving_path` fixture + existing MAZ precision suite | Low weight (0.02); existing CLI-path/dev-path suppression; localhost false-positive fence already hardened | 4 | 3 | 3 | 36 | Mitigated |
+| MAZ | FN: real unauthenticated endpoint ignored due conservative fallback | Expanded auth-parameter matching may suppress true missing-auth findings | Under-reporting for unusual parameter naming conventions | Existing MAZ TP fixtures + precision/recall run | Keep auth-marker set narrow; fallback-scoped only; existing decorator/allowlist guards retained | 5 | 3 | 5 | 75 | Open (bounded) |
+| ISD | FP: debug/test configuration files flagged despite being non-production | ISD checks all non-test Python files; local-dev settings with `DEBUG=True` may be intentional | Developer-facing noise in projects with explicit dev configs | `isd_ignore_directive_tn` fixture; `drift:ignore-security` directive | `is_test_file()` gate + `drift:ignore-security` directive; low weight (0.01) bounds impact | 4 | 4 | 3 | 48 | Mitigated |
+| ISD | FN: insecure defaults in non-Python config formats missed | ISD is AST-only Python; YAML/JSON/TOML configs not scanned | Under-reporting for polyglot projects | N/A (scope limitation) | Accept: Phase 1 scope is Python-only; future extension possible | 3 | 5 | 7 | 105 | Accepted |
+| HSC | FP: template/placeholder values trigger secret detection | Generic variable names with template-like values may match entropy heuristics | Triage noise in scaffold/template repositories | Existing `hsc_placeholder_tn` fixture + env-template suppression | `_is_safe_value` checks, known-prefix ordering, env-template suppression already active | 4 | 3 | 3 | 36 | Mitigated |
+| HSC | FN: obfuscated or encoded secrets missed | Base64-encoded or split credentials bypass literal matching | Under-reporting for sophisticated secret embedding | N/A (inherent static analysis limitation) | Accept: HSC targets plain-text literals; obfuscated secrets require runtime/entropy analysis | 5 | 3 | 7 | 105 | Accepted |
+| PHR | FP: third-party module import flagged as phantom | PHR only resolves project-internal modules; valid third-party imports not in project tree | False phantom reference in stdlib/vendor import contexts | Existing `phr_builtin_tn` + `phr_star_import_tn` fixtures | Known-module allowlist, `__all__` resolution, star-import handling; weight 0.02 bounds impact | 4 | 3 | 3 | 36 | Mitigated |
+| FOE | FP: barrel files flagged as high fan-out despite being re-export modules | `__init__.py` with many re-exports triggers import count threshold | Low-value finding for package index files | `foe_barrel_file_tn` fixture | Barrel-file suppression in FOE signal; very low weight (0.005) bounds score impact | 3 | 3 | 3 | 27 | Mitigated |
+| ALL | Score inflation from 5 newly-scoring signals | Combined weight addition (+0.065) may inflate composite scores for repos triggering multiple signals | Score comparability break vs. pre-activation baselines | Baseline diff after activation; `drift_diff` verification | Conservative weights (total +0.065 out of ~1.0); gradual activation allows recalibration | 5 | 3 | 4 | 60 | Open (bounded) |
+
+## 2026-04-10 - TypeScript signal expansion: TSB + NCV TS checks
+
+| Signal | Failure Mode | Cause | Effect | Detection | Mitigation | S | O | D | RPN | Status |
+|---|---|---|---|---|---|---:|---:|---:|---:|---|
+| TSB | FP: intentional TypeScript escape hatch flagged as architectural bypass | `as any`, non-null assertions, or `@ts-ignore` used intentionally in migration or framework boundary code | Extra noise in TS-heavy repositories and lower prioritization trust | Dedicated fixtures in `tests/fixtures/typescript/type_safety_bypass/` and `tests/test_type_safety_bypass.py` | Keep severity bounded and rely on focused evidence in metadata for triage | 5 | 4 | 4 | 80 | Open (bounded) |
+| TSB | FN: bypass pattern missed in nested or syntax-variant cast forms | AST shape variance across TS/TSX files or parser edge cases | Real type-safety erosion is under-reported | Parser and signal tests across clean/moderate/severe fixtures | Keep detection logic AST-based and add regression fixtures for new syntax variants | 7 | 3 | 4 | 84 | Open (bounded) |
+| NCV | FP: mixed naming conventions reported in codebases with deliberate multi-style boundaries | Cross-team or generated-code coexistence intentionally mixes interface/generic conventions | Increased low-severity findings and possible alert fatigue | `tests/test_ts_naming_consistency.py` + fixture matrix | Low severity, convention ratio thresholds, and file-level context in findings | 4 | 5 | 4 | 80 | Mitigated |
+
+## 2026-04-13 - ADR-036/037/038: AVS/DIA/MDS FP-Reduction
+
+| Signal | Failure Mode | Cause | Effect | Detection | Mitigation | S | O | D | RPN | Status |
+|---|---|---|---|---|---|---:|---:|---:|---:|---|
+| AVS | FN: models/ cross-layer import no longer detected | `models` moved to `_OMNILAYER_DIRS` — genuine layer violations from models/ are suppressed | Under-reporting for projects using models/ as a strict DB layer | `avs_models_omnilayer_tn` fixture + precision/recall run | Configurable `omnilayer_dirs` allows reversal; `models` is cross-cutting in >80% of observed repos | 4 | 2 | 4 | 32 | Open (bounded) |
+| AVS | FP: custom omnilayer_dirs config too broad | User adds too many dirs → most imports become omnilayer → signal degrades | AVS produces very few findings → loss of signal value | Config validation at load time (empty default) | Conservative default (empty list); documentation explains risk | 3 | 2 | 5 | 30 | Mitigated |
+| DIA | FN: custom auxiliary dir hides real undocumented source dir | `extra_auxiliary_dirs` config skips a dir that should be documented | Genuine documentation gap not reported | Default is empty (no dirs skipped by default) | Only user-configured dirs are skipped; no default change to _AUXILIARY_DIRS | 3 | 2 | 5 | 30 | Mitigated |
+| MDS | FN: protocol-method skip suppresses real duplication | Two classes implement same protocol method with genuinely duplicated non-trivial logic | Real near-duplication in protocol implementations not detected | Protocol-method set is narrow (20 names); only same-name different-class skipped | Only exact bare-name match + different class qualifies; body similarity not checked for skip | 4 | 2 | 5 | 40 | Open (bounded) |
+| MDS | FN: thin-wrapper gate suppresses refactoring opportunity | Wrapper function with LOC ≤ 5 that adds real behavior flagged as thin wrapper | Missed consolidation opportunity | `_is_thin_wrapper` checks for exactly 1 Call node in AST | Single-call heuristic is conservative; complex wrappers with conditions still detected | 3 | 2 | 4 | 24 | Mitigated |
+| MDS | FP: name-token similarity inflates score for same-named functions | Two unrelated functions with similar names get bonus from name similarity | Unrelated functions flagged as near-duplicates | Name component is only 10% of hybrid formula | 10% weight limits maximum name-only inflation to 0.10 total similarity | 3 | 2 | 3 | 18 | Mitigated |
+
+## 2026-04-12 - ADR-035: PHR per-repository calibration
+
+| Signal | Failure Mode | Cause | Effect | Detection | Mitigation | S | O | D | RPN | Status |
+|---|---|---|---|---|---|---:|---:|---:|---:|---|
+| PHR | FN: relevant phantom reference finding down-ranked too strongly | Repository feedback history contains biased/incorrect "false positive" labels for structurally valid PHR cases | Under-prioritized remediation for real reference drift in calibrated repository | `tests/test_calibration.py`, `tests/test_phantom_reference.py`, precision/recall run | Bound dampening factors, confidence weighting, and default fallback when calibration confidence is low | 7 | 4 | 4 | 112 | Open (bounded) |
+| PHR | FP: calibration not applied although repository has repeat FP pattern | Missing or stale `data/negative-patterns/` calibration snapshot, repo fingerprint mismatch, or cache invalidation | Repeated noisy PHR findings persist and reduce actionability | CLI calibration tests + snapshot persistence checks | Explicit calibrate/feedback commands, deterministic repo fingerprinting, lazy reload on changed calibration file | 5 | 3 | 4 | 60 | Mitigated |
+| PHR | Integrity risk: malformed calibration payload influences scoring path | External/manual edits to calibration JSON introduce invalid schema/value ranges | Runtime errors or unstable score adjustments | `tests/test_task_spec.py`, schema validation in calibration loading path | Strict validation + safe defaults on parse/validation failure; ignore invalid entries | 6 | 2 | 3 | 36 | Mitigated |
+
 ## 2026-04-07 - PFS FTA v1: RETURN_PATTERN extraction (MCS-1 recall fix)
 
 | Signal | Failure Mode | Cause | Effect | Detection | Mitigation | S | O | D | RPN | Status |
@@ -280,3 +330,27 @@
 |---|---|---|---|---|---|---:|---:|---:|---:|
 | DIA | FP: Generic prose tokens (e.g. async/, scan/, connectors/) reported as missing directories | Slash-token extraction without structural context in markdown prose | Trust erosion, noisy findings, reduced actionability | User report + regression test in tests/test_dia_enhanced.py | Context-aware extraction: accept only backticked refs or nearby structural keywords; keep code-span refs | 5 | 6 | 4 | 120 |
 | DIA | FN: Real directory mention in plain prose filtered too aggressively | Context window misses valid wording | Missed drift signal | DIA regression tests for context-positive phrases | Structural keyword list + explicit backtick acceptance | 4 | 3 | 5 | 60 |
+
+## 2026-04-09 - PHR Signal: Phantom Reference (ADR-033)
+
+| Signal | Failure Mode | Cause | Effect | Detection | Mitigation | S | O | D | RPN | Status |
+|---|---|---|---|---|---|---:|---:|---:|---:|---|
+| PHR | FP: star-import file references name provided by star | Star imports (`from X import *`) inject unknown names into scope | False phantom finding for names actually available via star import | `phr_star_import_tn` fixture | Conservative skip: files with star imports are excluded from PHR analysis | 4 | 3 | 2 | 24 | **Mitigated** |
+| PHR | FP: module __getattr__ provides dynamic names | Module-level `__getattr__` makes any attribute access valid | False phantom finding for dynamically provided names | `phr_dynamic_tn` fixture | Conservative skip: files with module-level `__getattr__` are excluded | 4 | 2 | 2 | 16 | **Mitigated** |
+| PHR | FP: plugin/extension names resolved at runtime | Plugin systems register names dynamically via entry points or registries | False positive for intentionally late-bound names | Manual review | `_FRAMEWORK_GLOBALS` allowlist covers common framework names; further refinement via config | 3 | 3 | 5 | 45 | Accepted |
+| PHR | FN: exec/eval introduce names not visible to AST | `exec()` or `eval()` can inject names into scope at runtime | Phantom names created by exec/eval not detected as defined | `_has_exec_eval` detection flag (logged, not yet used for suppression) | Accept: static analysis limitation; exec/eval usage is rare in well-structured code | 3 | 2 | 8 | 48 | Accepted |
+| PHR | FN: getattr-based access not tracked | `getattr(obj, "name")` resolves names at runtime | Under-reporting for highly dynamic codebases | N/A — static analysis limitation | Accept: getattr patterns are intentionally dynamic | 2 | 3 | 8 | 48 | Accepted |
+| PHR | FP: third-party library names not in project symbol table | Names from installed packages (e.g. `requests.get`) not tracked | False positive for external dependency calls | Project-wide symbol table includes import-resolved names | Import-tracked names are added to available set; root name resolution covers `import X; X.call()` | 5 | 4 | 3 | 60 | **Mitigated** |
+
+## 2026-04-10 - Scoring Promotion: HSC, FOE, PHR (ADR-040)
+
+| Signal | Failure Mode | Cause | Effect | Detection | Mitigation | S | O | D | RPN | Status |
+|---|---|---|---|---|---|---:|---:|---:|---:|---|
+| HSC | FP: non-secret config value in secret-free file | Variable names like DB_HOST, API_TIMEOUT don't match secret patterns | No false trigger expected | `hsc_placeholder_tn` fixture | Variable-name heuristic requires known secret-indicating patterns | 2 | 1 | 2 | 4 | **Mitigated** |
+| HSC | FP: environment-read variable flagged as hardcoded | Variable name matches secret pattern but value is `os.environ[...]` call | False finding on properly externalized secrets | `hsc_env_read_tn` fixture | AST check: RHS is `os.environ`/`os.getenv` call → skip | 5 | 3 | 2 | 30 | **Mitigated** |
+| HSC | FN: obfuscated secret not detected | Secret is base64-encoded, split across variables, or loaded from non-standard path | Missed hardcoded credential | Manual review | Accept: HSC is first-pass static heuristic; obfuscated secrets require dedicated secret scanning tools | 6 | 3 | 7 | 126 | Accepted |
+| HSC | FP: ML tokenizer/model constants flagged | High-entropy hex strings in ML vocabulary files match secret heuristic | False finding on legitimate ML constants | `hsc_tn_ml_tokenizer_constants` fixture | Context-aware skip for known ML file patterns | 4 | 2 | 2 | 16 | **Mitigated** |
+| FOE | FP: barrel/re-export __init__.py flagged | `__init__.py` files re-export many names from submodules | False fan-out finding on standard package pattern | `foe_barrel_file_tn` fixture | `__init__.py` files excluded from FOE detection | 3 | 4 | 2 | 24 | **Mitigated** |
+| FOE | FN: high fan-out via dynamic imports | `importlib.import_module()` or `__import__()` used to load modules | Under-reporting for dynamically assembled modules | N/A — static analysis limitation | Accept: dynamic imports are invisible to AST-based import counting | 3 | 2 | 8 | 48 | Accepted |
+| FOE | FP: test file with many test-helper imports | Test files often import many fixtures, helpers, and mocks | False finding on standard test organization | `is_test_file()` guard | Test files excluded via file-discovery filter | 3 | 3 | 2 | 18 | **Mitigated** |
+| PHR | Scoring promotion: FP in composite score | PHR false positive now affects composite drift score (weight 0.02) instead of being report-only | Slightly inflated drift score for affected modules | Precision/recall suite + `phr_conditional_import_tn`, `phr_framework_decorator_tn` fixtures | Low weight (0.02) limits score impact; existing FP mitigations remain active | 5 | 3 | 3 | 45 | **Mitigated** |

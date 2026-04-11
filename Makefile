@@ -14,7 +14,7 @@ MYPY     ?= $(PYTHON) -m mypy
 SRC      := src/
 TESTS    := tests/
 
-.PHONY: help install lint lint-fix typecheck test test-fast test-contract test-all coverage check self ci markdown-lint package-kpis-github-usage package-kpis-downloads package-kpis-real-public package-kpis-example clean
+.PHONY: help install lint lint-fix typecheck test test-fast test-contract smoke-pr smoke-nightly test-all coverage check self ci markdown-lint package-kpis-github-usage package-kpis-downloads package-kpis-real-public package-kpis-example clean
 
 help:  ## Show all available commands
 	@grep -E '^[a-zA-Z_-]+:.*##' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*##"}; {printf "  \033[36m%-15s\033[0m %s\n", $$1, $$2}'
@@ -33,28 +33,34 @@ lint-fix:  ## Run ruff with auto-fix
 typecheck:  ## Run mypy type checker
 	$(MYPY) src/drift
 
-test:  ## Run tests (skip slow smoke tests)
-	$(PYTEST) -v --tb=short --ignore=tests/test_smoke_real_repos.py
+test:  ## Run tests in parallel (skip slow smoke tests)
+	$(PYTEST) -v --tb=short --ignore=tests/test_smoke_real_repos.py -n auto --dist=loadscope
 
-test-fast:  ## Fast unit tests — stop on first failure
-	$(PYTEST) -v --tb=short -m "not slow" -x --ignore=tests/test_smoke_real_repos.py
+test-fast:  ## Fast unit tests — parallel, skip slow tests, stop on first failure
+	$(PYTEST) -v --tb=short -m "not slow" -x --ignore=tests/test_smoke_real_repos.py -n auto --dist=loadscope
 
 test-contract:  ## SARIF/JSON contract tests only
 	$(PYTEST) -v --tb=short -m contract
 
+smoke-pr:  ## Fast smoke tests on representative external repos (cached)
+	$(PYTEST) tests/test_smoke_real_repos.py -v --run-slow --smoke-profile=pr
+
+smoke-nightly:  ## Full smoke matrix on all external repos (cached)
+	$(PYTEST) tests/test_smoke_real_repos.py -v --run-slow --smoke-profile=nightly
+
 test-all:  ## All tests including slow smoke tests
-	$(PYTEST) -v --tb=short
+	$(PYTEST) -v --tb=short --run-slow --smoke-profile=nightly
 
-coverage:  ## Tests with coverage report
-	$(PYTEST) -v --tb=short --cov=drift --cov-report=term-missing --ignore=tests/test_smoke_real_repos.py
+coverage:  ## Tests with coverage report (quick, skips slow tests)
+	$(PYTEST) -q --tb=short --cov=drift --ignore=tests/test_smoke_real_repos.py -p no:xdist
 
-check:  ## Run all checks: lint + typecheck + tests + self-analysis
+check:  ## Run all checks: lint + typecheck + tests (incl. slow) + self-analysis
 	@echo ">>> [1/4] Lint..."
 	@$(MAKE) --no-print-directory lint
 	@echo ">>> [2/4] Type check..."
 	@$(MAKE) --no-print-directory typecheck
-	@echo ">>> [3/4] Tests + coverage..."
-	@$(MAKE) --no-print-directory coverage
+	@echo ">>> [3/4] Tests + coverage (incl. slow)..."
+	@$(PYTEST) -q --tb=short --cov=drift --ignore=tests/test_smoke_real_repos.py --run-slow -p no:xdist
 	@echo ">>> [4/4] Self-analysis..."
 	@$(MAKE) --no-print-directory self
 	@echo ">>> All checks passed."

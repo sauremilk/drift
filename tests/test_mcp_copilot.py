@@ -330,6 +330,85 @@ class TestMcpServerHelpers:
         assert callable(drift_fix_plan)
         assert callable(drift_validate)
 
+    def test_drift_fix_plan_uses_session_queue_fast_path(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+        tmp_path: Path,
+    ) -> None:
+        """Session-scoped fix_plan can reuse queued tasks without re-analysis."""
+        from drift import mcp_server
+        from drift.session import SessionManager
+
+        SessionManager.reset_instance()
+        start = json.loads(_run_tool(mcp_server.drift_session_start(path=str(tmp_path))))
+        sid = start["session_id"]
+        session = SessionManager.instance().get(sid)
+        assert session is not None
+        session.selected_tasks = [
+            {
+                "id": "T-1",
+                "signal": "PFS",
+                "title": "First queued task",
+                "action": "Apply first fix",
+            },
+            {
+                "id": "T-2",
+                "signal": "AVS",
+                "title": "Second queued task",
+                "action": "Apply second fix",
+            },
+        ]
+
+        def _should_not_run_fix_plan(*_args: object, **_kwargs: object) -> dict[str, object]:
+            msg = "drift.api.fix_plan should not run for session fast-path"
+            raise AssertionError(msg)
+
+        monkeypatch.setattr("drift.api.fix_plan", _should_not_run_fix_plan)
+
+        result = json.loads(_run_tool(mcp_server.drift_fix_plan(session_id=sid, max_tasks=1)))
+
+        assert result["status"] == "ok"
+        assert result["task_count"] == 1
+        assert result["total_available"] == 2
+        assert result["tasks"][0]["id"] == "T-1"
+        assert result["cache"]["hit"] is True
+        assert result["cache"]["source"] == "session.fix_plan_queue"
+
+    def test_drift_fix_plan_falls_back_to_api_when_filtered(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+        tmp_path: Path,
+    ) -> None:
+        """Explicit filters disable fast-path and trigger the regular API call."""
+        from drift import mcp_server
+        from drift.session import SessionManager
+
+        SessionManager.reset_instance()
+        start = json.loads(_run_tool(mcp_server.drift_session_start(path=str(tmp_path))))
+        sid = start["session_id"]
+        session = SessionManager.instance().get(sid)
+        assert session is not None
+        session.selected_tasks = [{"id": "T-1", "signal": "PFS", "title": "Queued"}]
+
+        called = {"value": False}
+
+        def _fake_fix_plan(*_args: object, **_kwargs: object) -> dict[str, object]:
+            called["value"] = True
+            return {
+                "status": "ok",
+                "tasks": [],
+                "task_count": 0,
+                "total_available": 0,
+            }
+
+        monkeypatch.setattr("drift.api.fix_plan", _fake_fix_plan)
+
+        result = json.loads(_run_tool(mcp_server.drift_fix_plan(session_id=sid, signal="PFS")))
+
+        assert called["value"] is True
+        assert result["status"] == "ok"
+        assert "cache" not in result
+
     def test_drift_explain_returns_json(self) -> None:
         """drift_explain returns valid JSON for a known signal."""
         import json as _json
@@ -453,7 +532,7 @@ class TestMcpServerHelpers:
         from drift import mcp_server
 
         fake_result = {
-            "schema_version": "2.0",
+            "schema_version": "2.1",
             "type": "brief",
             "task": "add payment",
             "scope": {
@@ -640,6 +719,22 @@ class TestCLICommands:
 
         assert isinstance(result.exception, DriftSystemError)
         assert result.exception.code == "DRIFT-2010"
+
+    def test_mcp_non_mcp_import_error_is_not_rewritten(self, monkeypatch) -> None:
+        from click.testing import CliRunner
+
+        from drift.cli import main
+
+        def _raise_non_mcp_import_error():
+            raise ModuleNotFoundError("No module named 'yaml'", name="yaml")
+
+        monkeypatch.setattr("drift.commands.mcp._load_mcp_entrypoints", _raise_non_mcp_import_error)
+
+        runner = CliRunner()
+        result = runner.invoke(main, ["mcp", "--serve"])
+
+        assert isinstance(result.exception, ModuleNotFoundError)
+        assert getattr(result.exception, "name", None) == "yaml"
 
     def test_mcp_allow_tty_emits_startup_handshake(self, monkeypatch) -> None:
         import json as _json

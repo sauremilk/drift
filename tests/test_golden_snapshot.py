@@ -17,6 +17,7 @@ from __future__ import annotations
 
 import json
 import shutil
+import tempfile
 from pathlib import Path
 
 import pytest
@@ -39,6 +40,7 @@ _VOLATILE_KEYS = frozenset({
 
 _VOLATILE_SARIF_KEYS = frozenset({
     "version",  # tool driver version
+    "trend",  # drift trend history is non-deterministic across runs
 })
 
 
@@ -77,20 +79,21 @@ def _strip_volatile_sarif(obj: object) -> object:
 
 def _run_corpus_analysis() -> tuple[str, str]:
     """Analyze the benchmark corpus and return (json_str, sarif_str)."""
-    cache_dir = CORPUS_DIR / ".drift-cache-golden"
-    if cache_dir.exists():
-        shutil.rmtree(cache_dir)
+    cache_dir = Path(tempfile.mkdtemp(prefix=".drift-cache-golden-", dir=CORPUS_DIR))
 
-    config = DriftConfig(
-        include=["**/*.py"],
-        exclude=["**/__pycache__/**"],
-        cache_dir=str(cache_dir),
-        embeddings_enabled=False,
-    )
-    analysis = analyze_repo(CORPUS_DIR, config=config, since_days=0)
-    json_str = analysis_to_json(analysis)
-    sarif_str = findings_to_sarif(analysis)
-    return json_str, sarif_str
+    try:
+        config = DriftConfig(
+            include=["**/*.py"],
+            exclude=["**/__pycache__/**"],
+            cache_dir=str(cache_dir),
+            embeddings_enabled=False,
+        )
+        analysis = analyze_repo(CORPUS_DIR, config=config, since_days=0)
+        json_str = analysis_to_json(analysis)
+        sarif_str = findings_to_sarif(analysis)
+        return json_str, sarif_str
+    finally:
+        shutil.rmtree(cache_dir, ignore_errors=True)
 
 
 def _canonical_json(raw: str, strip_fn: object = _strip_volatile) -> str:

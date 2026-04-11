@@ -21,6 +21,7 @@ jobs:
   smoke:
     name: Install from PyPI and verify CLI
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     strategy:
       matrix:
         python-version: ["3.11", "3.12", "3.13"]
@@ -30,18 +31,25 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
-      - name: Wait for PyPI propagation
-        if: github.event_name == 'release'
-        run: sleep 60
-
-      - name: Install drift-analyzer from PyPI
+      - name: Install drift-analyzer from PyPI (with retry)
         run: |
           VERSION="${{ inputs.version || '' }}"
-          if [ -n "$VERSION" ]; then
-            pip install "drift-analyzer==$VERSION"
-          else
-            pip install drift-analyzer
-          fi
+          MAX_RETRIES=5
+          for i in $(seq 1 $MAX_RETRIES); do
+            if [ -n "$VERSION" ]; then
+              pip install "drift-analyzer==$VERSION" && break
+            else
+              pip install drift-analyzer && break
+            fi
+            if [ $i -lt $MAX_RETRIES ]; then
+              WAIT=$((i * 30))
+              echo "::warning::pip install failed (attempt $i/$MAX_RETRIES), retrying in ${WAIT}s..."
+              sleep $WAIT
+            else
+              echo "::error::pip install failed after $MAX_RETRIES attempts"
+              exit 1
+            fi
+          done
 
       - name: Verify CLI entry point
         run: drift --version

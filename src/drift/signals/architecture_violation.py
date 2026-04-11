@@ -197,7 +197,6 @@ _DEFAULT_LAYERS: dict[str, int] = {
     "domain": 1,
     "use_cases": 1,
     "db": 2,
-    "models": 2,
     "repositories": 2,
     "storage": 2,
     "infrastructure": 2,
@@ -217,6 +216,7 @@ _OMNILAYER_DIRS: set[str] = {
     "errors",
     "enums",
     "schemas",
+    "models",
 }
 
 # Layer-prototype descriptions for embedding-based inference.
@@ -228,16 +228,17 @@ _LAYER_PROTOTYPES: dict[int, str] = {
 }
 
 
-def _infer_layer(path: Path) -> int | None:
+def _infer_layer(path: Path, extra_omnilayer: set[str] | None = None) -> int | None:
     """Infer the architectural layer from directory name.
 
     Returns ``_OMNILAYER`` for cross-cutting modules, a layer int for
     recognised layer directories, or ``None`` when no layer can be
     inferred.
     """
+    effective_omnilayer = _OMNILAYER_DIRS | extra_omnilayer if extra_omnilayer else _OMNILAYER_DIRS
     for part in path.parts:
         low = part.lower()
-        if low in _OMNILAYER_DIRS:
+        if low in effective_omnilayer:
             return _OMNILAYER
         if low in _DEFAULT_LAYERS:
             return _DEFAULT_LAYERS[low]
@@ -249,6 +250,7 @@ def _infer_layer_with_embeddings(
     parse_result: ParseResult | None,
     emb: EmbeddingService,
     proto_embeddings: dict[int, Any],
+    extra_omnilayer: set[str] | None = None,
 ) -> int | None:
     """Embedding-enhanced layer inference.
 
@@ -256,7 +258,7 @@ def _infer_layer_with_embeddings(
     is found.
     """
     # Try directory-name first
-    layer = _infer_layer(path)
+    layer = _infer_layer(path, extra_omnilayer=extra_omnilayer)
     if layer is not None:
         return layer
 
@@ -378,6 +380,9 @@ class ArchitectureViolationSignal(BaseSignal):
             findings.extend(self._check_lazy_import_rules(lazy_import_rules, all_imports))
 
         # --- Check inferred layer violations (upward imports) ---
+        extra_omnilayer: set[str] | None = None
+        if policies and policies.omnilayer_dirs:
+            extra_omnilayer = set(policies.omnilayer_dirs)
         findings.extend(
             self._check_inferred_layers(
                 graph,
@@ -388,6 +393,7 @@ class ArchitectureViolationSignal(BaseSignal):
                 hub_nodes,
                 allowed_patterns,
                 blast_radius,
+                extra_omnilayer=extra_omnilayer,
             )
         )
 
@@ -436,7 +442,7 @@ class ArchitectureViolationSignal(BaseSignal):
         file_path = finding.file_path.as_posix() if finding.file_path else ""
         start_line = str(int(finding.start_line or 0))
         end_line = str(int(finding.end_line or 0))
-        rule_id = finding.rule_id or self.signal_type.value
+        rule_id = finding.rule_id or str(self.signal_type)
         title = (finding.title or "").strip()
 
         # Policy-boundary and inferred-upward checks can report the same
@@ -518,6 +524,7 @@ class ArchitectureViolationSignal(BaseSignal):
         hub_nodes: set[str],
         allowed_patterns: list[str],
         blast_radius: dict[str, int] | None = None,
+        extra_omnilayer: set[str] | None = None,
     ) -> list[Finding]:
         """Flag cross-layer imports when no explicit policy boundaries exist.
 
@@ -535,14 +542,16 @@ class ArchitectureViolationSignal(BaseSignal):
             # Infer layers (with optional embedding enhancement)
             if emb is not None and proto_embeddings:
                 src_layer = _infer_layer_with_embeddings(
-                    Path(src), pr_by_path.get(src), emb, proto_embeddings
+                    Path(src), pr_by_path.get(src), emb, proto_embeddings,
+                    extra_omnilayer=extra_omnilayer,
                 )
                 dst_layer = _infer_layer_with_embeddings(
-                    Path(dst), pr_by_path.get(dst), emb, proto_embeddings
+                    Path(dst), pr_by_path.get(dst), emb, proto_embeddings,
+                    extra_omnilayer=extra_omnilayer,
                 )
             else:
-                src_layer = _infer_layer(Path(src))
-                dst_layer = _infer_layer(Path(dst))
+                src_layer = _infer_layer(Path(src), extra_omnilayer=extra_omnilayer)
+                dst_layer = _infer_layer(Path(dst), extra_omnilayer=extra_omnilayer)
 
             if src_layer is None or dst_layer is None:
                 continue

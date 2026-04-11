@@ -250,6 +250,13 @@ def _extract_functions(
         if ngrams:
             ast_fp["ngrams"] = ngrams
 
+        # Export detection
+        is_exported = False
+        if not is_method:
+            parent = node.parent
+            if parent and parent.type == "export_statement":
+                is_exported = True
+
         functions.append(
             FunctionInfo(
                 name=name,
@@ -265,10 +272,146 @@ def _extract_functions(
                 has_docstring=has_docstring,
                 body_hash=body_hash,
                 ast_fingerprint=ast_fp,
+                is_exported=is_exported,
             )
         )
 
     return functions
+
+
+def _extract_interfaces(
+    root: Any,
+    source: bytes,
+    file_path: Path,
+    language: str,
+) -> list[ClassInfo]:
+    """Extract interface declarations and type alias declarations."""
+    interfaces: list[ClassInfo] = []
+
+    for node in _walk(root):
+        if node.type == "interface_declaration":
+            name_node = _child_by_field(node, "name")
+            name = _node_text(name_node, source) if name_node else "anonymous"
+
+            # Extends clause
+            bases: list[str] = []
+            for child in node.children:
+                if child.type == "extends_type_clause":
+                    for sub in child.children:
+                        if sub.type in ("type_identifier", "identifier", "generic_type"):
+                            txt = _node_text(sub, source)
+                            # For generic_type, extract just the name part
+                            if sub.type == "generic_type":
+                                id_node = next(
+                                    (
+                                        c
+                                        for c in sub.children
+                                        if c.type in ("type_identifier", "identifier")
+                                    ),
+                                    None,
+                                )
+                                if id_node:
+                                    txt = _node_text(id_node, source)
+                            bases.append(txt)
+
+            # Extract method signatures from interface body
+            methods: list[FunctionInfo] = []
+            body = _child_by_field(node, "body")
+            if body is None:
+                for child in node.children:
+                    if child.type == "interface_body":
+                        body = child
+                        break
+
+            if body:
+                for member in body.children:
+                    if member.type in ("method_signature", "call_signature"):
+                        mname_node = _child_by_field(member, "name")
+                        mname = _node_text(mname_node, source) if mname_node else None
+                        if mname is None:
+                            continue
+
+                        # Parameters
+                        params_node = _child_by_field(member, "parameters")
+                        params: list[str] = []
+                        if params_node:
+                            for p in params_node.children:
+                                if p.type in (
+                                    "required_parameter",
+                                    "optional_parameter",
+                                    "rest_parameter",
+                                ):
+                                    pname = _child_by_field(
+                                        p, "pattern"
+                                    ) or _child_by_field(p, "name")
+                                    if pname:
+                                        params.append(_node_text(pname, source))
+                                elif p.type == "identifier":
+                                    params.append(_node_text(p, source))
+
+                        # Return type
+                        ret_node = _child_by_field(member, "return_type")
+                        return_type = (
+                            _node_text(ret_node, source).lstrip(": ")
+                            if ret_node
+                            else None
+                        )
+
+                        methods.append(
+                            FunctionInfo(
+                                name=f"{name}.{mname}",
+                                file_path=file_path,
+                                start_line=member.start_point[0] + 1,
+                                end_line=member.end_point[0] + 1,
+                                language=language,
+                                parameters=params,
+                                return_type=return_type,
+                            )
+                        )
+
+            # Docstring
+            has_docstring = False
+            if node.prev_sibling and node.prev_sibling.type == "comment":
+                has_docstring = _node_text(node.prev_sibling, source).startswith("/**")
+
+            interfaces.append(
+                ClassInfo(
+                    name=name,
+                    file_path=file_path,
+                    start_line=node.start_point[0] + 1,
+                    end_line=node.end_point[0] + 1,
+                    language=language,
+                    bases=bases,
+                    methods=methods,
+                    has_docstring=has_docstring,
+                    is_interface=True,
+                )
+            )
+
+        elif node.type == "type_alias_declaration":
+            name_node = _child_by_field(node, "name")
+            name = _node_text(name_node, source) if name_node else "anonymous"
+
+            # Docstring
+            has_docstring = False
+            if node.prev_sibling and node.prev_sibling.type == "comment":
+                has_docstring = _node_text(node.prev_sibling, source).startswith("/**")
+
+            interfaces.append(
+                ClassInfo(
+                    name=name,
+                    file_path=file_path,
+                    start_line=node.start_point[0] + 1,
+                    end_line=node.end_point[0] + 1,
+                    language=language,
+                    bases=[],
+                    methods=[],
+                    has_docstring=has_docstring,
+                    is_interface=True,
+                )
+            )
+
+    return interfaces
 
 
 def _extract_classes(
@@ -538,6 +681,144 @@ def _extract_api_patterns(
 
 
 # ---------------------------------------------------------------------------
+# React Hook pattern extraction
+# ---------------------------------------------------------------------------
+
+_REACT_HOOKS_WITH_DEPS = frozenset({
+    "useEffect",
+    "useCallback",
+    "useMemo",
+    "useLayoutEffect",
+    "useImperativeHandle",
+})
+
+
+def _extract_hook_patterns(
+    root: Any,
+    source: bytes,
+    file_path: Path,
+    language: str,
+) -> list[PatternInstance]:
+    """Extract React Hook anti-patterns: missing deps, stale closures, placement."""
+    patterns: list[PatternInstance] = []
+
+    for node in _walk(root):
+        if node.type != "call_expression":
+            continue
+
+        func_node = _child_by_field(node, "function")
+        if func_node is None:
+            continue
+        callee = _node_text(func_node, source)
+
+        if callee not in _REACT_HOOKS_WITH_DEPS:
+            continue
+
+        args = _child_by_field(node, "arguments")
+        if args is None:
+            continue
+
+        # Collect actual arguments (skip parentheses and commas)
+        arg_nodes = [
+            c for c in args.children
+            if c.type not in ("(", ")", ",")
+        ]
+
+        if len(arg_nodes) == 1:
+            # Missing dependency array
+            patterns.append(
+                PatternInstance(
+                    category=PatternCategory.REACT_HOOK,
+                    file_path=file_path,
+                    function_name=callee,
+                    start_line=node.start_point[0] + 1,
+                    end_line=node.end_point[0] + 1,
+                    fingerprint={
+                        "hook": callee,
+                        "issue": "missing_dependency_array",
+                    },
+                    variant_id="MISSING_DEPENDENCY_ARRAY",
+                )
+            )
+
+        elif len(arg_nodes) >= 2:
+            deps_node = arg_nodes[1]
+            if deps_node.type == "array":
+                dep_items = [
+                    c for c in deps_node.children
+                    if c.type not in ("[", "]", ",")
+                ]
+                if not dep_items:
+                    # Empty deps array — check for stale closure
+                    callback = arg_nodes[0]
+                    callback_ids = _collect_identifiers(callback, source)
+                    # Heuristic: if callback references identifiers that look
+                    # like state/props (any lowercase identifier) → stale closure risk
+                    if callback_ids:
+                        patterns.append(
+                            PatternInstance(
+                                category=PatternCategory.REACT_HOOK,
+                                file_path=file_path,
+                                function_name=callee,
+                                start_line=node.start_point[0] + 1,
+                                end_line=node.end_point[0] + 1,
+                                fingerprint={
+                                    "hook": callee,
+                                    "issue": "stale_closure",
+                                    "referenced_ids": list(callback_ids)[:10],
+                                },
+                                variant_id="STALE_CLOSURE",
+                            )
+                        )
+
+    # Hook placement: custom hooks (use* functions) outside hooks/ directory
+    hooks_dir_tokens = {"hooks", "use-hooks", "hook"}
+    path_parts = {p.lower() for p in file_path.parts}
+    in_hooks_dir = bool(path_parts & hooks_dir_tokens)
+
+    if not in_hooks_dir:
+        for node in _walk(root):
+            if node.type == "function_declaration":
+                name_node = _child_by_field(node, "name")
+                if name_node:
+                    fname = _node_text(name_node, source)
+                    if fname.startswith("use") and len(fname) > 3 and fname[3].isupper():
+                        patterns.append(
+                            PatternInstance(
+                                category=PatternCategory.REACT_HOOK,
+                                file_path=file_path,
+                                function_name=fname,
+                                start_line=node.start_point[0] + 1,
+                                end_line=node.end_point[0] + 1,
+                                fingerprint={
+                                    "hook_name": fname,
+                                    "issue": "hook_placement_violation",
+                                },
+                                variant_id="HOOK_PLACEMENT_VIOLATION",
+                            )
+                        )
+
+    return patterns
+
+
+def _collect_identifiers(node: Any, source: bytes) -> set[str]:
+    """Collect non-builtin identifier names from a callback node."""
+    builtins = frozenset({
+        "console", "document", "window", "setTimeout", "setInterval",
+        "clearTimeout", "clearInterval", "fetch", "JSON", "Math",
+        "Promise", "Array", "Object", "String", "Number", "Boolean",
+        "undefined", "null", "true", "false", "this",
+    })
+    ids: set[str] = set()
+    for child in _walk(node):
+        if child.type == "identifier":
+            name = _node_text(child, source)
+            if name not in builtins and not name.startswith("_"):
+                ids.add(name)
+    return ids
+
+
+# ---------------------------------------------------------------------------
 # Public API
 # ---------------------------------------------------------------------------
 
@@ -575,9 +856,12 @@ def parse_typescript_file(
 
     functions = _extract_functions(root, source_bytes, file_path, language)
     classes = _extract_classes(root, source_bytes, file_path, language, functions)
+    classes.extend(_extract_interfaces(root, source_bytes, file_path, language))
     imports = _extract_imports(root, source_bytes, file_path)
     patterns = _extract_patterns(root, source_bytes, file_path, functions)
     patterns.extend(_extract_api_patterns(root, source_bytes, file_path, functions))
+    if language in ("tsx", "jsx"):
+        patterns.extend(_extract_hook_patterns(root, source_bytes, file_path, language))
 
     return ParseResult(
         file_path=file_path,

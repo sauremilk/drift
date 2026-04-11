@@ -671,3 +671,72 @@ class TestActualCodeReferences:
         nc = result[0]
         assert "build_action_packet_legacy" in nc.forbidden_pattern
         assert "build_action_packet_legacy" in nc.canonical_alternative
+
+
+# ---------------------------------------------------------------------------
+# PHR generator (P2: dedicated instead of fallback)
+# ---------------------------------------------------------------------------
+
+
+class TestPhantomReferenceGenerator:
+    """P2: PHANTOM_REFERENCE uses a dedicated generator, not fallback."""
+
+    def test_phr_has_dedicated_generator(self) -> None:
+        """PHR must be registered, not falling through to _gen_fallback."""
+        assert str(SignalType.PHANTOM_REFERENCE) in _GENERATORS
+
+    def test_phr_returns_valid_nc(self) -> None:
+        f = _finding(
+            signal_type=SignalType.PHANTOM_REFERENCE,
+            severity=Severity.MEDIUM,
+            title="3 unresolvable references in api/client.py",
+            file_path="api/client.py",
+            metadata={
+                "phantom_names": [
+                    {"name": "fetch_remote_config", "line": 15},
+                    {"name": "validate_token", "line": 22},
+                    {"name": "parse_response", "line": 31},
+                ],
+                "phantom_count": 3,
+            },
+        )
+        result = findings_to_negative_context([f])
+        assert len(result) >= 1
+        nc = result[0]
+        assert nc.source_signal == SignalType.PHANTOM_REFERENCE
+        assert nc.category == NegativeContextCategory.COMPLETENESS
+        assert "client.py" in nc.description
+        assert "fetch_remote_config" in nc.description
+        assert nc.confidence >= 0.6
+        assert nc.metadata.get("fallback_policy") is None
+
+    def test_phr_no_metadata_graceful(self) -> None:
+        """PHR finding without metadata still produces valid NC."""
+        f = _finding(
+            signal_type=SignalType.PHANTOM_REFERENCE,
+            severity=Severity.MEDIUM,
+            title="Phantom reference in utils.py",
+            file_path="utils.py",
+            metadata={},
+        )
+        result = findings_to_negative_context([f])
+        assert len(result) >= 1
+        nc = result[0]
+        assert nc.source_signal == SignalType.PHANTOM_REFERENCE
+        assert nc.confidence >= 0.5
+
+    def test_phr_forbidden_pattern_is_specific(self) -> None:
+        """Forbidden pattern must reference the actual file, not a generic signal name."""
+        f = _finding(
+            signal_type=SignalType.PHANTOM_REFERENCE,
+            severity=Severity.HIGH,
+            file_path="services/auth.py",
+            metadata={
+                "phantom_names": [{"name": "check_perms", "line": 5}],
+                "phantom_count": 1,
+            },
+        )
+        result = findings_to_negative_context([f])
+        nc = result[0]
+        assert "auth.py" in nc.forbidden_pattern
+        assert "ANTI-PATTERN" in nc.forbidden_pattern

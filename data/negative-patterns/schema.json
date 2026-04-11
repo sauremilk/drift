@@ -1,0 +1,97 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/mick-gsk/drift/data/negative-patterns/schema.json",
+  "title": "Drift Negative Pattern Entry",
+  "description": "Schema for labelled negative code patterns used to validate drift signal detection. Each entry describes a code pattern that drift should identify as problematic.",
+  "type": "object",
+  "required": [
+    "id",
+    "signal",
+    "origin",
+    "pattern_class",
+    "confirmed_problematic",
+    "severity",
+    "description",
+    "tp_confirmed",
+    "added_by",
+    "drift_version"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]+$",
+      "description": "Unique identifier for this pattern. Must match the filename prefix (e.g. 'mutant_duplicate_001' for mutant_duplicate_001.py)."
+    },
+    "signal": {
+      "type": "string",
+      "enum": [
+        "pattern_fragmentation",
+        "architecture_violation",
+        "mutant_duplicate",
+        "explainability_deficit",
+        "temporal_volatility",
+        "system_misalignment",
+        "doc_implementation_drift",
+        "broad_exception_monoculture",
+        "test_polarity_deficit",
+        "guard_clause_deficit",
+        "naming_contract_violation",
+        "bypass_accumulation",
+        "exception_contract_drift",
+        "cohesion_deficit",
+        "co_change_coupling",
+        "type_surface_attrition",
+        "complexity_spread",
+        "feature_orphan_erosion",
+        "circular_import",
+        "dead_code_accumulation",
+        "module_access_zone",
+        "import_structure_drift",
+        "hidden_state_coupling",
+        "phantom_reference"
+      ],
+      "description": "The drift signal type this pattern targets. Must match a registered drift SignalType value."
+    },
+    "origin": {
+      "type": "string",
+      "enum": ["human", "ai_assisted", "ai_generated"],
+      "description": "How this pattern was created. 'human' = manually written, 'ai_assisted' = human-guided AI output, 'ai_generated' = fully AI-generated code."
+    },
+    "model_hint": {
+      "type": "string",
+      "description": "Optional best-effort hint about which AI model produced this pattern (e.g. 'gpt-4o', 'claude-3.5-sonnet')."
+    },
+    "pattern_class": {
+      "type": "string",
+      "description": "A short classification of the anti-pattern (e.g. 'copy_paste_with_variation', 'bare_except_pattern', 'missing_guard_clause')."
+    },
+    "confirmed_problematic": {
+      "type": "boolean",
+      "description": "Whether this pattern has been manually confirmed as genuinely problematic (not just detected by drift)."
+    },
+    "severity": {
+      "type": "string",
+      "enum": ["low", "medium", "high"],
+      "description": "Severity level of the anti-pattern."
+    },
+    "description": {
+      "type": "string",
+      "minLength": 10,
+      "description": "Brief explanation of why this pattern is problematic."
+    },
+    "tp_confirmed": {
+      "type": "boolean",
+      "description": "Whether drift correctly detects this pattern (true positive confirmed by CI or manual verification)."
+    },
+    "added_by": {
+      "type": "string",
+      "description": "Who added this pattern (e.g. 'bootstrap', a GitHub username, or 'community')."
+    },
+    "drift_version": {
+      "type": "string",
+      "pattern": "^\\d+\\.\\d+\\.\\d+",
+      "description": "The drift version against which this pattern was verified."
+    }
+  },
+  "additionalProperties": false
+}

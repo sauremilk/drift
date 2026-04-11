@@ -51,7 +51,12 @@ def embeddings_available() -> bool:
 # Embedding cache (disk-backed)
 # ---------------------------------------------------------------------------
 
-_CACHE_VERSION = 1
+_CACHE_VERSION = 2
+
+
+def _safe_model_name(model_name: str) -> str:
+    """Normalise a model name for use as a directory component."""
+    return model_name.replace("/", "_").replace("\\", "_")
 
 
 class EmbeddingCache:
@@ -59,10 +64,15 @@ class EmbeddingCache:
 
     Keys are SHA-256 hashes of input text.  Values are stored as raw
     float32 bytes for fast mmap-free loading.
+
+    The cache is partitioned by *model_name* and *_CACHE_VERSION* so that
+    a model switch or cache-format change never silently returns stale
+    vectors.
     """
 
-    def __init__(self, cache_dir: Path) -> None:
-        self._dir: Path | None = cache_dir / "embeddings"
+    def __init__(self, cache_dir: Path, *, model_name: str = "unknown") -> None:
+        safe = _safe_model_name(model_name)
+        self._dir: Path | None = cache_dir / "embeddings" / safe / f"v{_CACHE_VERSION}"
         try:
             self._dir.mkdir(parents=True, exist_ok=True)
         except OSError as exc:
@@ -140,7 +150,11 @@ class EmbeddingService:
         self._model_name = model_name
         self._batch_size = batch_size
         self._model: SentenceTransformer | None = None
-        self._cache = EmbeddingCache(cache_dir) if cache_dir else None
+        self._cache = (
+            EmbeddingCache(cache_dir, model_name=model_name)
+            if cache_dir
+            else None
+        )
 
     # -- lazy model loading --------------------------------------------------
 

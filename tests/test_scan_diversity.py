@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import sys
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -13,6 +14,10 @@ from drift.api import (
 )
 from drift.config import DriftConfig
 from drift.models import AgentTask, Severity, SignalType
+
+# Resolve the *module* drift.api.scan — drift.api.__init__ shadows the
+# submodule name with the re-exported ``scan`` function.
+_scan_mod = sys.modules["drift.api.scan"]
 
 
 def _make_finding(
@@ -85,7 +90,7 @@ class TestDiverseFindings:
             findings,
             key=lambda f: (
                 -f.impact,
-                f.signal_type.value,
+                f.signal_type,
                 f.file_path.as_posix() if f.file_path else "",
                 f.start_line or 0,
             ),
@@ -98,7 +103,6 @@ class TestDiverseFindings:
 
     def test_top_severity_preserves_old_behavior(self, monkeypatch):
         """top-severity returns pure score-sorted findings."""
-        import drift.api as api_module
 
         findings = (
             [
@@ -116,12 +120,10 @@ class TestDiverseFindings:
             ai_attributed_ratio=0.1,
             trend=None,
         )
-        monkeypatch.setattr(
-            api_module, "_finding_concise",
+        monkeypatch.setattr(_scan_mod, "_finding_concise",
             lambda f: {"title": f.title},
         )
-        monkeypatch.setattr(
-            api_module, "_fix_first_concise",
+        monkeypatch.setattr(_scan_mod, "_fix_first_concise",
             lambda analysis, max_items=5: [],
         )
         result = _format_scan_response(
@@ -161,19 +163,16 @@ class TestDiverseFindings:
             analyzer_module, "analyze_repo",
             lambda *a, **kw: analysis,
         )
-        monkeypatch.setattr(
-            api_module, "_emit_api_telemetry",
+        monkeypatch.setattr(_scan_mod, "_emit_api_telemetry",
             lambda **kw: None,
         )
-        monkeypatch.setattr(
-            api_module, "_finding_concise",
+        monkeypatch.setattr(_scan_mod, "_finding_concise",
             lambda f: {
                 "signal": api_module.signal_abbrev(f.signal_type),
                 "title": f.title,
             },
         )
-        monkeypatch.setattr(
-            api_module, "_fix_first_concise",
+        monkeypatch.setattr(_scan_mod, "_fix_first_concise",
             lambda analysis, max_items=5: [],
         )
 
@@ -227,12 +226,10 @@ class TestDiverseFindings:
             ai_attributed_ratio=0.1,
             trend=None,
         )
-        monkeypatch.setattr(
-            api_module, "_finding_concise",
+        monkeypatch.setattr(_scan_mod, "_finding_concise",
             lambda f: {"signal": api_module.signal_abbrev(f.signal_type), "title": f.title},
         )
-        monkeypatch.setattr(
-            api_module, "_fix_first_concise",
+        monkeypatch.setattr(_scan_mod, "_fix_first_concise",
             lambda analysis, max_items=5: [],
         )
 
@@ -270,12 +267,10 @@ class TestDiverseFindings:
             ai_attributed_ratio=0.0,
             trend=None,
         )
-        monkeypatch.setattr(
-            api_module, "_finding_concise",
+        monkeypatch.setattr(_scan_mod, "_finding_concise",
             lambda f: {"signal": api_module.signal_abbrev(f.signal_type), "title": f.title},
         )
-        monkeypatch.setattr(
-            api_module, "_fix_first_concise",
+        monkeypatch.setattr(_scan_mod, "_fix_first_concise",
             lambda analysis, max_items=5: [],
         )
 
@@ -308,12 +303,10 @@ class TestDiverseFindings:
             ai_attributed_ratio=0.0,
             trend=None,
         )
-        monkeypatch.setattr(
-            api_module, "_finding_concise",
+        monkeypatch.setattr(_scan_mod, "_finding_concise",
             lambda f: {"signal": api_module.signal_abbrev(f.signal_type), "title": f.title},
         )
-        monkeypatch.setattr(
-            api_module, "_fix_first_concise",
+        monkeypatch.setattr(_scan_mod, "_fix_first_concise",
             lambda analysis, max_items=5: [],
         )
 
@@ -406,7 +399,6 @@ class TestScanCrossValidationFields:
 class TestNonOperationalContextFiltering:
     def test_scan_excludes_fixture_from_findings_by_default(self, monkeypatch):
         import drift.analyzer as analyzer_module
-        import drift.api as api_module
 
         findings = [
             _make_finding(PFS, 0.95, 0.95, file="benchmarks/corpus/src/app.py", line=10),
@@ -429,10 +421,8 @@ class TestNonOperationalContextFiltering:
             staticmethod(lambda *a, **kw: DriftConfig()),
         )
         monkeypatch.setattr(analyzer_module, "analyze_repo", lambda *a, **kw: analysis)
-        monkeypatch.setattr(api_module, "_emit_api_telemetry", lambda **kw: None)
-        monkeypatch.setattr(
-            api_module,
-            "_finding_concise",
+        monkeypatch.setattr(_scan_mod, "_emit_api_telemetry", lambda **kw: None)
+        monkeypatch.setattr(_scan_mod, "_finding_concise",
             lambda f: {"file": f.file_path.as_posix() if f.file_path else None},
         )
 
@@ -448,7 +438,6 @@ class TestNonOperationalContextFiltering:
 
     def test_scan_includes_fixture_in_findings_with_opt_in(self, monkeypatch):
         import drift.analyzer as analyzer_module
-        import drift.api as api_module
 
         findings = [
             _make_finding(PFS, 0.95, 0.95, file="benchmarks/corpus/src/app.py", line=10),
@@ -471,10 +460,8 @@ class TestNonOperationalContextFiltering:
             staticmethod(lambda *a, **kw: DriftConfig()),
         )
         monkeypatch.setattr(analyzer_module, "analyze_repo", lambda *a, **kw: analysis)
-        monkeypatch.setattr(api_module, "_emit_api_telemetry", lambda **kw: None)
-        monkeypatch.setattr(
-            api_module,
-            "_finding_concise",
+        monkeypatch.setattr(_scan_mod, "_emit_api_telemetry", lambda **kw: None)
+        monkeypatch.setattr(_scan_mod, "_finding_concise",
             lambda f: {"file": f.file_path.as_posix() if f.file_path else None},
         )
 
@@ -491,7 +478,6 @@ class TestNonOperationalContextFiltering:
 
     def test_scan_detailed_excludes_fixture_from_fix_first_by_default(self, monkeypatch):
         import drift.analyzer as analyzer_module
-        import drift.api as api_module
 
         findings = [
             _make_finding(PFS, 0.9, 0.9, file="benchmarks/corpus/src/app.py", line=10),
@@ -514,7 +500,7 @@ class TestNonOperationalContextFiltering:
             staticmethod(lambda *a, **kw: DriftConfig()),
         )
         monkeypatch.setattr(analyzer_module, "analyze_repo", lambda *a, **kw: analysis)
-        monkeypatch.setattr(api_module, "_emit_api_telemetry", lambda **kw: None)
+        monkeypatch.setattr(_scan_mod, "_emit_api_telemetry", lambda **kw: None)
 
         result = scan(Path("."), response_detail="detailed", max_findings=10)
 
@@ -523,7 +509,6 @@ class TestNonOperationalContextFiltering:
 
     def test_scan_detailed_includes_fixture_with_opt_in(self, monkeypatch):
         import drift.analyzer as analyzer_module
-        import drift.api as api_module
 
         findings = [
             _make_finding(PFS, 0.9, 0.9, file="benchmarks/corpus/src/app.py", line=10),
@@ -546,7 +531,7 @@ class TestNonOperationalContextFiltering:
             staticmethod(lambda *a, **kw: DriftConfig()),
         )
         monkeypatch.setattr(analyzer_module, "analyze_repo", lambda *a, **kw: analysis)
-        monkeypatch.setattr(api_module, "_emit_api_telemetry", lambda **kw: None)
+        monkeypatch.setattr(_scan_mod, "_emit_api_telemetry", lambda **kw: None)
 
         result = scan(
             Path("."),
@@ -877,8 +862,7 @@ class TestDiffUncommittedScope:
             api_module, "_emit_api_telemetry",
             lambda **kw: None,
         )
-        monkeypatch.setattr(
-            api_module, "_finding_concise",
+        monkeypatch.setattr(_scan_mod, "_finding_concise",
             lambda f: {
                 "title": f.title,
                 "file": f.file_path.as_posix(),
@@ -920,8 +904,7 @@ class TestTargetPathWarning:
             api_module, "_emit_api_telemetry",
             lambda **kw: None,
         )
-        monkeypatch.setattr(
-            api_module, "_fix_first_concise",
+        monkeypatch.setattr(_scan_mod, "_fix_first_concise",
             lambda analysis, max_items=5: [],
         )
 
@@ -965,15 +948,13 @@ class TestTopSignalsFilter:
             api_module, "_emit_api_telemetry",
             lambda **kw: None,
         )
-        monkeypatch.setattr(
-            api_module, "_finding_concise",
+        monkeypatch.setattr(_scan_mod, "_finding_concise",
             lambda f: {
                 "signal": api_module.signal_abbrev(f.signal_type),
                 "title": f.title,
             },
         )
-        monkeypatch.setattr(
-            api_module, "_fix_first_concise",
+        monkeypatch.setattr(_scan_mod, "_fix_first_concise",
             lambda analysis, max_items=5: [],
         )
         monkeypatch.setattr(
@@ -1007,12 +988,10 @@ class TestScanSignalFiltering:
             ai_attributed_ratio=0.1,
             trend=None,
         )
-        monkeypatch.setattr(
-            api_module, "_finding_concise",
+        monkeypatch.setattr(_scan_mod, "_finding_concise",
             lambda f: {"signal": api_module.signal_abbrev(f.signal_type), "title": f.title},
         )
-        monkeypatch.setattr(
-            api_module, "_fix_first_concise",
+        monkeypatch.setattr(_scan_mod, "_fix_first_concise",
             lambda analysis, max_items=5: [],
         )
 
@@ -1045,12 +1024,10 @@ class TestScanSignalFiltering:
             ai_attributed_ratio=0.0,
             trend=None,
         )
-        monkeypatch.setattr(
-            api_module, "_finding_concise",
+        monkeypatch.setattr(_scan_mod, "_finding_concise",
             lambda f: {"signal": api_module.signal_abbrev(f.signal_type), "title": f.title},
         )
-        monkeypatch.setattr(
-            api_module, "_fix_first_concise",
+        monkeypatch.setattr(_scan_mod, "_fix_first_concise",
             lambda analysis, max_items=5: [],
         )
 
@@ -1099,12 +1076,10 @@ class TestScanSignalFiltering:
             api_module, "_emit_api_telemetry",
             lambda **kw: None,
         )
-        monkeypatch.setattr(
-            api_module, "_finding_concise",
+        monkeypatch.setattr(_scan_mod, "_finding_concise",
             lambda f: {"signal": api_module.signal_abbrev(f.signal_type), "title": f.title},
         )
-        monkeypatch.setattr(
-            api_module, "_fix_first_concise",
+        monkeypatch.setattr(_scan_mod, "_fix_first_concise",
             lambda analysis, max_items=5: [],
         )
         monkeypatch.setattr("drift.config.apply_signal_filter", _fake_apply_signal_filter)
@@ -1147,8 +1122,7 @@ class TestAgentInstruction:
             api_module, "_emit_api_telemetry",
             lambda **kw: None,
         )
-        monkeypatch.setattr(
-            api_module, "_fix_first_concise",
+        monkeypatch.setattr(_scan_mod, "_fix_first_concise",
             lambda analysis, max_items=5: [],
         )
 
@@ -1232,6 +1206,105 @@ class TestAgentInstruction:
         result = diff(Path("."), uncommitted=True)
         assert "agent_instruction" in result
         assert isinstance(result["agent_instruction"], str)
+
+    def test_diff_agent_hint_new_findings_within_threshold(self, monkeypatch):
+        """WP-1: When accept_change=true but new findings exist (low sev,
+        no delta), agent_instruction warns about new findings."""
+        import drift.analyzer as analyzer_module
+        import drift.api as api_module
+        from drift.config import DriftConfig
+
+        # Low-severity finding that won't trigger blocking_reasons
+        fake_finding = SimpleNamespace(
+            signal_type=SignalType.PATTERN_FRAGMENTATION,
+            severity=Severity.LOW,
+            score=0.3,
+            impact=0.1,
+            title="PFS finding",
+            description="desc",
+            fix="fix",
+            file_path=Path("src/a.py"),
+            start_line=1,
+            end_line=5,
+            symbol="func",
+            related_files=[],
+            rule_id="R1",
+            score_contribution=0.01,
+            metadata={},
+        )
+        analysis = SimpleNamespace(
+            findings=[fake_finding],
+            drift_score=0.0,  # same as previous → delta=0 → no blocking
+            severity=Severity.LOW,
+            total_files=10,
+            total_functions=50,
+            ai_attributed_ratio=0.1,
+            trend=SimpleNamespace(
+                direction="stable",
+                previous_score=0.0,
+                delta=0.0,
+            ),
+            is_degraded=False,
+        )
+        monkeypatch.setattr(
+            DriftConfig, "load",
+            staticmethod(lambda *a, **kw: object()),
+        )
+        monkeypatch.setattr(
+            analyzer_module, "analyze_diff",
+            lambda *a, **kw: analysis,
+        )
+        monkeypatch.setattr(
+            api_module, "_emit_api_telemetry",
+            lambda **kw: None,
+        )
+
+        from drift.api import diff
+
+        result = diff(Path("."), uncommitted=True)
+        hint = result["agent_instruction"]
+        assert "New findings exist" in hint
+        assert "threshold" in hint.lower()
+
+    def test_diff_agent_hint_no_findings_safe(self, monkeypatch):
+        """WP-1: When accept_change=true AND no new findings, hint says safe."""
+        import drift.analyzer as analyzer_module
+        import drift.api as api_module
+        from drift.config import DriftConfig
+
+        analysis = SimpleNamespace(
+            findings=[],
+            drift_score=0.0,
+            severity=Severity.LOW,
+            total_files=10,
+            total_functions=50,
+            ai_attributed_ratio=0.1,
+            trend=SimpleNamespace(
+                direction="stable",
+                previous_score=0.0,
+                delta=0.0,
+            ),
+            is_degraded=False,
+        )
+        monkeypatch.setattr(
+            DriftConfig, "load",
+            staticmethod(lambda *a, **kw: object()),
+        )
+        monkeypatch.setattr(
+            analyzer_module, "analyze_diff",
+            lambda *a, **kw: analysis,
+        )
+        monkeypatch.setattr(
+            api_module, "_emit_api_telemetry",
+            lambda **kw: None,
+        )
+
+        from drift.api import diff
+
+        result = diff(Path("."), uncommitted=True)
+        hint = result["agent_instruction"]
+        assert "No drift change detected" in hint
+        assert "Safe to proceed" in hint
 
 
 class TestFixPlanFindingIdDiagnostics:
@@ -1364,3 +1437,217 @@ class TestFixPlanFindingIdDiagnostics:
         assert result["suggested_fix"] is not None
         assert "valid_task_ids_sample" in result["suggested_fix"]
         assert result["invalid_fields"][0]["field"] == "finding_id"
+
+
+# ---------------------------------------------------------------------------
+# Next-Step Contracts (ADR-024)
+# ---------------------------------------------------------------------------
+
+
+def _assert_contract_shape(result: dict, *, allow_null_next: bool = False):
+    """Validate the structural contract of next_tool_call / fallback_tool_call / done_when."""
+    assert "done_when" in result, "missing done_when"
+    assert isinstance(result["done_when"], str), "done_when must be str"
+    assert len(result["done_when"]) > 0, "done_when must not be empty"
+
+    assert "next_tool_call" in result, "missing next_tool_call"
+    ntc = result["next_tool_call"]
+    if allow_null_next:
+        if ntc is not None:
+            assert isinstance(ntc, dict)
+            assert isinstance(ntc.get("tool"), str)
+            assert isinstance(ntc.get("params"), dict)
+    else:
+        assert isinstance(ntc, dict), "next_tool_call must be dict"
+        assert isinstance(ntc["tool"], str), "next_tool_call.tool must be str"
+        assert isinstance(ntc["params"], dict), "next_tool_call.params must be dict"
+
+    assert "fallback_tool_call" in result, "missing fallback_tool_call"
+    ftc = result["fallback_tool_call"]
+    if ftc is not None:
+        assert isinstance(ftc, dict)
+        assert isinstance(ftc.get("tool"), str)
+        assert isinstance(ftc.get("params"), dict)
+
+
+class TestNextStepContract:
+    """ADR-024: machine-readable next-step contracts in API responses."""
+
+    # -- scan ---------------------------------------------------------------
+
+    def test_scan_detailed_has_contract(self, monkeypatch):
+        import drift.analyzer as analyzer_module
+        import drift.api as api_module
+        from drift.config import DriftConfig
+
+        analysis = SimpleNamespace(
+            findings=[
+                _make_finding(SignalType.PATTERN_FRAGMENTATION, 0.8, 0.5),
+            ],
+            drift_score=0.4,
+            severity=Severity.MEDIUM,
+            total_files=5,
+            total_functions=10,
+            ai_attributed_ratio=0.0,
+            trend=None,
+        )
+        monkeypatch.setattr(DriftConfig, "load", staticmethod(lambda *a, **kw: object()))
+        monkeypatch.setattr(analyzer_module, "analyze_repo", lambda *a, **kw: analysis)
+        monkeypatch.setattr(api_module, "_emit_api_telemetry", lambda **kw: None)
+        monkeypatch.setattr(_scan_mod, "_fix_first_concise", lambda analysis, max_items=5: [])
+
+        result = scan(Path("."), response_detail="detailed")
+
+        _assert_contract_shape(result)
+        assert result["next_tool_call"]["tool"] == "drift_fix_plan"
+
+    def test_scan_concise_no_contract(self, monkeypatch):
+        import drift.analyzer as analyzer_module
+        import drift.api as api_module
+        from drift.config import DriftConfig
+
+        analysis = SimpleNamespace(
+            findings=[],
+            drift_score=0.0,
+            severity=Severity.LOW,
+            total_files=5,
+            total_functions=10,
+            ai_attributed_ratio=0.0,
+            trend=None,
+        )
+        monkeypatch.setattr(DriftConfig, "load", staticmethod(lambda *a, **kw: object()))
+        monkeypatch.setattr(analyzer_module, "analyze_repo", lambda *a, **kw: analysis)
+        monkeypatch.setattr(api_module, "_emit_api_telemetry", lambda **kw: None)
+
+        result = scan(Path("."), response_detail="concise")
+
+        assert "next_tool_call" not in result
+
+    def test_scan_zero_findings_null_next(self, monkeypatch):
+        import drift.analyzer as analyzer_module
+        import drift.api as api_module
+        from drift.config import DriftConfig
+
+        analysis = SimpleNamespace(
+            findings=[],
+            drift_score=0.0,
+            severity=Severity.LOW,
+            total_files=5,
+            total_functions=10,
+            ai_attributed_ratio=0.0,
+            trend=None,
+        )
+        monkeypatch.setattr(DriftConfig, "load", staticmethod(lambda *a, **kw: object()))
+        monkeypatch.setattr(analyzer_module, "analyze_repo", lambda *a, **kw: analysis)
+        monkeypatch.setattr(api_module, "_emit_api_telemetry", lambda **kw: None)
+        monkeypatch.setattr(_scan_mod, "_fix_first_concise", lambda analysis, max_items=5: [])
+
+        result = scan(Path("."), response_detail="detailed")
+
+        _assert_contract_shape(result, allow_null_next=True)
+        assert result["next_tool_call"] is None
+
+    # -- fix_plan -----------------------------------------------------------
+
+    def test_fix_plan_has_contract(self, monkeypatch):
+        import drift.analyzer as analyzer_module
+        import drift.api as api_module
+        from drift.api import fix_plan
+        from drift.config import DriftConfig
+
+        analysis = SimpleNamespace(
+            findings=[],
+            drift_score=0.3,
+            severity=Severity.MEDIUM,
+            total_files=5,
+            total_functions=10,
+            ai_attributed_ratio=0.0,
+            trend=None,
+        )
+        monkeypatch.setattr(DriftConfig, "load", staticmethod(lambda *a, **kw: object()))
+        monkeypatch.setattr(analyzer_module, "analyze_repo", lambda *a, **kw: analysis)
+        monkeypatch.setattr(
+            "drift.output.agent_tasks.analysis_to_agent_tasks",
+            lambda *a, **kw: [],
+        )
+        monkeypatch.setattr(api_module, "_emit_api_telemetry", lambda **kw: None)
+
+        result = fix_plan(Path("."))
+
+        _assert_contract_shape(result)
+        assert "drift_nudge" in (result["next_tool_call"]["tool"])
+        assert result["done_when"] == "drift_diff.accept_change == true"
+
+    # -- diff ---------------------------------------------------------------
+
+    def test_diff_has_contract(self, monkeypatch):
+        import drift.analyzer as analyzer_module
+        import drift.api as api_module
+        from drift.api import diff
+        from drift.config import DriftConfig
+
+        analysis = SimpleNamespace(
+            findings=[],
+            drift_score=0.0,
+            severity=Severity.LOW,
+            total_files=10,
+            total_functions=50,
+            ai_attributed_ratio=0.1,
+            trend=SimpleNamespace(
+                direction="stable",
+                previous_score=0.0,
+                delta=0.0,
+            ),
+            is_degraded=False,
+        )
+        monkeypatch.setattr(DriftConfig, "load", staticmethod(lambda *a, **kw: object()))
+        monkeypatch.setattr(analyzer_module, "analyze_diff", lambda *a, **kw: analysis)
+        monkeypatch.setattr(api_module, "_emit_api_telemetry", lambda **kw: None)
+
+        result = diff(Path("."), uncommitted=True)
+
+        _assert_contract_shape(result, allow_null_next=True)
+        assert "accept_change" in result["done_when"]
+
+    # -- contract shape validation ------------------------------------------
+
+    def test_contract_shape_builder(self):
+        from drift.api_helpers import DONE_ACCEPT_CHANGE, _next_step_contract
+
+        c = _next_step_contract(
+            next_tool="drift_fix_plan",
+            next_params={"max_tasks": 5},
+            done_when=DONE_ACCEPT_CHANGE,
+            fallback_tool="drift_explain",
+            fallback_params={"signal": "PFS"},
+        )
+        assert c["next_tool_call"] == {"tool": "drift_fix_plan", "params": {"max_tasks": 5}}
+        assert c["fallback_tool_call"] == {"tool": "drift_explain", "params": {"signal": "PFS"}}
+        assert c["done_when"] == DONE_ACCEPT_CHANGE
+
+    def test_contract_null_next(self):
+        from drift.api_helpers import DONE_NO_FINDINGS, _next_step_contract
+
+        c = _next_step_contract(next_tool=None, done_when=DONE_NO_FINDINGS)
+        assert c["next_tool_call"] is None
+        assert c["fallback_tool_call"] is None
+        assert c["done_when"] == DONE_NO_FINDINGS
+
+    def test_error_response_recovery_tool_call(self):
+        from drift.api_helpers import _error_response, _tool_call
+
+        recovery = _tool_call("drift_validate", {"path": "."})
+        resp = _error_response(
+            "DRIFT-5001",
+            "Something went wrong",
+            recoverable=True,
+            recovery_tool_call=recovery,
+        )
+        assert resp["recovery_tool_call"]["tool"] == "drift_validate"
+        assert resp["recovery_tool_call"]["params"] == {"path": "."}
+
+    def test_error_response_no_recovery_by_default(self):
+        from drift.api_helpers import _error_response
+
+        resp = _error_response("DRIFT-5001", "oops", recoverable=True)
+        assert "recovery_tool_call" not in resp

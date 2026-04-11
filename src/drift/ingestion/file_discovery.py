@@ -134,6 +134,7 @@ def discover_files(
             "**/scripts/**",
         ]
     prepared_exclude = _prepare_patterns(tuple(exclude))
+    include_patterns = list(dict.fromkeys(include))
 
     files: list[FileInfo] = []
     repo_path = repo_path.resolve()
@@ -145,9 +146,9 @@ def discover_files(
     seen: set[str] = set()
     skipped_langs: dict[str, int] = {}
 
-    for pattern in include:
+    for pattern in include_patterns:
         try:
-            matches = list(repo_path.glob(pattern))
+            matches = repo_path.glob(pattern)
         except (OSError, ValueError) as exc:
             logger.warning("glob(%s) failed: %s", pattern, exc)
             continue
@@ -162,7 +163,8 @@ def discover_files(
             except OSError:
                 continue
 
-            rel = match.relative_to(repo_path).as_posix()
+            rel_path = match.relative_to(repo_path)
+            rel = rel_path.as_posix()
 
             # Inline dedup — glob patterns can match same file
             if rel in seen:
@@ -194,7 +196,7 @@ def discover_files(
 
             files.append(
                 FileInfo(
-                    path=match.relative_to(repo_path),
+                    path=rel_path,
                     language=lang,
                     size_bytes=stat.st_size,
                     line_count=line_count,

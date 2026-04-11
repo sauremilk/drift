@@ -1,5 +1,210 @@
 # Fault Tree Analysis
 
+## 2026-04-10 - ADR-040: PHR Third-Party Import Resolver
+
+### Top Event (TE-PHR-040)
+PHR third-party import check produces false positives or misses real phantom imports.
+
+### FT-1: False positive branch — third-party import FP
+
+```
+            TE-FP: find_spec flags valid import as phantom
+                        |
+                     OR-Gate
+         +------+------+------+
+        IE-1   IE-2   IE-3   IE-4
+```
+
+- **IE-1 (MCS)**: Package installed in CI but not in local venv → `find_spec` returns None
+  - Mitigation: metadata hint `confidence: env_dependent`; documentation guidance
+- **IE-2 (MCS)**: Conditional import (`try/except ImportError`) not recognized
+  - Mitigation: `_is_in_try_except_import_error()` AST guard
+- **IE-3 (MCS)**: TYPE_CHECKING import not recognized
+  - Mitigation: `_collect_type_checking_import_ids()` pre-pass
+- **IE-4 (MCS)**: Namespace package without `__init__.py`
+  - Mitigation: `find_spec` handles PEP 420 namespace packages natively
+
+### FT-2: False negative branch — missed phantom import
+
+```
+            TE-FN: real phantom import not flagged
+                        |
+                     OR-Gate
+              +------+------+
+             IE-5   IE-6   IE-7
+```
+
+- **IE-5 (MCS)**: Dynamic import via `importlib.import_module(variable)`
+  - Accept: Not statically resolvable
+- **IE-6 (MCS)**: Package installed but wrong version (missing class/function)
+  - Accept: Phase C (ADR-041) will address attribute-level validation
+- **IE-7 (MCS)**: String-based plugin loaders
+  - Accept: Not statically resolvable
+
+## 2026-06-14 - ADR-039: Signal Activation (MAZ/PHR/HSC/ISD/FOE)
+
+### Top Event (TE-0)
+Newly scoring signals produce unacceptable false positive rates or composite score inflation after activation.
+
+### FT-1: False positive branch — individual signal FP
+
+```
+            TE-FP: scoring signal emits low-value finding
+                        |
+                     OR-Gate
+         +------+------+------+------+
+        IE-1   IE-2   IE-3   IE-4   IE-5
+        MAZ:    ISD:    HSC:   PHR:   FOE:
+        dev-    dev-    templ  3rd-   barrel
+        handler config  value  party  file
+```
+
+- MCS-1 (MAZ): Dev-server handler without auth decorator → suppressed by CLI-path/dev-path fence
+- MCS-2 (ISD): Dev-only `DEBUG=True` → suppressed by `drift:ignore-security` directive
+- MCS-3 (HSC): Template placeholder matches entropy heuristic → suppressed by `_is_safe_value`
+- MCS-4 (PHR): Third-party import not in project tree → suppressed by known-module allowlist
+- MCS-5 (FOE): Re-export barrel file → suppressed by barrel-file detection
+
+### FT-2: Score inflation branch — composite score distortion
+
+```
+            TE-SCORE: composite score breaks comparability
+                        |
+                     AND-Gate
+         +--------------+--------------+
+   IE-1: multiple new          IE-2: combined weight
+   signals fire on same        contribution exceeds
+   module simultaneously       recalibration tolerance
+```
+
+- MCS-1: All 5 signals fire simultaneously AND total weight (0.065) shifts score significantly → bounded by conservative weights and module-level aggregation
+- Mitigation: Baseline comparison via `drift_diff`; weight sum is ~6.5% of total
+
+### Verification
+- Ground-truth: 5 ISD fixtures, 1 MAZ TN, 6 HSC, 3 FOE, 17 PHR (all passing)
+- Precision/recall: `pytest tests/test_precision_recall.py -v`
+- Baseline diff: `drift analyze --repo . --format json --exit-zero`
+
+## 2026-04-10 - TS Type-Safety-Bypass detection path
+
+### Top Event (TE-0)
+Type-safety bypass in TypeScript files is not reported or is over-reported after signal expansion.
+
+### FT-1: False negative branch
+
+```
+        TE-FN: real TS bypass missed
+           |
+            AND-Gate
+       +-----------+-----------+
+      IE-1: AST form not       IE-2: bypass syntax
+        matched by rule           present only in
+        matcher                    unsupported variant
+```
+
+- MCS-1: unsupported AST variant + bypass expression present -> FN
+- Mitigation: add variant fixtures and keep AST walker coverage broad across TS and TSX.
+
+### FT-2: False positive branch
+
+```
+        TE-FP: intentional TS escape flagged
+           |
+            AND-Gate
+       +-----------+-----------+
+      IE-1: project allows     IE-2: expression matches
+        controlled escapes       generic bypass rule
+```
+
+- MCS-1: controlled migration escape + generic pattern match -> FP
+- Mitigation: low severity defaults, metadata detail for quick triage, fixture coverage for clean/moderate/severe examples.
+
+## 2026-04-13 - ADR-036/037/038: AVS/DIA/MDS FP-Reduction
+
+### Top Event (TE-0)
+FP-reduction logic incorrectly suppresses a true positive finding for AVS, DIA, or MDS.
+
+### FT-1: AVS models Omnilayer false negative
+
+```
+                         TE-AVS: real models/ violation missed
+                                      |
+                                   AND-Gate
+                         +------------+------------+
+                   IE-1: models/ is      IE-2: project uses models/
+                   in _OMNILAYER_DIRS    as strict DB layer (rare)
+```
+
+- MCS-1: `models` in Omnilayer AND project treats it as strict layer → FN
+- Mitigation: configurable `omnilayer_dirs` — user can remove `models` if their project needs strict layer enforcement
+
+### FT-2: MDS protocol skip false negative
+
+```
+                         TE-MDS: real protocol duplication missed
+                                      |
+                                   AND-Gate
+                         +------------+------------+
+                   IE-1: function name   IE-2: classes have genuinely
+                   in _PROTOCOL_METHOD_  duplicated non-trivial body
+                   NAMES                 beyond protocol interface
+```
+
+- MCS-1: Protocol-method name match AND genuine duplication → FN
+- Mitigation: protocol set is narrow (20 names); only bare-name + different-class qualifies
+
+### FT-3: MDS thin-wrapper false negative
+
+```
+                         TE-MDS: wrapper with real behavior missed
+                                      |
+                                   AND-Gate
+                         +------------+------------+
+                   IE-1: LOC <= 5        IE-2: wrapper adds
+                                         meaningful transform
+                                         (not just delegation)
+```
+
+- MCS-1: Short function with single Call AND meaningful transform → FN
+- Mitigation: `_is_thin_wrapper` requires exactly 1 Call node; any additional logic breaks the gate
+
+### Verification
+- Ground-truth fixtures: `AVS_MODELS_OMNILAYER_TN`, `MDS_CONFOUNDER_PROTOCOL_METHODS_TN`, `MDS_CONFOUNDER_THIN_WRAPPER_TN`, `MDS_CONFOUNDER_NAME_DIVERSE_TN`
+- Precision/recall test: `pytest tests/test_precision_recall.py -v`
+
+## 2026-04-12 - ADR-035: PHR calibration over-suppression risk
+
+### Top Event (TE-0)
+`phantom_reference` emits no actionable finding for a real unresolved reference in a repository where calibration data is present, due to over-aggressive per-repo dampening.
+
+### FT-1: TE-0 <- AND-Gate
+
+```
+                    TE-0: real PHR miss after calibration
+                               |
+                            AND-Gate
+                   +-----------+-----------+
+              IE-1: calibration active   IE-2: dampening weight
+                    for current repo            too high for this case
+```
+
+- IE-1 causes:
+  - repository fingerprint matches a stored calibration profile
+  - calibration file is valid and loaded successfully
+- IE-2 causes:
+  - repeated FP feedback for similar references biases local pattern score
+  - conservative floor is not reached before severity tier shifts below reporting threshold
+
+### Minimal Cut Set
+| MCS | Basis-Ereignis | SPOF | Mitigation |
+|---|---|---|---|
+| MCS-1 | Valid local calibration profile + biased FP-heavy feedback cluster for matching PHR pattern | Nein (AND path) | Cap dampening, enforce minimum evidence threshold, fallback to default weights when confidence is low |
+
+### Verification
+- `tests/test_calibration.py` validates calibration loading, bounds, and safe fallback behavior.
+- `tests/test_phantom_reference.py` validates calibrated vs uncalibrated reporting behavior.
+- Benchmark evidence for ADR-035 captured in versioned feature-evidence artifact.
+
 ## 2026-04-07 - PFS FTA v1: pfs_002 recall = 0 (RETURN_PATTERN SPOF)
 
 ### Top Event (TE-0)
@@ -811,3 +1016,72 @@ Weil kein `PatternInstance` mit `category=PatternCategory.RETURN_PATTERN` erzeug
 - Branch A: Mention not backticked.
 - Branch B: Structural cue absent from local context window.
 - Mitigation implemented: Add keyword-based structural context and targeted tests for positive prose context.
+
+---
+
+## PHR — Phantom Reference (ADR-033)
+
+### FT-1: False Positive — name flagged as phantom but actually available
+- Top event: PHR emits finding for a name that IS available at runtime.
+- Branch A: Name provided by star import (`from X import *`).
+  - Mitigation: Conservative skip — files with star imports excluded entirely.
+- Branch B: Name provided by module-level `__getattr__`.
+  - Mitigation: Conservative skip — files with `__getattr__` at module level excluded.
+- Branch C: Name is a third-party library name not in project symbol table.
+  - Mitigation: Import-resolved names added to available set; root-name resolution covers `import X; X.call()`.
+- Branch D: Name is a framework-injected global (e.g. pytest fixtures).
+  - Mitigation: `_FRAMEWORK_GLOBALS` allowlist for common framework names.
+- Branch E: Name introduced by `exec()`/`eval()` at runtime.
+  - Mitigation: `_has_exec_eval` flag detected (logged); accept as static analysis limitation.
+
+### FT-2: False Negative — phantom name not detected
+- Top event: PHR misses a genuinely unresolvable reference.
+- Branch A: Name retrieved via `getattr(obj, "name")` — dynamic access invisible to AST.
+  - Accept: static analysis cannot resolve runtime string-based attribute access.
+- Branch B: Name used in decorator context but not in call expression.
+  - Accept: current heuristic focuses on call targets; decorator names tracked via _ScopeCollector.
+- Branch C: Name used only in type annotations (not at runtime).
+  - Mitigation: TYPE_CHECKING blocks skipped; annotation-only names not collected.
+
+## 2026-04-10 - Scoring Promotion: HSC, FOE, PHR (ADR-040)
+
+### FT-1: HSC Finding = False Positive (Top Event)
+- Top event: HSC emits a hardcoded-secret finding for a value that is not actually a secret.
+- Gate: OR (any of IE-1, IE-2, IE-3 sufficient)
+
+#### IE-1: Value is a placeholder or example
+- Branch BE-1: Variable name matches secret pattern but value is a known placeholder (`changeme`, `xxx-*`, `PLACEHOLDER`, `<YOUR_*_HERE>`).
+  - Mitigation: Placeholder allowlist in HSC heuristics.
+- Branch BE-2: Value is a documentation example or test fixture string.
+  - Mitigation: Low-entropy threshold (3.5 bits) filters short/simple strings.
+
+#### IE-2: Secret is externalized but variable name triggers detection
+- Branch BE-3: RHS is `os.environ["KEY"]` or `os.getenv("KEY")` call.
+  - Mitigation: AST check recognizes os.environ/os.getenv as safe sourcing.
+- Branch BE-4: Value loaded from config file or environment variable via framework.
+  - Mitigation: Partial — only stdlib os.environ recognized; framework-specific patterns accepted as residual risk.
+
+#### IE-3: ML/data constants with high entropy
+- Branch BE-5: Hex tokenizer vocabulary or model hash strings.
+  - Mitigation: Context-aware skip for known ML file patterns.
+
+### FT-2: FOE Finding = False Positive (Top Event)
+- Top event: FOE emits a fan-out finding for a file that legitimately needs many imports.
+- Gate: OR (any of IE-1, IE-2 sufficient)
+
+#### IE-1: File is a barrel/re-export module
+- Branch BE-1: `__init__.py` re-exports names from submodules.
+  - Mitigation: `__init__.py` excluded from FOE detection.
+
+#### IE-2: File is a test module
+- Branch BE-2: Test files import many fixtures/helpers/mocks.
+  - Mitigation: `is_test_file()` guard excludes test files.
+
+### FT-3: Scoring-promotion risk — FP affects composite score
+- Top event: Previously report-only FP now inflates composite drift score.
+- Branch A: HSC false positive (weight 0.02) adds ≤0.02 to module score.
+  - Mitigation: Low weight limits impact; existing FP guards active.
+- Branch B: FOE false positive (weight 0.01) adds ≤0.01 to module score.
+  - Mitigation: Low weight + `__init__.py` exclusion + test-file guard.
+- Branch C: PHR false positive (weight 0.02) adds ≤0.02 to module score.
+  - Mitigation: Existing PHR FP mitigations (star-import skip, __getattr__ skip, framework allowlist).

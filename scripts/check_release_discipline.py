@@ -11,6 +11,7 @@ Checks the current release metadata against the documented rule:
 
 from __future__ import annotations
 
+import os
 import re
 import subprocess
 import sys
@@ -58,6 +59,20 @@ def _is_ancestor(ancestor_ref: str, descendant_ref: str = "HEAD") -> bool:
     return result.returncode == 0
 
 
+def _warn(message: str) -> None:
+    print(f"WARNING: {message}", flush=True)
+
+
+def _find_release_commit_on_main(version: str) -> str | None:
+    """Find the correct 'chore: Release X.Y.Z' commit on HEAD's lineage."""
+    result = _git(
+        "log", "--oneline", "--grep", f"chore: Release {version}", "--format=%H", "HEAD",
+    )
+    if result.returncode == 0 and result.stdout.strip():
+        return result.stdout.strip().splitlines()[0]
+    return None
+
+
 def _validate_version_tag_lineage(version: str) -> None:
     tag = f"v{version}"
 
@@ -67,15 +82,32 @@ def _validate_version_tag_lineage(version: str) -> None:
             f"Expected release tag '{tag}' for version '{version}', but the tag does not exist."
         )
 
-    if not _is_ancestor(tag, "HEAD"):
-        _fail(
-            "Release tag lineage check failed. "
-            f"Tag '{tag}' is not an ancestor of HEAD. "
-            "This indicates a detached/rewritten release tag and can block "
-            "python-semantic-release. "
-            f"Repair by retagging '{tag}' to the correct release commit on main "
-            "and pushing the tag with force."
+    if _is_ancestor(tag, "HEAD"):
+        return
+
+    # Tag exists but is not an ancestor of HEAD — orphaned/rewritten tag.
+    correct_commit = _find_release_commit_on_main(version)
+    repair_hint = ""
+    if correct_commit:
+        short = correct_commit[:12]
+        repair_hint = (
+            f"\n  Detected correct release commit on main: {short}"
+            f"\n  Repair: git tag -f {tag} {short} && git push origin {tag} -f"
         )
+
+    message = (
+        "Release tag lineage check failed. "
+        f"Tag '{tag}' is not an ancestor of HEAD. "
+        "This indicates a detached/rewritten release tag and can block "
+        "python-semantic-release."
+        f"{repair_hint}"
+    )
+
+    if os.environ.get("DRIFT_TAG_LINEAGE_WARN") == "1":
+        _warn(message + " (continuing because DRIFT_TAG_LINEAGE_WARN=1)")
+        return
+
+    _fail(message)
 
 
 def _read_pyproject_version() -> str:

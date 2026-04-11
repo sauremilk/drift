@@ -24,6 +24,7 @@ jobs:
   build-and-push:
     name: Build and push Docker image
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     permissions:
       contents: read
       packages: write

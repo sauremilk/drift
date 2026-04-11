@@ -19,6 +19,7 @@ jobs:
     name: Secret and workflow hygiene
     # NOTE: Uses GitHub-hosted Windows runner.
     runs-on: windows-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
 

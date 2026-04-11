@@ -18,6 +18,7 @@ jobs:
     name: Semantic Release
     # NOTE: Uses GitHub-hosted Windows runner.
     runs-on: windows-latest
+    timeout-minutes: 15
     # Skip release-commit pushes (safety net; GITHUB_TOKEN pushes
     # already don't trigger workflows, but guard explicitly).
     if: "!startsWith(github.event.head_commit.message, 'chore: Release ')"
@@ -80,11 +81,42 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add CITATION.cff
           git commit --amend --no-edit
+          # Re-tag to amended commit (amend changed the hash,
+          # but the tag still pointed to the pre-amend orphan).
+          $tag = "${{ steps.release.outputs.tag }}"
+          git tag -f $tag
 
       - name: Push release commit and tag
         if: steps.release.outputs.released == 'true'
         shell: powershell
-        run: git push origin main --tags
+        run: |
+          $tag = "${{ steps.release.outputs.tag }}"
+          $maxRetries = 3
+          for ($i = 1; $i -le $maxRetries; $i++) {
+            # Push branch and force-push the tag separately.
+            # --tags does NOT force-update existing remote tags;
+            # the explicit -f ensures the re-tagged (post-amend) ref
+            # always overwrites any stale remote tag.
+            git push origin main
+            if ($LASTEXITCODE -ne 0) {
+              if ($i -lt $maxRetries) {
+                Write-Warning "branch push failed (attempt $i/$maxRetries), retrying in $($i * 10)s..."
+                Start-Sleep -Seconds ($i * 10)
+                continue
+              }
+              Write-Error "branch push failed after $maxRetries attempts"
+              exit 1
+            }
+            git push origin "$tag" -f
+            if ($LASTEXITCODE -eq 0) { break }
+            if ($i -lt $maxRetries) {
+              Write-Warning "tag push failed (attempt $i/$maxRetries), retrying in $($i * 10)s..."
+              Start-Sleep -Seconds ($i * 10)
+            } else {
+              Write-Error "tag push failed after $maxRetries attempts"
+              exit 1
+            }
+          }
 
       - name: Create GitHub Release from CHANGELOG
         if: steps.release.outputs.released == 'true'
@@ -130,6 +162,7 @@ jobs:
     if: needs.release.outputs.released == 'true'
     # NOTE: Uses GitHub-hosted Windows runner.
     runs-on: windows-latest
+    timeout-minutes: 15
     environment: pypi
 
     steps:
@@ -160,6 +193,7 @@ jobs:
     if: needs.release.outputs.released == 'true'
     # NOTE: Uses GitHub-hosted Windows runner.
     runs-on: windows-latest
+    timeout-minutes: 5
     permissions:
       contents: write
 

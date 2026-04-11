@@ -134,6 +134,20 @@ def test_runtime_unknown_subcommand_adds_did_you_mean_hint() -> None:
     assert "did you mean 'analyze'" in result.output
 
 
+def test_root_help_shows_curated_sections_and_core_path() -> None:
+    runner = CliRunner()
+    result = runner.invoke(cli.main, ["--help"])
+
+    assert result.exit_code == 0
+    output = result.output
+    assert "Start Here (80% Path):" in output
+    assert "Advanced Commands:" in output
+    assert "analyze" in output
+    assert "fix-plan" in output
+    assert "check" in output
+    assert output.index("Start Here (80% Path):") < output.index("Advanced Commands:")
+
+
 def test_safe_main_drift_error_emits_json_payload_when_enabled(
     monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:
@@ -158,7 +172,7 @@ def test_safe_main_drift_error_emits_json_payload_when_enabled(
     assert exc_info.value.code == 2
     captured = capsys.readouterr()
     payload = json.loads(captured.err.strip())
-    assert payload["schema_version"] == "2.0"
+    assert payload["schema_version"] == "2.1"
     assert payload["type"] == "error"
     assert payload["error_code"] == "DRIFT-1001"
     assert payload["category"] == "user"
@@ -179,7 +193,7 @@ def test_safe_main_generic_exception_emits_json_payload_when_enabled(
     assert exc_info.value.code == 3
     captured = capsys.readouterr()
     payload = json.loads(captured.err.strip())
-    assert payload["schema_version"] == "2.0"
+    assert payload["schema_version"] == "2.1"
     assert payload["type"] == "error"
     assert payload["error_code"] == "DRIFT-3002"
     assert payload["category"] == "analysis"
@@ -265,7 +279,7 @@ def test_safe_main_scan_output_path_error_is_config_error_json(
         scan_command,
         "api_scan",
         lambda *args, **kwargs: {
-            "schema_version": "2.0",
+            "schema_version": "2.1",
             "accept_change": True,
             "blocking_reasons": [],
         },
@@ -307,7 +321,7 @@ def test_safe_main_fix_plan_invalid_signal_emits_single_json_and_nonzero(
         "api_fix_plan",
         lambda *args, **kwargs: {
             "error": True,
-            "schema_version": "2.0",
+            "schema_version": "2.1",
             "error_code": "DRIFT-1003",
             "message": "Unknown signal: 'INVALID_SIGNAL'",
             "invalid_fields": [

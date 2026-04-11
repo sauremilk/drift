@@ -86,10 +86,11 @@ def test_load_yaml_unknown_top_level_key_raises(tmp_path: Path):
 
 
 def test_load_yaml_unknown_nested_key_raises(tmp_path: Path):
+    # Plugin-weights (unknown keys in 'weights') are now accepted by the Plugin API.
+    # This test verifies that unknown keys in other strict sections still raise errors.
     yaml_content = """\
-weights:
-  pattern_fragmentation: 0.30
-  unknown_weight: 0.25
+thresholds:
+  unknown_threshold_key: 42
 """
     (tmp_path / "drift.yaml").write_text(yaml_content, encoding="utf-8")
 

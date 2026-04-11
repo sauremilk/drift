@@ -1,0 +1,69 @@
+{
+  "benchmark": "mcp_tool_layer_performance",
+  "execution_mode": "in_process_mcp_tools",
+  "repo": "C:\\Users\\mickg\\PWBS\\drift\\benchmarks\\corpus",
+  "iterations": 1,
+  "warmup": 0,
+  "tools": [
+    "drift_scan",
+    "drift_fix_plan",
+    "drift_nudge",
+    "drift_brief",
+    "drift_negative_context",
+    "drift_session_start_autopilot"
+  ],
+  "throughput_req_per_s": 0.885,
+  "total_measured_calls": 6,
+  "total_measured_seconds": 6.781,
+  "errors": [],
+  "per_tool": {
+    "drift_scan": {
+      "count": 1,
+      "mean_seconds": 1.203,
+      "p50_seconds": 1.203,
+      "p95_seconds": 1.203,
+      "min_seconds": 1.203,
+      "max_seconds": 1.203
+    },
+    "drift_fix_plan": {
+      "count": 1,
+      "mean_seconds": 0.203,
+      "p50_seconds": 0.203,
+      "p95_seconds": 0.203,
+      "min_seconds": 0.203,
+      "max_seconds": 0.203
+    },
+    "drift_nudge": {
+      "count": 1,
+      "mean_seconds": 4.687,
+      "p50_seconds": 4.687,
+      "p95_seconds": 4.687,
+      "min_seconds": 4.687,
+      "max_seconds": 4.687
+    },
+    "drift_brief": {
+      "count": 1,
+      "mean_seconds": 0.11,
+      "p50_seconds": 0.11,
+      "p95_seconds": 0.11,
+      "min_seconds": 0.11,
+      "max_seconds": 0.11
+    },
+    "drift_negative_context": {
+      "count": 1,
+      "mean_seconds": 0.125,
+      "p50_seconds": 0.125,
+      "p95_seconds": 0.125,
+      "min_seconds": 0.125,
+      "max_seconds": 0.125
+    },
+    "drift_session_start_autopilot": {
+      "count": 1,
+      "mean_seconds": 0.453,
+      "p50_seconds": 0.453,
+      "p95_seconds": 0.453,
+      "min_seconds": 0.453,
+      "max_seconds": 0.453
+    }
+  }
+}

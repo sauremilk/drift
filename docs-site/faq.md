@@ -159,4 +159,6 @@ This analyzes only the specified subtree while still resolving cross-file depend
 
 Yes. Drift has a built-in MCP server (`drift mcp --serve`) that integrates with MCP-capable editors. It also provides `drift export-context` and `drift copilot-context` commands that generate anti-pattern rules for AI assistants.
 
-See [Integrations](integrations.md) and [Vibe-Coding Guide](https://github.com/mick-gsk/drift/tree/main/examples/vibe-coding).
+For Cursor, see the dedicated **[Cursor MCP Setup Guide](guides/cursor-mcp-setup.md)** with step-by-step setup, tool catalog, and workflow examples.
+
+See also [Integrations](integrations.md) and [Vibe-Coding Guide](https://github.com/mick-gsk/drift/tree/main/examples/vibe-coding).

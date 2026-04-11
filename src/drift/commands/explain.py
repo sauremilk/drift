@@ -670,6 +670,62 @@ def _append_contract_section(body: Any, contract: dict[str, Any]) -> None:
     body.append("\n")
 
 
+def _write_json_output(path: Path, payload: Any) -> None:
+    import json as json_mod
+
+    path.write_text(json_mod.dumps(payload, indent=2) + "\n", encoding="utf-8")
+    click.echo(f"Output written to {path}", err=True)
+
+
+def _signal_list_payload() -> list[dict[str, Any]]:
+    return [
+        {
+            "abbreviation": abbr,
+            "name": _SIGNAL_INFO[abbr]["name"],
+            "signal_type": _SIGNAL_INFO[abbr]["signal_type"],
+            "weight": _SIGNAL_INFO[abbr]["weight"],
+            "description": _SIGNAL_INFO[abbr]["description"],
+        }
+        for abbr in _all_abbreviations()
+    ]
+
+
+def _error_payload_or_exit(error_code: str) -> dict[str, Any]:
+    from drift.errors import ERROR_REGISTRY, format_error_info_for_explain
+
+    info_err = ERROR_REGISTRY.get(error_code)
+    if info_err is None:
+        click.echo(f"Unknown error code: {error_code}", err=True)
+        raise SystemExit(1)
+
+    summary, why, action = format_error_info_for_explain(error_code, info_err)
+    return {
+        "code": info_err.code,
+        "summary": summary,
+        "why": why,
+        "action": action,
+        "category": info_err.category,
+    }
+
+
+def _signal_payload(info: dict[str, Any]) -> dict[str, Any]:
+    abbr = next((a for a, i in _SIGNAL_INFO.items() if i is info), "?")
+    payload = {
+        "abbreviation": abbr,
+        "name": info["name"],
+        "signal_type": info["signal_type"],
+        "weight": info["weight"],
+        "description": info["description"],
+        "detects": info["detects"],
+        "example": info["example"],
+        "fix_hint": info["fix_hint"],
+    }
+    trigger_contract = info.get("trigger_contract")
+    if trigger_contract is not None:
+        payload["trigger_contract"] = trigger_contract
+    return payload
+
+
 @click.command()
 @click.argument("signal", required=False, default=None)
 @click.option("--list", "-l", "list_all", is_flag=True, help="List all signals.")
@@ -701,24 +757,9 @@ def explain(
     output: Path | None,
 ) -> None:
     """Explain a drift signal: drift explain PFS"""
-    import json as json_mod
-
     if list_all or signal is None:
         if output is not None:
-            data = [
-                {
-                    "abbreviation": abbr,
-                    "name": _SIGNAL_INFO[abbr]["name"],
-                    "signal_type": _SIGNAL_INFO[abbr]["signal_type"],
-                    "weight": _SIGNAL_INFO[abbr]["weight"],
-                    "description": _SIGNAL_INFO[abbr]["description"],
-                }
-                for abbr in _all_abbreviations()
-            ]
-            output.write_text(
-                json_mod.dumps(data, indent=2) + "\n", encoding="utf-8",
-            )
-            click.echo(f"Output written to {output}", err=True)
+            _write_json_output(output, _signal_list_payload())
         else:
             _print_signal_list()
         return
@@ -728,24 +769,7 @@ def explain(
     # Check for error code first (DRIFT-XXXX pattern)
     if key.upper().startswith("DRIFT-"):
         if output is not None:
-            from drift.errors import ERROR_REGISTRY, format_error_info_for_explain
-
-            info_err = ERROR_REGISTRY.get(key.upper())
-            if info_err is None:
-                click.echo(f"Unknown error code: {key}", err=True)
-                raise SystemExit(1)
-            summary, why, action = format_error_info_for_explain(key.upper(), info_err)
-            err_data = {
-                "code": info_err.code,
-                "summary": summary,
-                "why": why,
-                "action": action,
-                "category": info_err.category,
-            }
-            output.write_text(
-                json_mod.dumps(err_data, indent=2) + "\n", encoding="utf-8",
-            )
-            click.echo(f"Output written to {output}", err=True)
+            _write_json_output(output, _error_payload_or_exit(key.upper()))
         else:
             _print_error_code_detail(key.upper())
         return
@@ -762,23 +786,7 @@ def explain(
         raise SystemExit(1)
 
     if output is not None:
-        abbr = next((a for a, i in _SIGNAL_INFO.items() if i is info), "?")
-        sig_data = {
-            "abbreviation": abbr,
-            "name": info["name"],
-            "signal_type": info["signal_type"],
-            "weight": info["weight"],
-            "description": info["description"],
-            "detects": info["detects"],
-            "example": info["example"],
-            "fix_hint": info["fix_hint"],
-        }
-        if "trigger_contract" in info:
-            sig_data["trigger_contract"] = info["trigger_contract"]
-        output.write_text(
-            json_mod.dumps(sig_data, indent=2) + "\n", encoding="utf-8",
-        )
-        click.echo(f"Output written to {output}", err=True)
+        _write_json_output(output, _signal_payload(info))
     else:
         _print_signal_detail(info)
 

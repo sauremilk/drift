@@ -34,7 +34,15 @@ cd /path/to/your/project
 drift analyze --repo .
 ```
 
-## 3. What you'll see
+## 3. Turn findings into repair tasks
+
+```bash
+drift fix-plan --repo . --max-tasks 5
+```
+
+`fix-plan` turns your top findings into concrete, ordered tasks with constraints and success criteria.
+
+## 4. What you'll see
 
 Here's what a typical first run looks like:
 
@@ -59,7 +67,7 @@ Here's what a typical first run looks like:
 
     **Precision claim (site-wide):** Historical accuracy of drift findings across the benchmark corpus. Currently 77% strict / 95% lenient on the v0.5 baseline. This describes methodology accuracy, not a per-repo promise.
 
-## 4. How to read your first findings
+## 5. How to read your first findings
 
 My recommendation: start with the highest-scored findings and check if they match what already felt expensive to maintain.
 
@@ -83,7 +91,21 @@ Typical first-run decisions:
 
     False positives are expected on first runs. Drift improves with every report.
 
-## 5. Verify your installation
+## 6. Add a safe CI gate
+
+Start in report-only mode so teams can build trust before blocking merges:
+
+```bash
+drift check --fail-on none
+```
+
+When the output is stable for your team, tighten to:
+
+```bash
+drift check --fail-on high
+```
+
+## 7. Verify your installation
 
 Drift can analyze its own codebase — useful to confirm everything works:
 
@@ -130,6 +152,8 @@ See [Team Rollout](team-rollout.md) for the full progressive adoption path, [Int
 **Rule of thumb:** Use `analyze` when you want a complete picture. Use `check` when you want a fast CI gate on changed code.
 
 ## Other commands
+
+Advanced commands beyond the default first-run journey (`analyze` -> `fix-plan` -> `check`):
 
 ```bash
 # Machine-readable JSON

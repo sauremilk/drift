@@ -1,0 +1,53 @@
+{
+  "feature": "A2A Agent Card and HTTP Serve Endpoint",
+  "version": "2.7.0",
+  "adr": "ADR-026",
+  "date": "2025-07-13",
+  "description": "Adds an A2A v1.0 compliant Agent Card at /.well-known/agent-card.json and a JSON-RPC 2.0 endpoint at /a2a/v1 for agent-to-agent discovery and skill invocation via `drift serve`.",
+  "components": {
+    "agent_card": "src/drift/serve/agent_card.py",
+    "models": "src/drift/serve/models.py",
+    "router": "src/drift/serve/a2a_router.py",
+    "app": "src/drift/serve/app.py",
+    "cli_command": "src/drift/commands/serve.py"
+  },
+  "skills_exposed": [
+    "scan",
+    "diff",
+    "explain",
+    "fix_plan",
+    "validate",
+    "nudge",
+    "brief",
+    "negative_context"
+  ],
+  "test_results": {
+    "test_file": "tests/test_a2a_serve.py",
+    "total": 15,
+    "passed": 15,
+    "failed": 0,
+    "coverage_areas": [
+      "Agent Card content validation (7 tests)",
+      "JSON-RPC skill dispatch and error handling (7 tests)",
+      "CLI command registration (1 test)"
+    ]
+  },
+  "audit_artifacts_updated": [
+    "audit_results/stride_threat_model.md",
+    "audit_results/risk_register.md"
+  ],
+  "security": {
+    "default_bind": "127.0.0.1 (localhost only)",
+    "path_traversal_mitigation": "_validate_repo_path() with realpath/normpath + isdir check",
+    "auth": "none (v1, localhost-only scope — auth deferred per ADR-026)"
+  },
+  "dependencies_added": {
+    "optional_serve": [
+      "fastapi>=0.110.0,<1.0",
+      "uvicorn[standard]>=0.28.0"
+    ],
+    "dev": [
+      "httpx>=0.27"
+    ]
+  }
+}

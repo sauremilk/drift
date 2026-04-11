@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import textwrap
 from pathlib import Path
+from typing import Literal
 
 import pytest
 
@@ -28,6 +29,24 @@ def pytest_addoption(parser: pytest.Parser) -> None:
         default=False,
         help="save smoke-test findings to benchmark_results/<repo>_full.json",
     )
+    parser.addoption(
+        "--smoke-profile",
+        action="store",
+        default="pr",
+        choices=("pr", "nightly"),
+        help="select external smoke repo profile (pr=fast, nightly=full)",
+    )
+    parser.addoption(
+        "--refresh-smoke-cache",
+        action="store_true",
+        default=False,
+        help="refresh cached external smoke repositories before analysis",
+    )
+
+
+def smoke_profile(config: pytest.Config) -> Literal["pr", "nightly"]:
+    """Return the selected smoke profile."""
+    return config.getoption("--smoke-profile", default="pr")
 
 
 def pytest_collection_modifyitems(config: pytest.Config, items: list[pytest.Item]) -> None:

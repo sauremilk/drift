@@ -6,22 +6,23 @@ It is intentionally compact so that third parties can describe drift consistentl
 
 ## Messaging hierarchy
 
-- Primary: deterministic architectural drift detection for AI-accelerated Python codebases
-- Secondary: architecture erosion analysis
-- Secondary: cross-file coherence detection
-- Secondary: structural code quality for fast-growing repositories
+- Hero: Drift catches what AI coding tools break silently — structural erosion across files that passes all your tests.
+- Primary: quality control layer for AI-generated Python code
+- Secondary: AI code coherence monitor — deterministic architecture erosion detection
+- Secondary: structural rot from vibe-coding, caught before it compounds
+- Tertiary: cross-file coherence analysis for fast-growing repositories
 
 ## One-sentence description
 
-Drift provides deterministic architectural drift detection for AI-accelerated Python codebases.
+Drift catches what AI coding tools break silently — structural erosion across files that passes all your tests.
 
 ## Short description
 
-Drift is an open-source static analyzer for Python repositories. It surfaces architectural drift through architecture erosion analysis and cross-file coherence detection: pattern fragmentation, architecture violations, mutant duplicates, explainability gaps, temporal volatility, and system misalignment. It complements linters, type checkers, and security tools with deterministic findings about structural coherence, plus JSON and SARIF output for automation.
+Drift is a quality control layer for AI-generated Python code. It detects structural erosion that passes linters, type checkers, and tests: the same problem solved four different ways, database logic leaking into the API layer, near-duplicate scaffolding accumulating across modules. No LLM in the pipeline — deterministic, reproducible, built for CI and agent workflows.
 
 ## Extended boilerplate
 
-Drift helps teams inspect architectural drift before it becomes normalized. The tool is designed for repositories where local code quality checks still pass, but structural consistency is slipping across modules over time. It is especially useful in fast-growing, AI-accelerated Python repositories. Drift is deterministic, benchmarked on a public study corpus, and intended for gradual rollout in CI rather than immediate hard gating.
+AI coding tools generate code that works — but silently erodes structural consistency. Drift catches this before it compounds. It operates across file boundaries to detect pattern fragmentation, architecture violations, mutant duplicates, and 21 more structural signals. Designed for repositories where tests stay green while the codebase gets progressively harder to change. Deterministic, benchmarked on a public study corpus, and intended for gradual rollout in CI rather than immediate hard gating.
 
 ## Safe factual points
 
@@ -32,15 +33,15 @@ Drift helps teams inspect architectural drift before it becomes normalized. The 
 - outputs: rich terminal, JSON, SARIF
 - GitHub Action support: yes
 - analysis style: deterministic, no LLM in the detector pipeline
-- scoring model: 15 scoring signals in the current composite model; 8 additional signals are report-only, with TVS at weight 0.0 pending re-validation
+- scoring model: 18 scoring signals in the current composite model; 6 additional signals are report-only, with TVS at weight 0.0 pending re-validation
 
 ## Suggested directory blurb
 
-Drift detects architectural drift in Python codebases. It complements local linting and security checks by surfacing architecture erosion and cross-file coherence problems such as pattern fragmentation, layer boundary violations, mutant duplicates, and structural hotspots.
+Drift is a quality control layer for AI-generated Python code. It catches structural erosion that passes tests — pattern fragmentation, architecture violations, mutant duplicates, and structural hotspots across modules. Deterministic, no LLM, works in CI and inside coding agents (MCP).
 
 ## Suggested comparison framing
 
-Use drift when the missing question is not whether code is syntactically correct or policy-compliant, but whether the repository is getting harder to reason about structurally.
+Use drift when the missing question is not whether code is syntactically correct or policy-compliant, but whether AI-generated code is silently making your repository harder to reason about.
 
 ## Source pages for deeper verification
 

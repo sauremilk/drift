@@ -2,7 +2,7 @@
 FROM python:3.13-slim AS base
 
 LABEL org.opencontainers.image.source="https://github.com/mick-gsk/drift"
-LABEL org.opencontainers.image.description="Deterministic architectural drift detection for AI-accelerated Python codebases"
+LABEL org.opencontainers.image.description="Catches structural erosion from AI-generated code that passes all your tests"
 LABEL org.opencontainers.image.licenses="MIT"
 
 # Install git (required for history-based signals)

@@ -7,7 +7,6 @@ from pathlib import Path
 
 def relative_to_or_none(path: Path, base: Path) -> Path | None:
     """Return ``path.relative_to(base)`` or ``None`` when path is outside base."""
-    try:
+    if path == base or base in path.parents:
         return path.relative_to(base)
-    except ValueError:
-        return None
+    return None

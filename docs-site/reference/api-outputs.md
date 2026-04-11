@@ -362,6 +362,70 @@ Drift includes:
 - context properties for tagged findings
 - trend properties when available
 
+## CSV output
+
+`drift analyze --format csv` produces a flat tabular export with one finding per row.
+
+Columns: `signal_type`, `severity`, `score`, `impact`, `file_path`, `start_line`, `end_line`, `title`, `description`, `fix`.
+
+Use CSV when you want to import findings into spreadsheets, data pipelines, or lightweight dashboards.
+
+```bash
+drift analyze --format csv -o findings.csv
+```
+
+## Markdown report
+
+`drift analyze --format markdown` generates a self-contained Markdown document suitable for:
+
+- PR review comments
+- Slack/Teams sharing
+- Wiki documentation
+- Email reports
+
+The report includes a summary header, severity breakdown, top findings with code context, and module scores.
+
+```bash
+drift analyze --format markdown -o report.md
+```
+
+## GitHub Actions annotations
+
+`drift analyze --format github` emits findings as GitHub Actions workflow commands (`::warning::` / `::error::`) that render as inline annotations on the PR diff.
+
+```bash
+# In .github/workflows/drift.yml:
+- run: drift analyze --repo . --format github
+```
+
+GitHub maps each annotation to the file and line range, showing drift findings directly in the PR review surface. Severity mapping:
+
+| Drift Severity | GitHub Level |
+|----------------|-------------|
+| `critical`, `high` | `::error::` |
+| `medium`, `low`, `info` | `::warning::` |
+
+## Agent tasks output
+
+`drift analyze --format agent-tasks` translates findings into machine-readable repair tasks for AI coding agents.
+
+Each task includes:
+
+- `task_id`: deterministic stable identifier
+- `title`: one-line fix summary
+- `description`: detailed explanation with code context
+- `priority`: `critical`, `high`, `medium`, `low`
+- `automation_fit`: `high`, `medium`, `low` — how well the fix can be automated
+- `affected_files`: list of files to modify
+- `negative_context`: anti-patterns to avoid during the fix
+- `batch_eligible`: whether this task can be batch-applied with similar tasks
+
+```bash
+drift analyze --format agent-tasks -o tasks.json
+```
+
+Schema version: `agent-tasks-v2`. The output is directly consumable by MCP-based agent loops.
+
 ## Current practical boundary
 
 Drift does not currently document a public HTTP API or OpenAPI surface.

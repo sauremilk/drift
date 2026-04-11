@@ -8,5 +8,7 @@
   "terminal.integrated.env.windows": {
     "PYTHONUNBUFFERED": "1"
   },
+  "task.allowAutomaticTasks": "on",
+  "python.defaultInterpreterPath": "${workspaceFolder}\\.venv\\Scripts\\python.exe",
   "python-envs.defaultEnvManager": "ms-python.python:system"
 }

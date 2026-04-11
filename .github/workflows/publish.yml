@@ -20,6 +20,7 @@ jobs:
     name: Validate tag & version consistency
     # NOTE: Uses GitHub-hosted Windows runner.
     runs-on: windows-latest
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
 
@@ -70,6 +71,7 @@ jobs:
     needs: validate-version
     # NOTE: Uses GitHub-hosted Windows runner.
     runs-on: windows-latest
+    timeout-minutes: 15
     environment: pypi
     env:
       PYPI_API_TOKEN: ${{ secrets.PYPI_RELEASE }}
@@ -125,13 +127,25 @@ jobs:
           }
           $env:TWINE_USERNAME = "__token__"
           $env:TWINE_PASSWORD = $env:PYPI_API_TOKEN
-          & $env:PYTHON_BIN -m twine upload --non-interactive --skip-existing dist/*
+          $maxRetries = 3
+          for ($i = 1; $i -le $maxRetries; $i++) {
+            & $env:PYTHON_BIN -m twine upload --non-interactive --skip-existing dist/*
+            if ($LASTEXITCODE -eq 0) { break }
+            if ($i -lt $maxRetries) {
+              Write-Warning "twine upload failed (attempt $i/$maxRetries), retrying in $($i * 15)s..."
+              Start-Sleep -Seconds ($i * 15)
+            } else {
+              Write-Error "twine upload failed after $maxRetries attempts"
+              exit 1
+            }
+          }
 
   update-major-tag:
     name: Update major-version tag (e.g. v1 → latest patch)
     needs: publish
     # NOTE: Uses GitHub-hosted Windows runner.
     runs-on: windows-latest
+    timeout-minutes: 5
     permissions:
       contents: write
 

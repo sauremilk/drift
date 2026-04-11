@@ -17,6 +17,13 @@
           "level": "error",
           "locations": [
             {
+              "logicalLocations": [
+                {
+                  "fullyQualifiedName": "src.myapp.service_a.process_order",
+                  "kind": "function",
+                  "name": "process_order"
+                }
+              ],
               "physicalLocation": {
                 "artifactLocation": {
                   "uri": "src/myapp/service_a.py"
@@ -30,6 +37,9 @@
           "message": {
             "text": "Exact duplicates (2×): process_order\n2 identical copies (6 lines each) at: src\\myapp\\service_a.py:4, src\\myapp\\service_b.py:4. Consider consolidating.\nFIX: Extract process_order() into src/myapp/shared.py. 2 identical copies (similarity: 1.00). Effort: S."
           },
+          "properties": {
+            "drift:findingId": "3a69d86a362eb5db"
+          },
           "relatedLocations": [
             {
               "id": 0,
@@ -49,6 +59,13 @@
           "level": "error",
           "locations": [
             {
+              "logicalLocations": [
+                {
+                  "fullyQualifiedName": "src.myapp.service_a.validate_input",
+                  "kind": "function",
+                  "name": "validate_input"
+                }
+              ],
               "physicalLocation": {
                 "artifactLocation": {
                   "uri": "src/myapp/service_a.py"
@@ -62,6 +79,9 @@
           "message": {
             "text": "Exact duplicates (2×): validate_input\n2 identical copies (9 lines each) at: src\\myapp\\service_a.py:12, src\\myapp\\service_b.py:12. Consider consolidating.\nFIX: Extract validate_input() into src/myapp/shared.py. 2 identical copies (similarity: 1.00). Effort: S."
           },
+          "properties": {
+            "drift:findingId": "6f1fb38c67d67f1f"
+          },
           "relatedLocations": [
             {
               "id": 0,
@@ -81,6 +101,13 @@
           "level": "error",
           "locations": [
             {
+              "logicalLocations": [
+                {
+                  "fullyQualifiedName": "src.myapp.connectors.db.connect_postgres",
+                  "kind": "function",
+                  "name": "connect_postgres"
+                }
+              ],
               "physicalLocation": {
                 "artifactLocation": {
                   "uri": "src/myapp/connectors/db.py"
@@ -92,7 +119,10 @@
             }
           ],
           "message": {
-            "text": "Near-duplicate (100%): connect_postgres ↔ connect_redis\nsrc\\myapp\\connectors\\db.py:8 and src\\myapp\\connectors\\db.py:17 are 100% similar. Small differences may indicate copy-paste divergence.\nFIX: Extract connect_postgres() into src/myapp/connectors/shared.py. Similarity: 100%. Effort: S."
+            "text": "Near-duplicate (90%): connect_postgres ↔ connect_redis\nsrc\\myapp\\connectors\\db.py:8 and src\\myapp\\connectors\\db.py:17 are 90% similar. Small differences may indicate copy-paste divergence.\nFIX: Extract connect_postgres() into src/myapp/connectors/shared.py. Similarity: 90%. Effort: S."
+          },
+          "properties": {
+            "drift:findingId": "086fb7cb5f9ca3db"
           },
           "relatedLocations": [
             {
@@ -113,6 +143,13 @@
           "level": "error",
           "locations": [
             {
+              "logicalLocations": [
+                {
+                  "fullyQualifiedName": "src.myapp.connectors.db.connect_postgres",
+                  "kind": "function",
+                  "name": "connect_postgres"
+                }
+              ],
               "physicalLocation": {
                 "artifactLocation": {
                   "uri": "src/myapp/connectors/db.py"
@@ -124,7 +161,10 @@
             }
           ],
           "message": {
-            "text": "Near-duplicate (100%): connect_postgres ↔ connect_mongodb\nsrc\\myapp\\connectors\\db.py:8 and src\\myapp\\connectors\\db.py:26 are 100% similar. Small differences may indicate copy-paste divergence.\nFIX: Extract connect_postgres() into src/myapp/connectors/shared.py. Similarity: 100%. Effort: S."
+            "text": "Near-duplicate (90%): connect_postgres ↔ connect_mongodb\nsrc\\myapp\\connectors\\db.py:8 and src\\myapp\\connectors\\db.py:26 are 90% similar. Small differences may indicate copy-paste divergence.\nFIX: Extract connect_postgres() into src/myapp/connectors/shared.py. Similarity: 90%. Effort: S."
+          },
+          "properties": {
+            "drift:findingId": "3ee21745c06c345c"
           },
           "relatedLocations": [
             {
@@ -145,6 +185,13 @@
           "level": "error",
           "locations": [
             {
+              "logicalLocations": [
+                {
+                  "fullyQualifiedName": "src.myapp.connectors.db.connect_postgres",
+                  "kind": "function",
+                  "name": "connect_postgres"
+                }
+              ],
               "physicalLocation": {
                 "artifactLocation": {
                   "uri": "src/myapp/connectors/db.py"
@@ -156,7 +203,10 @@
             }
           ],
           "message": {
-            "text": "Near-duplicate (100%): connect_postgres ↔ connect_elasticsearch\nsrc\\myapp\\connectors\\db.py:8 and src\\myapp\\connectors\\db.py:35 are 100% similar. Small differences may indicate copy-paste divergence.\nFIX: Extract connect_postgres() into src/myapp/connectors/shared.py. Similarity: 100%. Effort: S."
+            "text": "Near-duplicate (90%): connect_postgres ↔ connect_elasticsearch\nsrc\\myapp\\connectors\\db.py:8 and src\\myapp\\connectors\\db.py:35 are 90% similar. Small differences may indicate copy-paste divergence.\nFIX: Extract connect_postgres() into src/myapp/connectors/shared.py. Similarity: 90%. Effort: S."
+          },
+          "properties": {
+            "drift:findingId": "3d5f675df0a880a6"
           },
           "relatedLocations": [
             {
@@ -177,6 +227,13 @@
           "level": "error",
           "locations": [
             {
+              "logicalLocations": [
+                {
+                  "fullyQualifiedName": "src.myapp.connectors.db.connect_postgres",
+                  "kind": "function",
+                  "name": "connect_postgres"
+                }
+              ],
               "physicalLocation": {
                 "artifactLocation": {
                   "uri": "src/myapp/connectors/db.py"
@@ -188,7 +245,10 @@
             }
           ],
           "message": {
-            "text": "Near-duplicate (100%): connect_postgres ↔ connect_rabbitmq\nsrc\\myapp\\connectors\\db.py:8 and src\\myapp\\connectors\\db.py:44 are 100% similar. Small differences may indicate copy-paste divergence.\nFIX: Extract connect_postgres() into src/myapp/connectors/shared.py. Similarity: 100%. Effort: S."
+            "text": "Near-duplicate (90%): connect_postgres ↔ connect_rabbitmq\nsrc\\myapp\\connectors\\db.py:8 and src\\myapp\\connectors\\db.py:44 are 90% similar. Small differences may indicate copy-paste divergence.\nFIX: Extract connect_postgres() into src/myapp/connectors/shared.py. Similarity: 90%. Effort: S."
+          },
+          "properties": {
+            "drift:findingId": "8a2d99f2d0782163"
           },
           "relatedLocations": [
             {
@@ -209,6 +269,13 @@
           "level": "error",
           "locations": [
             {
+              "logicalLocations": [
+                {
+                  "fullyQualifiedName": "src.myapp.connectors.db.connect_postgres",
+                  "kind": "function",
+                  "name": "connect_postgres"
+                }
+              ],
               "physicalLocation": {
                 "artifactLocation": {
                   "uri": "src/myapp/connectors/db.py"
@@ -220,7 +287,10 @@
             }
           ],
           "message": {
-            "text": "Near-duplicate (100%): connect_postgres ↔ connect_kafka\nsrc\\myapp\\connectors\\db.py:8 and src\\myapp\\connectors\\db.py:53 are 100% similar. Small differences may indicate copy-paste divergence.\nFIX: Extract connect_postgres() into src/myapp/connectors/shared.py. Similarity: 100%. Effort: S."
+            "text": "Near-duplicate (90%): connect_postgres ↔ connect_kafka\nsrc\\myapp\\connectors\\db.py:8 and src\\myapp\\connectors\\db.py:53 are 90% similar. Small differences may indicate copy-paste divergence.\nFIX: Extract connect_postgres() into src/myapp/connectors/shared.py. Similarity: 90%. Effort: S."
+          },
+          "properties": {
+            "drift:findingId": "63e41f79e7ffaf67"
           },
           "relatedLocations": [
             {
@@ -241,6 +311,13 @@
           "level": "error",
           "locations": [
             {
+              "logicalLocations": [
+                {
+                  "fullyQualifiedName": "src.myapp.connectors.db.connect_postgres",
+                  "kind": "function",
+                  "name": "connect_postgres"
+                }
+              ],
               "physicalLocation": {
                 "artifactLocation": {
                   "uri": "src/myapp/connectors/db.py"
@@ -252,7 +329,10 @@
             }
           ],
           "message": {
-            "text": "Near-duplicate (100%): connect_postgres ↔ connect_memcached\nsrc\\myapp\\connectors\\db.py:8 and src\\myapp\\connectors\\db.py:62 are 100% similar. Small differences may indicate copy-paste divergence.\nFIX: Extract connect_postgres() into src/myapp/connectors/shared.py. Similarity: 100%. Effort: S."
+            "text": "Near-duplicate (90%): connect_postgres ↔ connect_memcached\nsrc\\myapp\\connectors\\db.py:8 and src\\myapp\\connectors\\db.py:62 are 90% similar. Small differences may indicate copy-paste divergence.\nFIX: Extract connect_postgres() into src/myapp/connectors/shared.py. Similarity: 90%. Effort: S."
+          },
+          "properties": {
+            "drift:findingId": "3cbcd1a866a6c925"
           },
           "relatedLocations": [
             {
@@ -273,6 +353,13 @@
           "level": "error",
           "locations": [
             {
+              "logicalLocations": [
+                {
+                  "fullyQualifiedName": "src.myapp.connectors.db.connect_postgres",
+                  "kind": "function",
+                  "name": "connect_postgres"
+                }
+              ],
               "physicalLocation": {
                 "artifactLocation": {
                   "uri": "src/myapp/connectors/db.py"
@@ -284,7 +371,10 @@
             }
           ],
           "message": {
-            "text": "Near-duplicate (100%): connect_postgres ↔ connect_dynamodb\nsrc\\myapp\\connectors\\db.py:8 and src\\myapp\\connectors\\db.py:71 are 100% similar. Small differences may indicate copy-paste divergence.\nFIX: Extract connect_postgres() into src/myapp/connectors/shared.py. Similarity: 100%. Effort: S."
+            "text": "Near-duplicate (90%): connect_postgres ↔ connect_dynamodb\nsrc\\myapp\\connectors\\db.py:8 and src\\myapp\\connectors\\db.py:71 are 90% similar. Small differences may indicate copy-paste divergence.\nFIX: Extract connect_postgres() into src/myapp/connectors/shared.py. Similarity: 90%. Effort: S."
+          },
+          "properties": {
+            "drift:findingId": "802492552f544ccc"
           },
           "relatedLocations": [
             {
@@ -305,6 +395,13 @@
           "level": "error",
           "locations": [
             {
+              "logicalLocations": [
+                {
+                  "fullyQualifiedName": "src.myapp.connectors.db.connect_redis",
+                  "kind": "function",
+                  "name": "connect_redis"
+                }
+              ],
               "physicalLocation": {
                 "artifactLocation": {
                   "uri": "src/myapp/connectors/db.py"
@@ -316,7 +413,10 @@
             }
           ],
           "message": {
-            "text": "Near-duplicate (100%): connect_redis ↔ connect_mongodb\nsrc\\myapp\\connectors\\db.py:17 and src\\myapp\\connectors\\db.py:26 are 100% similar. Small differences may indicate copy-paste divergence.\nFIX: Extract connect_redis() into src/myapp/connectors/shared.py. Similarity: 100%. Effort: S."
+            "text": "Near-duplicate (90%): connect_redis ↔ connect_mongodb\nsrc\\myapp\\connectors\\db.py:17 and src\\myapp\\connectors\\db.py:26 are 90% similar. Small differences may indicate copy-paste divergence.\nFIX: Extract connect_redis() into src/myapp/connectors/shared.py. Similarity: 90%. Effort: S."
+          },
+          "properties": {
+            "drift:findingId": "e40899d5eaadf472"
           },
           "relatedLocations": [
             {
@@ -337,6 +437,13 @@
           "level": "error",
           "locations": [
             {
+              "logicalLocations": [
+                {
+                  "fullyQualifiedName": "src.myapp.connectors.db.connect_redis",
+                  "kind": "function",
+                  "name": "connect_redis"
+                }
+              ],
               "physicalLocation": {
                 "artifactLocation": {
                   "uri": "src/myapp/connectors/db.py"
@@ -348,7 +455,10 @@
             }
           ],
           "message": {
-            "text": "Near-duplicate (100%): connect_redis ↔ connect_elasticsearch\nsrc\\myapp\\connectors\\db.py:17 and src\\myapp\\connectors\\db.py:35 are 100% similar. Small differences may indicate copy-paste divergence.\nFIX: Extract connect_redis() into src/myapp/connectors/shared.py. Similarity: 100%. Effort: S."
+            "text": "Near-duplicate (90%): connect_redis ↔ connect_elasticsearch\nsrc\\myapp\\connectors\\db.py:17 and src\\myapp\\connectors\\db.py:35 are 90% similar. Small differences may indicate copy-paste divergence.\nFIX: Extract connect_redis() into src/myapp/connectors/shared.py. Similarity: 90%. Effort: S."
+          },
+          "properties": {
+            "drift:findingId": "fd717276192fea9b"
           },
           "relatedLocations": [
             {
@@ -369,6 +479,13 @@
           "level": "error",
           "locations": [
             {
+              "logicalLocations": [
+                {
+                  "fullyQualifiedName": "src.myapp.connectors.db.connect_redis",
+                  "kind": "function",
+                  "name": "connect_redis"
+                }
+              ],
               "physicalLocation": {
                 "artifactLocation": {
                   "uri": "src/myapp/connectors/db.py"
@@ -380,7 +497,10 @@
             }
           ],
           "message": {
-            "text": "Near-duplicate (100%): connect_redis ↔ connect_rabbitmq\nsrc\\myapp\\connectors\\db.py:17 and src\\myapp\\connectors\\db.py:44 are 100% similar. Small differences may indicate copy-paste divergence.\nFIX: Extract connect_redis() into src/myapp/connectors/shared.py. Similarity: 100%. Effort: S."
+            "text": "Near-duplicate (90%): connect_redis ↔ connect_rabbitmq\nsrc\\myapp\\connectors\\db.py:17 and src\\myapp\\connectors\\db.py:44 are 90% similar. Small differences may indicate copy-paste divergence.\nFIX: Extract connect_redis() into src/myapp/connectors/shared.py. Similarity: 90%. Effort: S."
+          },
+          "properties": {
+            "drift:findingId": "dff7ef1c533d731c"
           },
           "relatedLocations": [
             {
@@ -401,6 +521,13 @@
           "level": "error",
           "locations": [
             {
+              "logicalLocations": [
+                {
+                  "fullyQualifiedName": "src.myapp.connectors.db.connect_redis",
+                  "kind": "function",
+                  "name": "connect_redis"
+                }
+              ],
               "physicalLocation": {
                 "artifactLocation": {
                   "uri": "src/myapp/connectors/db.py"
@@ -412,7 +539,10 @@
             }
           ],
           "message": {
-            "text": "Near-duplicate (100%): connect_redis ↔ connect_kafka\nsrc\\myapp\\connectors\\db.py:17 and src\\myapp\\connectors\\db.py:53 are 100% similar. Small differences may indicate copy-paste divergence.\nFIX: Extract connect_redis() into src/myapp/connectors/shared.py. Similarity: 100%. Effort: S."
+            "text": "Near-duplicate (90%): connect_redis ↔ connect_kafka\nsrc\\myapp\\connectors\\db.py:17 and src\\myapp\\connectors\\db.py:53 are 90% similar. Small differences may indicate copy-paste divergence.\nFIX: Extract connect_redis() into src/myapp/connectors/shared.py. Similarity: 90%. Effort: S."
+          },
+          "properties": {
+            "drift:findingId": "b42e69d1095d3153"
           },
           "relatedLocations": [
             {
@@ -433,6 +563,13 @@
           "level": "error",
           "locations": [
             {
+              "logicalLocations": [
+                {
+                  "fullyQualifiedName": "src.myapp.connectors.db.connect_redis",
+                  "kind": "function",
+                  "name": "connect_redis"
+                }
+              ],
               "physicalLocation": {
                 "artifactLocation": {
                   "uri": "src/myapp/connectors/db.py"
@@ -444,7 +581,10 @@
             }
           ],
           "message": {
-            "text": "Near-duplicate (100%): connect_redis ↔ connect_memcached\nsrc\\myapp\\connectors\\db.py:17 and src\\myapp\\connectors\\db.py:62 are 100% similar. Small differences may indicate copy-paste divergence.\nFIX: Extract connect_redis() into src/myapp/connectors/shared.py. Similarity: 100%. Effort: S."
+            "text": "Near-duplicate (90%): connect_redis ↔ connect_memcached\nsrc\\myapp\\connectors\\db.py:17 and src\\myapp\\connectors\\db.py:62 are 90% similar. Small differences may indicate copy-paste divergence.\nFIX: Extract connect_redis() into src/myapp/connectors/shared.py. Similarity: 90%. Effort: S."
+          },
+          "properties": {
+            "drift:findingId": "9c58e3224891f0b6"
           },
           "relatedLocations": [
             {
@@ -465,6 +605,13 @@
           "level": "error",
           "locations": [
             {
+              "logicalLocations": [
+                {
+                  "fullyQualifiedName": "src.myapp.connectors.db.connect_redis",
+                  "kind": "function",
+                  "name": "connect_redis"
+                }
+              ],
               "physicalLocation": {
                 "artifactLocation": {
                   "uri": "src/myapp/connectors/db.py"
@@ -476,7 +623,10 @@
             }
           ],
           "message": {
-            "text": "Near-duplicate (100%): connect_redis ↔ connect_dynamodb\nsrc\\myapp\\connectors\\db.py:17 and src\\myapp\\connectors\\db.py:71 are 100% similar. Small differences may indicate copy-paste divergence.\nFIX: Extract connect_redis() into src/myapp/connectors/shared.py. Similarity: 100%. Effort: S."
+            "text": "Near-duplicate (90%): connect_redis ↔ connect_dynamodb\nsrc\\myapp\\connectors\\db.py:17 and src\\myapp\\connectors\\db.py:71 are 90% similar. Small differences may indicate copy-paste divergence.\nFIX: Extract connect_redis() into src/myapp/connectors/shared.py. Similarity: 90%. Effort: S."
+          },
+          "properties": {
+            "drift:findingId": "e3f7c175abe45d0f"
           },
           "relatedLocations": [
             {
@@ -497,6 +647,13 @@
           "level": "error",
           "locations": [
             {
+              "logicalLocations": [
+                {
+                  "fullyQualifiedName": "src.myapp.connectors.db.connect_mongodb",
+                  "kind": "function",
+                  "name": "connect_mongodb"
+                }
+              ],
               "physicalLocation": {
                 "artifactLocation": {
                   "uri": "src/myapp/connectors/db.py"
@@ -508,7 +665,10 @@
             }
           ],
           "message": {
-            "text": "Near-duplicate (100%): connect_mongodb ↔ connect_elasticsearch\nsrc\\myapp\\connectors\\db.py:26 and src\\myapp\\connectors\\db.py:35 are 100% similar. Small differences may indicate copy-paste divergence.\nFIX: Extract connect_mongodb() into src/myapp/connectors/shared.py. Similarity: 100%. Effort: S."
+            "text": "Near-duplicate (90%): connect_mongodb ↔ connect_elasticsearch\nsrc\\myapp\\connectors\\db.py:26 and src\\myapp\\connectors\\db.py:35 are 90% similar. Small differences may indicate copy-paste divergence.\nFIX: Extract connect_mongodb() into src/myapp/connectors/shared.py. Similarity: 90%. Effort: S."
+          },
+          "properties": {
+            "drift:findingId": "1abbd8e6fe7b0303"
           },
           "relatedLocations": [
             {
@@ -529,6 +689,13 @@
           "level": "error",
           "locations": [
             {
+              "logicalLocations": [
+                {
+                  "fullyQualifiedName": "src.myapp.connectors.db.connect_mongodb",
+                  "kind": "function",
+                  "name": "connect_mongodb"
+                }
+              ],
               "physicalLocation": {
                 "artifactLocation": {
                   "uri": "src/myapp/connectors/db.py"
@@ -540,7 +707,10 @@
             }
           ],
           "message": {
-            "text": "Near-duplicate (100%): connect_mongodb ↔ connect_rabbitmq\nsrc\\myapp\\connectors\\db.py:26 and src\\myapp\\connectors\\db.py:44 are 100% similar. Small differences may indicate copy-paste divergence.\nFIX: Extract connect_mongodb() into src/myapp/connectors/shared.py. Similarity: 100%. Effort: S."
+            "text": "Near-duplicate (90%): connect_mongodb ↔ connect_rabbitmq\nsrc\\myapp\\connectors\\db.py:26 and src\\myapp\\connectors\\db.py:44 are 90% similar. Small differences may indicate copy-paste divergence.\nFIX: Extract connect_mongodb() into src/myapp/connectors/shared.py. Similarity: 90%. Effort: S."
+          },
+          "properties": {
+            "drift:findingId": "6cbd857575016b4f"
           },
           "relatedLocations": [
             {
@@ -561,6 +731,13 @@
           "level": "error",
           "locations": [
             {
+              "logicalLocations": [
+                {
+                  "fullyQualifiedName": "src.myapp.connectors.db.connect_mongodb",
+                  "kind": "function",
+                  "name": "connect_mongodb"
+                }
+              ],
               "physicalLocation": {
                 "artifactLocation": {
                   "uri": "src/myapp/connectors/db.py"
@@ -572,7 +749,10 @@
             }
           ],
           "message": {
-            "text": "Near-duplicate (100%): connect_mongodb ↔ connect_kafka\nsrc\\myapp\\connectors\\db.py:26 and src\\myapp\\connectors\\db.py:53 are 100% similar. Small differences may indicate copy-paste divergence.\nFIX: Extract connect_mongodb() into src/myapp/connectors/shared.py. Similarity: 100%. Effort: S."
+            "text": "Near-duplicate (90%): connect_mongodb ↔ connect_kafka\nsrc\\myapp\\connectors\\db.py:26 and src\\myapp\\connectors\\db.py:53 are 90% similar. Small differences may indicate copy-paste divergence.\nFIX: Extract connect_mongodb() into src/myapp/connectors/shared.py. Similarity: 90%. Effort: S."
+          },
+          "properties": {
+            "drift:findingId": "ec1565fc0123f085"
           },
           "relatedLocations": [
             {
@@ -593,6 +773,13 @@
           "level": "error",
           "locations": [
             {
+              "logicalLocations": [
+                {
+                  "fullyQualifiedName": "src.myapp.connectors.db.connect_mongodb",
+                  "kind": "function",
+                  "name": "connect_mongodb"
+                }
+              ],
               "physicalLocation": {
                 "artifactLocation": {
                   "uri": "src/myapp/connectors/db.py"
@@ -604,7 +791,10 @@
             }
           ],
           "message": {
-            "text": "Near-duplicate (100%): connect_mongodb ↔ connect_memcached\nsrc\\myapp\\connectors\\db.py:26 and src\\myapp\\connectors\\db.py:62 are 100% similar. Small differences may indicate copy-paste divergence.\nFIX: Extract connect_mongodb() into src/myapp/connectors/shared.py. Similarity: 100%. Effort: S."
+            "text": "Near-duplicate (90%): connect_mongodb ↔ connect_memcached\nsrc\\myapp\\connectors\\db.py:26 and src\\myapp\\connectors\\db.py:62 are 90% similar. Small differences may indicate copy-paste divergence.\nFIX: Extract connect_mongodb() into src/myapp/connectors/shared.py. Similarity: 90%. Effort: S."
+          },
+          "properties": {
+            "drift:findingId": "0deebb1fc015d9bb"
           },
           "relatedLocations": [
             {
@@ -625,6 +815,13 @@
           "level": "error",
           "locations": [
             {
+              "logicalLocations": [
+                {
+                  "fullyQualifiedName": "src.myapp.connectors.db.connect_mongodb",
+                  "kind": "function",
+                  "name": "connect_mongodb"
+                }
+              ],
               "physicalLocation": {
                 "artifactLocation": {
                   "uri": "src/myapp/connectors/db.py"
@@ -636,7 +833,10 @@
             }
           ],
           "message": {
-            "text": "Near-duplicate (100%): connect_mongodb ↔ connect_dynamodb\nsrc\\myapp\\connectors\\db.py:26 and src\\myapp\\connectors\\db.py:71 are 100% similar. Small differences may indicate copy-paste divergence.\nFIX: Extract connect_mongodb() into src/myapp/connectors/shared.py. Similarity: 100%. Effort: S."
+            "text": "Near-duplicate (90%): connect_mongodb ↔ connect_dynamodb\nsrc\\myapp\\connectors\\db.py:26 and src\\myapp\\connectors\\db.py:71 are 90% similar. Small differences may indicate copy-paste divergence.\nFIX: Extract connect_mongodb() into src/myapp/connectors/shared.py. Similarity: 90%. Effort: S."
+          },
+          "properties": {
+            "drift:findingId": "23d1f3255109cb81"
           },
           "relatedLocations": [
             {
@@ -657,6 +857,13 @@
           "level": "error",
           "locations": [
             {
+              "logicalLocations": [
+                {
+                  "fullyQualifiedName": "src.myapp.connectors.db.connect_elasticsearch",
+                  "kind": "function",
+                  "name": "connect_elasticsearch"
+                }
+              ],
               "physicalLocation": {
                 "artifactLocation": {
                   "uri": "src/myapp/connectors/db.py"
@@ -668,7 +875,10 @@
             }
           ],
           "message": {
-            "text": "Near-duplicate (100%): connect_elasticsearch ↔ connect_rabbitmq\nsrc\\myapp\\connectors\\db.py:35 and src\\myapp\\connectors\\db.py:44 are 100% similar. Small differences may indicate copy-paste divergence.\nFIX: Extract connect_elasticsearch() into src/myapp/connectors/shared.py. Similarity: 100%. Effort: S."
+            "text": "Near-duplicate (90%): connect_elasticsearch ↔ connect_rabbitmq\nsrc\\myapp\\connectors\\db.py:35 and src\\myapp\\connectors\\db.py:44 are 90% similar. Small differences may indicate copy-paste divergence.\nFIX: Extract connect_elasticsearch() into src/myapp/connectors/shared.py. Similarity: 90%. Effort: S."
+          },
+          "properties": {
+            "drift:findingId": "bea2c171de1ae0f8"
           },
           "relatedLocations": [
             {
@@ -689,6 +899,13 @@
           "level": "error",
           "locations": [
             {
+              "logicalLocations": [
+                {
+                  "fullyQualifiedName": "src.myapp.connectors.db.connect_elasticsearch",
+                  "kind": "function",
+                  "name": "connect_elasticsearch"
+                }
+              ],
               "physicalLocation": {
                 "artifactLocation": {
                   "uri": "src/myapp/connectors/db.py"
@@ -700,7 +917,10 @@
             }
           ],
           "message": {
-            "text": "Near-duplicate (100%): connect_elasticsearch ↔ connect_kafka\nsrc\\myapp\\connectors\\db.py:35 and src\\myapp\\connectors\\db.py:53 are 100% similar. Small differences may indicate copy-paste divergence.\nFIX: Extract connect_elasticsearch() into src/myapp/connectors/shared.py. Similarity: 100%. Effort: S."
+            "text": "Near-duplicate (90%): connect_elasticsearch ↔ connect_kafka\nsrc\\myapp\\connectors\\db.py:35 and src\\myapp\\connectors\\db.py:53 are 90% similar. Small differences may indicate copy-paste divergence.\nFIX: Extract connect_elasticsearch() into src/myapp/connectors/shared.py. Similarity: 90%. Effort: S."
+          },
+          "properties": {
+            "drift:findingId": "d94e46e5ee4ade34"
           },
           "relatedLocations": [
             {
@@ -721,6 +941,13 @@
           "level": "error",
           "locations": [
             {
+              "logicalLocations": [
+                {
+                  "fullyQualifiedName": "src.myapp.connectors.db.connect_elasticsearch",
+                  "kind": "function",
+                  "name": "connect_elasticsearch"
+                }
+              ],
               "physicalLocation": {
                 "artifactLocation": {
                   "uri": "src/myapp/connectors/db.py"
@@ -732,7 +959,10 @@
             }
           ],
           "message": {
-            "text": "Near-duplicate (100%): connect_elasticsearch ↔ connect_memcached\nsrc\\myapp\\connectors\\db.py:35 and src\\myapp\\connectors\\db.py:62 are 100% similar. Small differences may indicate copy-paste divergence.\nFIX: Extract connect_elasticsearch() into src/myapp/connectors/shared.py. Similarity: 100%. Effort: S."
+            "text": "Near-duplicate (90%): connect_elasticsearch ↔ connect_memcached\nsrc\\myapp\\connectors\\db.py:35 and src\\myapp\\connectors\\db.py:62 are 90% similar. Small differences may indicate copy-paste divergence.\nFIX: Extract connect_elasticsearch() into src/myapp/connectors/shared.py. Similarity: 90%. Effort: S."
+          },
+          "properties": {
+            "drift:findingId": "17b4520f20184ed0"
           },
           "relatedLocations": [
             {
@@ -753,6 +983,13 @@
           "level": "error",
           "locations": [
             {
+              "logicalLocations": [
+                {
+                  "fullyQualifiedName": "src.myapp.connectors.db.connect_elasticsearch",
+                  "kind": "function",
+                  "name": "connect_elasticsearch"
+                }
+              ],
               "physicalLocation": {
                 "artifactLocation": {
                   "uri": "src/myapp/connectors/db.py"
@@ -764,7 +1001,10 @@
             }
           ],
           "message": {
-            "text": "Near-duplicate (100%): connect_elasticsearch ↔ connect_dynamodb\nsrc\\myapp\\connectors\\db.py:35 and src\\myapp\\connectors\\db.py:71 are 100% similar. Small differences may indicate copy-paste divergence.\nFIX: Extract connect_elasticsearch() into src/myapp/connectors/shared.py. Similarity: 100%. Effort: S."
+            "text": "Near-duplicate (90%): connect_elasticsearch ↔ connect_dynamodb\nsrc\\myapp\\connectors\\db.py:35 and src\\myapp\\connectors\\db.py:71 are 90% similar. Small differences may indicate copy-paste divergence.\nFIX: Extract connect_elasticsearch() into src/myapp/connectors/shared.py. Similarity: 90%. Effort: S."
+          },
+          "properties": {
+            "drift:findingId": "5383c65c5a1a78f7"
           },
           "relatedLocations": [
             {
@@ -785,6 +1025,13 @@
           "level": "error",
           "locations": [
             {
+              "logicalLocations": [
+                {
+                  "fullyQualifiedName": "src.myapp.connectors.db.connect_rabbitmq",
+                  "kind": "function",
+                  "name": "connect_rabbitmq"
+                }
+              ],
               "physicalLocation": {
                 "artifactLocation": {
                   "uri": "src/myapp/connectors/db.py"
@@ -796,7 +1043,10 @@
             }
           ],
           "message": {
-            "text": "Near-duplicate (100%): connect_rabbitmq ↔ connect_kafka\nsrc\\myapp\\connectors\\db.py:44 and src\\myapp\\connectors\\db.py:53 are 100% similar. Small differences may indicate copy-paste divergence.\nFIX: Extract connect_rabbitmq() into src/myapp/connectors/shared.py. Similarity: 100%. Effort: S."
+            "text": "Near-duplicate (90%): connect_rabbitmq ↔ connect_kafka\nsrc\\myapp\\connectors\\db.py:44 and src\\myapp\\connectors\\db.py:53 are 90% similar. Small differences may indicate copy-paste divergence.\nFIX: Extract connect_rabbitmq() into src/myapp/connectors/shared.py. Similarity: 90%. Effort: S."
+          },
+          "properties": {
+            "drift:findingId": "0cd9cc380edd3dfd"
           },
           "relatedLocations": [
             {
@@ -817,6 +1067,13 @@
           "level": "error",
           "locations": [
             {
+              "logicalLocations": [
+                {
+                  "fullyQualifiedName": "src.myapp.connectors.db.connect_rabbitmq",
+                  "kind": "function",
+                  "name": "connect_rabbitmq"
+                }
+              ],
               "physicalLocation": {
                 "artifactLocation": {
                   "uri": "src/myapp/connectors/db.py"
@@ -828,7 +1085,10 @@
             }
           ],
           "message": {
-            "text": "Near-duplicate (100%): connect_rabbitmq ↔ connect_memcached\nsrc\\myapp\\connectors\\db.py:44 and src\\myapp\\connectors\\db.py:62 are 100% similar. Small differences may indicate copy-paste divergence.\nFIX: Extract connect_rabbitmq() into src/myapp/connectors/shared.py. Similarity: 100%. Effort: S."
+            "text": "Near-duplicate (90%): connect_rabbitmq ↔ connect_memcached\nsrc\\myapp\\connectors\\db.py:44 and src\\myapp\\connectors\\db.py:62 are 90% similar. Small differences may indicate copy-paste divergence.\nFIX: Extract connect_rabbitmq() into src/myapp/connectors/shared.py. Similarity: 90%. Effort: S."
+          },
+          "properties": {
+            "drift:findingId": "dff84741ec572976"
           },
           "relatedLocations": [
             {
@@ -849,6 +1109,13 @@
           "level": "error",
           "locations": [
             {
+              "logicalLocations": [
+                {
+                  "fullyQualifiedName": "src.myapp.connectors.db.connect_rabbitmq",
+                  "kind": "function",
+                  "name": "connect_rabbitmq"
+                }
+              ],
               "physicalLocation": {
                 "artifactLocation": {
                   "uri": "src/myapp/connectors/db.py"
@@ -860,7 +1127,10 @@
             }
           ],
           "message": {
-            "text": "Near-duplicate (100%): connect_rabbitmq ↔ connect_dynamodb\nsrc\\myapp\\connectors\\db.py:44 and src\\myapp\\connectors\\db.py:71 are 100% similar. Small differences may indicate copy-paste divergence.\nFIX: Extract connect_rabbitmq() into src/myapp/connectors/shared.py. Similarity: 100%. Effort: S."
+            "text": "Near-duplicate (90%): connect_rabbitmq ↔ connect_dynamodb\nsrc\\myapp\\connectors\\db.py:44 and src\\myapp\\connectors\\db.py:71 are 90% similar. Small differences may indicate copy-paste divergence.\nFIX: Extract connect_rabbitmq() into src/myapp/connectors/shared.py. Similarity: 90%. Effort: S."
+          },
+          "properties": {
+            "drift:findingId": "5772a9d3a380a895"
           },
           "relatedLocations": [
             {
@@ -881,6 +1151,13 @@
           "level": "error",
           "locations": [
             {
+              "logicalLocations": [
+                {
+                  "fullyQualifiedName": "src.myapp.connectors.db.connect_kafka",
+                  "kind": "function",
+                  "name": "connect_kafka"
+                }
+              ],
               "physicalLocation": {
                 "artifactLocation": {
                   "uri": "src/myapp/connectors/db.py"
@@ -892,7 +1169,10 @@
             }
           ],
           "message": {
-            "text": "Near-duplicate (100%): connect_kafka ↔ connect_memcached\nsrc\\myapp\\connectors\\db.py:53 and src\\myapp\\connectors\\db.py:62 are 100% similar. Small differences may indicate copy-paste divergence.\nFIX: Extract connect_kafka() into src/myapp/connectors/shared.py. Similarity: 100%. Effort: S."
+            "text": "Near-duplicate (90%): connect_kafka ↔ connect_memcached\nsrc\\myapp\\connectors\\db.py:53 and src\\myapp\\connectors\\db.py:62 are 90% similar. Small differences may indicate copy-paste divergence.\nFIX: Extract connect_kafka() into src/myapp/connectors/shared.py. Similarity: 90%. Effort: S."
+          },
+          "properties": {
+            "drift:findingId": "4f0d1be93c6bf270"
           },
           "relatedLocations": [
             {
@@ -913,6 +1193,13 @@
           "level": "error",
           "locations": [
             {
+              "logicalLocations": [
+                {
+                  "fullyQualifiedName": "src.myapp.connectors.db.connect_kafka",
+                  "kind": "function",
+                  "name": "connect_kafka"
+                }
+              ],
               "physicalLocation": {
                 "artifactLocation": {
                   "uri": "src/myapp/connectors/db.py"
@@ -924,7 +1211,10 @@
             }
           ],
           "message": {
-            "text": "Near-duplicate (100%): connect_kafka ↔ connect_dynamodb\nsrc\\myapp\\connectors\\db.py:53 and src\\myapp\\connectors\\db.py:71 are 100% similar. Small differences may indicate copy-paste divergence.\nFIX: Extract connect_kafka() into src/myapp/connectors/shared.py. Similarity: 100%. Effort: S."
+            "text": "Near-duplicate (90%): connect_kafka ↔ connect_dynamodb\nsrc\\myapp\\connectors\\db.py:53 and src\\myapp\\connectors\\db.py:71 are 90% similar. Small differences may indicate copy-paste divergence.\nFIX: Extract connect_kafka() into src/myapp/connectors/shared.py. Similarity: 90%. Effort: S."
+          },
+          "properties": {
+            "drift:findingId": "85f4042bb99e00fa"
           },
           "relatedLocations": [
             {
@@ -945,6 +1235,13 @@
           "level": "error",
           "locations": [
             {
+              "logicalLocations": [
+                {
+                  "fullyQualifiedName": "src.myapp.connectors.db.connect_memcached",
+                  "kind": "function",
+                  "name": "connect_memcached"
+                }
+              ],
               "physicalLocation": {
                 "artifactLocation": {
                   "uri": "src/myapp/connectors/db.py"
@@ -956,7 +1253,10 @@
             }
           ],
           "message": {
-            "text": "Near-duplicate (100%): connect_memcached ↔ connect_dynamodb\nsrc\\myapp\\connectors\\db.py:62 and src\\myapp\\connectors\\db.py:71 are 100% similar. Small differences may indicate copy-paste divergence.\nFIX: Extract connect_memcached() into src/myapp/connectors/shared.py. Similarity: 100%. Effort: S."
+            "text": "Near-duplicate (90%): connect_memcached ↔ connect_dynamodb\nsrc\\myapp\\connectors\\db.py:62 and src\\myapp\\connectors\\db.py:71 are 90% similar. Small differences may indicate copy-paste divergence.\nFIX: Extract connect_memcached() into src/myapp/connectors/shared.py. Similarity: 90%. Effort: S."
+          },
+          "properties": {
+            "drift:findingId": "dcd61b3c256ab376"
           },
           "relatedLocations": [
             {
@@ -974,9 +1274,16 @@
           "ruleId": "mutant_duplicate"
         },
         {
-          "level": "error",
+          "level": "warning",
           "locations": [
             {
+              "logicalLocations": [
+                {
+                  "fullyQualifiedName": "src.myapp.handler_v1.fetch_user_data",
+                  "kind": "function",
+                  "name": "fetch_user_data"
+                }
+              ],
               "physicalLocation": {
                 "artifactLocation": {
                   "uri": "src/myapp/handler_v1.py"
@@ -988,7 +1295,10 @@
             }
           ],
           "message": {
-            "text": "Near-duplicate (100%): fetch_user_data ↔ get_customer_info\nsrc\\myapp\\handler_v1.py:4 and src\\myapp\\handler_v2.py:4 are 100% similar. Small differences may indicate copy-paste divergence.\nFIX: Extract fetch_user_data() into src/myapp/shared.py. Similarity: 100%. Effort: S."
+            "text": "Near-duplicate (85%): fetch_user_data ↔ get_customer_info\nsrc\\myapp\\handler_v1.py:4 and src\\myapp\\handler_v2.py:4 are 85% similar. Small differences may indicate copy-paste divergence.\nFIX: Extract fetch_user_data() into src/myapp/shared.py. Similarity: 85%. Effort: S."
+          },
+          "properties": {
+            "drift:findingId": "6f7af21b5a7d7800"
           },
           "relatedLocations": [
             {
@@ -1009,6 +1319,13 @@
           "level": "warning",
           "locations": [
             {
+              "logicalLocations": [
+                {
+                  "fullyQualifiedName": "src.myapp.models",
+                  "kind": "module",
+                  "name": "models"
+                }
+              ],
               "physicalLocation": {
                 "artifactLocation": {
                   "uri": "src/myapp/models"
@@ -1021,6 +1338,9 @@
           ],
           "message": {
             "text": "return_pattern: 2 variants in src/myapp/models/\n2 return_pattern variants in src/myapp/models/ (1/2 use canonical pattern).\n  - src/myapp/models/core.py:25 (Product.find_by_sku)\nFIX: Consolidate to the dominant pattern (1x, exemplar: src/myapp/models/core.py:11). Deviations: src/myapp/models/core.py:25 (Product.find_by_sku)."
+          },
+          "properties": {
+            "drift:findingId": "4c322947dea01b7a"
           },
           "relatedLocations": [
             {
@@ -1041,6 +1361,13 @@
           "level": "error",
           "locations": [
             {
+              "logicalLocations": [
+                {
+                  "fullyQualifiedName": "src.myapp.processors.transform.transform_dataset",
+                  "kind": "function",
+                  "name": "transform_dataset"
+                }
+              ],
               "physicalLocation": {
                 "artifactLocation": {
                   "uri": "src/myapp/processors/transform.py"
@@ -1055,12 +1382,22 @@
           "message": {
             "text": "Unexplained complexity: transform_dataset\nComplexity: 29, LOC: 60. No docstring. No corresponding test found. No return type annotation.\nFIX: Function transform_dataset (complexity 29): add Docstring, Tests, Return-Type."
           },
+          "properties": {
+            "drift:findingId": "98d5538fca2c720d"
+          },
           "ruleId": "explainability_deficit"
         },
         {
           "level": "error",
           "locations": [
             {
+              "logicalLocations": [
+                {
+                  "fullyQualifiedName": "src.myapp.processors.pricing.calculate_pricing",
+                  "kind": "function",
+                  "name": "calculate_pricing"
+                }
+              ],
               "physicalLocation": {
                 "artifactLocation": {
                   "uri": "src/myapp/processors/pricing.py"
@@ -1075,76 +1412,22 @@
           "message": {
             "text": "Unexplained complexity: calculate_pricing\nComplexity: 19, LOC: 49. No docstring. No corresponding test found. No return type annotation.\nFIX: Function calculate_pricing (complexity 19): add Docstring, Tests, Return-Type."
           },
+          "properties": {
+            "drift:findingId": "e58dd1a1123f0bd8"
+          },
           "ruleId": "explainability_deficit"
-        },
-        {
-          "level": "warning",
-          "locations": [
-            {
-              "physicalLocation": {
-                "artifactLocation": {
-                  "uri": "src/myapp/models/enriched.py"
-                },
-                "region": {
-                  "startLine": 3
-                }
-              }
-            }
-          ],
-          "message": {
-            "text": "Upward layer import: enriched.py → auth.py\nsrc/myapp/models/enriched.py:3 — data/infrastructure layer imports from presentation/API layer. Expected direction: presentation → service → data.\nFIX: Move auth.py logic behind a service layer or abstraction interface that enriched.py is allowed to import."
-          },
-          "relatedLocations": [
-            {
-              "id": 0,
-              "message": {
-                "text": "Related file"
-              },
-              "physicalLocation": {
-                "artifactLocation": {
-                  "uri": "src/myapp/handlers/auth.py"
-                }
-              }
-            }
-          ],
-          "ruleId": "avs_upward_import"
-        },
-        {
-          "level": "warning",
-          "locations": [
-            {
-              "physicalLocation": {
-                "artifactLocation": {
-                  "uri": "src/myapp/models/enriched.py"
-                },
-                "region": {
-                  "startLine": 4
-                }
-              }
-            }
-          ],
-          "message": {
-            "text": "Upward layer import: enriched.py → orders.py\nsrc/myapp/models/enriched.py:4 — data/infrastructure layer imports from presentation/API layer. Expected direction: presentation → service → data.\nFIX: Move orders.py logic behind a service layer or abstraction interface that enriched.py is allowed to import."
-          },
-          "relatedLocations": [
-            {
-              "id": 0,
-              "message": {
-                "text": "Related file"
-              },
-              "physicalLocation": {
-                "artifactLocation": {
-                  "uri": "src/myapp/handlers/orders.py"
-                }
-              }
-            }
-          ],
-          "ruleId": "avs_upward_import"
         },
         {
           "level": "note",
           "locations": [
             {
+              "logicalLocations": [
+                {
+                  "fullyQualifiedName": "src.myapp.processors.validator.process_registration",
+                  "kind": "function",
+                  "name": "process_registration"
+                }
+              ],
               "physicalLocation": {
                 "artifactLocation": {
                   "uri": "src/myapp/processors/validator.py"
@@ -1159,12 +1442,22 @@
           "message": {
             "text": "Unexplained complexity: process_registration\nComplexity: 10, LOC: 25. No docstring. No corresponding test found. No return type annotation.\nFIX: Function process_registration (complexity 10): add Docstring, Tests, Return-Type."
           },
+          "properties": {
+            "drift:findingId": "c2c57de1abc9d061"
+          },
           "ruleId": "explainability_deficit"
         },
         {
           "level": "error",
           "locations": [
             {
+              "logicalLocations": [
+                {
+                  "fullyQualifiedName": "src.myapp.processors",
+                  "kind": "module",
+                  "name": "processors"
+                }
+              ],
               "physicalLocation": {
                 "artifactLocation": {
                   "uri": "src/myapp/processors"
@@ -1178,12 +1471,22 @@
           "message": {
             "text": "Guard clause deficit in src/myapp/processors/\n3/3 public functions lack guard clauses (guarded ratio 0.0%, mean unguarded complexity 38.7).\nFIX: Add guard clauses to 3/3 unguarded functions in src/myapp/processors/ (mean complexity 38.7): isinstance checks, None guards, or assert statements."
           },
+          "properties": {
+            "drift:findingId": "4e93fa3fcbeaf86d"
+          },
           "ruleId": "guard_clause_deficit"
         },
         {
           "level": "warning",
           "locations": [
             {
+              "logicalLocations": [
+                {
+                  "fullyQualifiedName": "src.myapp.models.core.Inventory.check_stock",
+                  "kind": "method",
+                  "name": "check_stock"
+                }
+              ],
               "physicalLocation": {
                 "artifactLocation": {
                   "uri": "src/myapp/models/core.py"
@@ -1198,12 +1501,22 @@
           "message": {
             "text": "Naming contract violation: Inventory.check_stock()\nFunction 'Inventory.check_stock' has prefix 'check_' but does not satisfy the expected contract: validate_*/check_* expects at least one raise or return False/None.\nFIX: 'Inventory.check_stock()' at src/myapp/models/core.py:38 does not satisfy 'check_' naming contract. Suggestion: implement a rejection path (raise or return False/None), or rename the function to match non-validating behavior."
           },
+          "properties": {
+            "drift:findingId": "092ff896d6032905"
+          },
           "ruleId": "naming_contract_violation"
         },
         {
           "level": "warning",
           "locations": [
             {
+              "logicalLocations": [
+                {
+                  "fullyQualifiedName": "src.myapp.utils.naming.validate_user_profile",
+                  "kind": "function",
+                  "name": "validate_user_profile"
+                }
+              ],
               "physicalLocation": {
                 "artifactLocation": {
                   "uri": "src/myapp/utils/naming.py"
@@ -1218,12 +1531,22 @@
           "message": {
             "text": "Naming contract violation: validate_user_profile()\nFunction 'validate_user_profile' has prefix 'validate_' but does not satisfy the expected contract: validate_*/check_* expects at least one raise or return False/None.\nFIX: 'validate_user_profile()' at src/myapp/utils/naming.py:4 does not satisfy 'validate_' naming contract. Suggestion: implement a rejection path (raise or return False/None), or rename the function to match non-validating behavior."
           },
+          "properties": {
+            "drift:findingId": "3f6bd384232864dd"
+          },
           "ruleId": "naming_contract_violation"
         },
         {
           "level": "warning",
           "locations": [
             {
+              "logicalLocations": [
+                {
+                  "fullyQualifiedName": "src.myapp.utils.naming.ensure_database_connection",
+                  "kind": "function",
+                  "name": "ensure_database_connection"
+                }
+              ],
               "physicalLocation": {
                 "artifactLocation": {
                   "uri": "src/myapp/utils/naming.py"
@@ -1238,12 +1561,22 @@
           "message": {
             "text": "Naming contract violation: ensure_database_connection()\nFunction 'ensure_database_connection' has prefix 'ensure_' but does not satisfy the expected contract: ensure_* expects at least one raise statement.\nFIX: 'ensure_database_connection()' at src/myapp/utils/naming.py:11 does not satisfy 'ensure_' naming contract. Suggestion: add at least one raise path that enforces the ensured precondition."
           },
+          "properties": {
+            "drift:findingId": "521495b69a3bcf19"
+          },
           "ruleId": "naming_contract_violation"
         },
         {
           "level": "warning",
           "locations": [
             {
+              "logicalLocations": [
+                {
+                  "fullyQualifiedName": "tests",
+                  "kind": "module",
+                  "name": "tests"
+                }
+              ],
               "physicalLocation": {
                 "artifactLocation": {
                   "uri": "tests"
@@ -1257,12 +1590,22 @@
           "message": {
             "text": "Happy-path-only test suite in tests/\n6 test functions with 12 positive / 0 negative assertions (negative ratio 0.0%). 0 boundary-named tests.\nFIX: Add negative tests to tests/ (6 test functions, only 0 negative assertions): use pytest.raises for expected exceptions, test edge cases (empty, None, invalid input)."
           },
+          "properties": {
+            "drift:findingId": "f24d5affcdf0a609"
+          },
           "ruleId": "test_polarity_deficit"
         },
         {
           "level": "error",
           "locations": [
             {
+              "logicalLocations": [
+                {
+                  "fullyQualifiedName": "src.myapp.processors.transform.transform_dataset",
+                  "kind": "function",
+                  "name": "transform_dataset"
+                }
+              ],
               "physicalLocation": {
                 "artifactLocation": {
                   "uri": "src/myapp/processors/transform.py"
@@ -1277,12 +1620,22 @@
           "message": {
             "text": "Deep nesting in transform_dataset()\nFunction 'transform_dataset' in src\\myapp\\processors\\transform.py has nesting depth 7 (threshold: 4). Deep nesting makes control flow hard to follow.\nFIX: Reduce nesting in 'transform_dataset' (depth 7, threshold 4): use early returns, extract nested blocks into helpers, or invert conditions."
           },
+          "properties": {
+            "drift:findingId": "8509e359f548566b"
+          },
           "ruleId": "deep_nesting"
         },
         {
           "level": "error",
           "locations": [
             {
+              "logicalLocations": [
+                {
+                  "fullyQualifiedName": "src.myapp.processors.validator.process_registration",
+                  "kind": "function",
+                  "name": "process_registration"
+                }
+              ],
               "physicalLocation": {
                 "artifactLocation": {
                   "uri": "src/myapp/processors/validator.py"
@@ -1297,12 +1650,22 @@
           "message": {
             "text": "Deep nesting in process_registration()\nFunction 'process_registration' in src\\myapp\\processors\\validator.py has nesting depth 6 (threshold: 4). Deep nesting makes control flow hard to follow.\nFIX: Reduce nesting in 'process_registration' (depth 6, threshold 4): use early returns, extract nested blocks into helpers, or invert conditions."
           },
+          "properties": {
+            "drift:findingId": "42f21537c3ea6399"
+          },
           "ruleId": "deep_nesting"
         },
         {
           "level": "warning",
           "locations": [
             {
+              "logicalLocations": [
+                {
+                  "fullyQualifiedName": "src.myapp.processors.pricing.calculate_pricing",
+                  "kind": "function",
+                  "name": "calculate_pricing"
+                }
+              ],
               "physicalLocation": {
                 "artifactLocation": {
                   "uri": "src/myapp/processors/pricing.py"
@@ -1317,12 +1680,22 @@
           "message": {
             "text": "Deep nesting in calculate_pricing()\nFunction 'calculate_pricing' in src\\myapp\\processors\\pricing.py has nesting depth 5 (threshold: 4). Deep nesting makes control flow hard to follow.\nFIX: Reduce nesting in 'calculate_pricing' (depth 5, threshold 4): use early returns, extract nested blocks into helpers, or invert conditions."
           },
+          "properties": {
+            "drift:findingId": "992535612148b980"
+          },
           "ruleId": "deep_nesting"
         },
         {
           "level": "note",
           "locations": [
             {
+              "logicalLocations": [
+                {
+                  "fullyQualifiedName": "README.md",
+                  "kind": "module",
+                  "name": "README"
+                }
+              ],
               "physicalLocation": {
                 "artifactLocation": {
                   "uri": "README.md"
@@ -1336,12 +1709,22 @@
           "message": {
             "text": "README references missing directory: connectors/\nREADME mentions 'connectors/' but no such directory exists. Documentation may be outdated.\nFIX: Remove 'connectors/' from README.md or create the directory."
           },
+          "properties": {
+            "drift:findingId": "b021871f8a02980d"
+          },
           "ruleId": "doc_impl_drift"
         },
         {
           "level": "note",
           "locations": [
             {
+              "logicalLocations": [
+                {
+                  "fullyQualifiedName": "README.md",
+                  "kind": "module",
+                  "name": "README"
+                }
+              ],
               "physicalLocation": {
                 "artifactLocation": {
                   "uri": "README.md"
@@ -1355,12 +1738,22 @@
           "message": {
             "text": "README references missing directory: handlers/\nREADME mentions 'handlers/' but no such directory exists. Documentation may be outdated.\nFIX: Remove 'handlers/' from README.md or create the directory."
           },
+          "properties": {
+            "drift:findingId": "832dd232d35d3c1a"
+          },
           "ruleId": "doc_impl_drift"
         },
         {
           "level": "note",
           "locations": [
             {
+              "logicalLocations": [
+                {
+                  "fullyQualifiedName": "README.md",
+                  "kind": "module",
+                  "name": "README"
+                }
+              ],
               "physicalLocation": {
                 "artifactLocation": {
                   "uri": "README.md"
@@ -1374,12 +1767,22 @@
           "message": {
             "text": "README references missing directory: middleware/\nREADME mentions 'middleware/' but no such directory exists. Documentation may be outdated.\nFIX: Remove 'middleware/' from README.md or create the directory."
           },
+          "properties": {
+            "drift:findingId": "0a5e145e87a9fd6d"
+          },
           "ruleId": "doc_impl_drift"
         },
         {
           "level": "note",
           "locations": [
             {
+              "logicalLocations": [
+                {
+                  "fullyQualifiedName": "README.md",
+                  "kind": "module",
+                  "name": "README"
+                }
+              ],
               "physicalLocation": {
                 "artifactLocation": {
                   "uri": "README.md"
@@ -1393,12 +1796,22 @@
           "message": {
             "text": "README references missing directory: models/\nREADME mentions 'models/' but no such directory exists. Documentation may be outdated.\nFIX: Remove 'models/' from README.md or create the directory."
           },
+          "properties": {
+            "drift:findingId": "c62fe02b17684732"
+          },
           "ruleId": "doc_impl_drift"
         },
         {
           "level": "note",
           "locations": [
             {
+              "logicalLocations": [
+                {
+                  "fullyQualifiedName": "README.md",
+                  "kind": "module",
+                  "name": "README"
+                }
+              ],
               "physicalLocation": {
                 "artifactLocation": {
                   "uri": "README.md"
@@ -1412,12 +1825,22 @@
           "message": {
             "text": "README references missing directory: utils/\nREADME mentions 'utils/' but no such directory exists. Documentation may be outdated.\nFIX: Remove 'utils/' from README.md or create the directory."
           },
+          "properties": {
+            "drift:findingId": "cb591161b3d1d383"
+          },
           "ruleId": "doc_impl_drift"
         },
         {
           "level": "note",
           "locations": [
             {
+              "logicalLocations": [
+                {
+                  "fullyQualifiedName": "README.md",
+                  "kind": "module",
+                  "name": "README"
+                }
+              ],
               "physicalLocation": {
                 "artifactLocation": {
                   "uri": "README.md"
@@ -1431,12 +1854,22 @@
           "message": {
             "text": "README references missing directory: views/\nREADME mentions 'views/' but no such directory exists. Documentation may be outdated.\nFIX: Remove 'views/' from README.md or create the directory."
           },
+          "properties": {
+            "drift:findingId": "b5ba5b917aa866a5"
+          },
           "ruleId": "doc_impl_drift"
         },
         {
           "level": "error",
           "locations": [
             {
+              "logicalLocations": [
+                {
+                  "fullyQualifiedName": "src.myapp.processors.pricing.calculate_pricing",
+                  "kind": "function",
+                  "name": "calculate_pricing"
+                }
+              ],
               "physicalLocation": {
                 "artifactLocation": {
                   "uri": "src/myapp/processors/pricing.py"
@@ -1451,12 +1884,22 @@
           "message": {
             "text": "High cognitive complexity in calculate_pricing()\nFunction 'calculate_pricing' in src\\myapp\\processors\\pricing.py has cognitive complexity 52 (threshold: 15). Complex control flow makes this function hard to understand and maintain.\nFIX: Reduce cognitive complexity of 'calculate_pricing' (currently 52, threshold 15): extract nested logic into helper functions, replace nested conditionals with guard clauses, simplify boolean expressions."
           },
+          "properties": {
+            "drift:findingId": "9d57ec3f1df88531"
+          },
           "ruleId": "cognitive_complexity"
         },
         {
           "level": "error",
           "locations": [
             {
+              "logicalLocations": [
+                {
+                  "fullyQualifiedName": "src.myapp.processors.transform.transform_dataset",
+                  "kind": "function",
+                  "name": "transform_dataset"
+                }
+              ],
               "physicalLocation": {
                 "artifactLocation": {
                   "uri": "src/myapp/processors/transform.py"
@@ -1471,12 +1914,22 @@
           "message": {
             "text": "High cognitive complexity in transform_dataset()\nFunction 'transform_dataset' in src\\myapp\\processors\\transform.py has cognitive complexity 108 (threshold: 15). Complex control flow makes this function hard to understand and maintain.\nFIX: Reduce cognitive complexity of 'transform_dataset' (currently 108, threshold 15): extract nested logic into helper functions, replace nested conditionals with guard clauses, simplify boolean expressions."
           },
+          "properties": {
+            "drift:findingId": "a8bcf58428ef0c13"
+          },
           "ruleId": "cognitive_complexity"
         },
         {
           "level": "error",
           "locations": [
             {
+              "logicalLocations": [
+                {
+                  "fullyQualifiedName": "src.myapp.processors.validator.process_registration",
+                  "kind": "function",
+                  "name": "process_registration"
+                }
+              ],
               "physicalLocation": {
                 "artifactLocation": {
                   "uri": "src/myapp/processors/validator.py"
@@ -1491,12 +1944,22 @@
           "message": {
             "text": "High cognitive complexity in process_registration()\nFunction 'process_registration' in src\\myapp\\processors\\validator.py has cognitive complexity 27 (threshold: 15). Complex control flow makes this function hard to understand and maintain.\nFIX: Reduce cognitive complexity of 'process_registration' (currently 27, threshold 15): extract nested logic into helper functions, replace nested conditionals with guard clauses, simplify boolean expressions."
           },
+          "properties": {
+            "drift:findingId": "e0a732a307111b15"
+          },
           "ruleId": "cognitive_complexity"
         },
         {
           "level": "error",
           "locations": [
             {
+              "logicalLocations": [
+                {
+                  "fullyQualifiedName": "src.myapp.connectors.db.connect_postgres",
+                  "kind": "function",
+                  "name": "connect_postgres"
+                }
+              ],
               "physicalLocation": {
                 "artifactLocation": {
                   "uri": "src/myapp/connectors/db.py"
@@ -1510,12 +1973,22 @@
           "message": {
             "text": "8 potentially unused exports in db.py\nsrc\\myapp\\connectors\\db.py exports 8/8 public symbols that are never imported elsewhere: connect_postgres, connect_redis, connect_mongodb, connect_elasticsearch, connect_rabbitmq, connect_kafka, connect_memcached, connect_dynamodb. Dead code increases maintenance cost and confuses contributors.\nFIX: Review and remove 8 unused exports in db.py: connect_postgres, connect_redis, connect_mongodb, connect_elasticsearch, connect_rabbitmq, connect_kafka, connect_memcached, connect_dynamodb. If they are framework entry-points or dynamically loaded, mark with # drift:ignore or add to exclude patterns."
           },
+          "properties": {
+            "drift:findingId": "2f1fc78563f35208"
+          },
           "ruleId": "dead_code_accumulation"
         },
         {
           "level": "warning",
           "locations": [
             {
+              "logicalLocations": [
+                {
+                  "fullyQualifiedName": "src.myapp.handlers.orders.OrderError",
+                  "kind": "class",
+                  "name": "OrderError"
+                }
+              ],
               "physicalLocation": {
                 "artifactLocation": {
                   "uri": "src/myapp/handlers/orders.py"
@@ -1529,12 +2002,22 @@
           "message": {
             "text": "2 potentially unused exports in orders.py\nsrc\\myapp\\handlers\\orders.py exports 2/3 public symbols that are never imported elsewhere: OrderError, PaymentError. Dead code increases maintenance cost and confuses contributors.\nFIX: Review and remove 2 unused exports in orders.py: OrderError, PaymentError. If they are framework entry-points or dynamically loaded, mark with # drift:ignore or add to exclude patterns."
           },
+          "properties": {
+            "drift:findingId": "ea183abeb26976be"
+          },
           "ruleId": "dead_code_accumulation"
         },
         {
           "level": "error",
           "locations": [
             {
+              "logicalLocations": [
+                {
+                  "fullyQualifiedName": "src.myapp.handlers.payments.handle_payment",
+                  "kind": "function",
+                  "name": "handle_payment"
+                }
+              ],
               "physicalLocation": {
                 "artifactLocation": {
                   "uri": "src/myapp/handlers/payments.py"
@@ -1548,12 +2031,22 @@
           "message": {
             "text": "2 potentially unused exports in payments.py\nsrc\\myapp\\handlers\\payments.py exports 2/2 public symbols that are never imported elsewhere: handle_payment, handle_refund. Dead code increases maintenance cost and confuses contributors.\nFIX: Review and remove 2 unused exports in payments.py: handle_payment, handle_refund. If they are framework entry-points or dynamically loaded, mark with # drift:ignore or add to exclude patterns."
           },
+          "properties": {
+            "drift:findingId": "0335e4ef2cf787db"
+          },
           "ruleId": "dead_code_accumulation"
         },
         {
           "level": "error",
           "locations": [
             {
+              "logicalLocations": [
+                {
+                  "fullyQualifiedName": "src.myapp.models.core.User.__init__",
+                  "kind": "method",
+                  "name": "__init__"
+                }
+              ],
               "physicalLocation": {
                 "artifactLocation": {
                   "uri": "src/myapp/models/core.py"
@@ -1567,12 +2060,22 @@
           "message": {
             "text": "9 potentially unused exports in core.py\nsrc\\myapp\\models\\core.py exports 9/9 public symbols that are never imported elsewhere: User.__init__, User.find_by_email, Product.__init__, Product.find_by_sku, Inventory.__init__, Inventory.check_stock, User, Product, Inventory. Dead code increases maintenance cost and confuses contributors.\nFIX: Review and remove 9 unused exports in core.py: User.__init__, User.find_by_email, Product.__init__, Product.find_by_sku, Inventory.__init__, Inventory.check_stock, User, Product, Inventory. If they are framework entry-points or dynamically loaded, mark with # drift:ignore or add to exclude patterns."
           },
+          "properties": {
+            "drift:findingId": "62674eb7bb984b34"
+          },
           "ruleId": "dead_code_accumulation"
         },
         {
           "level": "warning",
           "locations": [
             {
+              "logicalLocations": [
+                {
+                  "fullyQualifiedName": "src.myapp.models.enriched.EnrichedOrder.__init__",
+                  "kind": "method",
+                  "name": "__init__"
+                }
+              ],
               "physicalLocation": {
                 "artifactLocation": {
                   "uri": "src/myapp/models/enriched.py"
@@ -1586,12 +2089,22 @@
           "message": {
             "text": "2 potentially unused exports in enriched.py\nsrc\\myapp\\models\\enriched.py exports 2/3 public symbols that are never imported elsewhere: EnrichedOrder.__init__, EnrichedOrder.process. Dead code increases maintenance cost and confuses contributors.\nFIX: Review and remove 2 unused exports in enriched.py: EnrichedOrder.__init__, EnrichedOrder.process. If they are framework entry-points or dynamically loaded, mark with # drift:ignore or add to exclude patterns."
           },
+          "properties": {
+            "drift:findingId": "f43f9d3c479e04fa"
+          },
           "ruleId": "dead_code_accumulation"
         },
         {
           "level": "error",
           "locations": [
             {
+              "logicalLocations": [
+                {
+                  "fullyQualifiedName": "src.myapp.outlier_module.read_shared_memory",
+                  "kind": "function",
+                  "name": "read_shared_memory"
+                }
+              ],
               "physicalLocation": {
                 "artifactLocation": {
                   "uri": "src/myapp/outlier_module.py"
@@ -1605,12 +2118,22 @@
           "message": {
             "text": "3 potentially unused exports in outlier_module.py\nsrc\\myapp\\outlier_module.py exports 3/3 public symbols that are never imported elsewhere: read_shared_memory, call_native_lib, process_binary_data. Dead code increases maintenance cost and confuses contributors.\nFIX: Review and remove 3 unused exports in outlier_module.py: read_shared_memory, call_native_lib, process_binary_data. If they are framework entry-points or dynamically loaded, mark with # drift:ignore or add to exclude patterns."
           },
+          "properties": {
+            "drift:findingId": "4542ed4d903d4b2d"
+          },
           "ruleId": "dead_code_accumulation"
         },
         {
           "level": "error",
           "locations": [
             {
+              "logicalLocations": [
+                {
+                  "fullyQualifiedName": "src.myapp.service_a.process_order",
+                  "kind": "function",
+                  "name": "process_order"
+                }
+              ],
               "physicalLocation": {
                 "artifactLocation": {
                   "uri": "src/myapp/service_a.py"
@@ -1624,12 +2147,22 @@
           "message": {
             "text": "2 potentially unused exports in service_a.py\nsrc\\myapp\\service_a.py exports 2/2 public symbols that are never imported elsewhere: process_order, validate_input. Dead code increases maintenance cost and confuses contributors.\nFIX: Review and remove 2 unused exports in service_a.py: process_order, validate_input. If they are framework entry-points or dynamically loaded, mark with # drift:ignore or add to exclude patterns."
           },
+          "properties": {
+            "drift:findingId": "e25fb15a47d4aabf"
+          },
           "ruleId": "dead_code_accumulation"
         },
         {
           "level": "error",
           "locations": [
             {
+              "logicalLocations": [
+                {
+                  "fullyQualifiedName": "src.myapp.service_b.process_order",
+                  "kind": "function",
+                  "name": "process_order"
+                }
+              ],
               "physicalLocation": {
                 "artifactLocation": {
                   "uri": "src/myapp/service_b.py"
@@ -1643,12 +2176,22 @@
           "message": {
             "text": "2 potentially unused exports in service_b.py\nsrc\\myapp\\service_b.py exports 2/2 public symbols that are never imported elsewhere: process_order, validate_input. Dead code increases maintenance cost and confuses contributors.\nFIX: Review and remove 2 unused exports in service_b.py: process_order, validate_input. If they are framework entry-points or dynamically loaded, mark with # drift:ignore or add to exclude patterns."
           },
+          "properties": {
+            "drift:findingId": "1bafadbafcee7e83"
+          },
           "ruleId": "dead_code_accumulation"
         },
         {
           "level": "error",
           "locations": [
             {
+              "logicalLocations": [
+                {
+                  "fullyQualifiedName": "src.myapp.utils.formatting.format_currency",
+                  "kind": "function",
+                  "name": "format_currency"
+                }
+              ],
               "physicalLocation": {
                 "artifactLocation": {
                   "uri": "src/myapp/utils/formatting.py"
@@ -1662,12 +2205,22 @@
           "message": {
             "text": "2 potentially unused exports in formatting.py\nsrc\\myapp\\utils\\formatting.py exports 2/2 public symbols that are never imported elsewhere: format_currency, format_money. Dead code increases maintenance cost and confuses contributors.\nFIX: Review and remove 2 unused exports in formatting.py: format_currency, format_money. If they are framework entry-points or dynamically loaded, mark with # drift:ignore or add to exclude patterns."
           },
+          "properties": {
+            "drift:findingId": "31af5ce25d1cbfaf"
+          },
           "ruleId": "dead_code_accumulation"
         },
         {
           "level": "error",
           "locations": [
             {
+              "logicalLocations": [
+                {
+                  "fullyQualifiedName": "src.myapp.utils.naming.validate_user_profile",
+                  "kind": "function",
+                  "name": "validate_user_profile"
+                }
+              ],
               "physicalLocation": {
                 "artifactLocation": {
                   "uri": "src/myapp/utils/naming.py"
@@ -1680,6 +2233,9 @@
           ],
           "message": {
             "text": "2 potentially unused exports in naming.py\nsrc\\myapp\\utils\\naming.py exports 2/2 public symbols that are never imported elsewhere: validate_user_profile, ensure_database_connection. Dead code increases maintenance cost and confuses contributors.\nFIX: Review and remove 2 unused exports in naming.py: validate_user_profile, ensure_database_connection. If they are framework entry-points or dynamically loaded, mark with # drift:ignore or add to exclude patterns."
+          },
+          "properties": {
+            "drift:findingId": "ff34536027ff9602"
           },
           "ruleId": "dead_code_accumulation"
         }
@@ -1713,15 +2269,6 @@
               "id": "explainability_deficit",
               "shortDescription": {
                 "text": "explainability_deficit"
-              }
-            },
-            {
-              "defaultConfiguration": {
-                "level": "warning"
-              },
-              "id": "avs_upward_import",
-              "shortDescription": {
-                "text": "architecture_violation"
               }
             },
             {

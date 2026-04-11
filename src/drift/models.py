@@ -11,6 +11,13 @@ if TYPE_CHECKING:
     from pathlib import Path
 
 # ---------------------------------------------------------------------------
+# Output schema version (ADR-042)
+# ---------------------------------------------------------------------------
+# Shared across CLI JSON output and API responses.
+# Major: incompatible field removals/renames.  Minor: additive new fields.
+OUTPUT_SCHEMA_VERSION = "2.1"
+
+# ---------------------------------------------------------------------------
 # Enums
 # ---------------------------------------------------------------------------
 
@@ -21,6 +28,12 @@ class Severity(StrEnum):
     MEDIUM = "medium"
     LOW = "low"
     INFO = "info"
+
+
+class FindingStatus(StrEnum):
+    ACTIVE = "active"
+    SUPPRESSED = "suppressed"
+    RESOLVED = "resolved"
 
 
 class SignalType(StrEnum):
@@ -47,6 +60,8 @@ class SignalType(StrEnum):
     MISSING_AUTHORIZATION = "missing_authorization"
     INSECURE_DEFAULT = "insecure_default"
     HARDCODED_SECRET = "hardcoded_secret"
+    PHANTOM_REFERENCE = "phantom_reference"
+    TYPE_SAFETY_BYPASS = "type_safety_bypass"
 
 
 class PatternCategory(StrEnum):
@@ -59,6 +74,30 @@ class PatternCategory(StrEnum):
     AUTHENTICATION = "authentication"
     VALIDATION = "validation"
     RETURN_PATTERN = "return_pattern"
+    REACT_HOOK = "react_hook"
+
+
+# ---------------------------------------------------------------------------
+# Logical Location (AST-based)
+# ---------------------------------------------------------------------------
+
+
+@dataclass
+class LogicalLocation:
+    """AST-based logical location for a finding.
+
+    Provides stable, line-number-independent coordinates that survive
+    code edits — enabling autonomous agents to identify the affected
+    code element even after preceding modifications shift line numbers.
+
+    Field semantics follow SARIF v2.1.0 §3.33.
+    """
+
+    fully_qualified_name: str  # e.g. "src.api.auth.AuthService.login"
+    name: str  # e.g. "login"
+    kind: str  # "function" | "method" | "class" | "module"
+    class_name: str | None = None  # e.g. "AuthService"
+    namespace: str | None = None  # e.g. "src.api.auth"
 
 
 # ---------------------------------------------------------------------------
@@ -89,6 +128,7 @@ class FunctionInfo:
     has_docstring: bool = False
     body_hash: str = ""
     ast_fingerprint: dict[str, Any] = field(default_factory=dict)
+    is_exported: bool = False
 
 
 @dataclass
@@ -101,6 +141,7 @@ class ClassInfo:
     bases: list[str] = field(default_factory=list)
     methods: list[FunctionInfo] = field(default_factory=list)
     has_docstring: bool = False
+    is_interface: bool = False
 
 
 @dataclass
@@ -175,6 +216,41 @@ class FileHistory:
 
 
 # ---------------------------------------------------------------------------
+# Attribution Models (ADR-034)
+# ---------------------------------------------------------------------------
+
+
+@dataclass
+class BlameLine:
+    """A single line result from git blame --porcelain."""
+
+    line_no: int
+    commit_hash: str
+    author: str
+    email: str
+    date: datetime.date
+    content: str = ""
+
+
+@dataclass
+class Attribution:
+    """Causal provenance for a finding — who introduced the drifting code.
+
+    Populated by the attribution enrichment pipeline when
+    ``attribution.enabled`` is set in drift.yaml.
+    """
+
+    commit_hash: str
+    author: str
+    email: str
+    date: datetime.date
+    branch_hint: str | None = None
+    ai_attributed: bool = False
+    ai_confidence: float = 0.0
+    commit_message_summary: str = ""
+
+
+# ---------------------------------------------------------------------------
 # Shared Helpers
 # ---------------------------------------------------------------------------
 
@@ -201,7 +277,7 @@ def severity_for_score(score: float) -> Severity:
 class Finding:
     """A single detected issue."""
 
-    signal_type: SignalType
+    signal_type: str  # SignalType value for core signals, arbitrary str for plugins
     severity: Severity
     score: float
     title: str
@@ -217,16 +293,30 @@ class Finding:
     impact: float = 0.0
     score_contribution: float = 0.0
     deferred: bool = False
+    status: FindingStatus = FindingStatus.ACTIVE
+    status_set_by: str | None = None
+    status_reason: str | None = None
     metadata: dict[str, Any] = field(default_factory=dict)
     rule_id: str | None = None
+    attribution: Attribution | None = None
+    logical_location: LogicalLocation | None = None
 
     def __post_init__(self) -> None:
         if self.rule_id is None:
-            self.rule_id = self.signal_type.value
+            self.rule_id = str(self.signal_type)
         # Ensure machine-readable location is always populated when a file
         # is known — agents cannot parse file paths from free-text fields.
         if self.file_path is not None and self.start_line is None:
             self.start_line = 1
+
+
+@dataclass
+class AnalyzerWarning:
+    """A non-finding diagnostic emitted by a signal."""
+
+    signal_type: str
+    message: str
+    skipped: bool = True
 
 
 @dataclass
@@ -235,7 +325,7 @@ class ModuleScore:
 
     path: Path
     drift_score: float
-    signal_scores: dict[SignalType, float] = field(default_factory=dict)
+    signal_scores: dict[str, float] = field(default_factory=dict)
     findings: list[Finding] = field(default_factory=list)
     file_count: int = 0
     function_count: int = 0
@@ -267,6 +357,7 @@ class RepoAnalysis:
     drift_score: float
     module_scores: list[ModuleScore] = field(default_factory=list)
     findings: list[Finding] = field(default_factory=list)
+    suppressed_findings: list[Finding] = field(default_factory=list)
     pattern_catalog: dict[PatternCategory, list[PatternInstance]] = field(default_factory=dict)
     total_files: int = 0
     total_functions: int = 0
@@ -286,10 +377,19 @@ class RepoAnalysis:
     ai_tools_detected: list[str] = field(default_factory=list)
     skipped_files: int = 0
     skipped_languages: dict[str, int] = field(default_factory=dict)
+    preflight: Any | None = None
+    analyzer_warnings: list[AnalyzerWarning] = field(default_factory=list)
 
     @property
     def severity(self) -> Severity:
         return severity_for_score(self.drift_score)
+
+    @property
+    def grade(self) -> tuple[str, str]:
+        """Letter grade derived from drift score, e.g. ``("B", "Good")``."""
+        from drift.scoring.engine import score_to_grade
+
+        return score_to_grade(self.drift_score)
 
     @property
     def is_degraded(self) -> bool:
@@ -313,7 +413,7 @@ class AgentTask:
     """An atomic, machine-readable repair task derived from a Finding."""
 
     id: str
-    signal_type: SignalType
+    signal_type: str  # SignalType value for core signals, arbitrary str for plugins
     severity: Severity
     priority: int
     title: str
@@ -340,6 +440,13 @@ class AgentTask:
     repair_maturity: str = "experimental"  # "verified" | "experimental" | "indirect-only"
     # Negative context: anti-patterns the agent must NOT reproduce
     negative_context: list[NegativeContext] = field(default_factory=list)
+    # Expected score reduction when this task is resolved
+    expected_score_delta: float = 0.0
+    # ADR-025 Phase A: Task-graph fields for orchestration
+    blocks: list[str] = field(default_factory=list)  # inverse of depends_on
+    batch_group: str | None = None  # cluster ID for co-fixable tasks
+    preferred_order: int = 0  # topological sort index within session
+    parallel_with: list[str] = field(default_factory=list)  # task IDs safe to run concurrently
 
 
 # ---------------------------------------------------------------------------
@@ -378,7 +485,7 @@ class NegativeContext:
 
     anti_pattern_id: str
     category: NegativeContextCategory
-    source_signal: SignalType
+    source_signal: str
     severity: Severity
     scope: NegativeContextScope
     description: str

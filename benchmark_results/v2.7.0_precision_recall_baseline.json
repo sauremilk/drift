@@ -1,0 +1,161 @@
+{
+  "signals": {
+    "architecture_violation": {
+      "tp": 3,
+      "tn": 4,
+      "fp": 0,
+      "fn": 0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0
+    },
+    "broad_exception_monoculture": {
+      "tp": 2,
+      "tn": 7,
+      "fp": 0,
+      "fn": 0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0
+    },
+    "bypass_accumulation": {
+      "tp": 3,
+      "tn": 6,
+      "fp": 0,
+      "fn": 0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0
+    },
+    "co_change_coupling": {
+      "tp": 2,
+      "tn": 3,
+      "fp": 0,
+      "fn": 0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0
+    },
+    "cohesion_deficit": {
+      "tp": 2,
+      "tn": 3,
+      "fp": 0,
+      "fn": 0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0
+    },
+    "doc_impl_drift": {
+      "tp": 4,
+      "tn": 6,
+      "fp": 0,
+      "fn": 0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0
+    },
+    "exception_contract_drift": {
+      "tp": 1,
+      "tn": 2,
+      "fp": 0,
+      "fn": 0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0
+    },
+    "explainability_deficit": {
+      "tp": 4,
+      "tn": 6,
+      "fp": 0,
+      "fn": 0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0
+    },
+    "guard_clause_deficit": {
+      "tp": 3,
+      "tn": 6,
+      "fp": 0,
+      "fn": 0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0
+    },
+    "hardcoded_secret": {
+      "tp": 0,
+      "tn": 1,
+      "fp": 0,
+      "fn": 0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0
+    },
+    "missing_authorization": {
+      "tp": 0,
+      "tn": 1,
+      "fp": 0,
+      "fn": 0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0
+    },
+    "mutant_duplicate": {
+      "tp": 4,
+      "tn": 4,
+      "fp": 0,
+      "fn": 0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0
+    },
+    "naming_contract_violation": {
+      "tp": 6,
+      "tn": 6,
+      "fp": 0,
+      "fn": 0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0
+    },
+    "pattern_fragmentation": {
+      "tp": 5,
+      "tn": 3,
+      "fp": 0,
+      "fn": 0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0
+    },
+    "system_misalignment": {
+      "tp": 3,
+      "tn": 2,
+      "fp": 0,
+      "fn": 0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0
+    },
+    "temporal_volatility": {
+      "tp": 2,
+      "tn": 3,
+      "fp": 0,
+      "fn": 0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0
+    },
+    "test_polarity_deficit": {
+      "tp": 3,
+      "tn": 4,
+      "fp": 0,
+      "fn": 0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0
+    }
+  },
+  "aggregate_f1": 1.0,
+  "total_fixtures": 114,
+  "version": "v2.8.0-dev",
+  "signals_with_fixtures": 17
+}

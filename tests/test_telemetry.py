@@ -1,12 +1,17 @@
 from __future__ import annotations
 
 import json
+import sys
 from pathlib import Path
 from types import SimpleNamespace
 
 from drift.api import diff, explain, scan
 from drift.models import Severity, SignalType
 from drift.telemetry import log_tool_event
+
+# Resolve actual submodules (drift.api.__init__ shadows names with functions)
+_scan_mod = sys.modules["drift.api.scan"]
+_diff_mod = sys.modules["drift.api.diff"]
 
 
 def _read_jsonl(path: Path) -> list[dict]:
@@ -91,7 +96,7 @@ def test_api_explain_emits_telemetry(
     monkeypatch.setenv("DRIFT_TELEMETRY_FILE", str(out))
 
     result = explain("PFS")
-    assert result["schema_version"] == "2.0"
+    assert result["schema_version"] == "2.1"
 
     rows = _read_jsonl(out)
     assert len(rows) == 1
@@ -104,7 +109,6 @@ def test_api_explain_emits_telemetry(
 
 def test_api_diff_returns_acceptance_fields(monkeypatch) -> None:
     import drift.analyzer as analyzer_module
-    import drift.api as api_module
     from drift.config import DriftConfig
 
     finding = SimpleNamespace(
@@ -127,8 +131,8 @@ def test_api_diff_returns_acceptance_fields(monkeypatch) -> None:
 
     monkeypatch.setattr(DriftConfig, "load", staticmethod(lambda *args, **kwargs: object()))
     monkeypatch.setattr(analyzer_module, "analyze_diff", lambda *args, **kwargs: analysis)
-    monkeypatch.setattr(api_module, "_finding_concise", lambda f: {"title": f.title})
-    monkeypatch.setattr(api_module, "_emit_api_telemetry", lambda **kwargs: None)
+    monkeypatch.setattr(_diff_mod, "_finding_concise", lambda f: {"title": f.title})
+    monkeypatch.setattr(_diff_mod, "_emit_api_telemetry", lambda **kwargs: None)
 
     result = diff(Path("."))
 
@@ -145,7 +149,6 @@ def test_api_diff_returns_acceptance_fields(monkeypatch) -> None:
 
 def test_api_diff_scopes_decision_logic_to_target_path(monkeypatch) -> None:
     import drift.analyzer as analyzer_module
-    import drift.api as api_module
     from drift.config import DriftConfig
 
     in_scope = SimpleNamespace(
@@ -177,8 +180,8 @@ def test_api_diff_scopes_decision_logic_to_target_path(monkeypatch) -> None:
 
     monkeypatch.setattr(DriftConfig, "load", staticmethod(lambda *args, **kwargs: object()))
     monkeypatch.setattr(analyzer_module, "analyze_diff", lambda *args, **kwargs: analysis)
-    monkeypatch.setattr(api_module, "_finding_concise", lambda f: {"title": f.title})
-    monkeypatch.setattr(api_module, "_emit_api_telemetry", lambda **kwargs: None)
+    monkeypatch.setattr(_diff_mod, "_finding_concise", lambda f: {"title": f.title})
+    monkeypatch.setattr(_diff_mod, "_emit_api_telemetry", lambda **kwargs: None)
 
     result = diff(Path("."), target_path="src/app")
 
@@ -317,7 +320,6 @@ def test_api_diff_staged_only_reports_zero_staged_files(monkeypatch) -> None:
 
 def test_api_scan_returns_acceptance_fields(monkeypatch) -> None:
     import drift.analyzer as analyzer_module
-    import drift.api as api_module
     from drift.config import DriftConfig
 
     finding = SimpleNamespace(
@@ -343,10 +345,10 @@ def test_api_scan_returns_acceptance_fields(monkeypatch) -> None:
 
     monkeypatch.setattr(DriftConfig, "load", staticmethod(lambda *args, **kwargs: object()))
     monkeypatch.setattr(analyzer_module, "analyze_repo", lambda *args, **kwargs: analysis)
-    monkeypatch.setattr(api_module, "_emit_api_telemetry", lambda **kwargs: None)
-    monkeypatch.setattr(api_module, "_finding_concise", lambda f: {"title": f.title})
-    monkeypatch.setattr(api_module, "_top_signals", lambda analysis, **_kw: [])
-    monkeypatch.setattr(api_module, "_fix_first_concise", lambda analysis, max_items=5: [])
+    monkeypatch.setattr(_scan_mod, "_emit_api_telemetry", lambda **kwargs: None)
+    monkeypatch.setattr(_scan_mod, "_finding_concise", lambda f: {"title": f.title})
+    monkeypatch.setattr(_scan_mod, "_top_signals", lambda analysis, **_kw: [])
+    monkeypatch.setattr(_scan_mod, "_fix_first_concise", lambda analysis, max_items=5: [])
 
     result = scan(Path("."))
 

@@ -18,9 +18,11 @@ from __future__ import annotations
 import json
 import os
 import shutil
+import statistics
 import subprocess
 import tempfile
 import time
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -42,7 +44,36 @@ class ScenarioResult:
     score_after: float = 0.0
     iterations: int = 0
     duration_seconds: float = 0.0
+    call_timings: dict[str, list[float]] = field(default_factory=dict)
     details: dict = field(default_factory=dict)
+
+
+def _percentile(values: list[float], p: float) -> float:
+    """Return percentile for a non-empty list using inclusive quantiles."""
+    if not values:
+        return 0.0
+    if len(values) == 1:
+        return values[0]
+    if p <= 0:
+        return min(values)
+    if p >= 100:
+        return max(values)
+    idx = max(0, min(98, int(p) - 1))
+    return statistics.quantiles(values, n=100, method="inclusive")[idx]
+
+
+def _timed_call(
+    call_timings: dict[str, list[float]],
+    name: str,
+    fn: Callable[..., dict],
+    **kwargs: object,
+) -> dict:
+    """Execute a callable and track elapsed seconds under *name*."""
+    t0 = time.monotonic()
+    result = fn(**kwargs)
+    elapsed = time.monotonic() - t0
+    call_timings.setdefault(name, []).append(elapsed)
+    return result
 
 
 def _init_git_repo(path: Path) -> None:
@@ -84,16 +115,23 @@ def scenario_gate_check(workspace: Path) -> ScenarioResult:
     from drift.api import nudge, scan
 
     result = ScenarioResult(name="gate_check")
+    call_timings: dict[str, list[float]] = {}
     t0 = time.monotonic()
 
     # Step 1: Initial scan to establish baseline.
-    scan_result = scan(path=str(workspace), max_findings=50)
+    scan_result = _timed_call(
+        call_timings,
+        "scan",
+        scan,
+        path=str(workspace),
+        max_findings=50,
+    )
     result.api_calls += 1
     result.findings_before = len(scan_result.get("findings", []))
     result.score_before = scan_result.get("drift_score", 0.0)
 
     # Step 2: Nudge to check if safe to commit.
-    nudge_result = nudge(path=str(workspace))
+    nudge_result = _timed_call(call_timings, "nudge", nudge, path=str(workspace))
     result.api_calls += 1
 
     safe = nudge_result.get("safe_to_commit", True)
@@ -107,6 +145,7 @@ def scenario_gate_check(workspace: Path) -> ScenarioResult:
     }
     result.iterations = 1  # Single gate check.
     result.duration_seconds = round(time.monotonic() - t0, 3)
+    result.call_timings = call_timings
     result.findings_after = result.findings_before  # No fix applied.
     result.score_after = result.score_before
     return result
@@ -120,16 +159,29 @@ def scenario_fix_cycle(workspace: Path) -> ScenarioResult:
     from drift.api import fix_plan, scan
 
     result = ScenarioResult(name="fix_cycle")
+    call_timings: dict[str, list[float]] = {}
     t0 = time.monotonic()
 
     # Step 1: Initial scan.
-    scan1 = scan(path=str(workspace), max_findings=50)
+    scan1 = _timed_call(
+        call_timings,
+        "scan",
+        scan,
+        path=str(workspace),
+        max_findings=50,
+    )
     result.api_calls += 1
     result.findings_before = len(scan1.get("findings", []))
     result.score_before = scan1.get("drift_score", 0.0)
 
     # Step 2: Fix plan.
-    plan = fix_plan(path=str(workspace), max_tasks=5)
+    plan = _timed_call(
+        call_timings,
+        "fix_plan",
+        fix_plan,
+        path=str(workspace),
+        max_tasks=5,
+    )
     result.api_calls += 1
     tasks = plan.get("priority_tasks", [])
 
@@ -142,13 +194,20 @@ def scenario_fix_cycle(workspace: Path) -> ScenarioResult:
     # Step 3: Re-scan (simulating that agent applied fixes).
     # In a real loop, the agent would edit files here.
     # We measure the baseline API-call overhead.
-    scan2 = scan(path=str(workspace), max_findings=50)
+    scan2 = _timed_call(
+        call_timings,
+        "scan",
+        scan,
+        path=str(workspace),
+        max_findings=50,
+    )
     result.api_calls += 1
     result.findings_after = len(scan2.get("findings", []))
     result.score_after = scan2.get("drift_score", 0.0)
 
     result.iterations = 2  # scan→plan→scan.
     result.duration_seconds = round(time.monotonic() - t0, 3)
+    result.call_timings = call_timings
     return result
 
 
@@ -160,16 +219,28 @@ def scenario_context_export(workspace: Path) -> ScenarioResult:
     from drift.api import negative_context, scan
 
     result = ScenarioResult(name="context_export")
+    call_timings: dict[str, list[float]] = {}
     t0 = time.monotonic()
 
     # Step 1: Scan.
-    scan1 = scan(path=str(workspace), max_findings=50)
+    scan1 = _timed_call(
+        call_timings,
+        "scan",
+        scan,
+        path=str(workspace),
+        max_findings=50,
+    )
     result.api_calls += 1
     result.findings_before = len(scan1.get("findings", []))
     result.score_before = scan1.get("drift_score", 0.0)
 
     # Step 2: Export negative context.
-    ctx = negative_context(path=str(workspace))
+    ctx = _timed_call(
+        call_timings,
+        "negative_context",
+        negative_context,
+        path=str(workspace),
+    )
     result.api_calls += 1
 
     forbidden = ctx.get("forbidden_patterns", [])
@@ -197,6 +268,7 @@ def scenario_context_export(workspace: Path) -> ScenarioResult:
     result.score_after = result.score_before
     result.iterations = 1
     result.duration_seconds = round(time.monotonic() - t0, 3)
+    result.call_timings = call_timings
     return result
 
 
@@ -212,6 +284,17 @@ def main() -> None:
         default="benchmark_results/agent_loop_benchmark.json",
         help="Output JSON path",
     )
+    parser.add_argument(
+        "--runs",
+        type=int,
+        default=1,
+        help="How many times each scenario should be executed.",
+    )
+    parser.add_argument(
+        "--detailed",
+        action="store_true",
+        help="Include per-call timing statistics (p50/p95/mean).",
+    )
     args = parser.parse_args()
 
     results: list[dict] = []
@@ -226,7 +309,17 @@ def main() -> None:
             scenario_context_export,
         ]:
             print(f"Running: {scenario_fn.__name__} ...")
-            sr = scenario_fn(workspace)
+            run_results: list[ScenarioResult] = [
+                scenario_fn(workspace) for _ in range(max(1, args.runs))
+            ]
+            sr = run_results[-1]
+            duration_values = [r.duration_seconds for r in run_results]
+
+            merged_call_timings: dict[str, list[float]] = {}
+            for run in run_results:
+                for call_name, samples in run.call_timings.items():
+                    merged_call_timings.setdefault(call_name, []).extend(samples)
+
             result_dict = {
                 "scenario": sr.name,
                 "api_calls": sr.api_calls,
@@ -235,14 +328,26 @@ def main() -> None:
                 "findings_after": sr.findings_after,
                 "score_before": round(sr.score_before, 4),
                 "score_after": round(sr.score_after, 4),
-                "duration_seconds": sr.duration_seconds,
+                "duration_seconds": round(statistics.median(duration_values), 3),
+                "duration_p95_seconds": round(_percentile(duration_values, 95), 3),
+                "runs": len(run_results),
                 "details": sr.details,
             }
+            if args.detailed:
+                result_dict["per_call"] = {
+                    call_name: {
+                        "count": len(samples),
+                        "mean_seconds": round(statistics.mean(samples), 6),
+                        "p50_seconds": round(_percentile(samples, 50), 6),
+                        "p95_seconds": round(_percentile(samples, 95), 6),
+                    }
+                    for call_name, samples in sorted(merged_call_timings.items())
+                }
             results.append(result_dict)
             print(
                 f"  API calls: {sr.api_calls}"
                 f"  Findings: {sr.findings_before}"
-                f"  Duration: {sr.duration_seconds}s",
+                f"  Duration p50: {result_dict['duration_seconds']}s",
             )
 
     out_path = Path(args.output)
@@ -253,6 +358,7 @@ def main() -> None:
         "summary": {
             "total_api_calls": sum(r["api_calls"] for r in results),
             "total_iterations": sum(r["iterations"] for r in results),
+            "runs_per_scenario": max(1, args.runs),
             "narrative": (
                 "Pre-v0.10.5: agents needed scan + manual JSON parsing "
                 "for gate decisions. Post-v0.10.5: nudge() provides "

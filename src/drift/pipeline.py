@@ -1,4 +1,13 @@
-"""Composable analysis pipeline phases for repository and diff analysis."""
+"""Composable analysis pipeline phases for repository and diff analysis.
+
+This module is **stateless**: every function receives its inputs explicitly
+and returns results without mutating shared state.  It does not import or
+manage session state — that responsibility belongs to ``drift.session``.
+
+Architectural invariant (Phase-5 boundary contract):
+    pipeline.py  → stateless, single-run transformation graph
+    session.py   → stateful, multi-call orchestration context
+"""
 
 from __future__ import annotations
 
@@ -6,6 +15,7 @@ import datetime
 import logging
 import os
 import subprocess
+import threading
 import time
 from collections.abc import Callable
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -55,6 +65,14 @@ if TYPE_CHECKING:
     from drift.config import DriftConfig
 
 ProgressCallback = Callable[[str, int, int], None]
+
+_GIT_HISTORY_CACHE_TTL_SECONDS = 600.0
+_GIT_HISTORY_CACHE_MAX_ENTRIES = 16
+_GIT_HISTORY_CACHE_LOCK = threading.RLock()
+_GIT_HISTORY_CACHE: dict[
+    tuple[str, str, int, float, float, frozenset[str]],
+    tuple[float, list[CommitInfo], dict[str, FileHistory]],
+] = {}
 
 
 def _determine_default_workers() -> int:
@@ -121,6 +139,7 @@ class ScoredFindings:
     module_scores: list
     suppressed_count: int
     context_tagged_count: int
+    suppressed_findings: list[Finding] = field(default_factory=list)
 
 
 @dataclass(slots=True)
@@ -152,17 +171,105 @@ def make_degradation_event(
 
 
 def is_git_repo(path: Path) -> bool:
-    """Check whether *path* is inside a git working tree."""
+    """Check whether *path* is inside a git working tree.
+
+    Result is cached per resolved path with a short TTL to avoid
+    repeated subprocess spawns on consecutive pipeline runs.
+    """
+    return _is_git_repo_cached(path.resolve().as_posix())
+
+
+# Short-lived cache for is_git_repo to eliminate redundant subprocess calls.
+_IS_GIT_REPO_CACHE_LOCK = threading.Lock()
+_IS_GIT_REPO_CACHE: dict[str, tuple[float, bool]] = {}
+_IS_GIT_REPO_CACHE_TTL = 60.0
+
+
+def _is_git_repo_cached(posix_key: str) -> bool:
+    """Cached check — avoids spawning git rev-parse on every call."""
+    now = time.monotonic()
+    with _IS_GIT_REPO_CACHE_LOCK:
+        cached = _IS_GIT_REPO_CACHE.get(posix_key)
+        if cached is not None and (now - cached[0]) < _IS_GIT_REPO_CACHE_TTL:
+            return cached[1]
+
     try:
         subprocess.run(
-            ["git", "-C", str(path), "rev-parse", "--git-dir"],
+            ["git", "-C", posix_key, "rev-parse", "--git-dir"],
             capture_output=True,
             check=True,
             stdin=subprocess.DEVNULL,
         )
-        return True
+        result = True
     except (subprocess.CalledProcessError, FileNotFoundError):
-        return False
+        result = False
+
+    with _IS_GIT_REPO_CACHE_LOCK:
+        _IS_GIT_REPO_CACHE[posix_key] = (now, result)
+    return result
+
+
+def _current_git_head(path: Path) -> str | None:
+    """Return current HEAD SHA for cache invalidation, or None on failure.
+
+    Uses a short-lived per-path cache (5 s) so that consecutive calls
+    within the same pipeline run (ingestion check + fetch_git_history)
+    do not spawn redundant subprocesses.
+    """
+    posix_key = path.resolve().as_posix()
+    now = time.monotonic()
+    with _GIT_HEAD_CACHE_LOCK:
+        cached = _GIT_HEAD_CACHE.get(posix_key)
+        if cached is not None and (now - cached[0]) < _GIT_HEAD_CACHE_TTL:
+            return cached[1]
+
+    try:
+        result = subprocess.run(
+            ["git", "-C", str(path), "rev-parse", "HEAD"],
+            capture_output=True,
+            check=True,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+            stdin=subprocess.DEVNULL,
+            timeout=5,
+        )
+    except (
+        subprocess.CalledProcessError,
+        FileNotFoundError,
+        subprocess.TimeoutExpired,
+    ):
+        with _GIT_HEAD_CACHE_LOCK:
+            _GIT_HEAD_CACHE[posix_key] = (now, None)
+        return None
+
+    head = result.stdout.strip() or None
+    with _GIT_HEAD_CACHE_LOCK:
+        _GIT_HEAD_CACHE[posix_key] = (now, head)
+    return head
+
+
+# Short-lived HEAD SHA cache to deduplicate subprocess calls within a run.
+_GIT_HEAD_CACHE_LOCK = threading.Lock()
+_GIT_HEAD_CACHE: dict[str, tuple[float, str | None]] = {}
+_GIT_HEAD_CACHE_TTL = 5.0
+
+
+def _prune_git_history_cache(now: float) -> None:
+    """Drop stale entries and enforce bounded cache size."""
+    stale = [
+        key for key, (cached_at, _commits, _histories) in _GIT_HISTORY_CACHE.items()
+        if now - cached_at > _GIT_HISTORY_CACHE_TTL_SECONDS
+    ]
+    for key in stale:
+        _GIT_HISTORY_CACHE.pop(key, None)
+
+    while len(_GIT_HISTORY_CACHE) > _GIT_HISTORY_CACHE_MAX_ENTRIES:
+        oldest_key = min(
+            _GIT_HISTORY_CACHE,
+            key=lambda item: _GIT_HISTORY_CACHE[item][0],
+        )
+        _GIT_HISTORY_CACHE.pop(oldest_key, None)
 
 
 def fetch_git_history(
@@ -172,7 +279,31 @@ def fetch_git_history(
     ai_confidence_threshold: float = 0.50,
     indicator_boost: float = 0.0,
 ) -> tuple[list[CommitInfo], dict[str, FileHistory]]:
-    """Run git history parsing (designed to run in a background thread)."""
+    """Run git history parsing (designed to run in a background thread).
+
+    Uses a short-lived in-process cache keyed by repo head and analysis
+    parameters to avoid repeated expensive git-log parsing across consecutive
+    scans with unchanged commit history.
+    """
+    cache_key: tuple[str, str, int, float, float, frozenset[str]] | None = None
+    head_sha = _current_git_head(repo_path)
+    if head_sha is not None:
+        cache_key = (
+            repo_path.resolve().as_posix(),
+            head_sha,
+            since_days,
+            round(ai_confidence_threshold, 6),
+            round(indicator_boost, 6),
+            frozenset(known_files),
+        )
+        now = time.monotonic()
+        with _GIT_HISTORY_CACHE_LOCK:
+            cached = _GIT_HISTORY_CACHE.get(cache_key)
+            if cached is not None:
+                cached_at, cached_commits, cached_histories = cached
+                if now - cached_at <= _GIT_HISTORY_CACHE_TTL_SECONDS:
+                    return list(cached_commits), dict(cached_histories)
+
     commits = parse_git_history(
         repo_path,
         since_days=since_days,
@@ -181,6 +312,13 @@ def fetch_git_history(
         indicator_boost=indicator_boost,
     )
     file_histories = build_file_histories(commits, known_files=known_files)
+
+    if cache_key is not None:
+        now = time.monotonic()
+        with _GIT_HISTORY_CACHE_LOCK:
+            _GIT_HISTORY_CACHE[cache_key] = (now, list(commits), dict(file_histories))
+            _prune_git_history_cache(now)
+
     return commits, file_histories
 
 
@@ -214,6 +352,13 @@ class IngestionPhase:
         degradation: DegradationInfo,
         progress: ProgressCallback | None = None,
     ) -> ParsedInputs:
+        """Parse source files and collect git context for downstream signal phases.
+
+        The method first attempts content-hash cache hits, then parses only the
+        remaining files in parallel while git history is fetched concurrently.
+        On git failures, parsing results are preserved and degradation metadata is
+        recorded so later stages can continue with reduced context.
+        """
         known_files = {f.path.as_posix() for f in files}
         cache = self._cache_factory(repo_path / config.cache_dir)
 
@@ -376,7 +521,7 @@ class SignalPhase:
         self,
         *,
         embedding_factory: Callable[..., Any] = get_embedding_service,
-        signal_factory: Callable[[AnalysisContext], list[BaseSignal]] = create_signals,
+        signal_factory: Callable[..., list[BaseSignal]] = create_signals,
     ) -> None:
         self._embedding_factory = embedding_factory
         self._signal_factory = signal_factory
@@ -392,6 +537,13 @@ class SignalPhase:
         workers: int = DEFAULT_WORKERS,
         active_signals: set[str] | None = None,
     ) -> SignalOutput:
+        """Execute enabled signals with optional embedding support and result caching.
+
+        Signals are filtered by ``active_signals`` when provided, then executed
+        through a cache-aware wrapper that reuses stable results based on config
+        and parsed-content fingerprints. Failures are captured in degradation
+        metadata instead of aborting the whole analysis pipeline.
+        """
         ctx = AnalysisContext(
             repo_path=repo_path,
             config=config,
@@ -400,14 +552,18 @@ class SignalPhase:
             embedding_service=None,
             commits=parsed.commits,
         )
-        signals = self._signal_factory(ctx)
-        if active_signals is not None:
-            filtered_signals: list[BaseSignal] = []
-            for signal in signals:
-                sig_type = getattr(signal, "signal_type", None)
-                if sig_type is not None and sig_type.value in active_signals:
-                    filtered_signals.append(signal)
-            signals = filtered_signals
+        try:
+            signals = self._signal_factory(ctx, active_signals=active_signals)
+        except TypeError:
+            # Backward-compatible fallback for custom factories that only accept ctx.
+            signals = self._signal_factory(ctx)
+            if active_signals is not None:
+                filtered_signals: list[BaseSignal] = []
+                for signal in signals:
+                    sig_type = getattr(signal, "signal_type", None)
+                    if sig_type is not None and sig_type.value in active_signals:
+                        filtered_signals.append(signal)
+                signals = filtered_signals
         total_signals = len(signals)
 
         if total_signals == 0:
@@ -543,6 +699,7 @@ class ScoringPhase:
         files: list[FileInfo],
         config: DriftConfig,
         findings: list[Finding],
+        parse_results: list[ParseResult] | None = None,
     ) -> ScoredFindings:
         all_findings = findings
         self._impact_assigner(all_findings, config.weights)
@@ -588,6 +745,12 @@ class ScoringPhase:
         # Classify every finding into an operational context for policy-aware triage.
         annotate_finding_contexts(all_findings, config)
 
+        # Enrich findings with AST-based logical locations for agent navigation.
+        from drift.logical_location import enrich_logical_locations
+
+        if parse_results:
+            enrich_logical_locations(all_findings, parse_results)
+
         n_modules = len({f.path.parent.as_posix() for f in files})
         is_small_repo = n_modules < config.thresholds.small_repo_module_threshold
         scoring_kwargs: dict[str, int] = {}
@@ -605,6 +768,7 @@ class ScoringPhase:
             module_scores=module_scores,
             suppressed_count=suppressed_count,
             context_tagged_count=context_tagged_count,
+            suppressed_findings=suppressed_findings,
         )
 
 
@@ -644,6 +808,7 @@ class ResultAssemblyPhase:
             drift_score=artifacts.scored.repo_score,
             module_scores=artifacts.scored.module_scores,
             findings=artifacts.scored.findings,
+            suppressed_findings=artifacts.scored.suppressed_findings,
             pattern_catalog=pattern_catalog,
             total_files=len(files),
             total_functions=total_funcs,
@@ -711,7 +876,22 @@ class AnalysisPipeline:
             workers=workers,
             active_signals=active_signals,
         )
-        scored = self._scoring.run(repo_path, files, config, signaled.findings)
+        scored = self._scoring.run(
+            repo_path, files, config, signaled.findings,
+            parse_results=parsed.parse_results,
+        )
+
+        # Attribution enrichment (ADR-034): enrich findings with git-blame
+        # provenance when enabled.  Runs after scoring, before assembly.
+        if config.attribution.enabled:
+            from drift.attribution import enrich_findings
+
+            scored.findings = enrich_findings(
+                scored.findings,
+                repo_path,
+                config.attribution,
+                commits=parsed.commits,
+            )
 
         return self._assembly.run(
             repo_path,

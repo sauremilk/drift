@@ -177,6 +177,79 @@ def _jaccard(a: list[tuple[str, ...]], b: list[tuple[str, ...]]) -> float:
     return intersection / union if union else 0.0
 
 
+# ---------------------------------------------------------------------------
+# Name-token similarity (ADR-038)
+# ---------------------------------------------------------------------------
+
+_CAMEL_SPLIT_RE = re.compile(r"(?<=[a-z])(?=[A-Z])|(?<=[A-Z])(?=[A-Z][a-z])")
+
+
+def _tokenize_name(name: str) -> set[str]:
+    """Split a function name into lowercase tokens (CamelCase + snake_case)."""
+    # Remove class prefix if present (e.g. "MyClass.my_method" → "my_method")
+    bare = name.rsplit(".", 1)[-1]
+    # Split CamelCase first, then snake_case
+    camel_parts = _CAMEL_SPLIT_RE.sub("_", bare)
+    return {t.lower() for t in camel_parts.split("_") if t}
+
+
+def _name_token_similarity(name_a: str, name_b: str) -> float:
+    """Compute Jaccard similarity over tokenized function names."""
+    tokens_a = _tokenize_name(name_a)
+    tokens_b = _tokenize_name(name_b)
+    if not tokens_a and not tokens_b:
+        return 1.0
+    if not tokens_a or not tokens_b:
+        return 0.0
+    intersection = len(tokens_a & tokens_b)
+    union = len(tokens_a | tokens_b)
+    return intersection / union if union else 0.0
+
+
+# ---------------------------------------------------------------------------
+# Protocol-implementation awareness (ADR-038)
+# ---------------------------------------------------------------------------
+
+_PROTOCOL_METHOD_NAMES: frozenset[str] = frozenset({
+    "serialize", "deserialize", "to_dict", "from_dict",
+    "validate", "execute", "handle", "process", "render",
+    "close", "open", "read", "write", "flush",
+    "setup", "teardown", "run", "start", "stop",
+})
+
+
+def _is_protocol_method_pair(a: FunctionInfo, b: FunctionInfo) -> bool:
+    """Return True if both functions are interface/protocol implementations in different classes."""
+    bare_a = a.name.rsplit(".", 1)[-1]
+    bare_b = b.name.rsplit(".", 1)[-1]
+    if bare_a != bare_b:
+        return False
+    if bare_a not in _PROTOCOL_METHOD_NAMES:
+        return False
+    # Must be methods (contain a dot = class.method)
+    if "." not in a.name or "." not in b.name:
+        return False
+    # Must belong to different classes
+    class_a = a.name.rsplit(".", 1)[0]
+    class_b = b.name.rsplit(".", 1)[0]
+    return class_a != class_b
+
+
+# ---------------------------------------------------------------------------
+# Thin-wrapper detection (ADR-038)
+# ---------------------------------------------------------------------------
+
+def _is_thin_wrapper(fn: FunctionInfo) -> bool:
+    """Return True for functions that are thin delegating wrappers (LOC <= 5, single call)."""
+    if fn.loc > 5:
+        return False
+    ngrams = fn.ast_fingerprint.get("ngrams")
+    if not ngrams:
+        return False
+    call_count = sum(1 for ng in ngrams for node in ng if node == "Call")
+    return call_count == 1
+
+
 def _function_signature_text(fn: FunctionInfo) -> str:
     """Build a compact text representation for embedding a function."""
     parts = [fn.name]
@@ -387,6 +460,11 @@ class MutantDuplicateSignal(BaseSignal):
                 if a.body_hash and a.body_hash == b.body_hash:
                     continue
 
+                # ADR-038: Skip protocol/interface method pairs in different classes
+                if _is_protocol_method_pair(a, b):
+                    checked.add(key)
+                    continue
+
                 comparisons += 1
                 key_a = f"{a.file_path}:{a.name}:{a.start_line}"
                 key_b = f"{b.file_path}:{b.name}:{b.start_line}"
@@ -395,13 +473,20 @@ class MutantDuplicateSignal(BaseSignal):
 
                 ast_sim = _structural_similarity(ng_a, ng_b)
 
+                # ADR-038: Name-token similarity as third hybrid factor
+                name_sim = _name_token_similarity(a.name, b.name)
+
                 # Compute hybrid similarity if embeddings available
                 if use_hybrid and key_a in embedding_cache and key_b in embedding_cache:
                     assert emb is not None
                     emb_sim = emb.cosine_similarity(embedding_cache[key_a], embedding_cache[key_b])
-                    sim = 0.6 * ast_sim + 0.4 * emb_sim
+                    sim = 0.55 * ast_sim + 0.35 * emb_sim + 0.10 * name_sim
                 else:
-                    sim = ast_sim
+                    sim = 0.85 * ast_sim + 0.15 * name_sim
+
+                # ADR-038: Dampen score for thin-wrapper delegations
+                if _is_thin_wrapper(a) or _is_thin_wrapper(b):
+                    sim *= 0.5
 
                 if sim >= threshold:
                     checked.add(key)

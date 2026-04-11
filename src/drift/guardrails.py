@@ -35,7 +35,7 @@ _SEVERITY_ORDER = {
 }
 
 # Pre-task relevance factor per signal (spec §3.2)
-_PRE_TASK_RELEVANCE: dict[SignalType, float] = {
+_PRE_TASK_RELEVANCE: dict[str, float] = {
     # Critical
     SignalType.ARCHITECTURE_VIOLATION: 1.0,
     SignalType.PATTERN_FRAGMENTATION: 1.0,
@@ -57,7 +57,7 @@ _PRE_TASK_RELEVANCE: dict[SignalType, float] = {
 }
 
 # Constraint class templates per signal
-_CONSTRAINT_TEMPLATES: dict[SignalType, str] = {
+_CONSTRAINT_TEMPLATES: dict[str, str] = {
     SignalType.ARCHITECTURE_VIOLATION: "ARCHITECTURE",
     SignalType.PATTERN_FRAGMENTATION: "PATTERN",
     SignalType.MUTANT_DUPLICATE: "DEDUP",
@@ -84,6 +84,7 @@ class Guardrail:
     reason: str
     affected_files: list[str] = field(default_factory=list)
     prompt_text: str = ""
+    preferred_pattern: str = ""
 
     def to_dict(self) -> dict[str, Any]:
         """Serialize to JSON-compatible dict."""
@@ -97,12 +98,13 @@ class Guardrail:
             "reason": self.reason,
             "affected_files": self.affected_files,
             "prompt_text": self.prompt_text,
+            "preferred_pattern": self.preferred_pattern,
         }
 
 
-def pre_task_relevance(signal_type: SignalType) -> float:
-    """Return the pre-task relevance factor for a signal type."""
-    return _PRE_TASK_RELEVANCE.get(signal_type, 0.0)
+def pre_task_relevance(signal_type: str) -> float:
+    """Return the pre-task relevance factor for a signal identifier string."""
+    return _PRE_TASK_RELEVANCE.get(str(signal_type), 0.0)
 
 
 # ---------------------------------------------------------------------------
@@ -113,7 +115,7 @@ def pre_task_relevance(signal_type: SignalType) -> float:
 def _nc_to_guardrail(nc: NegativeContext, idx: int) -> Guardrail:
     """Transform a single NegativeContext item into a Guardrail."""
     abbrev = signal_abbrev(nc.source_signal)
-    constraint_class = _CONSTRAINT_TEMPLATES.get(nc.source_signal, "GENERAL")
+    constraint_class = _CONSTRAINT_TEMPLATES.get(str(nc.source_signal), "GENERAL")
 
     # Build concise constraint text from the NC description
     constraint = nc.description
@@ -129,6 +131,14 @@ def _nc_to_guardrail(nc: NegativeContext, idx: int) -> Guardrail:
         if forbidden_short:
             prompt_line += f" Do NOT: {forbidden_short}."
 
+    # Extract canonical alternative as preferred pattern reference
+    preferred = ""
+    if nc.canonical_alternative:
+        # Strip comment prefixes for a clean, agent-readable pattern ref
+        lines = nc.canonical_alternative.strip().splitlines()
+        cleaned = [ln.lstrip("# ").strip() for ln in lines if ln.strip()]
+        preferred = " ".join(cleaned)[:200]
+
     return Guardrail(
         id=gid,
         signal=abbrev,
@@ -139,6 +149,7 @@ def _nc_to_guardrail(nc: NegativeContext, idx: int) -> Guardrail:
         reason=reason,
         affected_files=nc.affected_files,
         prompt_text=prompt_line,
+        preferred_pattern=preferred,
     )
 
 
@@ -152,6 +163,7 @@ def generate_guardrails(
     *,
     max_guardrails: int = 10,
     min_severity: Severity = Severity.LOW,
+    min_confidence: float = 0.0,
 ) -> list[Guardrail]:
     """Generate prioritised guardrails from drift findings.
 
@@ -163,6 +175,10 @@ def generate_guardrails(
         Maximum number of guardrails to return.
     min_severity:
         Minimum severity threshold for guardrails.
+    min_confidence:
+        Minimum confidence threshold for negative-context items.
+        Items below this value are excluded from guardrail generation.
+        Default ``0.0`` preserves backward compatibility.
     """
     # Generate negative context items from findings
     nc_items = findings_to_negative_context(
@@ -177,11 +193,15 @@ def generate_guardrails(
         if _SEVERITY_ORDER.get(nc.severity, 4) <= min_rank
     ]
 
+    # Filter by minimum confidence
+    if min_confidence > 0.0:
+        nc_items = [nc for nc in nc_items if nc.confidence >= min_confidence]
+
     # Sort by: severity (desc), pre-task relevance (desc), confidence (desc)
     nc_items.sort(
         key=lambda nc: (
             _SEVERITY_ORDER.get(nc.severity, 4),
-            -_PRE_TASK_RELEVANCE.get(nc.source_signal, 0.0),
+            -_PRE_TASK_RELEVANCE.get(str(nc.source_signal), 0.0),
             -nc.confidence,
         ),
     )
@@ -190,7 +210,7 @@ def generate_guardrails(
     seen: set[tuple[str, str]] = set()
     unique: list[NegativeContext] = []
     for nc in nc_items:
-        key = (nc.source_signal.value, nc.affected_files[0] if nc.affected_files else "")
+        key = (str(nc.source_signal), nc.affected_files[0] if nc.affected_files else "")
         if key not in seen:
             seen.add(key)
             unique.append(nc)
@@ -221,5 +241,7 @@ def guardrails_to_prompt_block(guardrails: list[Guardrail]) -> str:
     ]
     for i, gr in enumerate(guardrails, start=1):
         lines.append(f"{i}. {gr.prompt_text}")
+        if gr.preferred_pattern:
+            lines.append(f"   PREFERRED: {gr.preferred_pattern}")
 
     return "\n".join(lines)

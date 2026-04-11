@@ -1,192 +1,174 @@
 ---
 name: drift-effective-usage
-description: "Practical workflow for effective use of the drift analyzer. Use when users ask how to run drift, configure scope, interpret findings, reduce false positives, use the drift MCP server, or integrate drift into CI and daily dev workflows."
+description: "Minimal workflow for effective use of drift-analyzer. Use when users ask how to run drift, scope scans, interpret findings, reduce noise, track trends, use feedback-based calibration, use the MCP server, or add drift to CI."
 ---
 
-# Drift Effective Usage Skill
+# Drift Effective Usage
 
-## Purpose
+Use this skill to help users adopt drift-analyzer with the smallest reliable workflow.
+Prefer reproducible commands, clear scope, and actionable findings over exhaustive output.
 
-Help users get high-value, reproducible, and actionable results from drift quickly.
-Focus on trust first: traceable findings, reproducibility, and clear next actions.
+## Use When
 
-## When to Use
+- User asks how to run drift for the first time
+- User wants less noise or fewer false positives
+- User asks how to interpret or prioritize findings
+- User wants a guided first-run path or score trend over time
+- User wants project-specific tuning from TP/FP/FN feedback
+- User wants to use direct drift MCP tools in chat or agent workflows
+- User wants to add drift to CI without blocking adoption too early
 
-- User asks how to use drift effectively
-- User wants a reliable first run on a new repository
-- User asks how to interpret findings and prioritize fixes
-- User wants fewer false positives or clearer output
-- User wants to use drift via MCP in VS Code or Copilot agent workflows
-- User wants to add drift to CI or team workflows
+## Default Workflow
 
-## Core Principles
+### 1. Establish a Baseline
 
-Apply this priority order when giving guidance:
+For a guided first run, start with:
 
-1. Credibility of findings
-2. Signal precision
-3. Clarity of explanation
-4. FP/FN reduction
-5. Adoption friction
-6. Trend tracking
-7. Extra features
+```bash
+drift start
+```
 
-Never optimize for more output if it does not improve decisions.
-
-## Effective Workflow
-
-### Step 1: Fast and Clean First Run
-
-Use a minimal command that is easy to reproduce:
+For reproducible automation or onboarding baselines, use:
 
 ```bash
 drift analyze --repo . --format json --exit-zero
 ```
 
-Goal:
-- confirm the tool runs
-- capture machine-readable baseline output
-- avoid failing pipelines during initial onboarding
+Use this first because it is reproducible, machine-readable, and safe for onboarding.
+`--exit-zero` keeps the first run non-blocking even when findings exist.
 
-### Step 2: Scope Hygiene
+### 2. Clean Up Scope
 
-Avoid noisy non-operational paths where possible (for example docs, generated files, fixtures, site outputs).
-Recommend using config-based excludes so runs stay deterministic across environments.
+Exclude non-operational paths such as generated output, docs, build artifacts, and fixtures.
+Put those excludes in drift config so local and CI runs behave the same.
+If results look noisy, narrow the scan scope before discussing fixes.
 
-### Step 3: Read Findings for Actionability
+### 3. Read Findings for Actionability
 
-For each important finding, verify:
+Prioritize findings that have:
 
-- technical traceability (file/line or equivalent anchor)
-- reproducibility (same input -> same finding)
-- clear cause attribution
-- understandable rationale
-- concrete next action
+- a clear file or module anchor
+- an understandable cause
+- a concrete next step
+- repeated or high-confidence occurrence
 
-If one element is missing, treat the finding as incomplete before prioritizing implementation work.
+Treat low-confidence or poorly explained findings as scope or calibration work first.
 
-### Step 4: Prioritize Fixes
+### 4. Roll Out Gradually
 
-Start with findings that combine:
+Start with local review, then add report-only CI with `drift analyze --repo . --format json --exit-zero`, then enforce stricter checks once findings are stable.
 
-- high confidence
-- clear architectural impact
-- low-to-medium remediation cost
+Use `drift trend --repo .` when the team wants to compare score movement over time instead of treating each scan as isolated.
 
-Defer low-confidence noise until scope/config issues are cleaned up.
+### 5. Use Feedback When Noise Persists
 
-### Step 5: Iterate With Evidence
-
-After changes, rerun drift and compare:
-
-- total finding count
-- severity distribution
-- module-level patterns
-- recurring categories over time
-
-Prefer small, measurable loops over broad refactors.
-
-## Command Patterns
-
-Use these patterns in recommendations:
+If the same findings repeatedly turn out to be true positives or false positives, record that evidence and review calibration before changing broad scope rules.
 
 ```bash
-# Baseline scan for automation
+drift feedback mark --mark fp --signal PFS --file src/example.py --reason "generated code"
+drift calibrate run --dry-run
+```
+
+Use calibration only after collecting real TP/FP/FN evidence. Start with `--dry-run`.
+
+## Core Commands
+
+```bash
+# Guided first-use path
+drift start
+
+# Baseline for automation or onboarding
 drift analyze --repo . --format json --exit-zero
+
+# Turn findings into concrete next tasks
+drift fix-plan --repo . --max-tasks 5
 
 # Human-readable local review
 drift analyze --repo .
 
-# CI-friendly gate (project decides strictness)
-drift check --repo .
+# Report-only CI rollout
+drift check --fail-on none
+
+# Stricter CI once the output is trusted
+drift check --fail-on high
+
+# Trend view across multiple snapshots
+drift trend --repo .
 ```
 
-If strict CI gating causes rollout friction, start in report-only mode and tighten later.
+## Optional Features
 
-## MCP Server Usage (VS Code / Copilot)
+If users want commit and author provenance on findings, enable attribution in config:
 
-Use this when users want agent-native drift analysis in editor workflows.
+```yaml
+attribution:
+  enabled: true
+```
 
-### Install MCP Extras
+Use this only when provenance helps triage. It is optional.
+
+## MCP Usage
+
+If the current chat or agent environment already exposes drift MCP tools, use them directly.
+Do not start `drift mcp --serve` in a terminal just to call drift tools from the same chat session.
+
+Prefer direct tool calls in chat in this order:
+
+1. `drift_validate`
+2. `drift_brief`
+3. `drift_scan`
+4. `drift_negative_context`
+5. `drift_fix_plan`
+6. `drift_nudge`
+7. `drift_diff`
+8. `drift_explain`
+9. `drift_feedback`
+10. `drift_calibrate`
+
+This order keeps the workflow predictable: validate first, gather context before changes, scan the baseline, use nudge for fast iteration, use diff for verification, and use feedback plus calibration only when signal quality needs tuning.
+
+For repeated remediation work, prefer `drift_session_start` before repeated `drift_nudge` checks.
+
+Only use terminal-based MCP setup when an editor or external MCP client still needs manual server registration.
 
 ```bash
 pip install drift-analyzer[mcp]
 ```
 
-### Start or Inspect MCP Modes
+Useful inspection commands:
 
 ```bash
-# Start MCP stdio server
-drift mcp --serve
-
-# List available tools without starting server
 drift mcp --list
-
-# Print MCP parameter schema as JSON
 drift mcp --schema
+drift mcp --serve
 ```
 
-Notes:
-- `--serve` uses stdio transport (no network listener)
-- interactive terminal start can be blocked; use `--allow-tty` only for manual debugging
-- use exactly one mode at a time (`--serve` or `--list` or `--schema`)
-
-### VS Code Registration Example
+If using VS Code:
 
 ```json
 {
-	"servers": {
-		"drift": {
-			"type": "stdio",
-			"command": "drift",
-			"args": ["mcp", "--serve"]
-		}
-	}
+  "servers": {
+    "drift": {
+      "type": "stdio",
+      "command": "drift",
+      "args": ["mcp", "--serve"]
+    }
+  }
 }
 ```
 
-### Recommended MCP Tool Order
+## Response Pattern
 
-1. `drift_validate` before first analysis (preflight)
-2. `drift_brief` before implementation tasks
-3. `drift_scan` for repository baseline
-4. `drift_diff` after changes for regression checks
-5. `drift_fix_plan` for prioritized remediation steps
-6. `drift_explain` for unfamiliar signal interpretation
+When helping a user, answer in this order:
 
-This sequence improves reliability and keeps agent actions policy-aligned.
-
-## False Positive Reduction Playbook
-
-1. Confirm repository scope and excludes
-2. Re-run on a narrowed target path when debugging
-3. Check whether the same finding recurs consistently
-4. Validate against real architecture intent, not naming alone
-5. Encode stable conventions in config/tests where possible
-
-## Recommended Response Pattern
-
-When assisting users, structure answers in this order:
-
-1. Short diagnosis of current usage problem
-2. Smallest next command to run
-3. How to interpret expected output
-4. One concrete follow-up action
-5. Optional hardening step for CI/trend tracking
+1. State the usage problem in one sentence
+2. Give the smallest next command
+3. Explain what to look for in the output
+4. Give one follow-up action
 
 ## Guardrails
 
-- Do not suggest cosmetic output changes as primary solution
-- Do not recommend broad feature work before trust/reproducibility is stable
-- Do not claim precision improvements without empirical evidence
-- Keep advice reproducible with explicit commands and expected outcomes
-
-## Ready-to-Use Mini Template
-
-```markdown
-Current issue: [one sentence]
-Run now: `drift analyze --repo . --format json --exit-zero`
-Check in output: [2-3 concrete fields/findings]
-Next action: [single highest-value change]
-Then verify with: [exact rerun command]
-```
+- Do not recommend more output unless it improves decisions
+- Do not jump to broad refactors before scope is clean
+- Do not present low-confidence findings as hard facts
+- Keep examples portable and repo-agnostic

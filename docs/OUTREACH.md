@@ -9,7 +9,7 @@ Order = recommended priority.
 - Package: `drift-analyzer`
 - Command: `drift`
 - Version: v2.5.1
-- Safe signal claim: 15 scoring signals (auto-calibrated at runtime) + 8 report-only signals (including TypeScript architecture, security, and complexity) = 23 total detectors.
+- Safe signal claim: 20 scoring signals (auto-calibrated at runtime) + 4 report-only signals (including TypeScript architecture and complexity) = 24 total detectors.
 - Safe CLI claim: 18 commands — `analyze`, `init`, `scan`, `diff`, `baseline`, `mcp`, `export-context`, `copilot-context`, `timeline`, `trend`, `patterns`, `badge`, `check`, `config`, `explain`, `fix-plan`, `self`, `validate`.
 - Safe rollout claim: `drift init --profile vibe-coding` for zero-config start, then baseline + incremental adoption.
 - Execution assets: see `docs/distribution/README.md` for awesome submissions, article draft, IDE MVP spec, and week-1 runbook.
@@ -37,11 +37,13 @@ near-identical functions accumulate with subtle differences.
 
 Drift doesn't detect bugs. It detects the loss of design intent.
 
-15 scoring signals cover pattern fragmentation, architecture violations,
+20 scoring signals cover pattern fragmentation, architecture violations,
 mutant duplicates, explainability deficit, temporal volatility, system
 misalignment, doc-impl drift, naming contracts, guard clauses, cohesion,
-coupling, and more. 8 additional report-only signals cover TypeScript
-architecture, security (missing auth, hardcoded secrets, insecure defaults) and complexity.
+coupling, hardcoded secrets, fan-out explosion, phantom references,
+missing authorization, insecure defaults, and more.
+4 additional report-only signals cover TypeScript
+architecture and complexity.
 
 All signals are deterministic, LLM-free, fast. Uses Python's built-in `ast`
 module — zero dependencies on ML infrastructure.
@@ -83,9 +85,9 @@ I built drift – deterministic architectural drift detection for AI-accelerated
 TL;DR: `pip install -q drift-analyzer && drift init --profile vibe-coding && drift analyze --repo .`
 
 Copilot and Cursor write code that solves local tasks correctly but weakens
-global design. Drift detects that architectural drift with 15 scoring signals
-covering pattern, architecture, consistency, and contract dimensions — plus
-8 report-only signals.
+global design. Drift detects that architectural drift with 20 scoring signals
+covering pattern, architecture, consistency, contract, and security dimensions — plus
+4 report-only signals.
 
 Core signals:
 - Pattern Fragmentation – same thing done N ways in one module
@@ -185,10 +187,11 @@ These aren't bugs. Linters won't flag them. They compound silently until the
 codebase resists change.
 
 I built drift, a static analyzer focused specifically on this problem. It runs
-15 scoring signals covering pattern fragmentation, layer violations,
+20 scoring signals covering pattern fragmentation, layer violations,
 near-duplicates, explainability gaps, naming contracts, cohesion, coupling,
-exception contracts, and more — plus 8 report-only detectors for TypeScript
-architecture, security (missing auth, hardcoded secrets, insecure defaults) and complexity.
+exception contracts, hardcoded secrets, phantom references, missing authorization,
+insecure defaults, and more — plus 4 report-only detectors for TypeScript
+architecture and complexity.
 
 Key design decisions:
 - No LLMs in the pipeline. Deterministic, reproducible, fast.
@@ -322,9 +325,9 @@ On Frappe (1,179 files):
 
 This isn't "bad code." It's code that grew without coherent design pressure.
 
-## The 23 detectors
+## The 24 detectors
 
-Drift runs 15 scoring signals plus 8 report-only detectors.
+Drift runs 20 scoring signals plus 4 report-only detectors.
 
 ### Core signals (ablation-validated)
 

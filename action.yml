@@ -1,5 +1,5 @@
-name: "Drift — Architectural Drift Check"
-description: "Deterministic architectural drift detection for AI-accelerated Python codebases. Finds architecture erosion through cross-file coherence signals."
+name: "Drift — AI Code Coherence Monitor"
+description: "Catches structural erosion from AI-generated code that passes all your tests. Quality control layer for AI-assisted Python development."
 
 branding:
   icon: "activity"
@@ -82,6 +82,9 @@ outputs:
   severity:
     description: "Overall severity level."
     value: ${{ steps.drift-json.outputs.severity }}
+  grade:
+    description: "Letter grade (A–F) derived from the drift score."
+    value: ${{ steps.drift-json.outputs.grade }}
 
 runs:
   using: "composite"
@@ -156,14 +159,20 @@ runs:
         SCORE=$(python3 -c "import json; d=json.load(open('${JSON_FILE}')); print(f\"{d['drift_score']:.2f}\")")
         SEVERITY=$(python3 -c "import json; d=json.load(open('${JSON_FILE}')); print(d['severity'].upper())")
         COUNT=$(python3 -c "import json; d=json.load(open('${JSON_FILE}')); print(len(d['findings']))")
+        GRADE=$(python3 -c "import json; d=json.load(open('${JSON_FILE}')); print(d.get('grade', 'N/A'))")
+        GRADE_LABEL=$(python3 -c "import json; d=json.load(open('${JSON_FILE}')); print(d.get('grade_label', ''))")
         TREND_DELTA=$(python3 -c "
         import json
         d=json.load(open('${JSON_FILE}'))
         t = d.get('trend')
         if t and t.get('delta') is not None:
             delta = t['delta']
-            arrow = '⬆' if delta > 0.005 else '⬇' if delta < -0.005 else '→'
-            print(f'{delta:+.2f} {arrow}')
+            if delta > 0.005:
+                print(f'🔴 {delta:+.3f} ▲ degrading')
+            elif delta < -0.005:
+                print(f'🟢 {delta:+.3f} ▼ improving')
+            else:
+                print(f'⚪ {delta:+.3f} → stable')
         else:
             print('N/A')
         ")
@@ -198,14 +207,31 @@ runs:
             print(f'| {sig} | {title} | \`{loc_str}\` | {fix} |')
         " 2>/dev/null || echo "| — | Analysis produced no ranked findings | — | — |")
 
+        # Determine score badge color
+        if (( $(echo "${SCORE} >= 0.8" | bc -l) )); then
+          BADGE_COLOR="critical"
+        elif (( $(echo "${SCORE} >= 0.6" | bc -l) )); then
+          BADGE_COLOR="orange"
+        elif (( $(echo "${SCORE} >= 0.4" | bc -l) )); then
+          BADGE_COLOR="yellow"
+        elif (( $(echo "${SCORE} >= 0.2" | bc -l) )); then
+          BADGE_COLOR="yellowgreen"
+        else
+          BADGE_COLOR="brightgreen"
+        fi
+
+        SCORE_BADGE="![Drift Score](https://img.shields.io/badge/drift%20score-${SCORE}-${BADGE_COLOR}?style=flat-square)"
+
         # Compose markdown comment body
         {
           echo "comment-body<<DRIFT_EOF"
           echo "## 🏗️ Drift Report"
           echo ""
+          echo "${SCORE_BADGE}"
+          echo ""
           echo "| Metric | Value |"
           echo "|--------|-------|"
-          echo "| **Score** | \`${SCORE}\` |"
+          echo "| **Score** | \`${SCORE}\` (Grade **${GRADE}** — ${GRADE_LABEL}) |"
           echo "| **Trend** | ${TREND_DELTA} |"
           echo "| **Severity** | ${SEVERITY} |"
           echo "| **Findings** | ${COUNT} |"
@@ -226,6 +252,7 @@ runs:
         echo "drift-score=${SCORE}" >> "${GITHUB_OUTPUT}"
         echo "severity=${SEVERITY}" >> "${GITHUB_OUTPUT}"
         echo "finding-count=${COUNT}" >> "${GITHUB_OUTPUT}"
+        echo "grade=${GRADE}" >> "${GITHUB_OUTPUT}"
 
     # Post PR summary comment. Updates existing comment if one exists.
     - name: Post PR comment

@@ -314,6 +314,52 @@ class TestIncrementalResult:
 class TestIncrementalSignalRunner:
     """Integration-level tests for the incremental runner."""
 
+    @pytest.fixture(autouse=True)
+    def _fast_signal_registry(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        """Keep runner behavior under test while avoiding heavyweight full signal sets."""
+        from drift.signals.base import BaseSignal
+
+        class _FastFileLocalSignal(BaseSignal):
+            incremental_scope = "file_local"
+
+            @property
+            def signal_type(self) -> SignalType:
+                return SignalType.PATTERN_FRAGMENTATION
+
+            @property
+            def name(self) -> str:
+                return "fast_file_local_signal"
+
+        class _FastCognitiveSignal(_FastFileLocalSignal):
+            @property
+            def signal_type(self) -> SignalType:
+                return SignalType.COGNITIVE_COMPLEXITY
+
+            @property
+            def name(self) -> str:
+                return "fast_cognitive_signal"
+
+            def analyze(self, parse_results, file_history, config):  # type: ignore[override]
+                findings: list[Finding] = []
+                for pr in parse_results:
+                    findings.append(
+                        Finding(
+                            signal_type=self.signal_type,
+                            severity=Severity.LOW,
+                            score=0.05,
+                            title="fast-test-finding",
+                            description="lightweight fixture finding",
+                            file_path=pr.file_path,
+                            start_line=1,
+                        )
+                    )
+                return findings
+
+        monkeypatch.setattr(
+            "drift.signals.base.registered_signals",
+            lambda: [_FastFileLocalSignal, _FastCognitiveSignal],
+        )
+
     @pytest.fixture()
     def config(self) -> DriftConfig:
         return DriftConfig()

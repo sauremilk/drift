@@ -7,15 +7,23 @@ from typing import Any
 
 from drift import __version__
 from drift.api_helpers import build_drift_score_scope, signal_abbrev, signal_abbrev_map
+from drift.baseline import finding_fingerprint
 from drift.config import DriftConfig
 from drift.finding_context import classify_finding_context, split_findings_by_context
-from drift.models import Finding, ModuleScore, RepoAnalysis, Severity, SignalType
+from drift.finding_rendering import _select_priority_findings_from_list, build_first_run_summary
+from drift.models import (
+    OUTPUT_SCHEMA_VERSION,
+    Finding,
+    ModuleScore,
+    RepoAnalysis,
+    Severity,
+    SignalType,
+)
 from drift.negative_context import findings_to_negative_context, negative_context_to_dict
 from drift.recommendations import generate_recommendation
 
-# JSON schema version — increment on breaking output changes.
-# Major: incompatible field removals/renames.  Minor: additive new fields.
-SCHEMA_VERSION = "1.0"
+# JSON schema version — shared with API responses (ADR-042).
+SCHEMA_VERSION = OUTPUT_SCHEMA_VERSION
 
 
 _ARCHITECTURE_BOUNDARY_SIGNALS = {
@@ -50,7 +58,7 @@ def _finding_dedupe_key(f: Finding) -> tuple[str, str, int, int, str]:
     start_line = int(f.start_line or 0)
     end_line = int(f.end_line or 0)
     title = (f.title or "").strip().lower()
-    rule_id = f.rule_id or f.signal_type.value
+    rule_id = f.rule_id or f.signal_type
     return (rule_id, file_path, start_line, end_line, title)
 
 
@@ -109,26 +117,15 @@ def _expected_benefit_for_finding(f: Finding) -> str:
 
 
 def _fix_first_list(ranked_findings: list[Finding], max_items: int = 10) -> list[dict[str, Any]]:
-    prioritized = sorted(
-        ranked_findings,
-        key=lambda f: (
-            _priority_rank(_priority_class(f)),
-            _SEVERITY_RANK[f.severity],
-            -float(f.impact),
-            -float(f.score_contribution),
-            f.signal_type.value,
-            f.file_path.as_posix() if f.file_path else "",
-            int(f.start_line or 0),
-        ),
-    )
-
     items: list[dict[str, Any]] = []
-    for idx, f in enumerate(prioritized[:max_items], start=1):
+    prioritized = _select_priority_findings_from_list(ranked_findings, max_items=max_items)
+    for idx, f in enumerate(prioritized, start=1):
         items.append(
             {
                 "rank": idx,
+                "finding_id": finding_fingerprint(f),
                 "priority_class": _priority_class(f),
-                "signal": f.signal_type.value,
+                "signal": f.signal_type,
                 "signal_abbrev": signal_abbrev(f.signal_type),
                 "rule_id": f.rule_id,
                 "severity": f.severity.value,
@@ -150,7 +147,7 @@ def _finding_sort_key(f: Finding) -> tuple[float, str, str, int, int]:
     """Stable ordering key for machine-readable finding output."""
     return (
         -float(f.impact),
-        f.signal_type.value,
+        f.signal_type,
         f.file_path.as_posix() if f.file_path else "",
         int(f.start_line or 0),
         int(f.end_line or 0),
@@ -160,7 +157,8 @@ def _finding_sort_key(f: Finding) -> tuple[float, str, str, int, int]:
 def _finding_to_dict(f: Finding, *, impact_rank: int | None = None) -> dict[str, Any]:
     rec = generate_recommendation(f)
     d: dict[str, Any] = {
-        "signal": f.signal_type.value,
+        "finding_id": finding_fingerprint(f),
+        "signal": f.signal_type,
         "signal_abbrev": signal_abbrev(f.signal_type),
         "rule_id": f.rule_id,
         "severity": f.severity.value,
@@ -176,10 +174,30 @@ def _finding_to_dict(f: Finding, *, impact_rank: int | None = None) -> dict[str,
         "end_line": f.end_line,
         "finding_context": classify_finding_context(f, DriftConfig()),
         "symbol": f.symbol,
+        "logical_location": {
+            "fully_qualified_name": f.logical_location.fully_qualified_name,
+            "name": f.logical_location.name,
+            "kind": f.logical_location.kind,
+            "class_name": f.logical_location.class_name,
+            "namespace": f.logical_location.namespace,
+        } if f.logical_location else None,
         "related_files": [rf.as_posix() for rf in f.related_files],
         "ai_attributed": f.ai_attributed,
         "deferred": f.deferred,
+        "status": f.status.value,
+        "status_set_by": f.status_set_by,
+        "status_reason": f.status_reason,
         "metadata": f.metadata,
+        "attribution": {
+            "commit_hash": f.attribution.commit_hash,
+            "author": f.attribution.author,
+            "email": f.attribution.email,
+            "date": f.attribution.date.isoformat(),
+            "branch_hint": f.attribution.branch_hint,
+            "ai_attributed": f.attribution.ai_attributed,
+            "ai_confidence": f.attribution.ai_confidence,
+            "commit_message": f.attribution.commit_message_summary,
+        } if f.attribution else None,
         "remediation": {
             "title": rec.title,
             "description": rec.description,
@@ -195,7 +213,7 @@ def _module_to_dict(m: ModuleScore) -> dict[str, Any]:
         "path": m.path.as_posix(),
         "drift_score": m.drift_score,
         "severity": m.severity.value,
-        "signal_scores": {s.value: v for s, v in m.signal_scores.items()},
+        "signal_scores": {s: v for s, v in m.signal_scores.items()},
         "finding_count": len(m.findings),
         "ai_ratio": m.ai_ratio,
     }
@@ -210,10 +228,12 @@ def _finding_compact_dict(
     """Compact finding shape optimized for agent/CI prioritization."""
     return {
         "rank": rank,
-        "signal": finding.signal_type.value,
+        "finding_id": finding_fingerprint(finding),
+        "signal": finding.signal_type,
         "signal_abbrev": signal_abbrev(finding.signal_type),
         "rule_id": finding.rule_id,
         "severity": finding.severity.value,
+        "status": finding.status.value,
         "finding_context": classify_finding_context(finding, DriftConfig()),
         "impact": finding.impact,
         "score_contribution": finding.score_contribution,
@@ -241,6 +261,8 @@ def analysis_to_json(
     indent: int = 2,
     compact: bool = False,
     drift_score_scope: str | None = None,
+    language: str | None = None,
+    group_by: str | None = None,
 ) -> str:
     """Serialize a RepoAnalysis to JSON string."""
     # Rank findings by impact (descending) for consumer convenience
@@ -248,6 +270,7 @@ def analysis_to_json(
     impact_ranks: dict[int, int] = {id(f): rank for rank, f in enumerate(ranked, 1)}
 
     deduped_findings, duplicate_counts = _dedupe_findings(ranked)
+    suppressed_ranked = sorted(analysis.suppressed_findings, key=_finding_sort_key)
     cfg = DriftConfig()
     prioritized_fix_first, excluded_fix_first, context_counts = split_findings_by_context(
         deduped_findings,
@@ -272,6 +295,8 @@ def analysis_to_json(
         "repo": analysis.repo_path.as_posix(),
         "analyzed_at": analysis.analyzed_at.isoformat(),
         "drift_score": round(analysis.drift_score, 3),
+        "grade": analysis.grade[0],
+        "grade_label": analysis.grade[1],
         "drift_score_scope": drift_score_scope or build_drift_score_scope(context="repo"),
         "severity": analysis.severity.value,
         "analysis_status": _analysis_status_to_dict(analysis),
@@ -290,11 +315,17 @@ def analysis_to_json(
             "ai_tools_detected": analysis.ai_tools_detected,
             "analysis_duration_seconds": analysis.analysis_duration_seconds,
         },
+        "first_run": build_first_run_summary(
+            analysis,
+            max_items=3,
+            language=language,
+        ),
         "findings_compact": compact_findings,
         "compact_summary": {
             "findings_total": len(ranked),
             "findings_deduplicated": len(deduped_findings),
             "duplicate_findings_removed": len(ranked) - len(deduped_findings),
+            "suppressed_total": len(suppressed_ranked),
             "critical_count": sum(1 for f in deduped_findings if f.severity == Severity.CRITICAL),
             "high_count": sum(1 for f in deduped_findings if f.severity == Severity.HIGH),
             "fix_first_count": len(fix_first),
@@ -321,11 +352,27 @@ def analysis_to_json(
         ],
     }
 
+    if group_by:
+        from drift.output.grouping import group_findings
+
+        grouped = group_findings(deduped_findings, group_by)
+        data["grouped_findings"] = {
+            name: [
+                _finding_compact_dict(f, rank=i, duplicate_count=1)
+                for i, f in enumerate(items, 1)
+            ]
+            for name, items in grouped.items()
+        }
+
     if not compact:
         data["modules"] = [_module_to_dict(m) for m in analysis.module_scores]
         data["findings"] = [
             _finding_to_dict(f, impact_rank=impact_ranks.get(id(f)))
             for f in ranked
+        ]
+        data["findings_suppressed"] = [
+            _finding_to_dict(f)
+            for f in suppressed_ranked
         ]
 
     return json.dumps(data, indent=indent, default=str, sort_keys=True)
@@ -338,12 +385,12 @@ def findings_to_sarif(analysis: RepoAnalysis) -> str:
 
     rule_ids: dict[str, int] = {}
     for f in sorted(analysis.findings, key=_finding_sort_key):
-        rule_key = f.rule_id or f.signal_type.value
+        rule_key = f.rule_id or f.signal_type
         if rule_key not in rule_ids:
             rule_ids[rule_key] = len(rules)
             rule_obj: dict[str, object] = {
                 "id": rule_key,
-                "shortDescription": {"text": f.signal_type.value},
+                "shortDescription": {"text": f.signal_type},
                 "defaultConfiguration": {
                     "level": "error"
                     if f.severity in (Severity.CRITICAL, Severity.HIGH)
@@ -389,6 +436,19 @@ def findings_to_sarif(analysis: RepoAnalysis) -> str:
                 location["physicalLocation"]["region"] = {"startLine": 1}
             result["locations"] = [location]
 
+        # SARIF v2.1.0 §3.33: logical locations for AST-based navigation.
+        if f.logical_location:
+            ll: dict[str, Any] = {
+                "name": f.logical_location.name,
+                "kind": f.logical_location.kind,
+                "fullyQualifiedName": f.logical_location.fully_qualified_name,
+            }
+            result["locations"] = result.get("locations", [])
+            if result["locations"]:
+                result["locations"][0]["logicalLocations"] = [ll]
+            else:
+                result["logicalLocations"] = [ll]
+
         # Include all related locations (Opt-2: expose every location in SARIF)
         if f.related_files:
             result["relatedLocations"] = [
@@ -407,9 +467,28 @@ def findings_to_sarif(analysis: RepoAnalysis) -> str:
             result["message"]["text"] = f"{f.title}\n{f.description}\nFIX: {f.fix}"
 
         # ADR-006: context tags as SARIF result properties
+        props: dict[str, Any] = {}
+
+        # ADR-042: stable finding ID for cross-referencing
+        props["drift:findingId"] = finding_fingerprint(f)
+
         ctx_tags = f.metadata.get("context_tags")
         if ctx_tags:
-            result["properties"] = {"drift:context": ctx_tags}
+            props["drift:context"] = ctx_tags
+
+        # ADR-034: attribution provenance in SARIF properties
+        if f.attribution:
+            props["drift:attribution"] = {
+                "commitHash": f.attribution.commit_hash,
+                "author": f.attribution.author,
+                "date": f.attribution.date.isoformat(),
+                "branchHint": f.attribution.branch_hint,
+                "aiAttributed": f.attribution.ai_attributed,
+                "aiConfidence": f.attribution.ai_confidence,
+            }
+
+        if props:
+            result["properties"] = props
 
         results.append(result)
 

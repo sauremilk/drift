@@ -21,8 +21,9 @@ Use this skill for repository-safe commit and push workflows in Drift.
 1. **Do not push autonomously.** A push requires explicit maintainer approval.
 2. **Never commit blocked paths.** Anything under `tagesplanung/` is excluded from pushes.
 3. **Use conventional commits.** Release automation depends on `feat:`, `fix:`, and `BREAKING:` semantics.
-4. **Run validation before commit and again before push when relevant.**
-5. **Do not bypass hooks by default.** Environment-variable bypasses are emergency-only and must be justified.
+4. **Releases are CI-automated.** Do not run manual release flows in normal operation; do not handcraft versioning beyond commit semantics.
+5. **Run validation before commit and again before push when relevant.**
+6. **Do not bypass hooks by default.** Environment-variable bypasses are emergency-only and must be justified.
 
 ## Step 0: Run The Drift Policy Gate
 
@@ -68,11 +69,16 @@ Apply the repository gates before pushing, and usually before committing if they
 - `feat:` commit planned:
   include tests, at least one empirical artifact in `benchmark_results/` or `audit_results/`, a versioned evidence file in `benchmark_results/`, and update `docs/STUDY.md` if it exists.
 - `feat:` or `fix:` commit planned:
-  include a `CHANGELOG.md` update in the same push.
+  satisfy the changelog gate. In normal operation this means including a `CHANGELOG.md` update in the push; emergency bypass requires explicit maintainer approval and reason.
 - `pyproject.toml` changed:
   ensure `uv.lock` is updated too.
 - New public function under `src/drift/`:
   add a docstring in the same diff if it is a lowercase `def` without a leading underscore.
+
+Release-specific note for `src/drift/**` changes:
+
+- Keep commit semantics correct (`feat:`, `fix:`, `BREAKING:`). CI uses python-semantic-release to derive version/tag/release.
+- Do not trigger manual release commands unless CI is unavailable and maintainer explicitly requests fallback execution.
 
 ## Step 4: Run Validation
 
@@ -80,6 +86,14 @@ Minimum expectation before commit:
 
 ```bash
 make test-fast
+```
+
+If smoke confidence is needed locally, use the split profiles instead of always running the full matrix:
+
+```bash
+make smoke-pr
+# optional full matrix
+make smoke-nightly
 ```
 
 Before push, the repository standard is:

@@ -1,0 +1,41 @@
+{
+  "version": "2.8.0",
+  "feature": "ROI estimate CLI command and documentation expansion",
+  "date": "2026-04-10",
+  "adr": "ADR-040",
+  "scope": {
+    "code": [
+      "src/drift/commands/roi_estimate.py",
+      "src/drift/cli.py"
+    ],
+    "tests": [
+      "tests/test_roi_estimate.py"
+    ],
+    "docs": [
+      "docs-site/",
+      "README.md",
+      "docs/STUDY.md"
+    ]
+  },
+  "checks": {
+    "ruff": "pass",
+    "mypy": "pass",
+    "pytest_full": {
+      "passed": 2849,
+      "skipped": 126,
+      "failed": 0
+    },
+    "drift_analyze_exit_zero": true
+  },
+  "roi_estimate_validation": {
+    "unit_and_cli_tests_passed": true,
+    "new_tests": 10,
+    "json_output_supported": true,
+    "rich_output_supported": true
+  },
+  "risk_audit_updated": [
+    "audit_results/fmea_matrix.md",
+    "audit_results/fault_trees.md",
+    "audit_results/risk_register.md"
+  ]
+}

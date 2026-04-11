@@ -189,6 +189,94 @@
         "min_findings": 1
       },
       "rationale": "Guard clause deficit: 3 public functions in processors/ with >=2 params, CC>=5, no guards"
+    },
+    {
+      "id": "nbv_001",
+      "signal": "naming_contract_violation",
+      "class": "injected_positive",
+      "severity_expectation": "medium",
+      "expected_detection": {
+        "must_detect": true,
+        "min_findings": 1
+      },
+      "rationale": "Naming violation: validate_email/validate_age don't raise or return False"
+    },
+    {
+      "id": "nbv_002",
+      "signal": "naming_contract_violation",
+      "class": "injected_positive",
+      "severity_expectation": "medium",
+      "expected_detection": {
+        "must_detect": true,
+        "min_findings": 1
+      },
+      "rationale": "Naming violation: is_premium_user returns str instead of bool"
+    },
+    {
+      "id": "nbv_003",
+      "signal": "naming_contract_violation",
+      "class": "injected_positive",
+      "severity_expectation": "medium",
+      "expected_detection": {
+        "must_detect": true,
+        "min_findings": 1
+      },
+      "rationale": "Naming violation: ensure_database_connection doesn't raise on failure"
+    },
+    {
+      "id": "bat_001",
+      "signal": "bypass_accumulation",
+      "class": "injected_positive",
+      "severity_expectation": "medium",
+      "expected_detection": {
+        "must_detect": true,
+        "min_findings": 1
+      },
+      "rationale": "Bypass accumulation: legacy/compat.py >100 LOC with >5% noqa/type:ignore/pragma density"
+    },
+    {
+      "id": "cod_001",
+      "signal": "cohesion_deficit",
+      "class": "injected_positive",
+      "severity_expectation": "medium",
+      "expected_detection": {
+        "must_detect": true,
+        "min_findings": 1
+      },
+      "rationale": "Cohesion deficit: kitchen_sink.py has 6 unrelated functions (CSV, email, hash, URL, finance, JSON)"
+    },
+    {
+      "id": "ecm_001",
+      "signal": "exception_contract_drift",
+      "class": "injected_positive",
+      "severity_expectation": "medium",
+      "expected_detection": {
+        "must_detect": true,
+        "min_findings": 1
+      },
+      "rationale": "Exception contract drift: payment.py changed from raising ValueError to RuntimeError"
+    },
+    {
+      "id": "ecm_002",
+      "signal": "exception_contract_drift",
+      "class": "injected_positive",
+      "severity_expectation": "medium",
+      "expected_detection": {
+        "must_detect": true,
+        "min_findings": 1
+      },
+      "rationale": "Exception contract drift: auth.py handler changed from specific to bare except"
+    },
+    {
+      "id": "ccc_001",
+      "signal": "co_change_coupling",
+      "class": "injected_positive",
+      "severity_expectation": "medium",
+      "expected_detection": {
+        "must_detect": true,
+        "min_findings": 1
+      },
+      "rationale": "Co-change coupling: config/settings.py and deploy/manifest.py always change together"
     }
   ]
 }

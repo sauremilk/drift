@@ -15,6 +15,12 @@ Guide Copilot agents through a policy-conformant, evidence-based pull request re
 - Evaluating signal quality, scoring changes, or output format changes
 - Checking benchmark evidence for new features
 
+## Strukturierte Review-Checkliste
+
+**Pflicht-Referenz:** Die vollständige Review-Checkliste liegt unter `.github/prompts/_partials/review-checkliste.md`.
+Bei jedem adversarialen Review wird diese Checkliste Punkt für Punkt abgearbeitet.
+Der Reviewer dokumentiert pro Punkt **Ja / Nein / N/A** mit Kurzbegründung.
+
 ## Review Workflow
 
 ### Step 1: Policy Gate

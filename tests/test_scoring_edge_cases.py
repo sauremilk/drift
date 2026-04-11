@@ -249,3 +249,57 @@ def test_signal_scores_missing_signals_have_zero_or_absent():
     for sig in SignalType:
         if sig != SignalType.DOC_IMPL_DRIFT:
             assert scores.get(sig, 0.0) == 0.0
+
+
+# ── Breadth-multiplier cap (ADR-041 P4) ──────────────────────────────────
+
+
+def test_breadth_multiplier_capped_at_maximum():
+    """Impact doesn't grow beyond BREADTH_CAP even with 10 000 related files."""
+    import math
+
+    from drift.scoring.engine import _BREADTH_CAP
+
+    huge_related = [f"mod/file_{i}.py" for i in range(10_000)]
+    f_huge = _finding(
+        SignalType.ARCHITECTURE_VIOLATION, 0.8, related=huge_related,
+    )
+    f_small = _finding(
+        SignalType.ARCHITECTURE_VIOLATION, 0.8, related=["a.py", "b.py"],
+    )
+    weights = SignalWeights()
+    assign_impact_scores([f_huge, f_small], weights)
+
+    # Huge cluster: breadth capped at _BREADTH_CAP
+    w = weights.as_dict().get("architecture_violation", 0.1)
+    expected_capped = round(w * 0.8 * _BREADTH_CAP, 4)
+    assert f_huge.impact == expected_capped
+
+    # Small cluster: breadth < cap, so not capped
+    uncapped_breadth = 1 + math.log(1 + 2)
+    assert uncapped_breadth < _BREADTH_CAP
+    assert f_small.impact == round(w * 0.8 * uncapped_breadth, 4)
+
+
+def test_breadth_cap_value_is_four():
+    """Breadth cap constant matches ADR-041 specification."""
+    from drift.scoring.engine import _BREADTH_CAP
+
+    assert _BREADTH_CAP == 4.0
+
+
+def test_breadth_multiplier_not_capped_for_moderate_clusters():
+    """Findings with ~10 related files stay below cap (no false capping)."""
+    import math
+
+    f = _finding(
+        SignalType.PATTERN_FRAGMENTATION, 0.5,
+        related=[f"mod/{i}.py" for i in range(10)],
+    )
+    weights = SignalWeights()
+    assign_impact_scores([f], weights)
+
+    uncapped_breadth = 1 + math.log(1 + 10)
+    assert uncapped_breadth < 4.0  # should be ~3.4, below cap
+    w = weights.as_dict().get("pattern_fragmentation", 0.1)
+    assert f.impact == round(w * 0.5 * uncapped_breadth, 4)

@@ -97,7 +97,10 @@ ERROR_REGISTRY: dict[str, ErrorInfo] = {
         code="DRIFT-1012",
         summary="Invalid CLI usage",
         why="{reason}",
-        action="Run 'drift --help' or 'drift <command> --help' for usage",
+        action=(
+            "Run 'drift start' for the guided path or "
+            "'drift --help' / 'drift <command> --help' for usage"
+        ),
         category="user",
     ),
     "DRIFT-1020": ErrorInfo(

@@ -1,5 +1,308 @@
 # Risk Register
 
+## 2026-04-10 - Output channel extension: session report + TUI visualize
+
+- Risk ID: RISK-OUTPUT-2026-04-10-SESSION-TUI
+- Component: `src/drift/commands/session_report.py`, `src/drift/output/session_renderer.py`, `src/drift/commands/visualize.py`, `src/drift/output/tui_renderer.py`, `src/drift/cli.py`
+- Type: Output path extension (additive, optional)
+- Description: New CLI output surfaces add session-effectiveness rendering (`drift session-report`) and an optional interactive Textual dashboard (`drift visualize`). The underlying analysis engine is unchanged, but user-facing output paths and rendering logic are expanded.
+- Trigger: Running `drift session-report` with session files or invoking `drift visualize` with the optional `tui` dependency.
+- Impact: Low to Medium. Misrendered or misleading presentation can reduce actionability even when findings remain correct.
+- Mitigation:
+  - `drift visualize` is dependency-gated and exits explicitly when `textual` is unavailable.
+  - Additive output path only; no scoring or finding-generation logic changed.
+  - Dedicated command/output tests added (`tests/test_session_report.py`, `tests/test_visualize.py`, renderer-focused coverage tests).
+  - Golden-snapshot stability hardened for Windows/xdist to reduce CI flakiness in output validation.
+- Residual risk: Low. Primary residual risk is UX-level misinterpretation in new renderers, bounded by dedicated tests and non-invasive integration.
+
+## 2026-04-10 - ADR-043: Shared First-Run Summary Contract
+
+- Risk ID: RISK-OUTPUT-2026-04-10-043
+- Component: `src/drift/finding_rendering.py`, `src/drift/output/json_output.py`, `src/drift/output/rich_output.py`, `src/drift/commands/analyze.py`, `src/drift/commands/status.py`
+- Type: Output contract extension (additive, non-breaking)
+- Description: `drift analyze` and `drift status` now share one deterministic first-run prioritization path. JSON output gains a top-level `first_run` block, Rich output gains a `Start Here` / `Starte hier` panel, and status JSON adds `why_this_matters` plus `next_step`. This improves first-run clarity but creates a risk that command surfaces drift apart again if one path is changed without the shared helper.
+- Trigger: `drift analyze` Rich/JSON output or `drift status --json` after future output-only changes that bypass the shared helper.
+- Impact: Low to Medium. Incorrect or divergent first-step guidance can mis-prioritize remediation work even when the underlying findings remain correct.
+- Mitigation:
+  - Shared helper functions `select_priority_findings()` and `build_first_run_summary()` centralize ranking and summary text.
+  - Additive contract only; existing `fix_first`, findings, and status fields remain intact.
+  - Regression coverage added in `tests/test_guided_mode.py`, `tests/test_json_output.py`, and `tests/test_output_golden.py`.
+  - ADR-043 updated so future output work is expected to preserve the shared contract.
+  - Verification commands:
+    - `pytest tests/test_guided_mode.py tests/test_json_output.py tests/test_output_golden.py -q --maxfail=1`
+    - `drift analyze --repo . --format json --exit-zero`
+- Residual risk: Low. Main residual risk is future maintenance drift between user-facing surfaces, bounded by the shared helper and regression tests.
+
+## 2026-04-10 - ADR-040: PHR Third-Party Import Resolver
+
+- Risk ID: RISK-PHR-IMPORT-RESOLVER-2026-04-10-040
+- Component: `src/drift/signals/phantom_reference.py` (`_check_third_party_imports`, `_is_in_try_except_import_error`, `_collect_type_checking_import_ids`)
+- Type: Signal heuristic extension (new detection capability for third-party imports)
+- Description: PHR now validates third-party `import X` / `from X import Y` statements using `importlib.util.find_spec()`. If the root module is not found in the current Python environment, it is flagged as a phantom import. This extends PHR's recall to cover AI-hallucinated third-party packages. The check is safe (no code execution — only path traversal on sys.path).
+- Severity: Low
+- Likelihood: Low to Medium (environment-dependent FP for packages not installed locally)
+- Mitigation:
+  - Stdlib modules excluded via `sys.stdlib_module_names`
+  - Project-internal modules excluded (already checked by existing import-from logic)
+  - try/except ImportError and ModuleNotFoundError blocks detected and skipped
+  - TYPE_CHECKING blocks detected and skipped via pre-pass
+  - 5 new ground-truth fixtures: 1 TP (missing package), 4 TN (optional dep, stdlib, TYPE_CHECKING, ModuleNotFoundError)
+  - 1 existing fixture updated (flask decorator: added flask stub to fixture project files)
+  - Precision/recall validated: 166/166 fixtures pass (22 PHR-specific)
+  - `find_spec()` is safe: no side effects, no code execution, no imports triggered
+- Residual Risk: FP when package is in CI but not local venv (bounded by metadata hint)
+- Status: Open (bounded)
+
+## 2026-06-14 - ADR-039: Activate MAZ/PHR/HSC/ISD/FOE for Scoring
+
+- Risk ID: RISK-SIGNAL-ACTIVATION-2026-06-14-039
+- Component: `src/drift/config.py` (SignalWeights), `tests/fixtures/ground_truth.py`
+- Type: Signal behavior change (report-only → scoring-active for 5 signals)
+- Description: Five previously report-only signals are promoted to scoring-active with conservative weights: MAZ=0.02, PHR=0.02, HSC=0.01, ISD=0.01, FOE=0.005. This adds +0.065 to the total signal weight budget (~6.5% of composite score). Finding detection logic is unchanged — only the weight (and therefore score impact) changes from 0.0 to non-zero.
+- Severity: Low to Medium
+- Likelihood: Low (all signals were already emitting findings in report-only mode; only score contribution changes)
+- Mitigation:
+  - Conservative weights chosen based on signal maturity and existing precision data
+  - All 5 signals have ground-truth fixture coverage (ISD: 5 new, MAZ: 1 TN, HSC: 6, FOE: 3, PHR: 17)
+  - Precision/recall validated via `test_precision_recall.py` — all fixtures pass
+  - Existing FP-reduction mechanisms (CLI-path fence, drift:ignore-security, barrel-file detection, env-template suppression) remain active
+  - Score comparability: baseline diff via `drift_diff` recommended after activation
+  - Weights are configurable via `drift.yaml` — users can revert individual signals to 0.0
+- Residual risk: Low. Primary residual risk is minor score inflation for repositories that trigger multiple newly-scoring signals simultaneously. Conservative weights and per-signal configurability bound the impact. No detection logic changes means no new FP/FN modes beyond those already documented.
+
+## 2026-06-01 - ADR-042: Schema Evolution and Finding-ID Promotion
+
+- Risk ID: RISK-OUTPUT-2026-06-01-042
+- Component: `src/drift/output/json_output.py`, `src/drift/api_helpers.py`, `src/drift/api/explain.py`, `src/drift/models.py`, `src/drift/mcp_server.py`
+- Type: Output schema version bump (additive, minor) + new output field + explain input extension
+- Description: Schema version unified from split "1.1" (CLI) / "2.0" (API) to "2.1". All output channels (JSON, SARIF, API) gain a `finding_id` field (16-char SHA256 fingerprint). `drift explain` and MCP `drift_explain` now accept finding fingerprints for finding-level drill-down, triggering a full analysis scan.
+- Severity: Low
+- Likelihood: Low (additive changes only; no fields removed or renamed)
+- Mitigation:
+  - Schema version bump follows established minor-version convention (additive fields only)
+  - `finding_id` is deterministic and content-based — no randomness or state dependency
+  - Fingerprint-based explain reuses existing `analyze_repo()` pipeline with same security boundaries
+  - Existing consumers of `schema_version` "1.1" or "2.0" may need test updates but face no runtime breakage (new fields are ignored by lenient parsers)
+  - `drift.output.schema.json` enables machine-verifiable contract validation
+  - Regression tests updated for new schema version
+- Residual risk: Low. Consumers with strict schema validation against "1.1" or "2.0" will reject "2.1" output until updated. This is intentional — the version bump signals the schema change. Fingerprint-based explain has the same performance cost as a normal scan.
+
+## 2026-04-10 - TypeScript signal expansion and parser/output wiring hardening
+
+- Risk ID: RISK-TS-SIGNALS-2026-04-10
+- Component: `src/drift/signals/type_safety_bypass.py`, `src/drift/signals/naming_contract_violation.py`, `src/drift/signals/ts_architecture.py`, `src/drift/ingestion/ts_parser.py`, `src/drift/output/agent_tasks.py`, `src/drift/models.py`
+- Type: New signal + signal behavior change + ingestion/output path adjustments
+- Description: TypeScript analysis coverage was expanded with a dedicated type-safety-bypass detector and additional TS naming/architecture checks. Parser extraction and agent-task output shaping were adjusted to surface the new findings consistently.
+- Severity: Medium
+- Likelihood: Low to Medium
+- Mitigation:
+  - New focused TS fixture suites for export detection, naming consistency, React hooks, and type-safety bypass
+  - Golden cache artifacts updated for deterministic corpus behavior
+  - Pre-commit lint gate enforced and fixed for touched files
+- Residual risk: Medium-Low. Main residual risk is precision drift in heterogeneous TS codebases with mixed naming conventions or intentional casts.
+
+## 2026-04-13 - ADR-036/037/038: AVS/DIA/MDS FP-Reduction
+
+- Risk ID: RISK-SIGNAL-2026-04-13-036-037-038
+- Component: `src/drift/signals/architecture_violation.py`, `src/drift/signals/doc_impl_drift.py`, `src/drift/signals/mutant_duplicates.py`, `src/drift/config.py`
+- Type: Signal behavior change (FP-reduction heuristics) + new config fields
+- Description: Three signals receive precision hardening: AVS moves `models/` to Omnilayer and adds configurable `omnilayer_dirs`; DIA adds configurable `extra_auxiliary_dirs`; MDS adds name-token similarity, protocol-method skip, and thin-wrapper dampening. All changes aim to reduce false positives without degrading recall.
+- Severity: Low to Medium
+- Likelihood: Low (conservative defaults; all changes bounded by narrow heuristics)
+- Mitigation:
+  - AVS: `models` Omnilayer is reversible via config; current default covers >80% of observed repos
+  - DIA: extra_auxiliary_dirs starts empty — no default behavior change
+  - MDS: name component is only 10% weight; protocol set is narrow; thin-wrapper gate is LOC + Call-count
+  - Ground-truth fixtures cover all new behaviors (6 TN fixtures)
+  - Precision/recall baseline validated via `test_precision_recall.py`
+- Residual risk: Low. Primary residual risk is MDS protocol-method FN in rare cases where protocol implementations contain genuinely duplicated non-trivial logic.
+
+## 2026-04-12 - ADR-035: Per-Repository Signal Calibration
+
+- Risk ID: RISK-SIGNAL-2026-04-12-035
+- Component: `src/drift/calibration/`, `src/drift/signals/phantom_reference.py`, `src/drift/task_spec.py`, `src/drift/commands/calibrate.py`, `src/drift/commands/feedback.py`
+- Type: Signal behavior adaptation (repo-scoped calibration) + new local input path (`data/negative-patterns/`)
+- Description: Drift now applies repository-scoped precision hardening for selected signal patterns (initially PHR) using persisted calibration snapshots derived from user feedback and benchmark traces.
+- Severity: Medium
+- Likelihood: Low to Medium (calibration is bounded and confidence-weighted, but mis-calibration can suppress valid findings)
+- Mitigation:
+  - Calibration operates per repository fingerprint, not globally
+  - Conservative default when calibration data is missing or stale
+  - Signal-level guardrails cap score dampening and prevent full suppression from a single sample
+  - Tests cover calibration loading, persistence, and PHR behavior under calibrated/un-calibrated paths
+  - Audit/benchmark artifacts are updated alongside calibration changes (`docs/STUDY.md`, evidence JSON)
+- Residual risk: Medium-Low. Main residual risk is repository-local false negatives if repeated incorrect feedback is provided; bounded dampening and fallback defaults reduce blast radius.
+
+## 2026-04-12 - ADR-034: Causal Attribution via Git Blame
+
+- Risk ID: RISK-INGESTION-2026-04-12-034
+- Component: `src/drift/ingestion/git_blame.py`, `src/drift/attribution.py`, `src/drift/pipeline.py`
+- Type: New subprocess input path (git blame) + additive output field (Finding.attribution)
+- Description: Opt-in enrichment that invokes `git blame --porcelain` per analyzed file to attribute findings to commits, authors, and branches. Subprocess execution introduces a new trust boundary (drift ↔ git CLI). Author data from git history is surfaced in JSON/SARIF/Rich output.
+- Severity: Low
+- Likelihood: Low (opt-in, disabled by default; subprocess uses same git binary as existing git_history.py)
+- Mitigation:
+  - Feature disabled by default (`attribution.enabled: false`)
+  - Per-file timeout (3s) prevents blame on slow/large files from blocking analysis
+  - ThreadPoolExecutor capped at 4 workers; in-memory LRU cache (500 entries)
+  - No `shell=True` in subprocess calls; arguments are explicit
+  - File paths sourced from existing ingestion pipeline (already validated)
+  - Branch hint extraction via deterministic regex on merge commit messages only
+- Residual risk: Low. Author/email data in blame output could be spoofed in git history (inherent git limitation, not a drift-specific risk). Performance on very large repos with thousands of files may require increasing timeout or disabling attribution.
+
+## 2026-04-09 - ADR-029: Preflight-Diagnose und Markdown-Report-Export
+
+- Risk ID: RISK-OUTPUT-2026-04-09-029
+- Component: `src/drift/preflight.py`, `src/drift/output/markdown_report.py`, `src/drift/finding_rendering.py`
+- Type: Neuer Output-Pfad (additiv, non-breaking)
+- Description: Die Analyseausgabe wird um einen strukturierten Preflight-Diagnosepfad und einen Markdown-Report erweitert. Ziel ist bessere Handlungsfaehigkeit fuer Review- und Agent-Workflows ohne Aenderung bestehender JSON-Schemas.
+- Trigger: Aufrufe, die den neuen Markdown-/Preflight-Ausgabepfad aktivieren.
+- Impact: Niedrig bis mittel. Falsche oder missverstaendliche Zusammenfassungen koennen die Priorisierung von Folgemaassnahmen beeinflussen, ohne den zugrunde liegenden Finding-Datensatz zu veraendern.
+- Mitigation:
+  - Additiver Kanal; bestehende JSON- und CLI-Standardausgaben bleiben erhalten
+  - Deterministische Ableitung aus vorhandenen Findings und Metadaten
+  - Testabdeckung fuer Rendering, Tool-Metadaten und semantische Advisory-Regeln
+- Residual risk: Niedrig. Hauptrestrisiko liegt in Darstellungsinterpretation, nicht in der Kernanalyse oder Score-Berechnung.
+
+## 2026-04-08 - ADR-027: Finding-Status fuer Suppression-Transparenz
+
+- Risk ID: RISK-OUTPUT-2026-04-08-027
+- Component: `src/drift/models.py`, `src/drift/suppression.py`, `src/drift/pipeline.py`, `src/drift/output/json_output.py`
+- Type: Output schema extension + lifecycle transparency (additive, non-breaking)
+- Description: Inline-Suppressions werden nicht mehr nur gezaehlt, sondern als expliziter Finding-Status (`suppressed`) modelliert und separat im JSON ausgegeben (`findings_suppressed`). Ziel ist die Trennung von real behobenen und nur unterdrueckten Findings.
+- Trigger: `drift analyze`/`drift check` JSON-Ausgabe bei vorhandenen `drift:ignore` Kommentaren.
+- Impact: Additiv. Bestehende `findings`-Consumer bleiben funktionsfaehig; neue Felder verbessern Audierbarkeit und reduzieren False-Negative-Wahrnehmung.
+- Mitigation:
+  - Statusfelder sind optional und additive (`schema_version` 1.1)
+  - Primarliste `findings` bleibt unveraendert fuer Rueckwaertskompatibilitaet
+  - Regressionstests fuer Suppression-Markierung und JSON-Serialisierung
+- Residual risk: Niedrig. Consumer, die strikt auf exakte Payload-Groesse optimieren, sehen mehr Felder und sollten ggf. kompaktes Format verwenden.
+
+## 2026-04-08 - ADR-026: A2A Agent Card and HTTP Serve Endpoint
+
+- Risk ID: RISK-SERVE-2026-04-08-026a
+- Component: `src/drift/serve/app.py`, `src/drift/serve/a2a_router.py`
+- Type: New HTTP input/output path (network-accessible trust boundary)
+- Description: `drift serve` exposes analysis capabilities over HTTP without authentication. Any client that can reach the bind address can invoke analysis on any local directory the OS user has read access to.
+- Severity: Medium
+- Likelihood: Low (default localhost-only; network exposure requires explicit `--host 0.0.0.0`)
+- Mitigation:
+  - Default bind to `127.0.0.1` — not reachable from network without explicit opt-in
+  - Documentation warns about production exposure requiring reverse proxy with auth
+  - No sensitive credentials stored or processed by the serve endpoint
+- Residual risk: Low. Localhost-only default limits attack surface to local processes. Users deploying on `0.0.0.0` accept responsibility for network-level access control.
+
+- Risk ID: RISK-SERVE-2026-04-08-026b
+- Component: `src/drift/serve/a2a_router.py`
+- Type: Input validation (path traversal prevention)
+- Description: A2A JSON-RPC requests include a `path` parameter specifying which repository to analyze. Insufficient validation could allow path traversal to analyze or probe arbitrary filesystem directories.
+- Severity: Medium
+- Likelihood: Low (requires network access to the serve endpoint)
+- Mitigation:
+  - `_validate_repo_path()` normalizes via `os.path.realpath(os.path.normpath(path))`
+  - Validates `os.path.isdir()` — rejects non-existent and non-directory paths
+  - Resolved path is used for all downstream API calls (no raw user input forwarded)
+  - ValueError raised with descriptive message on invalid paths
+- Residual risk: Low. Validation prevents traversal; attacker can only analyze directories the OS user can read (same as running `drift` directly). Combined with localhost-only default, risk is very low.
+
+## 2026-04-08 - Ingestion dedup + signal factory active_signals pass-through + git history cache
+
+- Risk ID: RISK-INGESTION-2026-04-08-DEDUP
+- Component: `src/drift/ingestion/file_discovery.py`, `src/drift/signals/base.py`, `src/drift/pipeline.py`
+- Type: Ingestion correctness fix + signal factory optimization + performance cache
+- Description: Three related changes applied together:
+  1. **`file_discovery.py` (ingestion):** `include` patterns are now deduped via `dict.fromkeys` before glob iteration. Previously a file matching multiple patterns could be discovered and appended multiple times, producing duplicate `FileInfo` entries and inflated finding counts. Lazy `glob()` iterator replaces `list(glob())` to avoid materializing all matches at once; `relative_to()` result reused instead of called twice.
+  2. **`signals/base.py` (signals):** `create_signals()` gains an `active_signals: set[str] | None` parameter so callers can pre-filter signals before instantiation. A `_SIGNAL_TYPE_VALUE_CACHE` avoids repeated probe-instantiation for the signal-type lookup on cached code paths.
+  3. **`pipeline.py`:** `fetch_git_history()` adds a short-lived in-process LRU cache (TTL 120 s, max 16 entries, keyed by HEAD SHA + parameters) to avoid redundant `git log` parsing across rapid consecutive scans. `SignalPhase` passes `active_signals` to the factory directly with a backward-compatible fallback for custom `signal_factory` implementations.
+- FP risk: Low. Dedup prevents double-processing; if a legitimate file happened to be discovered twice it was already a pre-existing FP source, not a TP. Active-signals pre-filtering uses same `signal_type.value` values that were already filtered downstream.
+- FN risk: Low. Dedup cannot suppress files that match at least one pattern once. The cache is keyed on HEAD SHA + all analysis parameters; any repo or config change invalidates the cache entry.
+- Mitigation:
+  - New tests in `tests/test_pipeline_components.py` cover cache hit/miss and HEAD-change invalidation.
+  - Full test suite passes; ruff + mypy clean.
+- Residual risk: Very low. Cache is process-local and bounded; no persistent state. Dedup is idempotent. Backward-compat fallback ensures custom signal factories continue to work.
+
+## 2026-04-11 - ADR-024: Machine-Readable Next-Step Contracts
+
+- Risk ID: RISK-OUTPUT-2026-04-11-024
+- Component: `src/drift/api.py`, `src/drift/api_helpers.py`, `src/drift/mcp_server.py`
+- Type: Output schema extension (additive, non-breaking)
+- Description: ADR-024 introduces machine-readable next-step contracts to reduce agent hallucinations in tool-call chains. Three fields added to every agent-oriented API response:
+  - `next_tool_call`: `{tool: str, params: dict}` — primary recommended action. Null when no action needed.
+  - `fallback_tool_call`: `{tool: str, params: dict}` — alternative if primary fails. Null when not applicable.
+  - `done_when`: Predicate string describing the termination condition for the current workflow step.
+  - MCP session enrichment injects `session_id` into contract params via `setdefault`.
+  - `_error_response` gains optional `recovery_tool_call` for recoverable errors.
+- Trigger: All API calls returning agent-oriented responses (scan detailed, diff, fix_plan, nudge, brief, negative_context), plus MCP session_start.
+- Impact: Additive only — `schema_version` remains "2.0". Existing `agent_instruction` and `recommended_next_actions` fields preserved. No scoring, signal, or ingestion logic affected. Backward-compatible: consumers ignoring new fields are unaffected.
+- Mitigation:
+  - 9 new tests in `TestNextStepContract` class (tests/test_scan_diversity.py)
+  - Contract shape validator `_assert_contract_shape()` enforces structural invariants
+  - Full test suite passes (2147 passed); ruff + mypy clean
+  - `done_when` is advisory text, not code — no injection or execution risk
+  - `_tool_call()` helper centralizes descriptor construction
+  - 8 `DONE_*` constants ensure predicate consistency across endpoints
+- Residual risk: Very low. All contract content is deterministic, derived from existing response state. Agents may ignore contracts — no enforcement, no side effects if misinterpreted.
+
+## 2026-04-08 - ADR-023: Canonical Examples in Agent-Output (fix_plan + brief)
+
+- Risk ID: RISK-OUTPUT-2026-04-08-023
+- Component: `src/drift/guardrails.py`, `src/drift/api_helpers.py`
+- Type: Output schema extension (additive, non-breaking)
+- Description: ADR-023 surfaces existing positive-reference data through two new additive fields:
+  - `Guardrail.preferred_pattern`: Carries `NegativeContext.canonical_alternative` through to brief guardrails and prompt block (previously lost during NC→Guardrail transformation).
+  - `canonical_refs` list in fix_plan task dicts: Extracts `canonical_exemplar` from Finding metadata (e.g. PFS file:line refs) and `canonical_alternative` from NegativeContext items. Capped at 3 refs per task.
+  - `guardrails_to_prompt_block()`: Emits optional `PREFERRED:` line after each constraint when preferred_pattern is non-empty.
+- Trigger: `brief()` and `fix_plan()` API calls; MCP `drift_brief` and `drift_fix_plan` tools (JSON passthrough).
+- Impact: Additive only — `schema_version` remains "2.0". No existing fields changed. Empty defaults (`""` / `[]`) when source data unavailable. No scoring, signal, or ingestion logic affected.
+- Mitigation:
+  - 4 new tests in `tests/test_brief.py` (28 total in class)
+  - 4 new tests in `tests/test_batch_metadata.py` (56 total)
+  - Full test suite passes; ruff + mypy clean
+  - canonical_refs capped at 3 per task (token budget)
+  - preferred_pattern truncated to 200 chars (injection prevention)
+- Residual risk: Very low. All new data is derived from existing analysis artifacts. Comment-prefix stripping is deterministic and bounded. No new computation paths or external data sources.
+
+## 2026-04-09 - ADR-021: Batch-Dominant Fix-Loop Orchestration (Agent Instruction Alignment)
+
+- Risk ID: RISK-OUTPUT-2026-04-09-021
+- Component: `src/drift/api.py`, `src/drift/mcp_server.py`
+- Type: Agent instruction text change (output channel, non-breaking)
+- Description: ADR-021 resolves contradictory `agent_instruction` texts that caused agents to fall back to per-file verification even when batch capabilities (ADR-020) exist. Changes:
+  - `_scan_agent_instruction()`: Threshold-based branching (>20 findings → batch-first guidance with max_tasks=20, ≤20 → nudge-based per-fix workflow)
+  - `_fix_plan_agent_instruction()`: Non-batch path recommends nudge (not diff) for inner loop; batch path adds nudge guidance between edits
+  - Diff `_agent_hint`: "improved" and "no change" cases now reference batch_eligible groups and nudge
+  - Nudge `agent_instruction`: References new inner-loop/outer-loop model (nudge = inner, diff = outer)
+  - MCP `_BASE_INSTRUCTIONS`: Removed "do not batch" from nudge tool description; added explicit FEEDBACK LOOP ROLES section; batch step 2 now mentions nudge between edits
+- Trigger: All API endpoints that return `agent_instruction` fields
+- Impact: Only plaintext `agent_instruction` strings changed — `schema_version` remains "2.0". No structural, scoring, or field-level changes.
+- Mitigation:
+  - 5 new tests in `tests/test_batch_metadata.py` (24 total)
+  - Full test suite passes (2083 passed, 168 skipped)
+  - ruff + mypy clean
+  - Contradictions verified eliminated via grep (zero matches for "do not batch" in MCP, zero matches for "After each file change.*drift_diff" in api.py)
+- Residual risk: Very low. Agent instruction texts are non-binding recommendations that guide but do not constrain agent behavior. No scoring, schema, or functional logic changed.
+
+## 2026-04-08 - Agent Repair Workflow Quick Wins (V-3a/V-5/V-6/V-8a/V-13)
+
+- Risk ID: RISK-OUTPUT-2026-04-08-021
+- Component: `src/drift/api.py`, `src/drift/output/agent_tasks.py`, `src/drift/api_helpers.py`, `src/drift/models.py`, `src/drift/mcp_server.py`
+- Type: Output schema extension + MCP tool parameter addition (additive, non-breaking)
+- Description: Six Quick Win improvements for agent repair workflow effectiveness:
+  - V-3c: Baseline-warming step added to Fix-Loop Protocol in MCP system prompt
+  - V-5: `finding_count_by_signal` dict added to scan response (Counter over ALL findings pre-truncation)
+  - V-6: `expected_score_delta` field added to AgentTask model, populated from `finding.score_contribution`, exposed in `_task_to_api_dict()`
+  - V-8a: Negative context `max_items` increased from 3 to 5 for richer anti-pattern guidance
+  - V-3a: `signals`/`exclude_signals` params added to `nudge()` and MCP `drift_nudge` — post-hoc result filtering (score unaffected)
+  - V-13: `dependency_depth` metadata via BFS in `_compute_dependencies()` — depth 0 = no deps, depth N = max(dep depths)+1, -1 = cycle
+- Trigger: scan, fix_plan, or nudge API calls
+- Impact: Schema additive only — `schema_version` remains "2.0". No existing fields removed or renamed.
+- Mitigation:
+  - All new fields are optional/additive (backward-compatible)
+  - 7 new tests added to `tests/test_batch_metadata.py` (19 total)
+  - Full test suite passes (2085 passed, 168 skipped)
+  - ruff + mypy clean
+- Residual risk: Low. Nudge signal filtering is display-only — score/direction always reflect full analysis.
+
 ## 2026-04-07 - ADR-020: Agent Fix-Loop Batch Metadata (Output Schema Extension)
 
 - Risk ID: RISK-OUTPUT-2026-04-07-020
@@ -761,3 +1064,52 @@
 - Mitigation: Context-aware extraction with structural-keyword window and backtick-preserved refs.
 - Verification: tests/test_dia_enhanced.py (new regression cases) + quick no-smoke suite pass.
 - Residual risk: Low; uncommon prose phrasing without structural terms may still be filtered.
+
+## 2026-04-09 - PHR Signal: Phantom Reference (ADR-033)
+
+- Risk ID: RISK-PHR-2026-04-09-033
+- Component: src/drift/signals/phantom_reference.py
+- Type: New signal (report-only, weight 0.0)
+- Description: PHR detects unresolvable function/class references in Python files — names used in call expressions that cannot be resolved against local definitions, imports, builtins, or the project-wide symbol table. Primary use case: detecting AI-hallucinated function references.
+- FP mitigations:
+  - Star-import files conservatively skipped (complete exclusion)
+  - Module-level `__getattr__` files conservatively skipped
+  - `_FRAMEWORK_GLOBALS` allowlist for common framework-injected names
+  - Import-resolved names added to available set (root-name resolution)
+  - Private names (`_prefix`) and dunder names excluded from flagging
+  - TYPE_CHECKING blocks excluded from name collection
+- FN acceptance:
+  - `exec()`/`eval()` introduced names: static analysis limitation
+  - `getattr(obj, "name")`: dynamic access invisible to AST
+  - Decorator-only references: partially covered via _ScopeCollector
+- Verification: 22 targeted tests (test_phantom_reference.py) + 6 ground-truth fixtures (2 TP, 4 TN/confounder) all passing. P=1.00 R=1.00 on fixture suite.
+- Residual risk: Medium; report-only status (weight 0.0) prevents false positives from affecting composite scores. Real-world precision validation pending on external repos.
+
+## 2026-04-10 - AST Logical Location Enrichment (ADR-039)
+
+- Risk ID: RISK-LL-2026-04-10-039
+- Component: src/drift/logical_location.py, src/drift/models.py, src/drift/pipeline.py, src/drift/output/json_output.py, src/drift/output/agent_tasks.py, src/drift/api_helpers.py
+- Type: Output schema extension (additive field on Finding model)
+- Description: Findings are enriched with AST-based logical locations (class, method, function, module) from existing ParseResult data. New `logical_location` object in JSON, `logicalLocations` in SARIF, and `logical_location` dict in AgentTask/API responses.
+- Trigger examples: All findings emitted by any signal; enrichment is post-processing in ScoringPhase.
+- Impact: Downstream consumers that strictly validate JSON schema may encounter unexpected new field. SARIF consumers gain richer location data.
+- Mitigation: Field is optional (`None` when no match); existing fields unchanged; backward-compatible. Symbol backfill only when `Finding.symbol` was previously empty.
+- Verification: tests/test_logical_location.py (22 tests), tests/test_precision_recall.py (no regression), full `make check`.
+- Residual risk: Low; purely additive output with no signal logic changes.
+
+## 2026-04-10 - Scoring Promotion: HSC, FOE, PHR (ADR-040)
+
+- Risk ID: RISK-SCORE-2026-04-10-040
+- Component: src/drift/config.py (SignalWeights), src/drift/signal_mapping.py
+- Type: Scoring change (weight activation for 3 previously report-only signals)
+- Description: HSC (hardcoded secrets), FOE (fan-out explosion), and PHR (phantom references) are promoted from report-only (weight 0.0) to scoring-active (HSC 0.02, FOE 0.01, PHR 0.02). This means findings from these signals now contribute to the composite drift score, affect module-level severity, and can trigger safe_to_commit blocking in agent loops.
+- Trigger examples: Any codebase with hardcoded secrets (HSC), files with >15 imports (FOE), or unresolvable function references (PHR) will now see score impact.
+- Impact: Composite scores may increase for affected modules. Agent loops (drift_nudge) will block commits when new HIGH-severity PHR/HSC findings appear.
+- Mitigation:
+  - Conservative weights (0.01–0.02) limit maximum score contribution per signal.
+  - All three signals retain their existing FP-reduction heuristics.
+  - 11 new ground-truth fixtures added (4 HSC, 3 FOE, 2 PHR supplement, 2 existing PHR TP).
+  - Precision/recall validation on full fixture suite before merge.
+  - PHR abbreviation mapping fix ensures drift_nudge/diff correctly reference PHR findings.
+- Verification: `pytest tests/test_precision_recall.py -v` (all signals P=1.00 R=1.00), `make check` (full CI suite).
+- Residual risk: Medium; real-world FP rates for scoring-active HSC/FOE/PHR not yet validated on external repos. Weight can be reverted to 0.0 without code changes if FP rate is unacceptable.

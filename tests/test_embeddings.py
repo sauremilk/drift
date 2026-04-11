@@ -128,3 +128,50 @@ class TestEmbeddingServiceWithModel:
         sim_ac = svc.cosine_similarity(a, c)
         # Payment-related texts should be more similar to each other
         assert sim_ab > sim_ac
+
+
+# ---------------------------------------------------------------------------
+# AP2: Model-/version-scoped cache tests
+# ---------------------------------------------------------------------------
+
+
+class TestEmbeddingCacheVersioning:
+    def test_cache_dir_contains_model_and_version(self, tmp_path):
+        from drift.embeddings import _CACHE_VERSION, EmbeddingCache
+
+        cache = EmbeddingCache(tmp_path, model_name="all-MiniLM-L6-v2")
+        assert cache._dir is not None
+        parts = cache._dir.parts
+        assert "all-MiniLM-L6-v2" in parts
+        assert f"v{_CACHE_VERSION}" in parts
+
+    def test_different_models_use_different_dirs(self, tmp_path):
+        from drift.embeddings import EmbeddingCache
+
+        c1 = EmbeddingCache(tmp_path, model_name="model-a")
+        c2 = EmbeddingCache(tmp_path, model_name="model-b")
+        assert c1._dir != c2._dir
+
+    def test_slash_in_model_name_normalised(self, tmp_path):
+        from drift.embeddings import EmbeddingCache
+
+        cache = EmbeddingCache(tmp_path, model_name="org/model-v1")
+        assert cache._dir is not None
+        # no literal "/" in the leaf directory names
+        for part in cache._dir.parts:
+            assert "org/model" not in part
+
+    def test_model_switch_no_cross_read(self, tmp_path):
+        """Vectors stored under model-a are not returned for model-b."""
+        from drift.embeddings import EmbeddingCache
+
+        c1 = EmbeddingCache(tmp_path, model_name="model-a")
+        fake_vec = np.array([1.0, 2.0, 3.0], dtype=np.float32)
+        # Write directly to bypass the _EMBEDDINGS_AVAILABLE guard
+        assert c1._dir is not None
+        key = c1._key("hello")
+        (c1._dir / f"{key}.bin").write_bytes(fake_vec.tobytes())
+
+        c2 = EmbeddingCache(tmp_path, model_name="model-b")
+        assert c2._dir is not None
+        assert not (c2._dir / f"{key}.bin").exists()  # different model → no file

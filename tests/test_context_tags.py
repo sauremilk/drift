@@ -305,7 +305,8 @@ class TestSarifContextTags:
         )
         sarif = json.loads(findings_to_sarif(analysis))
         result = sarif["runs"][0]["results"][0]
-        assert "properties" not in result
+        # drift:findingId is always present; only context tags should be absent
+        assert "drift:context" not in result.get("properties", {})
 
 
 # ---------------------------------------------------------------------------

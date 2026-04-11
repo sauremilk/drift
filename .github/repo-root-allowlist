@@ -12,12 +12,14 @@
 .markdownlint-cli2.jsonc
 .secrets.baseline
 .detect-secrets.cfg
+.drift-baseline.json
 .shellcheckrc
 .vscode
 CHANGELOG.md
 CITATION.cff
 CODE_OF_CONDUCT.md
 conda.recipe
+data
 .dockerignore
 Dockerfile
 CONTRIBUTING.md
@@ -38,7 +40,10 @@ demos
 docs
 docs-site
 drift.example.yaml
+drift.output.schema.json
 drift.schema.json
+drift-guided-mode-prd-v2.md
+drift.yaml
 examples
 Formula
 hooks

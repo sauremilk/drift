@@ -17,6 +17,7 @@ from drift.signals.guard_clause_deficit import GuardClauseDeficitSignal
 from drift.signals.mutant_duplicates import MutantDuplicateSignal
 from drift.signals.naming_contract_violation import NamingContractViolationSignal
 from drift.signals.pattern_fragmentation import PatternFragmentationSignal
+from drift.signals.phantom_reference import PhantomReferenceSignal
 from drift.signals.system_misalignment import SystemMisalignmentSignal
 from drift.signals.temporal_volatility import TemporalVolatilitySignal
 from drift.signals.test_polarity_deficit import TestPolarityDeficitSignal
@@ -44,4 +45,5 @@ __all__ = [
     "FanOutExplosionSignal",
     "CircularImportSignal",
     "DeadCodeAccumulationSignal",
+    "PhantomReferenceSignal",
 ]

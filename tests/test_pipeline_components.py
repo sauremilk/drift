@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import datetime
 import importlib
 from pathlib import Path
 
@@ -9,6 +10,8 @@ from drift.cache import ParseCache
 from drift.config import DriftConfig
 from drift.models import (
     ClassInfo,
+    CommitInfo,
+    FileHistory,
     FileInfo,
     Finding,
     FunctionInfo,
@@ -157,6 +160,84 @@ def test_ingestion_phase_remaps_all_cached_file_references(tmp_path: Path) -> No
     assert all(method.file_path == Path("new.py") for cls in pr.classes for method in cls.methods)
     assert all(imp.source_file == Path("new.py") for imp in pr.imports)
     assert all(pattern.file_path == Path("new.py") for pattern in pr.patterns)
+
+
+def test_fetch_git_history_uses_cache_for_same_head(monkeypatch) -> None:
+    import drift.pipeline as pipeline
+
+    pipeline._GIT_HISTORY_CACHE.clear()
+
+    calls = {"parse": 0, "build": 0}
+    now = datetime.datetime.now(datetime.UTC)
+    fake_commits = [
+        CommitInfo(
+            hash="abc123",
+            author="bot",
+            email="bot@example.com",
+            timestamp=now,
+            message="test",
+            files_changed=["a.py"],
+        )
+    ]
+
+    def _fake_parse(*_args, **_kwargs):
+        calls["parse"] += 1
+        return list(fake_commits)
+
+    def _fake_build(commits, *, known_files):
+        calls["build"] += 1
+        return {k: FileHistory(path=Path(k), total_commits=len(commits)) for k in known_files}
+
+    monkeypatch.setattr(pipeline, "parse_git_history", _fake_parse)
+    monkeypatch.setattr(pipeline, "build_file_histories", _fake_build)
+    monkeypatch.setattr(pipeline, "_current_git_head", lambda _p: "HEAD1")
+
+    known = {"a.py", "b.py"}
+    commits_1, histories_1 = pipeline.fetch_git_history(Path("."), 30, known)
+    commits_2, histories_2 = pipeline.fetch_git_history(Path("."), 30, known)
+
+    assert calls["parse"] == 1
+    assert calls["build"] == 1
+    assert commits_1 == commits_2
+    assert histories_1 == histories_2
+
+
+def test_fetch_git_history_cache_invalidates_on_head_change(monkeypatch) -> None:
+    import drift.pipeline as pipeline
+
+    pipeline._GIT_HISTORY_CACHE.clear()
+
+    calls = {"parse": 0}
+    now = datetime.datetime.now(datetime.UTC)
+
+    def _fake_parse(*_args, **_kwargs):
+        calls["parse"] += 1
+        return [
+            CommitInfo(
+                hash=f"h{calls['parse']}",
+                author="bot",
+                email="bot@example.com",
+                timestamp=now,
+                message="test",
+                files_changed=["a.py"],
+            )
+        ]
+
+    def _fake_build(commits, *, known_files):
+        return {k: FileHistory(path=Path(k), total_commits=len(commits)) for k in known_files}
+
+    heads = iter(["HEAD1", "HEAD2"])
+
+    monkeypatch.setattr(pipeline, "parse_git_history", _fake_parse)
+    monkeypatch.setattr(pipeline, "build_file_histories", _fake_build)
+    monkeypatch.setattr(pipeline, "_current_git_head", lambda _p: next(heads))
+
+    known = {"a.py"}
+    commits_1, _ = pipeline.fetch_git_history(Path("."), 30, known)
+    commits_2, _ = pipeline.fetch_git_history(Path("."), 30, known)
+
+    assert calls["parse"] == 2
+    assert commits_1[0].hash != commits_2[0].hash
 
 
 def test_signal_phase_records_degradation_on_signal_failure(tmp_path: Path) -> None:

@@ -141,6 +141,154 @@ Trade-off: this reduces remediation noise in mixed repositories, but teams with
 generated-code ownership should opt in to include non-operational contexts in
 prioritization for those workflows.
 
+## Calibration (Learning Model)
+
+Drift includes a Bayesian learning model that adjusts signal weights based on your feedback. See the [Feedback & Calibration Guide](../guides/feedback-calibration.md) for the full workflow.
+
+```yaml
+calibration:
+  enabled: true
+  min_samples: 20              # Min TP+FP per signal for full confidence
+  correlation_window_days: 30  # Days to look for defect-fix commits
+  decay_days: 90               # Profile considered stale after this
+  weak_fp_window_days: 60      # No defect-fix → counts as weak FP
+  fn_boost_factor: 0.1         # Boost weight for high-FN signals (0.0–1.0)
+  auto_recalibrate: false      # Auto-calibrate after each analyze run
+  github_token: null            # Or set DRIFT_GITHUB_TOKEN env var
+  bug_labels:
+    - bug
+    - regression
+    - defect
+  feedback_path: ".drift/feedback.jsonl"
+  history_dir: ".drift/history"
+  max_snapshots: 20
+  threshold_adaptation_enabled: false  # Experimental
+```
+
+| Field | Default | Description |
+|-------|---------|-------------|
+| `enabled` | `false` | Master switch |
+| `min_samples` | `20` | Min observations per signal for full calibration confidence |
+| `correlation_window_days` | `30` | Days after scan to look for defect-fix commits (TP evidence) |
+| `decay_days` | `90` | Stale profile threshold |
+| `weak_fp_window_days` | `60` | No defect-fix in this window → weak FP evidence |
+| `fn_boost_factor` | `0.1` | Weight boost for high-FN signals (max 1.0, 0.0 disables) |
+| `auto_recalibrate` | `false` | Recompute weights on every `drift analyze` |
+| `github_token` | `null` | GitHub token for issue/PR correlation |
+| `bug_labels` | `["bug", "regression", "defect"]` | Issue labels for defect correlation |
+| `feedback_path` | `".drift/feedback.jsonl"` | JSONL file for TP/FP/FN verdicts |
+| `history_dir` | `".drift/history"` | Directory for scan history snapshots |
+| `max_snapshots` | `20` | Max retained snapshots before pruning |
+| `threshold_adaptation_enabled` | `false` | Experimental adaptive thresholds |
+
+## Attribution (Git Blame)
+
+Enrich findings with git-blame provenance — shows which commit introduced the drifting code.
+
+```yaml
+attribution:
+  enabled: true
+  cache_enabled: true
+  timeout_per_file_seconds: 3.0
+  max_parallel_workers: 4
+  include_branch_hint: true
+```
+
+When enabled, each finding gains `attribution: {commit_hash, author, email, date, branch_hint}`. Blame results are cached in `.drift-cache/blame_cache.db`.
+
+## Plugins
+
+Selectively disable plugins discovered via Python entry points.
+
+```yaml
+plugins:
+  disabled:
+    - my-noisy-plugin
+    - experimental-signal
+```
+
+Plugin names must match entry-point names exactly. Invalid names are silently ignored.
+
+## Agent Objective
+
+Declare the agent's current task so drift provides targeted feedback and tracks effectiveness.
+
+```yaml
+agent:
+  goal: "Migrate payment module to Stripe API"
+  strict_guardrails: false
+  out_of_scope:
+    - "legacy/"
+    - "tests/fixtures/"
+  success_criteria:
+    - "No new AVS findings in src/billing/"
+    - "All PFS findings resolved"
+  effectiveness_thresholds:
+    low_effect_resolved_per_changed_file: 0.25
+    low_effect_resolved_per_100_loc_changed: 0.5
+    high_churn_min_changed_files: 5
+    high_churn_min_loc_changed: 200
+```
+
+| Field | Default | Description |
+|-------|---------|-------------|
+| `goal` | `""` | Natural-language task description |
+| `strict_guardrails` | `false` | Enforce MCP tool ordering (brief→scan→fix-plan→nudge→diff) |
+| `out_of_scope` | `[]` | Paths the agent should not touch |
+| `success_criteria` | `[]` | Human-readable completion conditions |
+| `effectiveness_thresholds` | (see above) | Deterministic low-effect/high-churn warning thresholds |
+
+## Path Overrides
+
+Per-path weight overrides, signal exclusions, and severity gates.
+
+```yaml
+path_overrides:
+  "tests/**":
+    weights:
+      pattern_fragmentation: 0.0
+      architecture_violation: 0.05
+    exclude_signals:
+      - temporal_volatility
+  "legacy/**":
+    severity_gate: "critical"
+    weights:
+      pattern_fragmentation: 0.05
+      architecture_violation: 0.05
+```
+
+Most specific (longest) glob match wins. `exclude_signals` takes precedence over `weights` for the same signal.
+
+## Deferred Areas
+
+Mark known technical debt — analyzed but tagged as `deferred=true` (unlike `exclude`, which skips analysis entirely).
+
+```yaml
+deferred:
+  - pattern: "legacy/**"
+    reason: "Scheduled Q3 rewrite"
+    review_by: "2026-09-01"
+  - pattern: "vendor/**"
+    reason: "Third-party code"
+```
+
+Deferred findings are excluded from `fix-plan` by default (opt in via `--include-deferred`).
+
+## Brief Scope Aliases
+
+Keyword → path mapping for convenient `drift brief --scope` resolution.
+
+```yaml
+brief:
+  scope_aliases:
+    payment: src/billing/
+    auth: src/auth/
+    api: src/api/
+    legacy: legacy/
+```
+
+Usage: `drift brief --scope payment` resolves to `src/billing/`. Exact paths still work.
+
 ## Monorepo Configuration Examples
 
 Drift works with any Python repository layout, including monorepos. Two

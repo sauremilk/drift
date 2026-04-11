@@ -6,6 +6,8 @@ import os
 import sys
 from pathlib import Path
 
+import click
+
 from drift.errors import DriftConfigError
 
 
@@ -30,3 +32,12 @@ def _write_output_file(content: str, destination: Path) -> None:
             path=str(destination),
             reason=str(exc),
         ) from exc
+
+
+def _emit_machine_output(content: str, destination: Path | None) -> None:
+    """Emit machine output to stdout or write it to file with status message."""
+    if destination is not None:
+        _write_output_file(content, destination)
+        click.echo(f"Output written to {destination}", err=True)
+        return
+    click.echo(content)

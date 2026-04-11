@@ -25,7 +25,8 @@ from drift.models import (
 
 # Generated from SignalType enum — adding a new SignalType auto-registers
 # its weight key without a manual dict entry.
-_SIGNAL_WEIGHT_KEYS: dict[SignalType, str] = {sig: sig.value for sig in SignalType}
+# For plugin signals (str, not SignalType), the key IS the value.
+_SIGNAL_WEIGHT_KEYS: dict[str, str] = {str(sig): str(sig) for sig in SignalType}
 
 
 # Re-export for backwards compat; canonical implementation in models.py
@@ -33,17 +34,22 @@ _severity_for_score = severity_for_score
 
 
 # Count-dampening constant: finding counts above this value produce a
-# dampening factor of ~1.0 (see ADR-003 for derivation).
-_DAMPENING_K = 10
+# dampening factor of ~1.0 (see ADR-003 for derivation, ADR-041 for k=20).
+_DAMPENING_K = 20
+
+# Breadth-multiplier ceiling (ADR-041): caps the log-based breadth factor
+# so that very large related_file clusters don't inflate impact unboundedly.
+_BREADTH_CAP = 4.0
 
 
 def assign_impact_scores(findings: list[Finding], weights: SignalWeights) -> None:
     """Compute and assign impact scores to each finding in-place.
 
-    impact = signal_weight × score × (1 + log(1 + related_file_count))
+    impact = signal_weight × score × min(BREADTH_CAP, 1 + log(1 + related_file_count))
 
     The logarithmic factor rewards findings that span many files without
-    creating an unbounded multiplier for very large clusters.
+    creating an unbounded multiplier for very large clusters.  The cap
+    prevents extreme inflation beyond ~50 related files (see ADR-041).
 
     Also computes ``score_contribution`` — the fraction of the composite
     score attributable to this finding.  Useful for prioritising which
@@ -53,9 +59,9 @@ def assign_impact_scores(findings: list[Finding], weights: SignalWeights) -> Non
     total_weight = sum(weight_dict.values())
 
     for f in findings:
-        key = _SIGNAL_WEIGHT_KEYS.get(f.signal_type)
-        w = weight_dict.get(key, 0.1) if key else 0.1
-        breadth = 1 + math.log(1 + len(f.related_files))
+        key = _SIGNAL_WEIGHT_KEYS.get(f.signal_type, f.signal_type)
+        w = weight_dict.get(key, 0.1)
+        breadth = min(_BREADTH_CAP, 1 + math.log(1 + len(f.related_files)))
         f.impact = round(w * f.score * breadth, 4)
 
         # score_contribution: estimated share of the composite score
@@ -112,15 +118,15 @@ def apply_path_overrides(
             continue
 
         # Exclude signal?
-        if f.signal_type.value in override.exclude_signals:
+        if f.signal_type in override.exclude_signals:
             continue
 
         # Re-weight if override provides custom weights
         if override.weights is not None:
             wd = override.weights.as_dict()
-            key = _SIGNAL_WEIGHT_KEYS.get(f.signal_type)
-            w = wd.get(key, 0.1) if key else 0.1
-            breadth = 1 + math.log(1 + len(f.related_files))
+            key = _SIGNAL_WEIGHT_KEYS.get(f.signal_type, f.signal_type)
+            w = wd.get(key, 0.1)
+            breadth = min(_BREADTH_CAP, 1 + math.log(1 + len(f.related_files)))
             f.impact = round(w * f.score * breadth, 4)
 
         kept.append(f)
@@ -133,7 +139,7 @@ def compute_signal_scores(
     *,
     dampening_k: int = _DAMPENING_K,
     min_findings: int = 0,
-) -> dict[SignalType, float]:
+) -> dict[str, float]:
     """Compute per-signal aggregate scores with count-dampened aggregation.
 
     Complexity: O(n) where n = total findings.
@@ -150,12 +156,14 @@ def compute_signal_scores(
         dampening_k: count-dampening constant (default 10; small repos use 20).
         min_findings: per-signal minimum finding count to score (below → 0).
     """
-    by_signal: dict[SignalType, list[float]] = defaultdict(list)
+    by_signal: dict[str, list[float]] = defaultdict(list)
     for f in findings:
         by_signal[f.signal_type].append(f.score)
 
-    scores: dict[SignalType, float] = {}
-    for sig in SignalType:
+    scores: dict[str, float] = {}
+    # Iterate all known core signals plus any plugin signals in findings
+    all_signal_ids = {str(sig) for sig in SignalType} | set(by_signal.keys())
+    for sig in sorted(all_signal_ids):
         values = by_signal.get(sig, [])
         if values and len(values) >= max(1, min_findings):
             mean = sum(values) / len(values)
@@ -166,7 +174,7 @@ def compute_signal_scores(
 
 
 def composite_score(
-    signal_scores: dict[SignalType, float],
+    signal_scores: dict[str, float],
     weights: SignalWeights,
 ) -> float:
     """Compute weighted composite drift score."""
@@ -175,9 +183,7 @@ def composite_score(
     weighted_sum = 0.0
 
     for sig, score in signal_scores.items():
-        key = _SIGNAL_WEIGHT_KEYS.get(sig)
-        if key is None:
-            continue
+        key = _SIGNAL_WEIGHT_KEYS.get(sig, sig)
         w = weight_dict.get(key, 0.0)
         weighted_sum += score * w
         total_weight += w
@@ -186,6 +192,28 @@ def composite_score(
         return 0.0
 
     return round(min(1.0, weighted_sum / total_weight), 3)
+
+
+# Grade bands: 0 = clean, 1 = maximum drift (inverted: A = best)
+_GRADE_BANDS: tuple[tuple[float, str, str], ...] = (
+    (0.20, "A", "Excellent"),
+    (0.40, "B", "Good"),
+    (0.60, "C", "Moderate Drift"),
+    (0.80, "D", "Significant Drift"),
+    (1.01, "F", "Critical Drift"),
+)
+
+
+def score_to_grade(score: float) -> tuple[str, str]:
+    """Map a 0.0–1.0 drift score to a letter grade with description.
+
+    Returns a ``(grade, label)`` tuple, e.g. ``("B", "Good")``.
+    Lower scores are better — ``A`` means almost no drift.
+    """
+    for threshold, grade, label in _GRADE_BANDS:
+        if score < threshold:
+            return grade, label
+    return "F", "Critical Drift"
 
 
 def compute_module_scores(
@@ -303,9 +331,8 @@ def auto_calibrate_weights(
     # Count findings per weight key
     counts: dict[str, int] = defaultdict(int)
     for f in findings:
-        key = _SIGNAL_WEIGHT_KEYS.get(f.signal_type)
-        if key:
-            counts[key] += 1
+        key = _SIGNAL_WEIGHT_KEYS.get(f.signal_type, f.signal_type)
+        counts[key] += 1
 
     total = sum(counts.values())
     if total == 0:

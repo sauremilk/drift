@@ -102,7 +102,105 @@
   }
 }
 
-/* ─── Prove-It-Yourself Viewer ─── */
+/* ─── Prove-It-Yourself: URL form + progress ─── */
+
+.drift-prove-form {
+  margin: 0;
+}
+
+.drift-prove-url-row {
+  display: flex;
+  gap: 0.5rem;
+  max-width: 560px;
+}
+
+.drift-prove-url {
+  flex: 1;
+  font-family: var(--drift-mono);
+  font-size: 0.88rem;
+  padding: 0.6rem 0.9rem;
+  background: var(--md-code-bg-color);
+  color: var(--md-default-fg-color);
+  border: 1px solid var(--md-default-fg-color--lightest);
+  border-radius: 4px;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.drift-prove-url:focus {
+  border-color: var(--drift-accent);
+}
+
+.drift-prove-url::placeholder {
+  color: var(--md-default-fg-color--lightest);
+}
+
+.drift-prove-btn {
+  font-family: var(--drift-mono);
+  font-size: 0.82rem;
+  font-weight: 700;
+  padding: 0.6rem 1.25rem;
+  background: var(--drift-accent);
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: opacity 0.15s;
+}
+
+.drift-prove-btn:hover {
+  opacity: 0.88;
+}
+
+.drift-prove-progress {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin: 1rem 0;
+  font-size: 0.84rem;
+  color: var(--md-default-fg-color--light);
+}
+
+.drift-prove-spinner {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border: 2px solid var(--md-default-fg-color--lightest);
+  border-top-color: var(--drift-accent);
+  border-radius: 50%;
+  animation: drift-spin 0.6s linear infinite;
+}
+
+@keyframes drift-spin {
+  to { transform: rotate(360deg); }
+}
+
+.drift-prove-status {
+  font-family: var(--drift-mono);
+}
+
+/* Preview banner (browser analysis) */
+.drift-prove-preview-banner {
+  font-size: 0.76rem;
+  color: var(--md-default-fg-color--light);
+  background: var(--md-code-bg-color);
+  border: 1px solid var(--md-default-fg-color--lightest);
+  border-radius: 4px;
+  padding: 0.5rem 0.85rem;
+  margin-bottom: 1rem;
+  line-height: 1.55;
+}
+
+.drift-prove-preview-banner code {
+  font-family: var(--drift-mono);
+  font-size: 0.74rem;
+  background: rgba(0, 150, 136, 0.1);
+  padding: 0.15rem 0.4rem;
+  border-radius: 3px;
+}
+
+/* ─── Prove-It-Yourself: Viewer ─── */
 
 .drift-prove-drop {
   border: 2px dashed var(--md-default-fg-color--lightest);
@@ -336,6 +434,12 @@
 }
 
 @media (max-width: 480px) {
+  .drift-prove-url-row {
+    flex-direction: column;
+  }
+  .drift-prove-url {
+    font-size: 0.8rem;
+  }
   .drift-prove-drop {
     padding: 1.25rem 1rem;
     font-size: 0.82rem;
@@ -356,6 +460,9 @@
 }
 
 @media (max-width: 360px) {
+  .drift-prove-url-row {
+    gap: 0.35rem;
+  }
   .drift-prove-drop {
     padding: 1rem 0.75rem;
     font-size: 0.75rem;

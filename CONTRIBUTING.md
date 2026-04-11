@@ -200,6 +200,103 @@ Signals must be:
 - **LLM-free** — the core pipeline uses only AST analysis and statistics
 - **Fast** — target < 500ms per 1 000 functions
 
+## Adding ground-truth fixtures
+
+Every signal must have ground-truth fixtures in `tests/fixtures/ground_truth.py`.
+These fixtures drive automated precision/recall measurement via `drift precision`.
+
+### Fixture kinds
+
+| Kind | Purpose | `should_detect` |
+|------|---------|-----------------|
+| `POSITIVE` | Clear true-positive — signal must fire | `True` |
+| `NEGATIVE` | Clear true-negative — signal must not fire | `False` |
+| `BOUNDARY` | Near detection threshold — tests edge behavior | either |
+| `CONFOUNDER` | Looks like a TP but isn't — tests false-positive suppression | `False` |
+
+### Minimum coverage per signal
+
+| Kind | Required |
+|------|----------|
+| Positive (TP) | ≥ 2 |
+| Negative (TN) | ≥ 2 |
+| Boundary | ≥ 1 |
+| Confounder | ≥ 1 |
+
+No signal should ship without at least one TN fixture to prevent FP regressions.
+
+### Workflow
+
+1. Define a `GroundTruthFixture` in the signal's section of `ground_truth.py`
+2. Add it to the `ALL_FIXTURES` list (or the `ALL_FIXTURES.extend(...)` block)
+3. Run `drift precision --signal YOUR_SIGNAL` to verify detection
+4. Run `pytest tests/test_precision_recall.py -k your_fixture_name` to validate
+
+### Using `FileHistoryOverride`
+
+Signals that depend on git history (TVS, SMS) need explicit history data.
+Use `file_history_overrides` on the fixture:
+
+```python
+GroundTruthFixture(
+    name="tvs_example",
+    files={"app/hot.py": "def f(): pass"},
+    expected=[...],
+    file_history_overrides={
+        "app/hot.py": FileHistoryOverride(
+            total_commits=80,
+            change_frequency_30d=25.0,
+        ),
+    },
+)
+```
+
+Fields not set in the override use sensible defaults (see `precision.py:run_fixture`).
+
+## Negative-Pattern Library
+
+The **negative-pattern library** under `data/negative-patterns/` is a standalone contribution path — no Rust, no analyzer internals needed. You contribute labelled code patterns that drift should detect.
+
+### What you contribute
+
+- A `.py` file (or directory of `.py` files) containing a minimal, self-contained anti-pattern
+- A `.json` metadata file describing the pattern (validated against `data/negative-patterns/schema.json`)
+
+### Quick-start
+
+1. Pick a signal from the [signal list](data/negative-patterns/README.md#current-signals-covered) (or propose one not yet covered)
+2. Write a minimal `.py` file exhibiting the anti-pattern — no external imports, keep it short
+3. Create a matching `.json` file following the schema:
+   ```json
+   {
+     "id": "mutant_duplicate_004",
+     "signal": "mutant_duplicate",
+     "origin": "ai_generated",
+     "model_hint": "gpt-4o",
+     "pattern_class": "copy_paste_with_variation",
+     "confirmed_problematic": true,
+     "severity": "medium",
+     "description": "AI-generated duplicate with cosmetic renaming only",
+     "tp_confirmed": true,
+     "added_by": "your-github-handle",
+     "drift_version": "2.7.2"
+   }
+   ```
+4. Validate locally:
+   ```bash
+   python scripts/validate_negative_patterns.py
+   python scripts/check_negative_patterns.py
+   ```
+5. Open a PR — CI will verify schema conformance and detection
+
+### Naming conventions
+
+- Pattern IDs: `{signal}_{nnn}` (e.g. `mutant_duplicate_004`)
+- Single-file: `patterns/{id}.py` + `patterns/{id}.json`
+- Multi-file: `patterns/{id}/` directory with `{id}.json` + multiple `.py` files
+
+See [data/negative-patterns/README.md](data/negative-patterns/README.md) for full details including schema documentation.
+
 ## Code conventions
 
 - Python 3.11+, type annotations everywhere

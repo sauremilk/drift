@@ -9,7 +9,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, ClassVar, Literal, cast
 
 from drift.config import DriftConfig
-from drift.models import CommitInfo, FileHistory, Finding, ParseResult, SignalType
+from drift.models import AnalyzerWarning, CommitInfo, FileHistory, Finding, ParseResult, SignalType
 
 if TYPE_CHECKING:
     from drift.embeddings import EmbeddingService
@@ -76,6 +76,17 @@ class BaseSignal(ABC):
         self._repo_path = repo_path
         self._embedding_service = embedding_service
         self._commits = commits if commits is not None else []
+        self._warnings: list[AnalyzerWarning] = []
+
+    def emit_warning(self, message: str, *, skipped: bool = True) -> None:
+        """Record a non-finding diagnostic for this signal."""
+        self._warnings.append(
+            AnalyzerWarning(
+                signal_type=str(self.signal_type),
+                message=message,
+                skipped=skipped,
+            )
+        )
 
     def bind_context(self, capabilities: SignalCapabilities) -> None:
         """Bind analyzer-provided runtime capabilities to this signal instance."""
@@ -122,6 +133,7 @@ class BaseSignal(ABC):
 # ---------------------------------------------------------------------------
 
 _SIGNAL_REGISTRY: list[type[BaseSignal]] = []
+_SIGNAL_TYPE_VALUE_CACHE: dict[type[BaseSignal], str] = {}
 
 
 def register_signal(cls: type[BaseSignal]) -> type[BaseSignal]:
@@ -152,8 +164,12 @@ def _instantiate_signal(
             ) from legacy_error
 
 
-def create_signals(ctx: AnalysisContext) -> list[BaseSignal]:
-    """Instantiate all registered signals.
+def create_signals(
+    ctx: AnalysisContext,
+    *,
+    active_signals: set[str] | None = None,
+) -> list[BaseSignal]:
+    """Instantiate registered signals with optional pre-filtering.
 
     Preferred contract:
     1. Parameterless constructor on the signal class
@@ -167,6 +183,19 @@ def create_signals(ctx: AnalysisContext) -> list[BaseSignal]:
 
     signals: list[BaseSignal] = []
     for cls in _SIGNAL_REGISTRY:
+        if active_signals is not None:
+            cached_type = _SIGNAL_TYPE_VALUE_CACHE.get(cls)
+            if cached_type is None:
+                probe = _instantiate_signal(cls, capabilities)
+                cached_type = str(probe.signal_type)
+                _SIGNAL_TYPE_VALUE_CACHE[cls] = cached_type
+                if cached_type not in active_signals:
+                    continue
+                probe.bind_context(capabilities)
+                signals.append(probe)
+                continue
+            if cached_type not in active_signals:
+                continue
         inst = _instantiate_signal(cls, capabilities)
         inst.bind_context(capabilities)
         signals.append(inst)

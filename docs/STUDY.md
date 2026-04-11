@@ -1,8 +1,20 @@
 # STUDY.md — Evaluating Architectural Drift Detection in Real-World Python Projects
 
+> **Scoring update (2026-06-14, ADR-039):** MAZ and ISD promoted from report-only to scoring-active, completing the agent-safety signal suite. HSC and FOE weights recalibrated for conservative activation. **MAZ** (missing authorization) weight 0.0→0.02: unprotected API endpoints now contribute to composite drift score. **ISD** (insecure default) weight 0.0→0.01: Django/Flask security misconfigurations (DEBUG=True, ALLOWED_HOSTS=["*"], verify=False, insecure cookies) now affect drift score; `drift:ignore-security` directive and localhost downgrade supported. **HSC** recalibrated 0.02→0.01; **FOE** recalibrated 0.01→0.005 for balanced weight budget. 5 new ISD ground-truth fixtures (2 TP, 2 TN confounder, 1 boundary). All 5 activated signals at P=1.00 R=1.00 on ground-truth suite. Total weight addition: +0.065 (~6.5% of composite). The model now exposes 24 configured signals with 20 scoring-active and 4 report-only. Evidence: `decisions/ADR-039-activate-agent-safety-signals.md`, `audit_results/risk_register.md` (RISK-SIGNAL-ACTIVATION-2026-06-14-039).
+
+> **PHR hardening (2026-04-10, ADR-040):** PHR extended with third-party import validation using `importlib.util.find_spec()`. Detects `import X` / `from X import Y` where X is not installed — a common AI hallucination pattern. FP guards: stdlib modules skipped (`sys.stdlib_module_names`), project-internal modules skipped, `try/except ImportError` and `ModuleNotFoundError` blocks detected via AST traversal, `TYPE_CHECKING` blocks excluded. 5 new fixtures (1 TP missing-package, 4 TN for conditional/stdlib/TYPE_CHECKING/ModuleNotFoundError). 1 existing fixture adapted (flask decorator: added flask stub). PHR total: 22 fixtures, P=1.00 R=1.00. Evidence: `decisions/ADR-040-phr-import-resolver.md`, `audit_results/risk_register.md` (RISK-PHR-IMPORT-RESOLVER-2026-04-10-040).
+
+> **Scoring update (2026-04-10, ADR-040):** PHR, HSC, and FOE promoted from report-only to scoring-active. **PHR** (phantom reference) weight 0.0→0.02: AI-hallucinated function/import detection now contributes to composite drift score and triggers safe_to_commit blocking in agent loops. **HSC** (hardcoded secret) weight 0.0→0.02: secrets left in source code now affect drift score; 3-tier detection (known prefix, entropy+name, entropy-only) with placeholder/env-read exclusion. **FOE** (fan-out explosion) weight 0.0→0.01: files with >15 imports flagged; `__init__.py` barrel files excluded. 9 new fixtures added (4 HSC, 3 FOE, 2 PHR supplement). PHR abbreviation mapping fix ensures nudge/diff correctly resolve PHR findings. All signals P=1.00 R=1.00 on ground-truth suite post-activation. Evidence: `decisions/ADR-040-signal-scoring-promotion-phr-hsc-foe.md`, `audit_results/risk_register.md` (RISK-SCORE-2026-04-10-040).
+
+> **Baseline update (2026-04-09, v2.7 KPI Roadmap):** First full-model precision/recall baseline on the current 15-signal scoring model (14 scoring-active + TVS at weight 0.0). Ground-truth fixture suite expanded to 115 fixtures covering 17 signal types (was: 110 fixtures, 16 signals). **New coverage:** ECM (Exception Contract Drift) — git-backed TP fixture via `old_sources` mechanism + confounder TN (refactored body, same profile); CCC (Co-Change Coupling) — expanded to 5 fixtures (boundary TP at 8-commit threshold, large-commit confounder TN). **Result:** All 17 evaluated signals at P=1.00 R=1.00 F1=1.00 on ground-truth fixtures; macro-average F1=1.00. Mutation benchmark: 25/25 = 100% recall (all 15 scoring-active signals covered). CI aggregate F1 gate raised from 0.50 → 0.60. CCC added to per-signal precision gates at 0.50. **Resolved gaps:** ECM TP fixture gap (was 0 TP → now 1 TP + 1 TN + 1 confounder); CCC fixture gap (was 3 → now 5). **Limitations:** Fixture P/R measures in-vitro signal correctness, not real-world precision on diverse codebases. Oracle-based precision (§3) remains at v0.5 baseline. Evidence: `benchmark_results/v2.7.0_precision_recall_baseline.json`.
+
+> **Feature update (2026-04-09, PHR Signal):** PHR (Phantom Reference Signal, ADR-033) — AST-based detection of unresolvable function calls, decorator references, and `from X import Y` phantom imports. 15 ground-truth fixtures (5 TP, 2 TN, 2 boundary, 6 confounder) covering hallucinated function calls, cross-file phantoms, phantom imports, phantom decorators, multi-phantom scoring, TYPE_CHECKING exclusion, comprehension/lambda variable handling, private/single-char name boundaries, parent-package re-export tolerance, star-import and `__getattr__` bailout. Self-analysis: 5 PHR findings on drift repo, 5/5 true positive (all in `data/negative-patterns/` — intentional anti-pattern files with undefined references), 0 FP in `src/drift/`. Detection patterns: (1) bare name references in Load context, (2) cross-file symbol table verification, (3) `from X import Y` against per-module export map with `src/`/`lib/` prefix normalization and parent-package fallback. Report-only (weight=0.0). 26 targeted tests + 15 P/R fixtures, F1=1.00. Evidence: `benchmark_results/v2.7.1_phr_signal_feature_evidence.json`.
+
 > **Versioning note (2026-04-05):** The package version in this repository is drift v2.5.4. Most quantitative benchmark artifacts referenced in this document were generated with drift v0.5.0 unless a later dated section states otherwise. The current production model exposes 23 configured signals, of which 15 are scoring-active and 8 remain report-only pending broader validation. This file therefore documents a historical evidence baseline and must not be read as a full description of the current live signal model. As of v2.5.0 the `scan` API and CLI command expose a `strategy` parameter (`diverse` / `top-severity`) that controls finding selection.
 
 > **Feature update (2026-04-07, v2.5.4):** AVS `avs_co_change` precision hardening via FTA-driven three-MCS fix (ADR-018): self-analysis avs_co_change findings 20→0 (score 0.522→0.501, total findings 345→330). (1) Same-directory guard suppresses sister-file co-evolution in package directories; root-level pairs preserved. (2) `known_files` built from `filtered_prs` (consistent with import graph) eliminates test-source FPs. (3) Commit-size discount `1/(n-1)` in `build_co_change_pairs` reduces bulk/sweep-commit inflation. Mutation benchmark: AVS recall 100% (2/2), overall 94% (16/17). 5 regression tests added. Evidence: `benchmark_results/v2.5.4_avs_co_change_precision_hardening_feature_evidence.json`.
+
+> **Feature update (2026-04-08):** Added A2A Agent Discovery support via `drift serve` (ADR-026): optional FastAPI/uvicorn HTTP server exposing `GET /.well-known/agent-card.json` (A2A v1.0 Agent Card) and `POST /a2a/v1` (JSON-RPC 2.0 dispatch) with 8 core skills (`scan`, `diff`, `explain`, `fix_plan`, `validate`, `nudge`, `brief`, `negative_context`). Security posture: localhost-only default bind (`127.0.0.1`), path normalization/validation in request router. Evidence: `benchmark_results/v2.7.0_a2a_agent_card_feature_evidence.json`; tests: `tests/test_a2a_serve.py` (15 passed).
 
 > **Feature update (2026-04-07):** DIA FTA v2 eliminates all remaining self-analysis false positives (DIA findings 2→0 on own repo): (1) `_AUXILIARY_DIRS` extended with `artifacts` and `work_artifacts` to cover CI/build artifact and working directories; (2) illustrative path examples in ADR-017 moved from inline codespans to fenced code blocks so ADR scanning's `trust_codespans=True` no longer extracts them as phantom refs. FTA v2 root-cause chain: IE-4 (BE-8a) + IE-5a. 76/76 DIA unit tests green (3 new regression tests); 97/97 precision/recall fixtures unaffected. Evidence: `audit_results/risk_register.md` (RISK-SIG-2026-04-08-191).
 
@@ -46,15 +58,16 @@
 
 ## Executive Summary
 
-### Public Claims Safe To Repeat As Of 2026-03-30
+### Public Claims Safe To Repeat As Of 2026-04-09
 
 - The package version in this repository is drift v2.5.4. The core benchmark corpus summarized below is the v0.5.0 evidence baseline.
-- The v0.5 baseline composite score used 6 scoring signals. The current model exposes 23 configured signals, with 15 scoring-active and 8 report-only pending broader validation; quantitative precision/recall claims in this study apply only to the historical 6-signal model and have not been revalidated for the current live model.
+- The v0.5 baseline composite score used 6 scoring signals. The current model exposes 24 configured signals, with 20 scoring-active and 4 report-only pending broader validation; quantitative precision/recall claims in this study apply only to the historical 6-signal model and have not been revalidated for the current live model.
+- **v2.7 ground-truth baseline (2026-04-09):** 110 fixtures across 16 signal types yield P=1.00 R=1.00 F1=1.00 (macro) on the current 15-signal model. This measures in-vitro fixture correctness, not real-world oracle precision. Evidence: `benchmark_results/v2.7.0_precision_recall_baseline.json`.
 - The current study corpus still covers 15 real-world repositories.
 - All analysis is deterministic; no LLM is used in the detector pipeline.
 
 1. **77% strict precision** on a score-weighted sample of 286 findings across 5 repositories (v0.5 non-circular heuristic classification). Of 15 total FPs, 9 come from DIA (weight 0.00) and 6 from active signals (4 AVS, 2 MDS). 51 findings are classified as Disputed (score-only evidence, no structural confirmation). Independent multi-rater validation is pending — treat as upper-bound estimate. **Note (2026-04-07):** DIA FTA v2 eliminates all 9 DIA FP sources in self-analysis (9→0). **Note (2026-04-07, v2.5.4):** AVS co_change FTA v1 (ADR-018) eliminates all 20 avs_co_change findings in self-analysis (precision_strict was 0.3, n=20 — all Disputed); drift score 0.522→0.501, total findings 345→330; see feature update above.
-2. **94% mutation recall (v2.5.4+, 2026-04-07):** 16 of 17 injected patterns detected across 10 signal types on a synthetic repository with git history. AVS recall 100% (2/2, upward import + transitive layer violation). Undetected: 1 of 2 pattern-fragmentation variants (return-pattern not flagged). FTA root-cause analysis (April 2026) first fixed SMS sms_001 SPOFs (`_mutation_benchmark.py` fixture now uses third-party imports; commits back-dated to Feb 2026). AVS co_change FP hardening (ADR-018) confirmed no mutation recall regression: both avs_001/avs_002 still detected. The historical 14-pattern §4 benchmark (86% recall, v0.5) remains for reference.
+2. **100% mutation recall (v2.7+, 2026-04-09):** 25 of 25 injected patterns detected across all 15 scoring-active signal types on a synthetic repository with git history. Expanded from 17 patterns / 10 signals (v2.5.4) to 25 patterns / 15 signals: added NBV (3 mutations), BAT (1), COD (1), ECM (2, with git-backed exception contract changes), CCC (1, with co-change commit history). The historical 14-pattern §4 benchmark (86% recall, v0.5) remains for reference.
 3. **Self-analysis baseline remains 0.442 (MEDIUM)** in the study corpus. Later smoke-test sections add broader comparison context, but they should be read as dated snapshots rather than a continuously refreshed badge.
 
 For methodology, see §1. For precision tables, see §3. For threats to validity, see §7.
@@ -63,7 +76,7 @@ For methodology, see §1. For precision tables, see §3. For threats to validity
 
 ## Abstract
 
-This document records the evidence base behind drift, whose package version in this repository is currently v2.5.4. The main quantitative corpus in §§1–12 is a frozen v0.5.0 benchmark baseline combining three methods: (1) a **ground-truth precision analysis** of 286 classified findings across 5 repositories, (2) a **historical controlled mutation benchmark** over 14 intentionally injected drift patterns, and (3) a **usefulness study** demonstrating actionable findings in a production codebase. The strongest current repeatable precision claim from that corpus remains 77% precision (strict) / 95% lenient on the score-weighted sample, using non-circular classification criteria; this claim applies to the v0.5 6-signal model and has not been revalidated for the current v2.5.x live model with 23 configured signals. A fresh mutation benchmark (17 patterns, 10 signals, synthetic repo with git history) yields 94% detection recall (v2.5.4+, 2026-04-07); AVS recall 100% confirmed post co_change hardening. The tool is fully deterministic — no LLM is used in the analysis pipeline ([ADR-001](adr/001-deterministic-analysis-pipeline.md)).
+This document records the evidence base behind drift, whose package version in this repository is currently v2.5.4. The main quantitative corpus in §§1–12 is a frozen v0.5.0 benchmark baseline combining three methods: (1) a **ground-truth precision analysis** of 286 classified findings across 5 repositories, (2) a **historical controlled mutation benchmark** over 14 intentionally injected drift patterns, and (3) a **usefulness study** demonstrating actionable findings in a production codebase. The strongest current repeatable precision claim from that corpus remains 77% precision (strict) / 95% lenient on the score-weighted sample, using non-circular classification criteria; this claim applies to the v0.5 6-signal model and has not been revalidated for the current v2.5.x live model with 23 configured signals. A fresh mutation benchmark (25 patterns, 15 signals, synthetic repo with git history) yields 100% detection recall (v2.7+, 2026-04-09); all scoring-active signals covered. The tool is fully deterministic — no LLM is used in the analysis pipeline ([ADR-001](adr/001-deterministic-analysis-pipeline.md)).
 
 ---
 
@@ -92,7 +105,7 @@ $$S_i = \frac{\sum f_{ij}}{n_i} \cdot \min\!\left(1,\; \frac{\ln(1 + n_i)}{\ln(1
 
 DIA, BEM, TPD, and GCD are included in the analysis output but contribute 0.0 to the composite score. They are Phase 2 signals with known precision limitations (see §3.1 for DIA; see [ADR-007](adr/007-consistency-proxy-signals.md) for BEM/TPD/GCD).
 
-**Current codebase note (v2.5.4):** The live model exposes 23 configured signals, of which 15 are scoring-active and 8 remain report-only pending broader validation. The table above documents the v0.5 baseline only. Precision and recall claims in this study have not been revalidated for the current live model.
+**Current codebase note (v2.7 baseline):** The live model exposes 24 configured signals, of which 14 are scoring-active (TVS weight reduced to 0.0) and 10 remain report-only. Ground-truth fixture evaluation (110 fixtures, 16 signal types) yields P=1.00 / R=1.00 / F1=1.00 macro-average. All 15 scoring-active signals have mutation coverage (25/25 = 100% recall). The table above documents the v0.5 baseline only. See `benchmark_results/v2.7.0_precision_recall_baseline.json` for the full current-model baseline.
 
 ### 1.2 Repository Selection
 
@@ -240,7 +253,7 @@ Classification used signal-specific structural criteria designed to avoid circul
 
 To measure detection recall, we created a synthetic Python repository with 14 intentionally injected drift patterns — 2 per signal (3 for MDS and DIA). Each mutation was designed to trigger exactly one signal type. The synthetic repo was analyzed with `drift analyze --since 90`, and we checked whether the injected pattern was detected.
 
-This section documents the last validated mutation-benchmark result used for the public study narrative. A later rerun of the checked-in CLI mutation harness is discussed in §12.7.2; that rerun is currently not comparable as a public recall measurement because the harness has a JSON-field accounting defect.
+This section documents the original v0.5 mutation-benchmark result (14 patterns, 86% recall). The harness has since been expanded to 25 patterns across all 15 scoring-active signals (100% recall, v2.7+); see §12.7.2 for the extended benchmark.
 
 ### 4.2 Injected Mutations
 
@@ -392,7 +405,7 @@ All raw JSON outputs, ground-truth classifications, and mutation benchmark resul
 
 The ground-truth classification can be reproduced with `python scripts/ground_truth_analysis.py`.
 
-For mutation-benchmark history, the repository currently contains both `scripts/mutation_benchmark.py` and the workspace-task runner `scripts/_mutation_benchmark.py`. As of 2026-03-26, the checked-in CLI rerun via the underscored harness is not a trustworthy public recall source because its detection accounting expects `signal_type` in JSON findings while current CLI output uses `signal`.
+For mutation-benchmark history, the repository currently contains both `scripts/mutation_benchmark.py` and the workspace-task runner `scripts/_mutation_benchmark.py`. The `signal_type` vs `signal` JSON-field accounting defect (noted 2026-03-26) was repaired in the v2.7 harness update; the current harness produces 25/25 = 100% recall across all 15 scoring-active signals.
 
 ---
 
@@ -706,9 +719,11 @@ Weight stability across folds:
 
 | Gap                               | Risk                                 | Next Step                                                |
 | --------------------------------- | ------------------------------------ | -------------------------------------------------------- |
-| n=15 fixtures (2 per signal avg.) | Weight variance σ≈0.03 per fold      | Scale to ≥4 fixtures per signal (≥30 total)              |
+| ~~ECM has 0 TP fixtures~~         | ✅ Resolved (v2.8-dev) — 1 TP + 1 confounder added via `old_sources` git-backed mechanism | — |
+| ~~CCC has only 3 fixtures~~       | ✅ Resolved (v2.8-dev) — expanded to 5 (boundary TP + large-commit confounder) | — |
 | DIA weight still 0.00             | Signal has 59% precision, not scored | Increase to 0.05 once precision > 70% on external corpus |
 | MDS Decorator-Pattern FP          | Documented known limit (httpx codec) | Per-file suppressions or ABC-sibling heuristic           |
+| Oracle precision at v0.5 baseline | No revalidation on current 15-signal model | Run oracle_fp_audit.py against 5 repos with ground-truth labels |
 
 ### 11.10 Unknown-Repo External Validation (2026-03-23)
 
@@ -1037,30 +1052,26 @@ historical v0.5 precision/recall baseline documented in earlier sections.
 
 #### 12.7.2 Controlled Mutation Benchmark (Pillar 2)
 
-We extended the mutation benchmark (`scripts/_mutation_benchmark.py`) with
-3 additional mutations (17 total across 10 signals):
+The mutation benchmark (`scripts/_mutation_benchmark.py`) was expanded from 17
+mutations across 10 signals to **25 mutations across all 15 scoring-active
+signals** (v2.7+, 2026-04-09). The `signal_type` vs `signal` JSON-field
+accounting defect (previously reporting 0/17) was repaired.
+
+**New mutations added:**
 
 | # | Signal | Mutation Description | Expected Detection |
 | - | ------ | -------------------- | ------------------ |
-| 15 | BEM | 8 broad `except Exception` handlers in `connectors/` with log-only recovery | BEM finding on connectors/ |
-| 16 | TPD | 6 test functions in `tests/api/` with 12 positive assertions, 0 negative | TPD finding on tests/api/ |
-| 17 | GCD | 3 public functions in `processors/` with ≥2 params, CC≥5, no guards | GCD finding on processors/ |
+| 18 | NBV | `validate_email` that returns str instead of raising on invalid input | naming_contract_violation finding |
+| 19 | NBV | `validate_age` that returns False but never raises | naming_contract_violation finding |
+| 20 | NBV | `is_premium_user` with no boolean return contract | naming_contract_violation finding |
+| 21 | BAT | 15 handler functions with >5% bypass marker density (noqa, type:ignore) | bypass_accumulation finding |
+| 22 | COD | Module with 6 semantically unrelated functions (parsing, email, crypto, tax) | cohesion_deficit finding |
+| 23 | ECM | `process_refund` changes from ValueError to RuntimeError across commits | exception_contract_drift finding |
+| 24 | ECM | `authenticate` handler changes from ValueError catch to bare except | exception_contract_drift finding |
+| 25 | CCC | config/settings.py + deploy/manifest.py co-changed in 6 of 6 commits | co_change_coupling finding |
 
-**Result of the current CLI rerun: 0/3 counted detections (0% recall).**
-
-The overall current CLI rerun shows **0/17 counted detections (0% recall)**
-across all 10 signals in `benchmark_results/mutation_benchmark.json`. This
-must **not** be interpreted as detector recall. The same run produced 22
-findings total, but the accounting step in `scripts/_mutation_benchmark.py`
-groups findings by `signal_type` while current CLI JSON emits `signal`, so the
-rerun drops detections during benchmark accounting instead of at analysis time.
-Until that harness is repaired and rerun, the mutation benchmark is not a
-valid current recall measurement.
-
-**Note:** The ground-truth micro-corpus (§12.7.1) is the more reliable
-validation method for these signals, since it exercises signals directly
-against materialized fixture code rather than through the full CLI pipeline on
-a minimal git repo.
+**Result: 25/25 counted detections (100% recall)** across all 15
+scoring-active signals. Evidence: `benchmark_results/mutation_benchmark.json`.
 
 #### 12.7.3 Self-Analysis Usefulness (Pillar 3)
 
@@ -1097,7 +1108,7 @@ observed for scoring signals after calibration (§5).
 | Evaluation Method | BEM | TPD | GCD | Assessment |
 | ----------------- | --: | --: | --: | ---------- |
 | Ground-truth precision | 4/4 (100%) | 4/4 (100%) | 4/4 (100%) | All fixtures correct |
-| Mutation recall | 0/1 (0%) | 0/1 (0%) | 0/1 (0%) | Current CLI harness accounting bug |
+| Mutation recall | 1/1 (100%) | 1/1 (100%) | 1/1 (100%) | Harness repaired (v2.7+) |
 
 ---
 
@@ -1337,7 +1348,7 @@ This study now represents a mixed evidence record: a frozen v0.5.0 benchmark bas
 - **77% precision** (strict) / 95% lenient on 286 classified findings using non-circular heuristics, with **15 false positives** (6 from active signals, 9 from DIA)
 - **~93% pre-calibration precision** on 373 findings across 3 previously unseen repositories (httpie, arrow, frappe) — single-rater annotation; post-calibration 100% but constitutes data leakage (see §11.10)
 - **100% fix-text actionability** (76/76) on self-analysis after calibration (baseline: 74%)
-- **Historical only:** the last validated 14-mutation benchmark in this document reported 86% recall, but the currently checked-in CLI mutation harness must be repaired before a fresh public recall headline can be claimed for the current codebase
+- **100% mutation recall** on 25 injected patterns across all 15 scoring-active signals (v2.7+, synthetic repo with git history); the historical 14-pattern benchmark (86% recall, v0.5) remains documented in §4
 - **3 consistency proxy signals** (BEM, TPD, GCD) validated: 12/12 ground-truth fixtures correct, 5/5 self-analysis findings plausible and actionable (§12.7)
 - **3 actionable findings** in a production codebase, including copy-pasted functions, error-handling fragmentation, and API inconsistency
 - **8 real-world smoke tests** confirm score ranking tracks expectations: hand-crafted libraries (requests=0.376) score lowest, large historically grown frameworks (django=0.599) score highest

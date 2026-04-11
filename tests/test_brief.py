@@ -11,6 +11,7 @@ from drift.api import brief as api_brief
 from drift.commands.brief import brief as brief_cmd
 from drift.guardrails import (
     Guardrail,
+    generate_guardrails,
     guardrails_to_prompt_block,
 )
 
@@ -208,6 +209,65 @@ class TestGuardrails:
         assert d["signal"] == "PFS"
         assert isinstance(d["affected_files"], list)
 
+    def test_guardrail_preferred_pattern_in_dict(self) -> None:
+        gr = Guardrail(
+            id="GR-PFS-002",
+            signal="PFS",
+            constraint_class="PATTERN",
+            severity="MEDIUM",
+            constraint="Use consistent error handling.",
+            forbidden="bare except",
+            reason="Pattern fragmentation.",
+            affected_files=["services/payment_service.py"],
+            prompt_text="CONSTRAINT [PFS]: Use consistent error handling.",
+            preferred_pattern="Follow the canonical pattern: return_dict",
+        )
+        d = gr.to_dict()
+        assert d["preferred_pattern"] == "Follow the canonical pattern: return_dict"
+
+    def test_guardrail_preferred_pattern_default_empty(self) -> None:
+        gr = Guardrail(
+            id="GR-AVS-001",
+            signal="AVS",
+            constraint_class="ARCHITECTURE",
+            severity="HIGH",
+            constraint="Do not cross layer boundaries.",
+            forbidden="Import db from api",
+            reason="Violates layer architecture.",
+        )
+        assert gr.preferred_pattern == ""
+        assert gr.to_dict()["preferred_pattern"] == ""
+
+    def test_prompt_block_includes_preferred_pattern(self) -> None:
+        gr = Guardrail(
+            id="GR-PFS-001",
+            signal="PFS",
+            constraint_class="PATTERN",
+            severity="MEDIUM",
+            constraint="Use consistent error handling.",
+            forbidden="bare except",
+            reason="Pattern fragmentation.",
+            prompt_text="CONSTRAINT [PFS]: Use consistent error handling.",
+            preferred_pattern="Follow the canonical pattern: return_dict",
+        )
+        block = guardrails_to_prompt_block([gr])
+        assert "PREFERRED: Follow the canonical pattern: return_dict" in block
+
+    def test_prompt_block_omits_preferred_when_empty(self) -> None:
+        gr = Guardrail(
+            id="GR-AVS-001",
+            signal="AVS",
+            constraint_class="ARCHITECTURE",
+            severity="HIGH",
+            constraint="Do not cross layer boundaries.",
+            forbidden="Import db from api",
+            reason="Violates layer architecture.",
+            prompt_text="CONSTRAINT [AVS]: Do not cross layer boundaries.",
+            preferred_pattern="",
+        )
+        block = guardrails_to_prompt_block([gr])
+        assert "PREFERRED" not in block
+
 
 # ---------------------------------------------------------------------------
 # Config: BriefConfig
@@ -382,3 +442,80 @@ class TestBriefProgress:
         runner = self._make_runner()
         result = runner.invoke(brief_cmd, ["--help"])
         assert "--progress" in result.output
+
+
+# ---------------------------------------------------------------------------
+# Guardrail min_confidence filtering
+# ---------------------------------------------------------------------------
+
+
+class TestGuardrailMinConfidence:
+    """P1: generate_guardrails() must filter NC items below min_confidence."""
+
+    @staticmethod
+    def _make_findings() -> list:
+        """Create findings that produce NCs with varying confidence levels."""
+        from drift.models import Finding, Severity, SignalType
+
+        return [
+            Finding(
+                signal_type=SignalType.ARCHITECTURE_VIOLATION,
+                severity=Severity.HIGH,
+                score=0.8,
+                title="Layer violation in api/routes.py",
+                description="Direct DB import from API layer.",
+                file_path=Path("api/routes.py"),
+                metadata={
+                    "source_layer": "api",
+                    "target_layer": "db",
+                    "import_path": "db.models",
+                },
+            ),
+            Finding(
+                signal_type=SignalType.PHANTOM_REFERENCE,
+                severity=Severity.MEDIUM,
+                score=0.5,
+                title="1 unresolvable reference in utils.py",
+                description="utils.py uses 1 name that cannot be resolved.",
+                file_path=Path("utils.py"),
+                metadata={
+                    "phantom_names": [{"name": "nonexistent_fn", "line": 10}],
+                    "phantom_count": 1,
+                },
+            ),
+            Finding(
+                signal_type=SignalType.PATTERN_FRAGMENTATION,
+                severity=Severity.HIGH,
+                score=0.9,
+                title="error_handling: 4 variants in services/",
+                description="4 different error handling patterns found.",
+                file_path=Path("services/payment.py"),
+                related_files=[Path("services/order.py")],
+                metadata={"pattern": "error_handling", "variant_count": 4},
+            ),
+        ]
+
+    def test_min_confidence_zero_keeps_all(self) -> None:
+        """Default min_confidence=0.0 preserves all guardrails."""
+        findings = self._make_findings()
+        guardrails = generate_guardrails(findings, min_confidence=0.0)
+        assert len(guardrails) >= 1
+
+    def test_min_confidence_filters_weak_items(self) -> None:
+        """NC items below the floor are excluded."""
+        findings = self._make_findings()
+        all_grs = generate_guardrails(findings, min_confidence=0.0)
+        filtered_grs = generate_guardrails(findings, min_confidence=0.6)
+        assert len(filtered_grs) <= len(all_grs)
+
+    def test_min_confidence_high_excludes_everything(self) -> None:
+        """A very high floor removes all guardrails."""
+        findings = self._make_findings()
+        guardrails = generate_guardrails(findings, min_confidence=1.0)
+        assert len(guardrails) == 0
+
+    def test_backward_compat_no_min_confidence(self) -> None:
+        """Calling without min_confidence works as before."""
+        findings = self._make_findings()
+        guardrails = generate_guardrails(findings)
+        assert len(guardrails) >= 1

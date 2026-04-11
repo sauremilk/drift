@@ -1,8 +1,8 @@
 # Signal Reference
 
-Drift tracks 23 total signals across architectural erosion and security-by-default patterns. 14 signals are currently scoring-active and 9 are report-only until precision/recall validation is complete or re-validation is finished. Signals are grouped by origin: 6 core signals from the historical v0.5 baseline (with TVS currently held report-only in the composite score), 4 consistency proxy signals (promoted from report-only in v0.7.0 via [ADR-007](https://github.com/mick-gsk/drift/blob/main/docs/adr/007-consistency-proxy-signals.md)), 3 contract signals (added in v0.7.0/v0.7.1 via [ADR-008](https://github.com/mick-gsk/drift/blob/main/docs/adr/008-adr-008-signal-promotion.md)), 1 cohesion signal (COD), 1 co-change coupling signal (CCC), 1 TypeScript architecture signal (TSA), 4 structural report-only signals, and 3 security report-only signals.
+Drift tracks 24 total signals across architectural erosion and security-by-default patterns. 14 signals are currently scoring-active and 10 are report-only until precision/recall validation is complete or re-validation is finished. Signals are grouped by origin: 6 core signals from the historical v0.5 baseline (with TVS currently held report-only in the composite score), 4 consistency proxy signals (promoted from report-only in v0.7.0 via [ADR-007](https://github.com/mick-gsk/drift/blob/main/docs/adr/007-consistency-proxy-signals.md)), 3 contract signals (added in v0.7.0/v0.7.1 via [ADR-008](https://github.com/mick-gsk/drift/blob/main/docs/adr/008-adr-008-signal-promotion.md)), 1 cohesion signal (COD), 1 co-change coupling signal (CCC), 1 TypeScript architecture signal (TSA), 4 structural report-only signals, 3 security report-only signals, and 1 AI-hallucination report-only signal (PHR).
 
-## Signal Table (All 23)
+## Signal Table (All 24)
 
 | Abbrev | Signal | Mode | What it detects |
 |---|---|---|---|
@@ -29,6 +29,7 @@ Drift tracks 23 total signals across architectural erosion and security-by-defau
 | MAZ | Missing Authorization | Report-only | API endpoints lacking auth/authz checks (CWE-862). |
 | ISD | Insecure Default | Report-only | Unsafe default config patterns (CWE-1188). |
 | HSC | Hardcoded Secret | Report-only | Embedded secrets/tokens/credentials in source (CWE-798). |
+| PHR | Phantom Reference | Report-only | Unresolvable function/class references — AI hallucination indicator. |
 
 ## Signal-derived negative context
 

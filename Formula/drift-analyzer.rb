@@ -13,7 +13,7 @@
 class DriftAnalyzer < Formula
   include Language::Python::Virtualenv
 
-  desc "Deterministic architectural drift detection for AI-accelerated Python codebases"
+  desc "Catches structural erosion from AI-generated code that passes all your tests"
   homepage "https://github.com/mick-gsk/drift"
   url "https://pypi.io/packages/source/d/drift-analyzer/drift_analyzer-2.5.1.tar.gz"
   # sha256 "UPDATE_WITH_REAL_SHA256"

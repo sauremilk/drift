@@ -170,6 +170,26 @@ Typical commands called through MCP-backed agent flows:
 - `validate` for config and environment readiness
 - `fix-plan` for prioritized remediation tasks
 
+### Cursor
+
+Cursor uses the same MCP protocol and config format. Create `.cursor/mcp.json` in your project root:
+
+```json
+{
+  "mcpServers": {
+    "drift": {
+      "type": "stdio",
+      "command": "drift",
+      "args": ["mcp", "--serve"]
+    }
+  }
+}
+```
+
+Or use `drift init --mcp` to auto-generate. Cursor reads `.vscode/mcp.json` too, so a single config works for both editors.
+
+For setup details, tool catalog, and workflow examples, see the **[Cursor MCP Setup Guide](guides/cursor-mcp-setup.md)**.
+
 ## Example workflow assets in the repository
 
 - `action.yml` for the GitHub Action implementation
@@ -189,6 +209,7 @@ Typical commands called through MCP-backed agent flows:
 - [Quick Start](getting-started/quickstart.md)
 - [Team Rollout](getting-started/team-rollout.md)
 - [CI Architecture Checks with SARIF](use-cases/ci-architecture-checks-sarif.md)
+- [Drift Bot — GitHub App](drift-bot.md) — automatic PR comments, no workflow files needed
 - [Trust and Evidence](trust-evidence.md)
 
 ## GitLab CI

@@ -9,8 +9,8 @@ authors:
 repository-code: "https://github.com/mick-gsk/drift"
 url: "https://mick-gsk.github.io/drift/"
 license: MIT
-version: "2.6.1"
-date-released: "2026-04-07"
+version: "2.9.1"
+date-released: "2026-04-10"
 keywords:
   - static-analysis
   - architectural-drift
@@ -18,5 +18,5 @@ keywords:
   - technical-debt
   - python
 abstract: >-
-  Deterministic architectural drift detection for AI-accelerated
-  Python repositories through cross-file coherence analysis.
+  Quality control layer for AI-generated Python code. Catches structural
+  erosion across files that passes linters, type checkers, and tests.

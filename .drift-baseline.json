@@ -1,0 +1,2722 @@
+{
+  "baseline_version": 1,
+  "drift_version": "2.6.1",
+  "created_at": "2026-04-08T05:33:53.943064+00:00",
+  "drift_score": 0.526,
+  "drift_score_scope": "context:repo,signals:all,path:all",
+  "finding_count": 339,
+  "findings": [
+    {
+      "fingerprint": "2b42712667c1d1cc",
+      "signal": "architecture_violation",
+      "severity": "medium",
+      "file": "src/drift/api_helpers.py",
+      "start_line": 1,
+      "title": "Circular dependency (3 modules)"
+    },
+    {
+      "fingerprint": "206b7d6096af6747",
+      "signal": "architecture_violation",
+      "severity": "medium",
+      "file": "src/drift/ingestion/ast_parser.py",
+      "start_line": 1,
+      "title": "Circular dependency (2 modules)"
+    },
+    {
+      "fingerprint": "8ca7ddb5e3e76a19",
+      "signal": "architecture_violation",
+      "severity": "medium",
+      "file": "src/drift/api.py",
+      "start_line": 1,
+      "title": "Circular dependency (2 modules)"
+    },
+    {
+      "fingerprint": "8bc7141992645ae5",
+      "signal": "architecture_violation",
+      "severity": "medium",
+      "file": "src/drift/analyzer.py",
+      "start_line": 1,
+      "title": "High blast radius: analyzer.py (23 transitive dependents)"
+    },
+    {
+      "fingerprint": "692edf0ed972303a",
+      "signal": "architecture_violation",
+      "severity": "medium",
+      "file": "src/drift/api_helpers.py",
+      "start_line": 1,
+      "title": "High blast radius: api_helpers.py (27 transitive dependents)"
+    },
+    {
+      "fingerprint": "5a79736b48e4bc6d",
+      "signal": "architecture_violation",
+      "severity": "medium",
+      "file": "src/drift/baseline.py",
+      "start_line": 1,
+      "title": "High blast radius: baseline.py (27 transitive dependents)"
+    },
+    {
+      "fingerprint": "f703405c6e1f50aa",
+      "signal": "architecture_violation",
+      "severity": "medium",
+      "file": "src/drift/cache.py",
+      "start_line": 1,
+      "title": "High blast radius: cache.py (25 transitive dependents)"
+    },
+    {
+      "fingerprint": "d7ed2650b7fc2eb7",
+      "signal": "architecture_violation",
+      "severity": "medium",
+      "file": "src/drift/config.py",
+      "start_line": 1,
+      "title": "High blast radius: config.py (66 transitive dependents)"
+    },
+    {
+      "fingerprint": "dbc6e6f26ae73d96",
+      "signal": "architecture_violation",
+      "severity": "medium",
+      "file": "src/drift/context_tags.py",
+      "start_line": 1,
+      "title": "High blast radius: context_tags.py (25 transitive dependents)"
+    },
+    {
+      "fingerprint": "264c92dc0cf7b301",
+      "signal": "architecture_violation",
+      "severity": "medium",
+      "file": "src/drift/embeddings.py",
+      "start_line": 1,
+      "title": "High blast radius: embeddings.py (50 transitive dependents)"
+    },
+    {
+      "fingerprint": "514d12bd10285161",
+      "signal": "architecture_violation",
+      "severity": "medium",
+      "file": "src/drift/errors.py",
+      "start_line": 1,
+      "title": "High blast radius: errors.py (68 transitive dependents)"
+    },
+    {
+      "fingerprint": "62a17b1d6cb4f995",
+      "signal": "architecture_violation",
+      "severity": "medium",
+      "file": "src/drift/finding_context.py",
+      "start_line": 1,
+      "title": "High blast radius: finding_context.py (34 transitive dependents)"
+    },
+    {
+      "fingerprint": "cbb2e9377f1c7800",
+      "signal": "architecture_violation",
+      "severity": "medium",
+      "file": "src/drift/ingestion/ast_parser.py",
+      "start_line": 1,
+      "title": "High blast radius: ast_parser.py (71 transitive dependents)"
+    },
+    {
+      "fingerprint": "9e87d227256b48cb",
+      "signal": "architecture_violation",
+      "severity": "medium",
+      "file": "src/drift/ingestion/file_discovery.py",
+      "start_line": 1,
+      "title": "High blast radius: file_discovery.py (25 transitive dependents)"
+    },
+    {
+      "fingerprint": "d80589053d5354c7",
+      "signal": "architecture_violation",
+      "severity": "medium",
+      "file": "src/drift/ingestion/git_history.py",
+      "start_line": 1,
+      "title": "High blast radius: git_history.py (28 transitive dependents)"
+    },
+    {
+      "fingerprint": "51c1bafcdbfd7f03",
+      "signal": "architecture_violation",
+      "severity": "medium",
+      "file": "src/drift/ingestion/ts_parser.py",
+      "start_line": 1,
+      "title": "High blast radius: ts_parser.py (71 transitive dependents)"
+    },
+    {
+      "fingerprint": "a33756d0bc9c8276",
+      "signal": "architecture_violation",
+      "severity": "medium",
+      "file": "src/drift/models.py",
+      "start_line": 1,
+      "title": "High blast radius: models.py (79 transitive dependents)"
+    },
+    {
+      "fingerprint": "d101cd6fa2ea7745",
+      "signal": "architecture_violation",
+      "severity": "medium",
+      "file": "src/drift/negative_context.py",
+      "start_line": 1,
+      "title": "High blast radius: negative_context.py (28 transitive dependents)"
+    },
+    {
+      "fingerprint": "6a9cfb5ca5115df5",
+      "signal": "architecture_violation",
+      "severity": "medium",
+      "file": "src/drift/output/json_output.py",
+      "start_line": 1,
+      "title": "High blast radius: json_output.py (27 transitive dependents)"
+    },
+    {
+      "fingerprint": "ac50c368e0af2f2f",
+      "signal": "architecture_violation",
+      "severity": "medium",
+      "file": "src/drift/pipeline.py",
+      "start_line": 1,
+      "title": "High blast radius: pipeline.py (24 transitive dependents)"
+    },
+    {
+      "fingerprint": "c53106c27b2308ea",
+      "signal": "architecture_violation",
+      "severity": "medium",
+      "file": "src/drift/recommendations.py",
+      "start_line": 1,
+      "title": "High blast radius: recommendations.py (31 transitive dependents)"
+    },
+    {
+      "fingerprint": "c3babaae97f11e05",
+      "signal": "architecture_violation",
+      "severity": "medium",
+      "file": "src/drift/scoring/engine.py",
+      "start_line": 1,
+      "title": "High blast radius: engine.py (28 transitive dependents)"
+    },
+    {
+      "fingerprint": "2d0065a888610fa4",
+      "signal": "architecture_violation",
+      "severity": "medium",
+      "file": "src/drift/signals/base.py",
+      "start_line": 1,
+      "title": "High blast radius: base.py (49 transitive dependents)"
+    },
+    {
+      "fingerprint": "a983ff63915031bc",
+      "signal": "architecture_violation",
+      "severity": "medium",
+      "file": "src/drift/trend_history.py",
+      "start_line": 1,
+      "title": "High blast radius: trend_history.py (24 transitive dependents)"
+    },
+    {
+      "fingerprint": "7fe2823eed081198",
+      "signal": "architecture_violation",
+      "severity": "high",
+      "file": "src/drift/config.py",
+      "start_line": 1,
+      "title": "Zone of Pain: config.py (I=0.15, D=0.85)"
+    },
+    {
+      "fingerprint": "fe7facc17852146b",
+      "signal": "architecture_violation",
+      "severity": "high",
+      "file": "src/drift/models.py",
+      "start_line": 1,
+      "title": "Zone of Pain: models.py (I=0.10, D=0.90)"
+    },
+    {
+      "fingerprint": "4f96edf75593a060",
+      "signal": "architecture_violation",
+      "severity": "high",
+      "file": "src/drift/errors.py",
+      "start_line": 1,
+      "title": "Zone of Pain: errors.py (I=0.20, D=0.80)"
+    },
+    {
+      "fingerprint": "37c8fd91aac20d89",
+      "signal": "architecture_violation",
+      "severity": "high",
+      "file": "src/drift/signals/_utils.py",
+      "start_line": 1,
+      "title": "Zone of Pain: _utils.py (I=0.24, D=0.76)"
+    },
+    {
+      "fingerprint": "01b4e9861a55a9e9",
+      "signal": "architecture_violation",
+      "severity": "medium",
+      "file": "src/drift/analyzer.py",
+      "start_line": 1,
+      "title": "God module candidate: analyzer.py"
+    },
+    {
+      "fingerprint": "0ec58828693c3bfd",
+      "signal": "architecture_violation",
+      "severity": "medium",
+      "file": "src/drift/api.py",
+      "start_line": 1,
+      "title": "God module candidate: api.py"
+    },
+    {
+      "fingerprint": "d8bd8d38c10a00bd",
+      "signal": "architecture_violation",
+      "severity": "medium",
+      "file": "src/drift/api_helpers.py",
+      "start_line": 1,
+      "title": "God module candidate: api_helpers.py"
+    },
+    {
+      "fingerprint": "3a3a10cea0e11605",
+      "signal": "architecture_violation",
+      "severity": "high",
+      "file": "src/drift/config.py",
+      "start_line": 1,
+      "title": "God module candidate: config.py"
+    },
+    {
+      "fingerprint": "52693f92412e11f4",
+      "signal": "architecture_violation",
+      "severity": "medium",
+      "file": "src/drift/mcp_server.py",
+      "start_line": 1,
+      "title": "God module candidate: mcp_server.py"
+    },
+    {
+      "fingerprint": "7ad8b34023400be6",
+      "signal": "architecture_violation",
+      "severity": "high",
+      "file": "src/drift/models.py",
+      "start_line": 1,
+      "title": "God module candidate: models.py"
+    },
+    {
+      "fingerprint": "589ec6f4fc966e87",
+      "signal": "architecture_violation",
+      "severity": "medium",
+      "file": "src/drift/output/rich_output.py",
+      "start_line": 1,
+      "title": "God module candidate: rich_output.py"
+    },
+    {
+      "fingerprint": "ad4bcaca8a970b89",
+      "signal": "architecture_violation",
+      "severity": "medium",
+      "file": "src/drift/pipeline.py",
+      "start_line": 1,
+      "title": "God module candidate: pipeline.py"
+    },
+    {
+      "fingerprint": "1bca1224f728080c",
+      "signal": "architecture_violation",
+      "severity": "medium",
+      "file": "src/drift/signals/_utils.py",
+      "start_line": 1,
+      "title": "God module candidate: _utils.py"
+    },
+    {
+      "fingerprint": "bf58f3d863264389",
+      "signal": "architecture_violation",
+      "severity": "medium",
+      "file": "src/drift/signals/base.py",
+      "start_line": 1,
+      "title": "God module candidate: base.py"
+    },
+    {
+      "fingerprint": "a2b5cb03a3b9a1bb",
+      "signal": "architecture_violation",
+      "severity": "high",
+      "file": "src/drift/config.py",
+      "start_line": 1,
+      "title": "Unstable dependency: config.py -> ts_parser.py"
+    },
+    {
+      "fingerprint": "205dc4711b125e2c",
+      "signal": "architecture_violation",
+      "severity": "medium",
+      "file": "src/drift/config.py",
+      "start_line": 1,
+      "title": "Unstable dependency: config.py -> errors.py"
+    },
+    {
+      "fingerprint": "da2e1428ac3b7ed7",
+      "signal": "architecture_violation",
+      "severity": "medium",
+      "file": "src/drift/signals/base.py",
+      "start_line": 1,
+      "title": "Unstable dependency: base.py -> config.py"
+    },
+    {
+      "fingerprint": "c76a70ab376af542",
+      "signal": "architecture_violation",
+      "severity": "medium",
+      "file": "src/drift/signals/base.py",
+      "start_line": 1,
+      "title": "Unstable dependency: base.py -> models.py"
+    },
+    {
+      "fingerprint": "e370c0af642f9f55",
+      "signal": "architecture_violation",
+      "severity": "high",
+      "file": "src/drift/signals/base.py",
+      "start_line": 1,
+      "title": "Unstable dependency: base.py -> embeddings.py"
+    },
+    {
+      "fingerprint": "d1b244af4a4c8a25",
+      "signal": "architecture_violation",
+      "severity": "medium",
+      "file": "src/drift/recommendations.py",
+      "start_line": 1,
+      "title": "Unstable dependency: recommendations.py -> models.py"
+    },
+    {
+      "fingerprint": "698136fed5648da1",
+      "signal": "architecture_violation",
+      "severity": "medium",
+      "file": "src/drift/output/github_format.py",
+      "start_line": 1,
+      "title": "Unstable dependency: github_format.py -> models.py"
+    },
+    {
+      "fingerprint": "9616a4921315693c",
+      "signal": "architecture_violation",
+      "severity": "high",
+      "file": "src/drift/signals/_utils.py",
+      "start_line": 1,
+      "title": "Unstable dependency: _utils.py -> ts_parser.py"
+    },
+    {
+      "fingerprint": "444351e6a102b4ac",
+      "signal": "broad_exception_monoculture",
+      "severity": "medium",
+      "file": "work_artifacts",
+      "start_line": 1,
+      "title": "Broad exception monoculture in work_artifacts/"
+    },
+    {
+      "fingerprint": "d66d62f0f51c1e3d",
+      "signal": "bypass_accumulation",
+      "severity": "medium",
+      "file": "src/drift/cli.py",
+      "start_line": 1,
+      "title": "High bypass marker density in cli.py"
+    },
+    {
+      "fingerprint": "5d66041899115ab2",
+      "signal": "co_change_coupling",
+      "severity": "high",
+      "file": "src/drift/analyzer.py",
+      "start_line": 1,
+      "title": "Hidden co-change coupling: analyzer.py <-> git_history.py (12 commits)"
+    },
+    {
+      "fingerprint": "f83929e68ab1f9f3",
+      "signal": "co_change_coupling",
+      "severity": "high",
+      "file": "src/drift/api.py",
+      "start_line": 1,
+      "title": "Hidden co-change coupling: api.py <-> mcp_server.py (14 commits)"
+    },
+    {
+      "fingerprint": "a7fc60809226e1ee",
+      "signal": "co_change_coupling",
+      "severity": "high",
+      "file": "src/drift/commands/analyze.py",
+      "start_line": 1,
+      "title": "Hidden co-change coupling: analyze.py <-> check.py (20 commits)"
+    },
+    {
+      "fingerprint": "95976ca4c6acfb1b",
+      "signal": "co_change_coupling",
+      "severity": "high",
+      "file": "src/drift/config.py",
+      "start_line": 1,
+      "title": "Hidden co-change coupling: config.py <-> __init__.py (9 commits)"
+    },
+    {
+      "fingerprint": "72893e2e6a2e0d00",
+      "signal": "co_change_coupling",
+      "severity": "high",
+      "file": "src/drift/signals/architecture_violation.py",
+      "start_line": 1,
+      "title": "Hidden co-change coupling: architecture_violation.py <-> explainability_deficit.py (9 commits)"
+    },
+    {
+      "fingerprint": "bb0a1b99ade9d83c",
+      "signal": "co_change_coupling",
+      "severity": "high",
+      "file": "src/drift/signals/architecture_violation.py",
+      "start_line": 1,
+      "title": "Hidden co-change coupling: architecture_violation.py <-> mutant_duplicates.py (14 commits)"
+    },
+    {
+      "fingerprint": "bf150a58e2e38109",
+      "signal": "co_change_coupling",
+      "severity": "high",
+      "file": "src/drift/signals/base.py",
+      "start_line": 1,
+      "title": "Hidden co-change coupling: base.py <-> doc_impl_drift.py (9 commits)"
+    },
+    {
+      "fingerprint": "17a969e2d47b6cdc",
+      "signal": "co_change_coupling",
+      "severity": "high",
+      "file": "src/drift/signals/base.py",
+      "start_line": 1,
+      "title": "Hidden co-change coupling: base.py <-> mutant_duplicates.py (8 commits)"
+    },
+    {
+      "fingerprint": "febafda9d484c9af",
+      "signal": "co_change_coupling",
+      "severity": "high",
+      "file": "src/drift/signals/doc_impl_drift.py",
+      "start_line": 1,
+      "title": "Hidden co-change coupling: doc_impl_drift.py <-> mutant_duplicates.py (11 commits)"
+    },
+    {
+      "fingerprint": "58159dde4a48bd2e",
+      "signal": "co_change_coupling",
+      "severity": "high",
+      "file": "src/drift/signals/explainability_deficit.py",
+      "start_line": 1,
+      "title": "Hidden co-change coupling: explainability_deficit.py <-> mutant_duplicates.py (10 commits)"
+    },
+    {
+      "fingerprint": "f11216022322faec",
+      "signal": "cognitive_complexity",
+      "severity": "high",
+      "file": "benchmarks/corpus/src/myapp/processors/pricing.py",
+      "start_line": 4,
+      "title": "High cognitive complexity in calculate_pricing()"
+    },
+    {
+      "fingerprint": "229bc550b2185b04",
+      "signal": "cognitive_complexity",
+      "severity": "high",
+      "file": "benchmarks/corpus/src/myapp/processors/transform.py",
+      "start_line": 4,
+      "title": "High cognitive complexity in transform_dataset()"
+    },
+    {
+      "fingerprint": "f914f9c6f300a8a1",
+      "signal": "cognitive_complexity",
+      "severity": "high",
+      "file": "benchmarks/corpus/src/myapp/processors/validator.py",
+      "start_line": 4,
+      "title": "High cognitive complexity in process_registration()"
+    },
+    {
+      "fingerprint": "3e8ebc0594e94977",
+      "signal": "cognitive_complexity",
+      "severity": "medium",
+      "file": "src/drift/analyzer.py",
+      "start_line": 257,
+      "title": "High cognitive complexity in analyze_diff()"
+    },
+    {
+      "fingerprint": "d5e71ef4eeb14c10",
+      "signal": "cognitive_complexity",
+      "severity": "medium",
+      "file": "src/drift/analyzers/typescript/alias_resolver.py",
+      "start_line": 175,
+      "title": "High cognitive complexity in resolve_tsconfig_alias_import()"
+    },
+    {
+      "fingerprint": "e6682f63ac5d887a",
+      "signal": "cognitive_complexity",
+      "severity": "high",
+      "file": "src/drift/api.py",
+      "start_line": 672,
+      "title": "High cognitive complexity in diff()"
+    },
+    {
+      "fingerprint": "548105805dbd356c",
+      "signal": "cognitive_complexity",
+      "severity": "high",
+      "file": "src/drift/api.py",
+      "start_line": 1345,
+      "title": "High cognitive complexity in fix_plan()"
+    },
+    {
+      "fingerprint": "a70942443fddead9",
+      "signal": "cognitive_complexity",
+      "severity": "high",
+      "file": "src/drift/api.py",
+      "start_line": 1734,
+      "title": "High cognitive complexity in validate()"
+    },
+    {
+      "fingerprint": "06b8c0d523ee24a8",
+      "signal": "cognitive_complexity",
+      "severity": "high",
+      "file": "src/drift/api.py",
+      "start_line": 2014,
+      "title": "High cognitive complexity in nudge()"
+    },
+    {
+      "fingerprint": "c3ceb9ed175bcff8",
+      "signal": "cognitive_complexity",
+      "severity": "medium",
+      "file": "src/drift/api.py",
+      "start_line": 2604,
+      "title": "High cognitive complexity in brief()"
+    },
+    {
+      "fingerprint": "5c8538ab5c570e14",
+      "signal": "cognitive_complexity",
+      "severity": "high",
+      "file": "src/drift/cli.py",
+      "start_line": 199,
+      "title": "High cognitive complexity in safe_main()"
+    },
+    {
+      "fingerprint": "fb90b7599b89fe2a",
+      "signal": "cognitive_complexity",
+      "severity": "high",
+      "file": "src/drift/commands/analyze.py",
+      "start_line": 158,
+      "title": "High cognitive complexity in analyze()"
+    },
+    {
+      "fingerprint": "5b8a858e1b3d58ab",
+      "signal": "cognitive_complexity",
+      "severity": "high",
+      "file": "src/drift/commands/check.py",
+      "start_line": 146,
+      "title": "High cognitive complexity in check()"
+    },
+    {
+      "fingerprint": "b2bd1f679dc06c18",
+      "signal": "cognitive_complexity",
+      "severity": "medium",
+      "file": "src/drift/commands/config_cmd.py",
+      "start_line": 24,
+      "title": "High cognitive complexity in validate()"
+    },
+    {
+      "fingerprint": "3b0240c161f2a67c",
+      "signal": "cognitive_complexity",
+      "severity": "medium",
+      "file": "src/drift/commands/explain.py",
+      "start_line": 696,
+      "title": "High cognitive complexity in explain()"
+    },
+    {
+      "fingerprint": "1cdd56b6a590a6ac",
+      "signal": "cognitive_complexity",
+      "severity": "high",
+      "file": "src/drift/commands/init_cmd.py",
+      "start_line": 283,
+      "title": "High cognitive complexity in init()"
+    },
+    {
+      "fingerprint": "f352a32a86084937",
+      "signal": "cognitive_complexity",
+      "severity": "high",
+      "file": "src/drift/commands/patterns.py",
+      "start_line": 59,
+      "title": "High cognitive complexity in patterns()"
+    },
+    {
+      "fingerprint": "5d1c06e62d60993e",
+      "signal": "cognitive_complexity",
+      "severity": "medium",
+      "file": "src/drift/commands/self_analyze.py",
+      "start_line": 32,
+      "title": "High cognitive complexity in self_analyze()"
+    },
+    {
+      "fingerprint": "cf6d4e9a4db0a3d3",
+      "signal": "cognitive_complexity",
+      "severity": "medium",
+      "file": "src/drift/commands/trend.py",
+      "start_line": 22,
+      "title": "High cognitive complexity in trend()"
+    },
+    {
+      "fingerprint": "0fe747aba86fa667",
+      "signal": "cognitive_complexity",
+      "severity": "medium",
+      "file": "src/drift/config.py",
+      "start_line": 392,
+      "title": "High cognitive complexity in load()"
+    },
+    {
+      "fingerprint": "821f6611a792c282",
+      "signal": "cognitive_complexity",
+      "severity": "medium",
+      "file": "src/drift/finding_context.py",
+      "start_line": 146,
+      "title": "High cognitive complexity in classify_finding_context()"
+    },
+    {
+      "fingerprint": "4d5331ee816c47b7",
+      "signal": "cognitive_complexity",
+      "severity": "medium",
+      "file": "src/drift/incremental.py",
+      "start_line": 394,
+      "title": "High cognitive complexity in run()"
+    },
+    {
+      "fingerprint": "14ada0f8c28c57b0",
+      "signal": "cognitive_complexity",
+      "severity": "high",
+      "file": "src/drift/ingestion/file_discovery.py",
+      "start_line": 95,
+      "title": "High cognitive complexity in discover_files()"
+    },
+    {
+      "fingerprint": "596f3af151037055",
+      "signal": "cognitive_complexity",
+      "severity": "high",
+      "file": "src/drift/ingestion/git_history.py",
+      "start_line": 256,
+      "title": "High cognitive complexity in parse_git_history()"
+    },
+    {
+      "fingerprint": "210c66f36791caad",
+      "signal": "cognitive_complexity",
+      "severity": "medium",
+      "file": "src/drift/ingestion/git_history.py",
+      "start_line": 456,
+      "title": "High cognitive complexity in build_co_change_pairs()"
+    },
+    {
+      "fingerprint": "58f8ca509012ace8",
+      "signal": "cognitive_complexity",
+      "severity": "medium",
+      "file": "src/drift/mcp_server.py",
+      "start_line": 937,
+      "title": "High cognitive complexity in get_tool_catalog()"
+    },
+    {
+      "fingerprint": "8e280d468d7af057",
+      "signal": "cognitive_complexity",
+      "severity": "medium",
+      "file": "src/drift/negative_context.py",
+      "start_line": 1195,
+      "title": "High cognitive complexity in findings_to_negative_context()"
+    },
+    {
+      "fingerprint": "921569f943d2626c",
+      "signal": "cognitive_complexity",
+      "severity": "medium",
+      "file": "src/drift/output/agent_tasks.py",
+      "start_line": 772,
+      "title": "High cognitive complexity in analysis_to_agent_tasks()"
+    },
+    {
+      "fingerprint": "40c9216aaba3de9e",
+      "signal": "cognitive_complexity",
+      "severity": "high",
+      "file": "src/drift/output/json_output.py",
+      "start_line": 334,
+      "title": "High cognitive complexity in findings_to_sarif()"
+    },
+    {
+      "fingerprint": "434c07d8d5823c10",
+      "signal": "cognitive_complexity",
+      "severity": "medium",
+      "file": "src/drift/output/rich_output.py",
+      "start_line": 507,
+      "title": "High cognitive complexity in render_timeline()"
+    },
+    {
+      "fingerprint": "f4a22e205d31f405",
+      "signal": "cognitive_complexity",
+      "severity": "medium",
+      "file": "src/drift/output/rich_output.py",
+      "start_line": 625,
+      "title": "High cognitive complexity in render_trend_chart()"
+    },
+    {
+      "fingerprint": "ae2d42facace679c",
+      "signal": "cognitive_complexity",
+      "severity": "high",
+      "file": "src/drift/pipeline.py",
+      "start_line": 206,
+      "title": "High cognitive complexity in run()"
+    },
+    {
+      "fingerprint": "04427de8835391c2",
+      "signal": "cognitive_complexity",
+      "severity": "high",
+      "file": "src/drift/pipeline.py",
+      "start_line": 384,
+      "title": "High cognitive complexity in run()"
+    },
+    {
+      "fingerprint": "7d2b548039cf604b",
+      "signal": "cognitive_complexity",
+      "severity": "medium",
+      "file": "src/drift/pipeline.py",
+      "start_line": 540,
+      "title": "High cognitive complexity in run()"
+    },
+    {
+      "fingerprint": "78f5a03964fc8aa4",
+      "signal": "cognitive_complexity",
+      "severity": "medium",
+      "file": "src/drift/rules/tsjs/layer_leak_detection.py",
+      "start_line": 46,
+      "title": "High cognitive complexity in run_layer_leak_detection()"
+    },
+    {
+      "fingerprint": "ca7a3bd1821c48db",
+      "signal": "cognitive_complexity",
+      "severity": "high",
+      "file": "src/drift/scope_resolver.py",
+      "start_line": 446,
+      "title": "High cognitive complexity in expand_scope_imports()"
+    },
+    {
+      "fingerprint": "436d4c4cc607e4f2",
+      "signal": "cognitive_complexity",
+      "severity": "medium",
+      "file": "src/drift/scoring/engine.py",
+      "start_line": 281,
+      "title": "High cognitive complexity in auto_calibrate_weights()"
+    },
+    {
+      "fingerprint": "8afb8916faa756e3",
+      "signal": "cognitive_complexity",
+      "severity": "high",
+      "file": "src/drift/scoring/engine.py",
+      "start_line": 360,
+      "title": "High cognitive complexity in calibrate_weights()"
+    },
+    {
+      "fingerprint": "67e2115e747c992d",
+      "signal": "cognitive_complexity",
+      "severity": "high",
+      "file": "src/drift/signals/architecture_violation.py",
+      "start_line": 127,
+      "title": "High cognitive complexity in build_import_graph()"
+    },
+    {
+      "fingerprint": "ef1cf10d91f26380",
+      "signal": "cognitive_complexity",
+      "severity": "medium",
+      "file": "src/drift/signals/architecture_violation.py",
+      "start_line": 331,
+      "title": "High cognitive complexity in analyze()"
+    },
+    {
+      "fingerprint": "0cb46b54c5170427",
+      "signal": "cognitive_complexity",
+      "severity": "high",
+      "file": "src/drift/signals/broad_exception_monoculture.py",
+      "start_line": 97,
+      "title": "High cognitive complexity in analyze()"
+    },
+    {
+      "fingerprint": "02cc8045b56b7569",
+      "signal": "cognitive_complexity",
+      "severity": "high",
+      "file": "src/drift/signals/co_change_coupling.py",
+      "start_line": 162,
+      "title": "High cognitive complexity in analyze()"
+    },
+    {
+      "fingerprint": "2d1fb53bba848bd4",
+      "signal": "cognitive_complexity",
+      "severity": "high",
+      "file": "src/drift/signals/cognitive_complexity.py",
+      "start_line": 134,
+      "title": "High cognitive complexity in analyze()"
+    },
+    {
+      "fingerprint": "f34a6011e04e0b57",
+      "signal": "cognitive_complexity",
+      "severity": "medium",
+      "file": "src/drift/signals/cohesion_deficit.py",
+      "start_line": 179,
+      "title": "High cognitive complexity in analyze()"
+    },
+    {
+      "fingerprint": "98fe5e89394b48b7",
+      "signal": "cognitive_complexity",
+      "severity": "high",
+      "file": "src/drift/signals/doc_impl_drift.py",
+      "start_line": 477,
+      "title": "High cognitive complexity in analyze()"
+    },
+    {
+      "fingerprint": "e46f77994811abc7",
+      "signal": "cognitive_complexity",
+      "severity": "high",
+      "file": "src/drift/signals/exception_contract_drift.py",
+      "start_line": 379,
+      "title": "High cognitive complexity in analyze()"
+    },
+    {
+      "fingerprint": "e1b9f74d8d62ea1d",
+      "signal": "cognitive_complexity",
+      "severity": "high",
+      "file": "src/drift/signals/explainability_deficit.py",
+      "start_line": 62,
+      "title": "High cognitive complexity in analyze()"
+    },
+    {
+      "fingerprint": "fa7c85c9d58be71e",
+      "signal": "cognitive_complexity",
+      "severity": "high",
+      "file": "src/drift/signals/guard_clause_deficit.py",
+      "start_line": 241,
+      "title": "High cognitive complexity in analyze()"
+    },
+    {
+      "fingerprint": "a5634042c37a8a87",
+      "signal": "cognitive_complexity",
+      "severity": "high",
+      "file": "src/drift/signals/missing_authorization.py",
+      "start_line": 230,
+      "title": "High cognitive complexity in analyze()"
+    },
+    {
+      "fingerprint": "3c35417dd64703d7",
+      "signal": "cognitive_complexity",
+      "severity": "high",
+      "file": "src/drift/signals/mutant_duplicates.py",
+      "start_line": 211,
+      "title": "High cognitive complexity in analyze()"
+    },
+    {
+      "fingerprint": "f12451513c8ac082",
+      "signal": "cognitive_complexity",
+      "severity": "high",
+      "file": "src/drift/signals/naming_contract_violation.py",
+      "start_line": 350,
+      "title": "High cognitive complexity in analyze()"
+    },
+    {
+      "fingerprint": "e809c4a7dc9f742b",
+      "signal": "cognitive_complexity",
+      "severity": "high",
+      "file": "src/drift/signals/pattern_fragmentation.py",
+      "start_line": 151,
+      "title": "High cognitive complexity in analyze()"
+    },
+    {
+      "fingerprint": "6bfb68c21b664b15",
+      "signal": "cognitive_complexity",
+      "severity": "medium",
+      "file": "src/drift/signals/system_misalignment.py",
+      "start_line": 190,
+      "title": "High cognitive complexity in analyze()"
+    },
+    {
+      "fingerprint": "6ad72ee24c032848",
+      "signal": "cognitive_complexity",
+      "severity": "high",
+      "file": "src/drift/signals/temporal_volatility.py",
+      "start_line": 53,
+      "title": "High cognitive complexity in analyze()"
+    },
+    {
+      "fingerprint": "c68a8973986c543d",
+      "signal": "cognitive_complexity",
+      "severity": "high",
+      "file": "src/drift/suppression.py",
+      "start_line": 25,
+      "title": "High cognitive complexity in scan_suppressions()"
+    },
+    {
+      "fingerprint": "e6feb25bcc23640f",
+      "signal": "cognitive_complexity",
+      "severity": "medium",
+      "file": "src/drift/suppression.py",
+      "start_line": 72,
+      "title": "High cognitive complexity in filter_findings()"
+    },
+    {
+      "fingerprint": "fd55f9301b31f423",
+      "signal": "cognitive_complexity",
+      "severity": "medium",
+      "file": "src/drift/timeline.py",
+      "start_line": 207,
+      "title": "High cognitive complexity in build_timeline()"
+    },
+    {
+      "fingerprint": "dca6aa3986c04693",
+      "signal": "cognitive_complexity",
+      "severity": "medium",
+      "file": "work_artifacts/mcp_min_client.py",
+      "start_line": 20,
+      "title": "High cognitive complexity in main()"
+    },
+    {
+      "fingerprint": "f49e619f8c172452",
+      "signal": "cohesion_deficit",
+      "severity": "medium",
+      "file": "src/drift/analyzer.py",
+      "start_line": 1,
+      "title": "Cohesion deficit in src/drift/analyzer.py"
+    },
+    {
+      "fingerprint": "98b84bedf5e07cfb",
+      "signal": "cohesion_deficit",
+      "severity": "low",
+      "file": "src/drift/analyzers/typescript/alias_resolver.py",
+      "start_line": 1,
+      "title": "Cohesion deficit in src/drift/analyzers/typescript/alias_resolver.py"
+    },
+    {
+      "fingerprint": "b7c4b8bfa94527e2",
+      "signal": "cohesion_deficit",
+      "severity": "low",
+      "file": "src/drift/analyzers/typescript/barrel_resolver.py",
+      "start_line": 1,
+      "title": "Cohesion deficit in src/drift/analyzers/typescript/barrel_resolver.py"
+    },
+    {
+      "fingerprint": "6741068f954bb01b",
+      "signal": "cohesion_deficit",
+      "severity": "medium",
+      "file": "src/drift/analyzers/typescript/import_graph.py",
+      "start_line": 1,
+      "title": "Cohesion deficit in src/drift/analyzers/typescript/import_graph.py"
+    },
+    {
+      "fingerprint": "40e8d8fb55c4c3bf",
+      "signal": "cohesion_deficit",
+      "severity": "medium",
+      "file": "src/drift/analyzers/typescript/workspace_boundaries.py",
+      "start_line": 1,
+      "title": "Cohesion deficit in src/drift/analyzers/typescript/workspace_boundaries.py"
+    },
+    {
+      "fingerprint": "40b435bdc5a1f265",
+      "signal": "cohesion_deficit",
+      "severity": "medium",
+      "file": "src/drift/api.py",
+      "start_line": 1,
+      "title": "Cohesion deficit in src/drift/api.py"
+    },
+    {
+      "fingerprint": "c7ea888bfd62e143",
+      "signal": "cohesion_deficit",
+      "severity": "medium",
+      "file": "src/drift/cli.py",
+      "start_line": 1,
+      "title": "Cohesion deficit in src/drift/cli.py"
+    },
+    {
+      "fingerprint": "06079dd51bc8606f",
+      "signal": "cohesion_deficit",
+      "severity": "medium",
+      "file": "src/drift/commands/analyze.py",
+      "start_line": 1,
+      "title": "Cohesion deficit in src/drift/commands/analyze.py"
+    },
+    {
+      "fingerprint": "5f0780769e088a87",
+      "signal": "cohesion_deficit",
+      "severity": "medium",
+      "file": "src/drift/commands/brief.py",
+      "start_line": 1,
+      "title": "Cohesion deficit in src/drift/commands/brief.py"
+    },
+    {
+      "fingerprint": "4da19132fafbba87",
+      "signal": "cohesion_deficit",
+      "severity": "medium",
+      "file": "src/drift/commands/config_cmd.py",
+      "start_line": 1,
+      "title": "Cohesion deficit in src/drift/commands/config_cmd.py"
+    },
+    {
+      "fingerprint": "b3337d4387278ae3",
+      "signal": "cohesion_deficit",
+      "severity": "medium",
+      "file": "src/drift/commands/explain.py",
+      "start_line": 1,
+      "title": "Cohesion deficit in src/drift/commands/explain.py"
+    },
+    {
+      "fingerprint": "c85a14d8ac8e05c2",
+      "signal": "cohesion_deficit",
+      "severity": "high",
+      "file": "src/drift/commands/init_cmd.py",
+      "start_line": 1,
+      "title": "Cohesion deficit in src/drift/commands/init_cmd.py"
+    },
+    {
+      "fingerprint": "46121bf31a2041af",
+      "signal": "cohesion_deficit",
+      "severity": "medium",
+      "file": "src/drift/config.py",
+      "start_line": 1,
+      "title": "Cohesion deficit in src/drift/config.py"
+    },
+    {
+      "fingerprint": "154f17a784285a85",
+      "signal": "cohesion_deficit",
+      "severity": "high",
+      "file": "src/drift/copilot_context.py",
+      "start_line": 1,
+      "title": "Cohesion deficit in src/drift/copilot_context.py"
+    },
+    {
+      "fingerprint": "492b19474f9edf13",
+      "signal": "cohesion_deficit",
+      "severity": "medium",
+      "file": "src/drift/embeddings.py",
+      "start_line": 1,
+      "title": "Cohesion deficit in src/drift/embeddings.py"
+    },
+    {
+      "fingerprint": "8643de828e85173d",
+      "signal": "cohesion_deficit",
+      "severity": "medium",
+      "file": "src/drift/finding_context.py",
+      "start_line": 1,
+      "title": "Cohesion deficit in src/drift/finding_context.py"
+    },
+    {
+      "fingerprint": "54790d255f695559",
+      "signal": "cohesion_deficit",
+      "severity": "medium",
+      "file": "src/drift/incremental.py",
+      "start_line": 1,
+      "title": "Cohesion deficit in src/drift/incremental.py"
+    },
+    {
+      "fingerprint": "97a726fe611a9bf1",
+      "signal": "cohesion_deficit",
+      "severity": "medium",
+      "file": "src/drift/ingestion/ast_parser.py",
+      "start_line": 1,
+      "title": "Cohesion deficit in src/drift/ingestion/ast_parser.py"
+    },
+    {
+      "fingerprint": "16a1b89006d70658",
+      "signal": "cohesion_deficit",
+      "severity": "medium",
+      "file": "src/drift/ingestion/file_discovery.py",
+      "start_line": 1,
+      "title": "Cohesion deficit in src/drift/ingestion/file_discovery.py"
+    },
+    {
+      "fingerprint": "bfed6baa20eb1fa1",
+      "signal": "cohesion_deficit",
+      "severity": "medium",
+      "file": "src/drift/ingestion/git_history.py",
+      "start_line": 1,
+      "title": "Cohesion deficit in src/drift/ingestion/git_history.py"
+    },
+    {
+      "fingerprint": "4e26bdc751791ffd",
+      "signal": "cohesion_deficit",
+      "severity": "high",
+      "file": "src/drift/ingestion/ts_parser.py",
+      "start_line": 1,
+      "title": "Cohesion deficit in src/drift/ingestion/ts_parser.py"
+    },
+    {
+      "fingerprint": "dbf420b6e7ba9587",
+      "signal": "cohesion_deficit",
+      "severity": "medium",
+      "file": "src/drift/models.py",
+      "start_line": 1,
+      "title": "Cohesion deficit in src/drift/models.py"
+    },
+    {
+      "fingerprint": "913336fdfbbbc13b",
+      "signal": "cohesion_deficit",
+      "severity": "low",
+      "file": "src/drift/negative_context.py",
+      "start_line": 1,
+      "title": "Cohesion deficit in src/drift/negative_context.py"
+    },
+    {
+      "fingerprint": "f92e62c4c0c5d672",
+      "signal": "cohesion_deficit",
+      "severity": "low",
+      "file": "src/drift/negative_context_export.py",
+      "start_line": 1,
+      "title": "Cohesion deficit in src/drift/negative_context_export.py"
+    },
+    {
+      "fingerprint": "333a834ed3f29f15",
+      "signal": "cohesion_deficit",
+      "severity": "medium",
+      "file": "src/drift/output/agent_tasks.py",
+      "start_line": 1,
+      "title": "Cohesion deficit in src/drift/output/agent_tasks.py"
+    },
+    {
+      "fingerprint": "21acfd32b323cf67",
+      "signal": "cohesion_deficit",
+      "severity": "medium",
+      "file": "src/drift/output/rich_output.py",
+      "start_line": 1,
+      "title": "Cohesion deficit in src/drift/output/rich_output.py"
+    },
+    {
+      "fingerprint": "d2c7e5c353aac14a",
+      "signal": "cohesion_deficit",
+      "severity": "medium",
+      "file": "src/drift/pipeline.py",
+      "start_line": 1,
+      "title": "Cohesion deficit in src/drift/pipeline.py"
+    },
+    {
+      "fingerprint": "8d49239865a3aabb",
+      "signal": "cohesion_deficit",
+      "severity": "low",
+      "file": "src/drift/recommendations.py",
+      "start_line": 1,
+      "title": "Cohesion deficit in src/drift/recommendations.py"
+    },
+    {
+      "fingerprint": "39c60b86c29276d9",
+      "signal": "cohesion_deficit",
+      "severity": "medium",
+      "file": "src/drift/rules/tsjs/circular_module_detection.py",
+      "start_line": 1,
+      "title": "Cohesion deficit in src/drift/rules/tsjs/circular_module_detection.py"
+    },
+    {
+      "fingerprint": "f6fc53ddc9d40a6d",
+      "signal": "cohesion_deficit",
+      "severity": "medium",
+      "file": "src/drift/scope_resolver.py",
+      "start_line": 1,
+      "title": "Cohesion deficit in src/drift/scope_resolver.py"
+    },
+    {
+      "fingerprint": "642b2e88245a5b85",
+      "signal": "cohesion_deficit",
+      "severity": "high",
+      "file": "src/drift/signals/_utils.py",
+      "start_line": 1,
+      "title": "Cohesion deficit in src/drift/signals/_utils.py"
+    },
+    {
+      "fingerprint": "cd4e0670305df781",
+      "signal": "cohesion_deficit",
+      "severity": "medium",
+      "file": "src/drift/signals/bypass_accumulation.py",
+      "start_line": 1,
+      "title": "Cohesion deficit in src/drift/signals/bypass_accumulation.py"
+    },
+    {
+      "fingerprint": "2833c5972bd85aa2",
+      "signal": "cohesion_deficit",
+      "severity": "high",
+      "file": "src/drift/signals/circular_import.py",
+      "start_line": 1,
+      "title": "Cohesion deficit in src/drift/signals/circular_import.py"
+    },
+    {
+      "fingerprint": "5db8359e012d2f81",
+      "signal": "cohesion_deficit",
+      "severity": "medium",
+      "file": "src/drift/signals/co_change_coupling.py",
+      "start_line": 1,
+      "title": "Cohesion deficit in src/drift/signals/co_change_coupling.py"
+    },
+    {
+      "fingerprint": "9936db33cbaaa553",
+      "signal": "cohesion_deficit",
+      "severity": "high",
+      "file": "src/drift/signals/cohesion_deficit.py",
+      "start_line": 1,
+      "title": "Cohesion deficit in src/drift/signals/cohesion_deficit.py"
+    },
+    {
+      "fingerprint": "321f0302abc9a6ee",
+      "signal": "cohesion_deficit",
+      "severity": "medium",
+      "file": "src/drift/signals/dead_code_accumulation.py",
+      "start_line": 1,
+      "title": "Cohesion deficit in src/drift/signals/dead_code_accumulation.py"
+    },
+    {
+      "fingerprint": "48ffe37d2122d2dc",
+      "signal": "cohesion_deficit",
+      "severity": "high",
+      "file": "src/drift/signals/doc_impl_drift.py",
+      "start_line": 1,
+      "title": "Cohesion deficit in src/drift/signals/doc_impl_drift.py"
+    },
+    {
+      "fingerprint": "f29bdeb6606ddeec",
+      "signal": "cohesion_deficit",
+      "severity": "low",
+      "file": "src/drift/signals/exception_contract_drift.py",
+      "start_line": 1,
+      "title": "Cohesion deficit in src/drift/signals/exception_contract_drift.py"
+    },
+    {
+      "fingerprint": "d1a4af0821a0cc63",
+      "signal": "cohesion_deficit",
+      "severity": "medium",
+      "file": "src/drift/signals/hardcoded_secret.py",
+      "start_line": 1,
+      "title": "Cohesion deficit in src/drift/signals/hardcoded_secret.py"
+    },
+    {
+      "fingerprint": "c74e8917aef601b7",
+      "signal": "cohesion_deficit",
+      "severity": "medium",
+      "file": "src/drift/signals/insecure_default.py",
+      "start_line": 1,
+      "title": "Cohesion deficit in src/drift/signals/insecure_default.py"
+    },
+    {
+      "fingerprint": "24e3ea46a0702715",
+      "signal": "cohesion_deficit",
+      "severity": "medium",
+      "file": "src/drift/signals/missing_authorization.py",
+      "start_line": 1,
+      "title": "Cohesion deficit in src/drift/signals/missing_authorization.py"
+    },
+    {
+      "fingerprint": "733d35f23e9f2492",
+      "signal": "cohesion_deficit",
+      "severity": "high",
+      "file": "src/drift/signals/mutant_duplicates.py",
+      "start_line": 1,
+      "title": "Cohesion deficit in src/drift/signals/mutant_duplicates.py"
+    },
+    {
+      "fingerprint": "016f9b3235f8829c",
+      "signal": "cohesion_deficit",
+      "severity": "low",
+      "file": "src/drift/signals/naming_contract_violation.py",
+      "start_line": 1,
+      "title": "Cohesion deficit in src/drift/signals/naming_contract_violation.py"
+    },
+    {
+      "fingerprint": "593c9aa0c01445db",
+      "signal": "cohesion_deficit",
+      "severity": "high",
+      "file": "src/drift/signals/pattern_fragmentation.py",
+      "start_line": 1,
+      "title": "Cohesion deficit in src/drift/signals/pattern_fragmentation.py"
+    },
+    {
+      "fingerprint": "0e5b60973b4324cf",
+      "signal": "cohesion_deficit",
+      "severity": "high",
+      "file": "src/drift/telemetry.py",
+      "start_line": 1,
+      "title": "Cohesion deficit in src/drift/telemetry.py"
+    },
+    {
+      "fingerprint": "7df80fa0eb183b64",
+      "signal": "cohesion_deficit",
+      "severity": "medium",
+      "file": "src/drift/timeline.py",
+      "start_line": 1,
+      "title": "Cohesion deficit in src/drift/timeline.py"
+    },
+    {
+      "fingerprint": "0cd5cd37432b02ae",
+      "signal": "dead_code_accumulation",
+      "severity": "high",
+      "file": "hooks/docs_version.py",
+      "start_line": 24,
+      "title": "2 potentially unused exports in docs_version.py"
+    },
+    {
+      "fingerprint": "ed56f0a7bf6d5890",
+      "signal": "dead_code_accumulation",
+      "severity": "medium",
+      "file": "src/drift/analyzers/typescript/workspace_boundaries.py",
+      "start_line": 62,
+      "title": "2 potentially unused exports in workspace_boundaries.py"
+    },
+    {
+      "fingerprint": "4713aa8cda1935bd",
+      "signal": "dead_code_accumulation",
+      "severity": "medium",
+      "file": "src/drift/api.py",
+      "start_line": 2071,
+      "title": "3 potentially unused exports in api.py"
+    },
+    {
+      "fingerprint": "b8b8788518bc4b95",
+      "signal": "dead_code_accumulation",
+      "severity": "high",
+      "file": "src/drift/cache.py",
+      "start_line": 41,
+      "title": "14 potentially unused exports in cache.py"
+    },
+    {
+      "fingerprint": "fc376d2a6a1950a3",
+      "signal": "dead_code_accumulation",
+      "severity": "medium",
+      "file": "src/drift/cli.py",
+      "start_line": 135,
+      "title": "2 potentially unused exports in cli.py"
+    },
+    {
+      "fingerprint": "776492e1e54d28f7",
+      "signal": "dead_code_accumulation",
+      "severity": "medium",
+      "file": "src/drift/commands/config_cmd.py",
+      "start_line": 91,
+      "title": "2 potentially unused exports in config_cmd.py"
+    },
+    {
+      "fingerprint": "a16b95ea3c297995",
+      "signal": "dead_code_accumulation",
+      "severity": "high",
+      "file": "src/drift/config.py",
+      "start_line": 188,
+      "title": "13 potentially unused exports in config.py"
+    },
+    {
+      "fingerprint": "41809202a98e5e88",
+      "signal": "dead_code_accumulation",
+      "severity": "high",
+      "file": "src/drift/embeddings.py",
+      "start_line": 45,
+      "title": "16 potentially unused exports in embeddings.py"
+    },
+    {
+      "fingerprint": "d20f7efb2e50d36f",
+      "signal": "dead_code_accumulation",
+      "severity": "medium",
+      "file": "src/drift/errors.py",
+      "start_line": 47,
+      "title": "6 potentially unused exports in errors.py"
+    },
+    {
+      "fingerprint": "2924088454581bb3",
+      "signal": "dead_code_accumulation",
+      "severity": "medium",
+      "file": "src/drift/guardrails.py",
+      "start_line": 88,
+      "title": "3 potentially unused exports in guardrails.py"
+    },
+    {
+      "fingerprint": "9c959e91b65fa0f7",
+      "signal": "dead_code_accumulation",
+      "severity": "high",
+      "file": "src/drift/incremental.py",
+      "start_line": 56,
+      "title": "15 potentially unused exports in incremental.py"
+    },
+    {
+      "fingerprint": "0f763ba431205250",
+      "signal": "dead_code_accumulation",
+      "severity": "high",
+      "file": "src/drift/ingestion/ast_parser.py",
+      "start_line": 366,
+      "title": "11 potentially unused exports in ast_parser.py"
+    },
+    {
+      "fingerprint": "868cedac4c62df16",
+      "signal": "dead_code_accumulation",
+      "severity": "high",
+      "file": "src/drift/mcp_server.py",
+      "start_line": 225,
+      "title": "8 potentially unused exports in mcp_server.py"
+    },
+    {
+      "fingerprint": "bf8b5ced78ee8135",
+      "signal": "dead_code_accumulation",
+      "severity": "medium",
+      "file": "src/drift/models.py",
+      "start_line": 223,
+      "title": "6 potentially unused exports in models.py"
+    },
+    {
+      "fingerprint": "32d9331a6bf9710f",
+      "signal": "dead_code_accumulation",
+      "severity": "medium",
+      "file": "src/drift/output/rich_output.py",
+      "start_line": 151,
+      "title": "3 potentially unused exports in rich_output.py"
+    },
+    {
+      "fingerprint": "17c536ff3ff5286a",
+      "signal": "dead_code_accumulation",
+      "severity": "high",
+      "file": "src/drift/pipeline.py",
+      "start_line": 190,
+      "title": "18 potentially unused exports in pipeline.py"
+    },
+    {
+      "fingerprint": "1e10e06665244d87",
+      "signal": "dead_code_accumulation",
+      "severity": "medium",
+      "file": "src/drift/profiles.py",
+      "start_line": 184,
+      "title": "2 potentially unused exports in profiles.py"
+    },
+    {
+      "fingerprint": "d656b091c4fa5a3c",
+      "signal": "dead_code_accumulation",
+      "severity": "medium",
+      "file": "src/drift/scoring/engine.py",
+      "start_line": 68,
+      "title": "2 potentially unused exports in engine.py"
+    },
+    {
+      "fingerprint": "3b46b8753fe39bf9",
+      "signal": "dead_code_accumulation",
+      "severity": "high",
+      "file": "src/drift/signals/architecture_violation.py",
+      "start_line": 127,
+      "title": "14 potentially unused exports in architecture_violation.py"
+    },
+    {
+      "fingerprint": "7bab8f6d0f802ec2",
+      "signal": "dead_code_accumulation",
+      "severity": "medium",
+      "file": "src/drift/signals/base.py",
+      "start_line": 43,
+      "title": "9 potentially unused exports in base.py"
+    },
+    {
+      "fingerprint": "5929264dc56bd344",
+      "signal": "dead_code_accumulation",
+      "severity": "medium",
+      "file": "src/drift/signals/broad_exception_monoculture.py",
+      "start_line": 90,
+      "title": "3 potentially unused exports in broad_exception_monoculture.py"
+    },
+    {
+      "fingerprint": "cbcfc7879102e05a",
+      "signal": "dead_code_accumulation",
+      "severity": "medium",
+      "file": "src/drift/signals/bypass_accumulation.py",
+      "start_line": 104,
+      "title": "3 potentially unused exports in bypass_accumulation.py"
+    },
+    {
+      "fingerprint": "69d24812166c3673",
+      "signal": "dead_code_accumulation",
+      "severity": "medium",
+      "file": "src/drift/signals/circular_import.py",
+      "start_line": 135,
+      "title": "3 potentially unused exports in circular_import.py"
+    },
+    {
+      "fingerprint": "0446bce5525bc097",
+      "signal": "dead_code_accumulation",
+      "severity": "medium",
+      "file": "src/drift/signals/co_change_coupling.py",
+      "start_line": 155,
+      "title": "3 potentially unused exports in co_change_coupling.py"
+    },
+    {
+      "fingerprint": "6e4150dab37c4084",
+      "signal": "dead_code_accumulation",
+      "severity": "high",
+      "file": "src/drift/signals/cognitive_complexity.py",
+      "start_line": 127,
+      "title": "4 potentially unused exports in cognitive_complexity.py"
+    },
+    {
+      "fingerprint": "ccb29581112eb164",
+      "signal": "dead_code_accumulation",
+      "severity": "medium",
+      "file": "src/drift/signals/cohesion_deficit.py",
+      "start_line": 172,
+      "title": "3 potentially unused exports in cohesion_deficit.py"
+    },
+    {
+      "fingerprint": "1d92753fcb7965fc",
+      "signal": "dead_code_accumulation",
+      "severity": "medium",
+      "file": "src/drift/signals/dead_code_accumulation.py",
+      "start_line": 218,
+      "title": "3 potentially unused exports in dead_code_accumulation.py"
+    },
+    {
+      "fingerprint": "17f0200fb4bbb6bd",
+      "signal": "dead_code_accumulation",
+      "severity": "high",
+      "file": "src/drift/signals/doc_impl_drift.py",
+      "start_line": 470,
+      "title": "8 potentially unused exports in doc_impl_drift.py"
+    },
+    {
+      "fingerprint": "b642535e86048f0e",
+      "signal": "dead_code_accumulation",
+      "severity": "medium",
+      "file": "src/drift/signals/exception_contract_drift.py",
+      "start_line": 372,
+      "title": "3 potentially unused exports in exception_contract_drift.py"
+    },
+    {
+      "fingerprint": "cb1b1bbe20c807ab",
+      "signal": "dead_code_accumulation",
+      "severity": "medium",
+      "file": "src/drift/signals/explainability_deficit.py",
+      "start_line": 55,
+      "title": "3 potentially unused exports in explainability_deficit.py"
+    },
+    {
+      "fingerprint": "594119f1e1c6e05f",
+      "signal": "dead_code_accumulation",
+      "severity": "medium",
+      "file": "src/drift/signals/fan_out_explosion.py",
+      "start_line": 41,
+      "title": "3 potentially unused exports in fan_out_explosion.py"
+    },
+    {
+      "fingerprint": "d3f3a74c26f43e74",
+      "signal": "dead_code_accumulation",
+      "severity": "medium",
+      "file": "src/drift/signals/guard_clause_deficit.py",
+      "start_line": 234,
+      "title": "3 potentially unused exports in guard_clause_deficit.py"
+    },
+    {
+      "fingerprint": "e3469233eb8180b5",
+      "signal": "dead_code_accumulation",
+      "severity": "high",
+      "file": "src/drift/signals/hardcoded_secret.py",
+      "start_line": 315,
+      "title": "9 potentially unused exports in hardcoded_secret.py"
+    },
+    {
+      "fingerprint": "07dd31f4bf729333",
+      "signal": "dead_code_accumulation",
+      "severity": "high",
+      "file": "src/drift/signals/insecure_default.py",
+      "start_line": 205,
+      "title": "8 potentially unused exports in insecure_default.py"
+    },
+    {
+      "fingerprint": "6c9b63e359b2139b",
+      "signal": "dead_code_accumulation",
+      "severity": "high",
+      "file": "src/drift/signals/missing_authorization.py",
+      "start_line": 223,
+      "title": "4 potentially unused exports in missing_authorization.py"
+    },
+    {
+      "fingerprint": "faca76149cdb1ca7",
+      "signal": "dead_code_accumulation",
+      "severity": "high",
+      "file": "src/drift/signals/mutant_duplicates.py",
+      "start_line": 204,
+      "title": "4 potentially unused exports in mutant_duplicates.py"
+    },
+    {
+      "fingerprint": "a021a9e07e44cc6c",
+      "signal": "dead_code_accumulation",
+      "severity": "medium",
+      "file": "src/drift/signals/naming_contract_violation.py",
+      "start_line": 343,
+      "title": "3 potentially unused exports in naming_contract_violation.py"
+    },
+    {
+      "fingerprint": "d39476f90c240eda",
+      "signal": "dead_code_accumulation",
+      "severity": "medium",
+      "file": "src/drift/signals/pattern_fragmentation.py",
+      "start_line": 144,
+      "title": "3 potentially unused exports in pattern_fragmentation.py"
+    },
+    {
+      "fingerprint": "fe85fb2888be9cf4",
+      "signal": "dead_code_accumulation",
+      "severity": "medium",
+      "file": "src/drift/signals/system_misalignment.py",
+      "start_line": 183,
+      "title": "3 potentially unused exports in system_misalignment.py"
+    },
+    {
+      "fingerprint": "0e1e70c017faf587",
+      "signal": "dead_code_accumulation",
+      "severity": "high",
+      "file": "src/drift/signals/temporal_volatility.py",
+      "start_line": 46,
+      "title": "5 potentially unused exports in temporal_volatility.py"
+    },
+    {
+      "fingerprint": "40bb6fe0b6771176",
+      "signal": "dead_code_accumulation",
+      "severity": "high",
+      "file": "src/drift/signals/ts_architecture.py",
+      "start_line": 47,
+      "title": "7 potentially unused exports in ts_architecture.py"
+    },
+    {
+      "fingerprint": "a9feb53881b323d7",
+      "signal": "dead_code_accumulation",
+      "severity": "medium",
+      "file": "src/drift/telemetry.py",
+      "start_line": 33,
+      "title": "4 potentially unused exports in telemetry.py"
+    },
+    {
+      "fingerprint": "f147a61d79d9adb4",
+      "signal": "dead_code_accumulation",
+      "severity": "medium",
+      "file": "src/drift/timeline.py",
+      "start_line": 17,
+      "title": "3 potentially unused exports in timeline.py"
+    },
+    {
+      "fingerprint": "68d564c225a08b7e",
+      "signal": "dead_code_accumulation",
+      "severity": "high",
+      "file": "src/drift/types.py",
+      "start_line": 15,
+      "title": "7 potentially unused exports in types.py"
+    },
+    {
+      "fingerprint": "6c2de1e178e407dc",
+      "signal": "doc_impl_drift",
+      "severity": "medium",
+      "file": "decisions/ADR-017-dia-false-positive-reduction.md",
+      "start_line": 1,
+      "title": "ADR references missing directory: services/"
+    },
+    {
+      "fingerprint": "c8ade547d88980bf",
+      "signal": "explainability_deficit",
+      "severity": "high",
+      "file": "benchmarks/corpus/src/myapp/processors/pricing.py",
+      "start_line": 4,
+      "title": "Unexplained complexity: calculate_pricing"
+    },
+    {
+      "fingerprint": "022d812ef7317a1e",
+      "signal": "explainability_deficit",
+      "severity": "high",
+      "file": "benchmarks/corpus/src/myapp/processors/transform.py",
+      "start_line": 4,
+      "title": "Unexplained complexity: transform_dataset"
+    },
+    {
+      "fingerprint": "9947a4241b648ebe",
+      "signal": "explainability_deficit",
+      "severity": "low",
+      "file": "benchmarks/corpus/src/myapp/processors/validator.py",
+      "start_line": 4,
+      "title": "Unexplained complexity: process_registration"
+    },
+    {
+      "fingerprint": "e8f9eca74053209a",
+      "signal": "explainability_deficit",
+      "severity": "low",
+      "file": "src/drift/analyzer.py",
+      "start_line": 257,
+      "title": "Unexplained complexity: analyze_diff"
+    },
+    {
+      "fingerprint": "0cf37c3daeadaca0",
+      "signal": "explainability_deficit",
+      "severity": "low",
+      "file": "src/drift/api.py",
+      "start_line": 343,
+      "title": "Unexplained complexity: _format_scan_response"
+    },
+    {
+      "fingerprint": "fd6c009e77dc6367",
+      "signal": "explainability_deficit",
+      "severity": "medium",
+      "file": "src/drift/api.py",
+      "start_line": 672,
+      "title": "Unexplained complexity: diff"
+    },
+    {
+      "fingerprint": "56c055d31e2d0d99",
+      "signal": "explainability_deficit",
+      "severity": "medium",
+      "file": "src/drift/api.py",
+      "start_line": 1345,
+      "title": "Unexplained complexity: fix_plan"
+    },
+    {
+      "fingerprint": "3679e67887e7f912",
+      "signal": "explainability_deficit",
+      "severity": "medium",
+      "file": "src/drift/api.py",
+      "start_line": 1734,
+      "title": "Unexplained complexity: validate"
+    },
+    {
+      "fingerprint": "9ea19688aeb82e3a",
+      "signal": "explainability_deficit",
+      "severity": "medium",
+      "file": "src/drift/api.py",
+      "start_line": 2014,
+      "title": "Unexplained complexity: nudge"
+    },
+    {
+      "fingerprint": "d051b5f094ad9074",
+      "signal": "explainability_deficit",
+      "severity": "low",
+      "file": "src/drift/api.py",
+      "start_line": 2604,
+      "title": "Unexplained complexity: brief"
+    },
+    {
+      "fingerprint": "75e7c4065e627af9",
+      "signal": "explainability_deficit",
+      "severity": "low",
+      "file": "src/drift/cli.py",
+      "start_line": 199,
+      "title": "Unexplained complexity: safe_main"
+    },
+    {
+      "fingerprint": "5625fce7a9881d09",
+      "signal": "explainability_deficit",
+      "severity": "low",
+      "file": "src/drift/commands/check.py",
+      "start_line": 146,
+      "title": "Unexplained complexity: check"
+    },
+    {
+      "fingerprint": "31dc656ba4c4cb83",
+      "signal": "explainability_deficit",
+      "severity": "low",
+      "file": "src/drift/commands/config_cmd.py",
+      "start_line": 24,
+      "title": "Unexplained complexity: validate"
+    },
+    {
+      "fingerprint": "cd948a396a9a05cb",
+      "signal": "explainability_deficit",
+      "severity": "low",
+      "file": "src/drift/commands/init_cmd.py",
+      "start_line": 283,
+      "title": "Unexplained complexity: init"
+    },
+    {
+      "fingerprint": "66e4a9d03803061f",
+      "signal": "explainability_deficit",
+      "severity": "low",
+      "file": "src/drift/config.py",
+      "start_line": 392,
+      "title": "Unexplained complexity: DriftConfig.load"
+    },
+    {
+      "fingerprint": "8a32752a6dffd8b9",
+      "signal": "explainability_deficit",
+      "severity": "low",
+      "file": "src/drift/copilot_context.py",
+      "start_line": 57,
+      "title": "Unexplained complexity: _format_rule"
+    },
+    {
+      "fingerprint": "a503071ef279839a",
+      "signal": "explainability_deficit",
+      "severity": "low",
+      "file": "src/drift/finding_context.py",
+      "start_line": 146,
+      "title": "Unexplained complexity: classify_finding_context"
+    },
+    {
+      "fingerprint": "6ccd061a40525032",
+      "signal": "explainability_deficit",
+      "severity": "low",
+      "file": "src/drift/incremental.py",
+      "start_line": 394,
+      "title": "Unexplained complexity: IncrementalSignalRunner.run"
+    },
+    {
+      "fingerprint": "e48ccecb3929ae9b",
+      "signal": "explainability_deficit",
+      "severity": "low",
+      "file": "src/drift/ingestion/ast_parser.py",
+      "start_line": 74,
+      "title": "Unexplained complexity: _fingerprint_try_block"
+    },
+    {
+      "fingerprint": "4d219a9f35d2648e",
+      "signal": "explainability_deficit",
+      "severity": "medium",
+      "file": "src/drift/ingestion/ast_parser.py",
+      "start_line": 415,
+      "title": "Unexplained complexity: PythonFileParser._process_function"
+    },
+    {
+      "fingerprint": "7cbb10934ba1aca9",
+      "signal": "explainability_deficit",
+      "severity": "low",
+      "file": "src/drift/ingestion/ast_parser.py",
+      "start_line": 540,
+      "title": "Unexplained complexity: PythonFileParser.visit_ClassDef"
+    },
+    {
+      "fingerprint": "86d818be3d564fdf",
+      "signal": "explainability_deficit",
+      "severity": "medium",
+      "file": "src/drift/ingestion/file_discovery.py",
+      "start_line": 95,
+      "title": "Unexplained complexity: discover_files"
+    },
+    {
+      "fingerprint": "eb8aacd137673b45",
+      "signal": "explainability_deficit",
+      "severity": "medium",
+      "file": "src/drift/ingestion/git_history.py",
+      "start_line": 256,
+      "title": "Unexplained complexity: parse_git_history"
+    },
+    {
+      "fingerprint": "808ad80fc4f2a460",
+      "signal": "explainability_deficit",
+      "severity": "low",
+      "file": "src/drift/ingestion/ts_parser.py",
+      "start_line": 139,
+      "title": "Unexplained complexity: _extract_functions"
+    },
+    {
+      "fingerprint": "c9a0e53cc8b50df1",
+      "signal": "explainability_deficit",
+      "severity": "low",
+      "file": "src/drift/ingestion/ts_parser.py",
+      "start_line": 378,
+      "title": "Unexplained complexity: _extract_patterns"
+    },
+    {
+      "fingerprint": "741607b3dff1d7f9",
+      "signal": "explainability_deficit",
+      "severity": "low",
+      "file": "src/drift/output/agent_tasks.py",
+      "start_line": 364,
+      "title": "Unexplained complexity: _success_criteria_for"
+    },
+    {
+      "fingerprint": "8e9962095f665161",
+      "signal": "explainability_deficit",
+      "severity": "low",
+      "file": "src/drift/output/agent_tasks.py",
+      "start_line": 637,
+      "title": "Unexplained complexity: _compute_dependencies"
+    },
+    {
+      "fingerprint": "b4216d3ac99f6a00",
+      "signal": "explainability_deficit",
+      "severity": "low",
+      "file": "src/drift/output/json_output.py",
+      "start_line": 334,
+      "title": "Unexplained complexity: findings_to_sarif"
+    },
+    {
+      "fingerprint": "197aed0fdc2cae6a",
+      "signal": "explainability_deficit",
+      "severity": "low",
+      "file": "src/drift/output/rich_output.py",
+      "start_line": 151,
+      "title": "Unexplained complexity: render_summary"
+    },
+    {
+      "fingerprint": "1f03f000bb607adf",
+      "signal": "explainability_deficit",
+      "severity": "low",
+      "file": "src/drift/output/rich_output.py",
+      "start_line": 507,
+      "title": "Unexplained complexity: render_timeline"
+    },
+    {
+      "fingerprint": "877b8be9e81d5751",
+      "signal": "explainability_deficit",
+      "severity": "low",
+      "file": "src/drift/output/rich_output.py",
+      "start_line": 625,
+      "title": "Unexplained complexity: render_trend_chart"
+    },
+    {
+      "fingerprint": "ef7f81e6ef6f2ad2",
+      "signal": "explainability_deficit",
+      "severity": "high",
+      "file": "src/drift/pipeline.py",
+      "start_line": 206,
+      "title": "Unexplained complexity: IngestionPhase.run"
+    },
+    {
+      "fingerprint": "49d3a4853b5a60d0",
+      "signal": "explainability_deficit",
+      "severity": "medium",
+      "file": "src/drift/pipeline.py",
+      "start_line": 384,
+      "title": "Unexplained complexity: SignalPhase.run"
+    },
+    {
+      "fingerprint": "0236bfd592df6216",
+      "signal": "explainability_deficit",
+      "severity": "low",
+      "file": "src/drift/pipeline.py",
+      "start_line": 540,
+      "title": "Unexplained complexity: ScoringPhase.run"
+    },
+    {
+      "fingerprint": "30b8c61a26ef4b7d",
+      "signal": "explainability_deficit",
+      "severity": "low",
+      "file": "src/drift/recommendations.py",
+      "start_line": 96,
+      "title": "Unexplained complexity: _recommend_mutant_duplicate"
+    },
+    {
+      "fingerprint": "e0de05731342dcc3",
+      "signal": "explainability_deficit",
+      "severity": "low",
+      "file": "src/drift/scope_resolver.py",
+      "start_line": 237,
+      "title": "Unexplained complexity: _match_keywords"
+    },
+    {
+      "fingerprint": "d0734045b5b70d09",
+      "signal": "explainability_deficit",
+      "severity": "low",
+      "file": "src/drift/scope_resolver.py",
+      "start_line": 446,
+      "title": "Unexplained complexity: expand_scope_imports"
+    },
+    {
+      "fingerprint": "3d5128b6d306dd1e",
+      "signal": "explainability_deficit",
+      "severity": "low",
+      "file": "src/drift/scoring/engine.py",
+      "start_line": 281,
+      "title": "Unexplained complexity: auto_calibrate_weights"
+    },
+    {
+      "fingerprint": "4abfc4f0e410d249",
+      "signal": "explainability_deficit",
+      "severity": "medium",
+      "file": "src/drift/scoring/engine.py",
+      "start_line": 360,
+      "title": "Unexplained complexity: calibrate_weights"
+    },
+    {
+      "fingerprint": "d30c089271cb75fc",
+      "signal": "explainability_deficit",
+      "severity": "low",
+      "file": "src/drift/signals/architecture_violation.py",
+      "start_line": 127,
+      "title": "Unexplained complexity: build_import_graph"
+    },
+    {
+      "fingerprint": "587d8f39a2851e92",
+      "signal": "explainability_deficit",
+      "severity": "low",
+      "file": "src/drift/signals/architecture_violation.py",
+      "start_line": 331,
+      "title": "Unexplained complexity: ArchitectureViolationSignal.analyze"
+    },
+    {
+      "fingerprint": "63c396f7eb4edb86",
+      "signal": "explainability_deficit",
+      "severity": "low",
+      "file": "src/drift/signals/architecture_violation.py",
+      "start_line": 758,
+      "title": "Unexplained complexity: ArchitectureViolationSignal._check_instability"
+    },
+    {
+      "fingerprint": "748c3215b601d88f",
+      "signal": "explainability_deficit",
+      "severity": "low",
+      "file": "src/drift/signals/cohesion_deficit.py",
+      "start_line": 76,
+      "title": "Unexplained complexity: _is_test_like"
+    },
+    {
+      "fingerprint": "fe9afc403d8b6e2c",
+      "signal": "explainability_deficit",
+      "severity": "low",
+      "file": "src/drift/signals/doc_impl_drift.py",
+      "start_line": 477,
+      "title": "Unexplained complexity: DocImplDriftSignal.analyze"
+    },
+    {
+      "fingerprint": "05f001f98cd3d387",
+      "signal": "explainability_deficit",
+      "severity": "low",
+      "file": "src/drift/signals/exception_contract_drift.py",
+      "start_line": 379,
+      "title": "Unexplained complexity: ExceptionContractDriftSignal.analyze"
+    },
+    {
+      "fingerprint": "c367489acb5235ad",
+      "signal": "explainability_deficit",
+      "severity": "low",
+      "file": "src/drift/signals/guard_clause_deficit.py",
+      "start_line": 241,
+      "title": "Unexplained complexity: GuardClauseDeficitSignal.analyze"
+    },
+    {
+      "fingerprint": "b3e7ee4f3233b355",
+      "signal": "explainability_deficit",
+      "severity": "low",
+      "file": "src/drift/signals/hardcoded_secret.py",
+      "start_line": 474,
+      "title": "Unexplained complexity: HardcodedSecretSignal._evaluate_value"
+    },
+    {
+      "fingerprint": "d420dc4b87c41dad",
+      "signal": "explainability_deficit",
+      "severity": "low",
+      "file": "src/drift/signals/insecure_default.py",
+      "start_line": 242,
+      "title": "Unexplained complexity: InsecureDefaultSignal._check_tree"
+    },
+    {
+      "fingerprint": "cd0fc3fd46b8fc63",
+      "signal": "explainability_deficit",
+      "severity": "low",
+      "file": "src/drift/signals/missing_authorization.py",
+      "start_line": 230,
+      "title": "Unexplained complexity: MissingAuthorizationSignal.analyze"
+    },
+    {
+      "fingerprint": "f9325e553ea1ec6e",
+      "signal": "explainability_deficit",
+      "severity": "low",
+      "file": "src/drift/signals/naming_contract_violation.py",
+      "start_line": 350,
+      "title": "Unexplained complexity: NamingContractViolationSignal.analyze"
+    },
+    {
+      "fingerprint": "b85b4dc1928fddd7",
+      "signal": "explainability_deficit",
+      "severity": "low",
+      "file": "src/drift/signals/pattern_fragmentation.py",
+      "start_line": 151,
+      "title": "Unexplained complexity: PatternFragmentationSignal.analyze"
+    },
+    {
+      "fingerprint": "8e1eb2437a012654",
+      "signal": "fan_out_explosion",
+      "severity": "medium",
+      "file": "src/drift/analyzer.py",
+      "start_line": 1,
+      "title": "Fan-out explosion in analyzer.py"
+    },
+    {
+      "fingerprint": "b10f23864a4df348",
+      "signal": "fan_out_explosion",
+      "severity": "high",
+      "file": "src/drift/api.py",
+      "start_line": 1,
+      "title": "Fan-out explosion in api.py"
+    },
+    {
+      "fingerprint": "3d214d6c49621cba",
+      "signal": "fan_out_explosion",
+      "severity": "high",
+      "file": "src/drift/cli.py",
+      "start_line": 1,
+      "title": "Fan-out explosion in cli.py"
+    },
+    {
+      "fingerprint": "26ae163eea63dc0d",
+      "signal": "fan_out_explosion",
+      "severity": "medium",
+      "file": "src/drift/commands/analyze.py",
+      "start_line": 1,
+      "title": "Fan-out explosion in analyze.py"
+    },
+    {
+      "fingerprint": "4ce61bdd8fb9613d",
+      "signal": "fan_out_explosion",
+      "severity": "medium",
+      "file": "src/drift/commands/check.py",
+      "start_line": 1,
+      "title": "Fan-out explosion in check.py"
+    },
+    {
+      "fingerprint": "a6eaf80c96f813d0",
+      "signal": "fan_out_explosion",
+      "severity": "medium",
+      "file": "src/drift/mcp_server.py",
+      "start_line": 1,
+      "title": "Fan-out explosion in mcp_server.py"
+    },
+    {
+      "fingerprint": "54c0f3dbd7669b7b",
+      "signal": "fan_out_explosion",
+      "severity": "medium",
+      "file": "src/drift/pipeline.py",
+      "start_line": 1,
+      "title": "Fan-out explosion in pipeline.py"
+    },
+    {
+      "fingerprint": "5ec9a106bfef64e9",
+      "signal": "guard_clause_deficit",
+      "severity": "medium",
+      "file": "benchmarks/corpus/src/myapp/processors/pricing.py",
+      "start_line": 4,
+      "title": "Deep nesting in calculate_pricing()"
+    },
+    {
+      "fingerprint": "93793103f983c049",
+      "signal": "guard_clause_deficit",
+      "severity": "high",
+      "file": "benchmarks/corpus/src/myapp/processors/transform.py",
+      "start_line": 4,
+      "title": "Deep nesting in transform_dataset()"
+    },
+    {
+      "fingerprint": "6f8ee9d9afc1e105",
+      "signal": "guard_clause_deficit",
+      "severity": "high",
+      "file": "benchmarks/corpus/src/myapp/processors/validator.py",
+      "start_line": 4,
+      "title": "Deep nesting in process_registration()"
+    },
+    {
+      "fingerprint": "51b19abe86ed52e2",
+      "signal": "guard_clause_deficit",
+      "severity": "high",
+      "file": "benchmarks/corpus/src/myapp/processors",
+      "start_line": 1,
+      "title": "Guard clause deficit in benchmarks/corpus/src/myapp/processors/"
+    },
+    {
+      "fingerprint": "165f676b886b3c34",
+      "signal": "guard_clause_deficit",
+      "severity": "medium",
+      "file": "src/drift/suppression.py",
+      "start_line": 25,
+      "title": "Deep nesting in scan_suppressions()"
+    },
+    {
+      "fingerprint": "22fd689e4b7fba32",
+      "signal": "guard_clause_deficit",
+      "severity": "high",
+      "file": "src/drift/commands/analyze.py",
+      "start_line": 158,
+      "title": "Deep nesting in analyze()"
+    },
+    {
+      "fingerprint": "1e006ab2b8fac108",
+      "signal": "guard_clause_deficit",
+      "severity": "high",
+      "file": "src/drift/commands/check.py",
+      "start_line": 146,
+      "title": "Deep nesting in check()"
+    },
+    {
+      "fingerprint": "794911ef8bacbbb4",
+      "signal": "guard_clause_deficit",
+      "severity": "medium",
+      "file": "src/drift/commands/init_cmd.py",
+      "start_line": 283,
+      "title": "Deep nesting in init()"
+    },
+    {
+      "fingerprint": "db7a35a217ce1c1c",
+      "signal": "guard_clause_deficit",
+      "severity": "high",
+      "file": "src/drift/ingestion/git_history.py",
+      "start_line": 256,
+      "title": "Deep nesting in parse_git_history()"
+    },
+    {
+      "fingerprint": "5fe6039b0686e71f",
+      "signal": "guard_clause_deficit",
+      "severity": "high",
+      "file": "src/drift/ingestion",
+      "start_line": 1,
+      "title": "Guard clause deficit in src/drift/ingestion/"
+    },
+    {
+      "fingerprint": "487e52b1abefc41b",
+      "signal": "guard_clause_deficit",
+      "severity": "high",
+      "file": "src/drift/rules/tsjs",
+      "start_line": 1,
+      "title": "Guard clause deficit in src/drift/rules/tsjs/"
+    },
+    {
+      "fingerprint": "a553a7ba04b32b34",
+      "signal": "mutant_duplicate",
+      "severity": "high",
+      "file": "benchmarks/corpus/src/myapp/service_a.py",
+      "start_line": 4,
+      "title": "Exact duplicates (2\u00d7): process_order"
+    },
+    {
+      "fingerprint": "f84171dd3ef6d7c3",
+      "signal": "mutant_duplicate",
+      "severity": "high",
+      "file": "benchmarks/corpus/src/myapp/service_a.py",
+      "start_line": 12,
+      "title": "Exact duplicates (2\u00d7): validate_input"
+    },
+    {
+      "fingerprint": "e81a488a88632e02",
+      "signal": "mutant_duplicate",
+      "severity": "high",
+      "file": "src/drift/commands/analyze.py",
+      "start_line": 205,
+      "title": "Exact duplicates (2\u00d7): _parse_signal_ids"
+    },
+    {
+      "fingerprint": "3b2ebaa0423158df",
+      "signal": "mutant_duplicate",
+      "severity": "high",
+      "file": "benchmarks/corpus/src/myapp/connectors/db.py",
+      "start_line": 8,
+      "title": "Near-duplicate (100%): connect_postgres \u2194 connect_redis"
+    },
+    {
+      "fingerprint": "7c5fa635897976e7",
+      "signal": "mutant_duplicate",
+      "severity": "high",
+      "file": "benchmarks/corpus/src/myapp/connectors/db.py",
+      "start_line": 8,
+      "title": "Near-duplicate (100%): connect_postgres \u2194 connect_mongodb"
+    },
+    {
+      "fingerprint": "c85733b8f6043641",
+      "signal": "mutant_duplicate",
+      "severity": "high",
+      "file": "benchmarks/corpus/src/myapp/connectors/db.py",
+      "start_line": 8,
+      "title": "Near-duplicate (100%): connect_postgres \u2194 connect_elasticsearch"
+    },
+    {
+      "fingerprint": "a90a9ab2ff8a7e28",
+      "signal": "mutant_duplicate",
+      "severity": "high",
+      "file": "benchmarks/corpus/src/myapp/connectors/db.py",
+      "start_line": 8,
+      "title": "Near-duplicate (100%): connect_postgres \u2194 connect_rabbitmq"
+    },
+    {
+      "fingerprint": "21c9688a760ec035",
+      "signal": "mutant_duplicate",
+      "severity": "high",
+      "file": "benchmarks/corpus/src/myapp/connectors/db.py",
+      "start_line": 8,
+      "title": "Near-duplicate (100%): connect_postgres \u2194 connect_kafka"
+    },
+    {
+      "fingerprint": "98b68470af63ef39",
+      "signal": "mutant_duplicate",
+      "severity": "high",
+      "file": "benchmarks/corpus/src/myapp/connectors/db.py",
+      "start_line": 8,
+      "title": "Near-duplicate (100%): connect_postgres \u2194 connect_memcached"
+    },
+    {
+      "fingerprint": "91474265cbbd1c92",
+      "signal": "mutant_duplicate",
+      "severity": "high",
+      "file": "benchmarks/corpus/src/myapp/connectors/db.py",
+      "start_line": 8,
+      "title": "Near-duplicate (100%): connect_postgres \u2194 connect_dynamodb"
+    },
+    {
+      "fingerprint": "f28e1a8b38673720",
+      "signal": "mutant_duplicate",
+      "severity": "high",
+      "file": "benchmarks/corpus/src/myapp/connectors/db.py",
+      "start_line": 17,
+      "title": "Near-duplicate (100%): connect_redis \u2194 connect_mongodb"
+    },
+    {
+      "fingerprint": "38d14f7445b3e751",
+      "signal": "mutant_duplicate",
+      "severity": "high",
+      "file": "benchmarks/corpus/src/myapp/connectors/db.py",
+      "start_line": 17,
+      "title": "Near-duplicate (100%): connect_redis \u2194 connect_elasticsearch"
+    },
+    {
+      "fingerprint": "78b9ad88b93bffc2",
+      "signal": "mutant_duplicate",
+      "severity": "high",
+      "file": "benchmarks/corpus/src/myapp/connectors/db.py",
+      "start_line": 17,
+      "title": "Near-duplicate (100%): connect_redis \u2194 connect_rabbitmq"
+    },
+    {
+      "fingerprint": "fed4c8d6428280e7",
+      "signal": "mutant_duplicate",
+      "severity": "high",
+      "file": "benchmarks/corpus/src/myapp/connectors/db.py",
+      "start_line": 17,
+      "title": "Near-duplicate (100%): connect_redis \u2194 connect_kafka"
+    },
+    {
+      "fingerprint": "be36c7636b9ce3c8",
+      "signal": "mutant_duplicate",
+      "severity": "high",
+      "file": "benchmarks/corpus/src/myapp/connectors/db.py",
+      "start_line": 17,
+      "title": "Near-duplicate (100%): connect_redis \u2194 connect_memcached"
+    },
+    {
+      "fingerprint": "eeac29089bdd3dfa",
+      "signal": "mutant_duplicate",
+      "severity": "high",
+      "file": "benchmarks/corpus/src/myapp/connectors/db.py",
+      "start_line": 17,
+      "title": "Near-duplicate (100%): connect_redis \u2194 connect_dynamodb"
+    },
+    {
+      "fingerprint": "4feb440749213da3",
+      "signal": "mutant_duplicate",
+      "severity": "high",
+      "file": "benchmarks/corpus/src/myapp/connectors/db.py",
+      "start_line": 26,
+      "title": "Near-duplicate (100%): connect_mongodb \u2194 connect_elasticsearch"
+    },
+    {
+      "fingerprint": "3b46926d6bab04d0",
+      "signal": "mutant_duplicate",
+      "severity": "high",
+      "file": "benchmarks/corpus/src/myapp/connectors/db.py",
+      "start_line": 26,
+      "title": "Near-duplicate (100%): connect_mongodb \u2194 connect_rabbitmq"
+    },
+    {
+      "fingerprint": "8337c0c9edecc70d",
+      "signal": "mutant_duplicate",
+      "severity": "high",
+      "file": "benchmarks/corpus/src/myapp/connectors/db.py",
+      "start_line": 26,
+      "title": "Near-duplicate (100%): connect_mongodb \u2194 connect_kafka"
+    },
+    {
+      "fingerprint": "b03341715710fa32",
+      "signal": "mutant_duplicate",
+      "severity": "high",
+      "file": "benchmarks/corpus/src/myapp/connectors/db.py",
+      "start_line": 26,
+      "title": "Near-duplicate (100%): connect_mongodb \u2194 connect_memcached"
+    },
+    {
+      "fingerprint": "aa80bde30b487162",
+      "signal": "mutant_duplicate",
+      "severity": "high",
+      "file": "benchmarks/corpus/src/myapp/connectors/db.py",
+      "start_line": 26,
+      "title": "Near-duplicate (100%): connect_mongodb \u2194 connect_dynamodb"
+    },
+    {
+      "fingerprint": "f731f3fae3649411",
+      "signal": "mutant_duplicate",
+      "severity": "high",
+      "file": "benchmarks/corpus/src/myapp/handler_v1.py",
+      "start_line": 4,
+      "title": "Near-duplicate (100%): fetch_user_data \u2194 get_customer_info"
+    },
+    {
+      "fingerprint": "f01eeb7bf6aa18c3",
+      "signal": "mutant_duplicate",
+      "severity": "medium",
+      "file": "src/drift/mcp_server.py",
+      "start_line": 318,
+      "title": "Near-duplicate (82%): drift_diff \u2194 drift_scan"
+    },
+    {
+      "fingerprint": "1f6d1062c1a96249",
+      "signal": "naming_contract_violation",
+      "severity": "medium",
+      "file": "benchmarks/corpus/src/myapp/models/core.py",
+      "start_line": 38,
+      "title": "Naming contract violation: Inventory.check_stock()"
+    },
+    {
+      "fingerprint": "c17bae10cdb2c846",
+      "signal": "naming_contract_violation",
+      "severity": "medium",
+      "file": "benchmarks/corpus/src/myapp/utils/naming.py",
+      "start_line": 4,
+      "title": "Naming contract violation: validate_user_profile()"
+    },
+    {
+      "fingerprint": "12855b3046836d53",
+      "signal": "naming_contract_violation",
+      "severity": "medium",
+      "file": "benchmarks/corpus/src/myapp/utils/naming.py",
+      "start_line": 11,
+      "title": "Naming contract violation: ensure_database_connection()"
+    },
+    {
+      "fingerprint": "1ae3fda08a2c9c06",
+      "signal": "pattern_fragmentation",
+      "severity": "medium",
+      "file": "src/drift",
+      "start_line": 1,
+      "title": "error_handling: 34 variants in src/drift/"
+    },
+    {
+      "fingerprint": "af42403da76520af",
+      "signal": "pattern_fragmentation",
+      "severity": "medium",
+      "file": "src/drift/analyzers/typescript",
+      "start_line": 1,
+      "title": "error_handling: 2 variants in src/drift/analyzers/typescript/"
+    },
+    {
+      "fingerprint": "52eb175a6f6f0071",
+      "signal": "pattern_fragmentation",
+      "severity": "medium",
+      "file": "src/drift/commands",
+      "start_line": 1,
+      "title": "error_handling: 6 variants in src/drift/commands/"
+    },
+    {
+      "fingerprint": "6bb7d9fc3e005948",
+      "signal": "pattern_fragmentation",
+      "severity": "high",
+      "file": "src/drift/ingestion",
+      "start_line": 1,
+      "title": "error_handling: 14 variants in src/drift/ingestion/"
+    },
+    {
+      "fingerprint": "d40e570d714a4495",
+      "signal": "pattern_fragmentation",
+      "severity": "high",
+      "file": "src/drift/signals",
+      "start_line": 1,
+      "title": "error_handling: 19 variants in src/drift/signals/"
+    },
+    {
+      "fingerprint": "6ecd26682ba03830",
+      "signal": "pattern_fragmentation",
+      "severity": "medium",
+      "file": "work_artifacts",
+      "start_line": 1,
+      "title": "error_handling: 4 variants in work_artifacts/"
+    },
+    {
+      "fingerprint": "5ad30653e3f743b0",
+      "signal": "pattern_fragmentation",
+      "severity": "medium",
+      "file": "benchmarks/corpus/src/myapp/models",
+      "start_line": 1,
+      "title": "return_pattern: 2 variants in benchmarks/corpus/src/myapp/models/"
+    },
+    {
+      "fingerprint": "46257987af5aafe7",
+      "signal": "pattern_fragmentation",
+      "severity": "medium",
+      "file": "src/drift/analyzers/typescript",
+      "start_line": 1,
+      "title": "return_pattern: 3 variants in src/drift/analyzers/typescript/"
+    },
+    {
+      "fingerprint": "cb795d6216fe7ecd",
+      "signal": "pattern_fragmentation",
+      "severity": "high",
+      "file": "src/drift",
+      "start_line": 1,
+      "title": "return_pattern: 4 variants in src/drift/"
+    },
+    {
+      "fingerprint": "d5c3043a2b4322e5",
+      "signal": "pattern_fragmentation",
+      "severity": "medium",
+      "file": "src/drift/commands",
+      "start_line": 1,
+      "title": "return_pattern: 2 variants in src/drift/commands/"
+    },
+    {
+      "fingerprint": "bed4a5777ee3660a",
+      "signal": "pattern_fragmentation",
+      "severity": "medium",
+      "file": "src/drift/rules/tsjs",
+      "start_line": 1,
+      "title": "return_pattern: 2 variants in src/drift/rules/tsjs/"
+    },
+    {
+      "fingerprint": "e0ec0995858b1141",
+      "signal": "pattern_fragmentation",
+      "severity": "high",
+      "file": "src/drift/signals",
+      "start_line": 1,
+      "title": "return_pattern: 4 variants in src/drift/signals/"
+    },
+    {
+      "fingerprint": "7d3a1d44a986e2ed",
+      "signal": "temporal_volatility",
+      "severity": "medium",
+      "file": "src/drift/mcp_server.py",
+      "start_line": 1,
+      "title": "High volatility: src/drift/mcp_server.py"
+    },
+    {
+      "fingerprint": "54b79de5bf4d82fb",
+      "signal": "temporal_volatility",
+      "severity": "high",
+      "file": "src/drift/api.py",
+      "start_line": 1,
+      "title": "High volatility: src/drift/api.py"
+    },
+    {
+      "fingerprint": "3ec72933fa7cedda",
+      "signal": "temporal_volatility",
+      "severity": "high",
+      "file": "src/drift/signals/architecture_violation.py",
+      "start_line": 1,
+      "title": "High volatility: src/drift/signals/architecture_violation.py"
+    },
+    {
+      "fingerprint": "cc76b65fa16ec778",
+      "signal": "temporal_volatility",
+      "severity": "low",
+      "file": "src/drift/signals/system_misalignment.py",
+      "start_line": 1,
+      "title": "High volatility: src/drift/signals/system_misalignment.py"
+    },
+    {
+      "fingerprint": "e741ac0490268fd3",
+      "signal": "temporal_volatility",
+      "severity": "low",
+      "file": "src/drift/signals/temporal_volatility.py",
+      "start_line": 1,
+      "title": "High volatility: src/drift/signals/temporal_volatility.py"
+    },
+    {
+      "fingerprint": "1370e2b96cf9e011",
+      "signal": "temporal_volatility",
+      "severity": "low",
+      "file": "src/drift/ingestion/ast_parser.py",
+      "start_line": 1,
+      "title": "High volatility: src/drift/ingestion/ast_parser.py"
+    },
+    {
+      "fingerprint": "b1f91106d71bfe9c",
+      "signal": "temporal_volatility",
+      "severity": "high",
+      "file": "src/drift/models.py",
+      "start_line": 1,
+      "title": "High volatility: src/drift/models.py"
+    },
+    {
+      "fingerprint": "3326be281f81e50a",
+      "signal": "temporal_volatility",
+      "severity": "high",
+      "file": "src/drift/ingestion/git_history.py",
+      "start_line": 1,
+      "title": "High volatility: src/drift/ingestion/git_history.py"
+    },
+    {
+      "fingerprint": "66a4af1bde44be29",
+      "signal": "temporal_volatility",
+      "severity": "high",
+      "file": "src/drift/signals/doc_impl_drift.py",
+      "start_line": 1,
+      "title": "High volatility: src/drift/signals/doc_impl_drift.py"
+    },
+    {
+      "fingerprint": "87b124b745b7db93",
+      "signal": "temporal_volatility",
+      "severity": "medium",
+      "file": "src/drift/ingestion/file_discovery.py",
+      "start_line": 1,
+      "title": "High volatility: src/drift/ingestion/file_discovery.py"
+    },
+    {
+      "fingerprint": "a7da4c5f2829b37e",
+      "signal": "temporal_volatility",
+      "severity": "high",
+      "file": "src/drift/cli.py",
+      "start_line": 1,
+      "title": "High volatility: src/drift/cli.py"
+    },
+    {
+      "fingerprint": "7e5c19c257f9714a",
+      "signal": "temporal_volatility",
+      "severity": "high",
+      "file": "src/drift/output/json_output.py",
+      "start_line": 1,
+      "title": "High volatility: src/drift/output/json_output.py"
+    },
+    {
+      "fingerprint": "39fadd0ebd6be1af",
+      "signal": "temporal_volatility",
+      "severity": "high",
+      "file": "src/drift/signals/mutant_duplicates.py",
+      "start_line": 1,
+      "title": "High volatility: src/drift/signals/mutant_duplicates.py"
+    },
+    {
+      "fingerprint": "74e56f7778aa6e81",
+      "signal": "temporal_volatility",
+      "severity": "low",
+      "file": "src/drift/cache.py",
+      "start_line": 1,
+      "title": "High volatility: src/drift/cache.py"
+    },
+    {
+      "fingerprint": "d4c731942c5512cf",
+      "signal": "temporal_volatility",
+      "severity": "low",
+      "file": "src/drift/commands/analyze.py",
+      "start_line": 1,
+      "title": "High volatility: src/drift/commands/analyze.py"
+    },
+    {
+      "fingerprint": "4e113b8a8a88a8e0",
+      "signal": "temporal_volatility",
+      "severity": "high",
+      "file": "src/drift/config.py",
+      "start_line": 1,
+      "title": "High volatility: src/drift/config.py"
+    },
+    {
+      "fingerprint": "96c8796a5f17b4e0",
+      "signal": "temporal_volatility",
+      "severity": "low",
+      "file": "src/drift/commands/check.py",
+      "start_line": 1,
+      "title": "High volatility: src/drift/commands/check.py"
+    },
+    {
+      "fingerprint": "fce82f0726ecdc07",
+      "signal": "temporal_volatility",
+      "severity": "medium",
+      "file": "src/drift/signals/pattern_fragmentation.py",
+      "start_line": 1,
+      "title": "High volatility: src/drift/signals/pattern_fragmentation.py"
+    },
+    {
+      "fingerprint": "7d7a76901159e704",
+      "signal": "temporal_volatility",
+      "severity": "high",
+      "file": "src/drift/signals/explainability_deficit.py",
+      "start_line": 1,
+      "title": "High volatility: src/drift/signals/explainability_deficit.py"
+    },
+    {
+      "fingerprint": "5deffec9f4a297b2",
+      "signal": "temporal_volatility",
+      "severity": "high",
+      "file": "src/drift/analyzer.py",
+      "start_line": 1,
+      "title": "High volatility: src/drift/analyzer.py"
+    },
+    {
+      "fingerprint": "d6b62fd1c335671f",
+      "signal": "temporal_volatility",
+      "severity": "info",
+      "file": "src/drift/recommendations.py",
+      "start_line": 1,
+      "title": "High volatility: src/drift/recommendations.py"
+    },
+    {
+      "fingerprint": "679c9809c6e843db",
+      "signal": "temporal_volatility",
+      "severity": "medium",
+      "file": "src/drift/output/rich_output.py",
+      "start_line": 1,
+      "title": "High volatility: src/drift/output/rich_output.py"
+    },
+    {
+      "fingerprint": "53cb37fae056dd48",
+      "signal": "temporal_volatility",
+      "severity": "low",
+      "file": "src/drift/signals/base.py",
+      "start_line": 1,
+      "title": "High volatility: src/drift/signals/base.py"
+    },
+    {
+      "fingerprint": "e69a87728c4bfede",
+      "signal": "temporal_volatility",
+      "severity": "medium",
+      "file": "src/drift/scoring/engine.py",
+      "start_line": 1,
+      "title": "High volatility: src/drift/scoring/engine.py"
+    },
+    {
+      "fingerprint": "eebfeb23a5ba1fe6",
+      "signal": "temporal_volatility",
+      "severity": "low",
+      "file": "src/drift/signals/__init__.py",
+      "start_line": 1,
+      "title": "High volatility: src/drift/signals/__init__.py"
+    }
+  ]
+}

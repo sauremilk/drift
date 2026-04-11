@@ -20,6 +20,8 @@ class Profile:
     policies: dict[str, object] = field(default_factory=dict)
     fail_on: str = "none"
     auto_calibrate: bool = True
+    guided_thresholds: dict[str, float] = field(default_factory=dict)
+    output_language: str = "de"
 
 
 # ---------------------------------------------------------------------------
@@ -130,6 +132,8 @@ _register(
             },
         },
         fail_on="none",
+        guided_thresholds={"green_max": 0.35, "yellow_max": 0.65},
+        output_language="de",
     )
 )
 
@@ -169,6 +173,141 @@ _register(
             "max_discovery_files": 10000,
         },
         fail_on="medium",
+    )
+)
+
+
+# ---------------------------------------------------------------------------
+# FastAPI profile — tuned for web API projects
+# ---------------------------------------------------------------------------
+_register(
+    Profile(
+        name="fastapi",
+        description=(
+            "Tuned for FastAPI / web-API projects. Upweights architecture "
+            "violations and enforces strict layer boundaries between "
+            "routes, services, and data layers."
+        ),
+        weights={
+            "pattern_fragmentation": 0.14,
+            "architecture_violation": 0.20,
+            "mutant_duplicate": 0.13,
+            "temporal_volatility": 0.0,
+            "explainability_deficit": 0.08,
+            "system_misalignment": 0.08,
+            "doc_impl_drift": 0.04,
+            "broad_exception_monoculture": 0.05,
+            "test_polarity_deficit": 0.04,
+            "guard_clause_deficit": 0.03,
+            "naming_contract_violation": 0.04,
+            "bypass_accumulation": 0.03,
+            "exception_contract_drift": 0.03,
+            "cohesion_deficit": 0.01,
+            "co_change_coupling": 0.005,
+        },
+        thresholds={
+            "similarity_threshold": 0.80,
+            "min_function_loc": 10,
+            "min_complexity": 5,
+            "recency_days": 14,
+            "volatility_z_threshold": 1.5,
+            "max_discovery_files": 10000,
+        },
+        policies={
+            "layer_boundaries": [
+                {
+                    "name": "No DB imports in routers",
+                    "from": "routers/**",
+                    "deny_import": ["db.*", "models.*", "repositories.*"],
+                },
+                {
+                    "name": "No HTTP imports in services",
+                    "from": "services/**",
+                    "deny_import": ["fastapi.*", "starlette.*"],
+                },
+            ],
+        },
+        fail_on="none",
+    )
+)
+
+# ---------------------------------------------------------------------------
+# Library profile — tuned for reusable packages
+# ---------------------------------------------------------------------------
+_register(
+    Profile(
+        name="library",
+        description=(
+            "Tuned for reusable Python libraries. Upweights API surface "
+            "quality signals (explainability, naming, doc-impl drift) "
+            "to keep the public interface clean."
+        ),
+        weights={
+            "pattern_fragmentation": 0.14,
+            "architecture_violation": 0.12,
+            "mutant_duplicate": 0.10,
+            "temporal_volatility": 0.0,
+            "explainability_deficit": 0.12,
+            "system_misalignment": 0.06,
+            "doc_impl_drift": 0.08,
+            "broad_exception_monoculture": 0.04,
+            "test_polarity_deficit": 0.04,
+            "guard_clause_deficit": 0.03,
+            "naming_contract_violation": 0.08,
+            "bypass_accumulation": 0.03,
+            "exception_contract_drift": 0.03,
+            "cohesion_deficit": 0.01,
+            "co_change_coupling": 0.005,
+        },
+        thresholds={
+            "similarity_threshold": 0.80,
+            "min_function_loc": 8,
+            "min_complexity": 5,
+            "recency_days": 14,
+            "volatility_z_threshold": 1.5,
+            "max_discovery_files": 10000,
+        },
+        fail_on="none",
+    )
+)
+
+# ---------------------------------------------------------------------------
+# Monorepo profile — tuned for large multi-package repositories
+# ---------------------------------------------------------------------------
+_register(
+    Profile(
+        name="monorepo",
+        description=(
+            "Tuned for large monorepos with multiple packages. Upweights "
+            "architecture violations and co-change coupling; raises file "
+            "discovery limits for broad coverage."
+        ),
+        weights={
+            "pattern_fragmentation": 0.14,
+            "architecture_violation": 0.18,
+            "mutant_duplicate": 0.13,
+            "temporal_volatility": 0.0,
+            "explainability_deficit": 0.08,
+            "system_misalignment": 0.08,
+            "doc_impl_drift": 0.04,
+            "broad_exception_monoculture": 0.04,
+            "test_polarity_deficit": 0.04,
+            "guard_clause_deficit": 0.03,
+            "naming_contract_violation": 0.04,
+            "bypass_accumulation": 0.03,
+            "exception_contract_drift": 0.02,
+            "cohesion_deficit": 0.01,
+            "co_change_coupling": 0.02,
+        },
+        thresholds={
+            "similarity_threshold": 0.80,
+            "min_function_loc": 10,
+            "min_complexity": 5,
+            "recency_days": 14,
+            "volatility_z_threshold": 1.5,
+            "max_discovery_files": 20000,
+        },
+        fail_on="none",
     )
 )
 

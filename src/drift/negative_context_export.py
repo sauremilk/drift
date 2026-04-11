@@ -62,7 +62,7 @@ def _dedup_key(nc: NegativeContext) -> tuple[str, str, str, str, str]:
     """Return grouping key for remediation-equivalent anti-pattern rules."""
     return (
         nc.category.value,
-        nc.source_signal.value,
+        nc.source_signal,
         nc.severity.value,
         nc.canonical_alternative or "",
         nc.rationale or "",
@@ -126,7 +126,7 @@ def _render_item(group: _DeduplicatedContext) -> str:
 
     lines.append(
         f"- {icon} **{nc.description}** "
-        f"({nc.source_signal.value}, {nc.severity.value}){occurrence_note}"
+        f"({nc.source_signal}, {nc.severity.value}){occurrence_note}"
     )
 
     if group.forbidden_variants:
@@ -176,7 +176,7 @@ def _render_prompt_rule(group: _DeduplicatedContext) -> str:
     instead = nc.canonical_alternative or "Follow established project patterns"
     sev = nc.severity.value.upper()
     suffix = f" (x{group.occurrences})" if group.occurrences > 1 else ""
-    return f"- [{sev}|{nc.source_signal.value}] {do_not} -> {instead}{suffix}"
+    return f"- [{sev}|{nc.source_signal}] {do_not} -> {instead}{suffix}"
 
 
 def _item_to_raw_payload(group: _DeduplicatedContext) -> dict[str, object]:
@@ -185,7 +185,7 @@ def _item_to_raw_payload(group: _DeduplicatedContext) -> dict[str, object]:
     return {
         "anti_pattern_id": nc.anti_pattern_id,
         "category": nc.category.value,
-        "signal": nc.source_signal.value,
+        "signal": nc.source_signal,
         "severity": nc.severity.value,
         "scope": nc.scope.value,
         "description": nc.description,

@@ -42,6 +42,7 @@ jobs:
     name: Performance benchmark
     # NOTE: Uses GitHub-hosted Windows runner (consistent with CI).
     runs-on: windows-latest
+    timeout-minutes: 30
     outputs:
       passed: ${{ steps.gate.outputs.passed }}
       wall_clock: ${{ steps.gate.outputs.wall_clock }}
@@ -153,6 +154,7 @@ jobs:
     needs: benchmark
     if: needs.benchmark.outputs.passed == 'false'
     runs-on: windows-latest
+    timeout-minutes: 10
     env:
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
@@ -200,6 +202,7 @@ jobs:
     needs: benchmark
     if: needs.benchmark.outputs.passed == 'true'
     runs-on: windows-latest
+    timeout-minutes: 10
     env:
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:

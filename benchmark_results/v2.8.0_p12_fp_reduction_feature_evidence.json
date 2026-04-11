@@ -1,0 +1,65 @@
+{
+  "version": "2.8.0",
+  "feature": "P1-2 FP-Reduktion für COD, AVS, EDS (ADR-030)",
+  "date": "2026-04-09",
+  "adr": "ADR-030",
+  "signals_changed": ["cohesion_deficit", "architecture_violation", "explainability_deficit"],
+  "baseline": {
+    "total_findings": 335,
+    "cod_findings": 51,
+    "avs_findings": 36,
+    "eds_findings": 55,
+    "scoring_production_findings": 182
+  },
+  "after_fix": {
+    "total_findings": 282,
+    "cod_findings": 18,
+    "avs_findings": 21,
+    "eds_findings": 55,
+    "scoring_production_findings": 149
+  },
+  "delta": {
+    "total_findings": -53,
+    "cod_findings": -33,
+    "avs_findings": -15,
+    "eds_findings": 0,
+    "scoring_production_findings": -33
+  },
+  "fixes_applied": {
+    "COD": {
+      "fix": "Added min_isolation_ratio=0.50 gate — skip modules where <50% of units are isolated",
+      "fps_eliminated": 33,
+      "mechanism": "isolation_ratio < 0.50 check before score computation"
+    },
+    "AVS": {
+      "fix_blast_radius": "Raised absolute threshold 5→15, added pct>75% gate",
+      "fix_god_module": "Raised thresholds: Ca 2→5, Ce 2→3, br 3→5, total max(6,mean*2)→max(10,mean*2.5)",
+      "fix_zone_of_pain": "Raised Ca minimum 3→8, high_risk_evidence Ca≥6→Ca≥12 or (Ca≥10 and Ce≥2)",
+      "fps_eliminated": 15
+    },
+    "EDS": {
+      "fix": "Raised min_complexity 5→8, min_func_loc 10→15",
+      "fps_eliminated": 0,
+      "note": "All 55 drift EDS findings have CC≥10 and LOC≥18 — threshold change only affects other repos with simpler functions"
+    }
+  },
+  "precision_recall_tests": {
+    "total_fixtures": 118,
+    "total_tests": 119,
+    "all_passing": true,
+    "new_fixtures_added": ["cod_low_isolation_tn", "eds_moderate_complexity_tn"]
+  },
+  "full_test_suite": {
+    "passed": 2384,
+    "failed": 0,
+    "skipped": 169,
+    "deselected": 42
+  },
+  "eds_finding_distribution": {
+    "cc_range": "10–62",
+    "cc_median": 18,
+    "loc_range": "18–400",
+    "loc_median": 103,
+    "note": "All EDS findings are on genuinely complex functions — no low-severity FPs present"
+  }
+}

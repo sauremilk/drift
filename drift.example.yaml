@@ -50,16 +50,17 @@ weights:
   # Added in v0.7.3 / v0.8.0
   cohesion_deficit: 0.01
   co_change_coupling: 0.005
+  # Promoted from report-only (ADR-039/040: agent-safety signals)
+  fan_out_explosion: 0.005
+  hardcoded_secret: 0.01
+  phantom_reference: 0.02
+  missing_authorization: 0.02
+  insecure_default: 0.01
   # Report-only signals (weight 0.0, pending validation)
   typescript_architecture: 0.0
   cognitive_complexity: 0.0
-  fan_out_explosion: 0.0
   circular_import: 0.0
   dead_code_accumulation: 0.0
-  # Security-by-default signals (report-only)
-  missing_authorization: 0.0
-  insecure_default: 0.0
-  hardcoded_secret: 0.0
 
 # Auto-calibration rebalances weights at runtime based on finding distribution.
 # Set to false for fully manual weight control.
@@ -173,3 +174,18 @@ thresholds:
 #     - pattern: "src/generated/safe/**"
 #       context: production
 #       precedence: 50
+
+# Agent objective: declare the agent's current task so drift can provide
+# targeted feedback, scope advisories, and quality tracking.
+# agent:
+#   goal: "Migrate payment module to new Stripe API"
+#   strict_guardrails: true  # Optional: block unsafe MCP tool transitions
+#   # Strict orchestration order:
+#   # 1) drift_brief  2) drift_scan  3) drift_fix_plan
+#   # 4) edits + drift_nudge  5) drift_diff  6) drift_session_end
+#   out_of_scope:
+#     - "legacy/"
+#     - "tests/fixtures/"
+#   success_criteria:
+#     - "No new AVS findings in src/billing/"
+#     - "All existing PFS findings resolved"

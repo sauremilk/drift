@@ -61,6 +61,8 @@ Keine „quick hacks" ohne Begründungsstruktur.
 
 Nach jedem pushbaren Zwischenstand wird ein separater BugBot-Review-Schritt ausgeführt.
 
+**Strukturierte Review-Checkliste verwenden:** Der Reviewer arbeitet die Checkliste unter `.github/prompts/_partials/review-checkliste.md` Punkt für Punkt ab und dokumentiert pro Punkt Ja / Nein / N/A mit Kurzbegründung. Kein Punkt darf übersprungen werden.
+
 **Dieser Review bewertet isoliert und streng:**
 - Korrektheit der Änderung
 - Risiko und Edge Cases

@@ -79,6 +79,7 @@ class TestMutationDbImportsServices:
     """Database layer (layer 2) importing from service layer (layer 1)."""
 
     def test_models_imports_services(self):
+        # models/ is now Omnilayer (ADR-036), so no upward-import violation
         results = [
             _pr("models/user.py", [_imp("models/user.py", "services.auth")]),
             _pr("services/auth.py", []),
@@ -86,7 +87,7 @@ class TestMutationDbImportsServices:
         signal = ArchitectureViolationSignal()
         findings = signal.analyze(results, {}, DriftConfig())
         upward = [f for f in findings if "Upward" in f.title]
-        assert len(upward) >= 1
+        assert len(upward) == 0
 
     def test_db_imports_domain(self):
         results = [

@@ -1,0 +1,108 @@
+{
+  "version": "2.7.1",
+  "feature": "PHR: Phantom Reference Signal (ADR-033)",
+  "date": "2026-04-09",
+  "adr": "ADR-033",
+  "signal_added": "phantom_reference",
+  "signal_abbrev": "PHR",
+  "signal_category": "ai_quality",
+  "signal_weight": 0.0,
+  "signal_scope": "report-only",
+  "precision_recall": {
+    "precision": 1.0,
+    "recall": 1.0,
+    "f1": 1.0,
+    "tp": 5,
+    "fp": 0,
+    "fn": 0,
+    "tn": 10,
+    "total_phr_fixtures": 15,
+    "fixture_coverage": {
+      "positive": ["phr_tp", "phr_cross_file_tp", "phr_import_from_tp", "phr_decorator_tp", "phr_multi_phantom_tp"],
+      "negative": ["phr_tn", "phr_builtin_tn"],
+      "boundary": ["phr_private_boundary", "phr_single_char_boundary"],
+      "confounder": ["phr_star_import_tn", "phr_dynamic_tn", "phr_comprehension_tn", "phr_lambda_param_tn", "phr_type_checking_tn", "phr_parent_reexport_tn"]
+    }
+  },
+  "aggregate_f1_after": 1.0,
+  "total_fixtures_after": 129,
+  "self_analysis": {
+    "phr_findings_on_drift_repo": 5,
+    "total_findings": 419,
+    "phr_in_src": 0,
+    "phr_in_negative_patterns": 5,
+    "classification": "all_true_positive",
+    "findings": [
+      {
+        "file": "data/negative-patterns/patterns/explainability_deficit_001.py",
+        "phantom_count": 5,
+        "phantom_names": ["handle_high_priority", "handle_pending", "handle_default", "fast_process", "slow_process"],
+        "score": 1.0,
+        "verdict": "TP — intentional anti-pattern file with undefined function calls"
+      },
+      {
+        "file": "data/negative-patterns/patterns/pattern_fragmentation_001/handler_a.py",
+        "phantom_count": 2,
+        "phantom_names": ["process", "AppError"],
+        "score": 0.6,
+        "verdict": "TP — handler calls process()/AppError that are defined nowhere in the pattern"
+      },
+      {
+        "file": "data/negative-patterns/patterns/pattern_fragmentation_001/handler_b.py",
+        "phantom_count": 1,
+        "phantom_names": ["process"],
+        "score": 0.45,
+        "verdict": "TP — calls process() which is not defined in this pattern"
+      },
+      {
+        "file": "data/negative-patterns/patterns/pattern_fragmentation_001/handler_c.py",
+        "phantom_count": 1,
+        "phantom_names": ["process"],
+        "score": 0.45,
+        "verdict": "TP — calls process() which is not defined in this pattern"
+      },
+      {
+        "file": "data/negative-patterns/patterns/pattern_fragmentation_002/input_validator.py",
+        "phantom_count": 1,
+        "phantom_names": ["AppError"],
+        "score": 0.45,
+        "verdict": "TP — references AppError which is not defined in this pattern"
+      }
+    ],
+    "note": "5 PHR findings in data/negative-patterns/, 0 in src/drift/. All findings manually verified as true positives — files contain intentional unresolvable references."
+  },
+  "detection_patterns_tested": {
+    "hallucinated_function_calls": "sanitize_input, validate_token — never defined/imported",
+    "cross_file_phantom": "check_permissions, build_dashboard_data — called but not in imported module",
+    "import_from_phantom": "from pkg.helpers import hallucinated_helper — name absent from module",
+    "phantom_decorators": "@require_auth, @rate_limit — undefined decorators",
+    "multi_phantom_high_score": "5 phantoms in one file → score=1.0",
+    "type_checking_exclusion": "TYPE_CHECKING imports correctly ignored",
+    "comprehension_variable_exclusion": "list/set/generator comprehension vars not flagged",
+    "lambda_parameter_exclusion": "lambda params not flagged",
+    "private_name_exclusion": "_prefixed names intentionally skipped",
+    "single_char_exclusion": "single-char names intentionally skipped",
+    "parent_reexport_tolerance": "from pkg import X where X comes from submodule",
+    "star_import_bailout": "star imports cause conservative skip",
+    "dynamic_getattr_bailout": "module-level __getattr__ causes conservative skip",
+    "builtin_exclusion": "len, sum, set, dict etc. never flagged"
+  },
+  "mutation_benchmark": {
+    "overall_recall": "N/A",
+    "note": "PHR is report-only (weight=0.0), not included in scoring mutation benchmark"
+  },
+  "test_results": {
+    "targeted_tests": 26,
+    "precision_recall_fixtures": 15,
+    "full_suite_passed": 2468,
+    "full_suite_failed": 1,
+    "full_suite_note": "1 failure is pre-existing SARIF golden snapshot mismatch (drift:trend added), unrelated to PHR"
+  },
+  "audit_artifacts_updated": [
+    "audit_results/fmea_matrix.md",
+    "audit_results/fault_trees.md",
+    "audit_results/risk_register.md"
+  ],
+  "kpi_snapshot_source": "benchmark_results/kpi_snapshot.json",
+  "git_sha": "207308b1e"
+}

@@ -81,7 +81,7 @@ baselines per repository and automatically invalidates them when:
 
 ---
 
-## Signals (23 total — 15 scoring-active, 8 report-only)
+## Signals (24 total — 18 scoring-active, 6 report-only)
 
 ### Scoring-active signals
 
@@ -102,6 +102,9 @@ baselines per repository and automatically invalidates them when:
 | **ECM** | Exception Contract Drift | Public functions whose exception profile changed across recent commits (git-based, MVP) |
 | **COD** | Cohesion Deficit | Modules that mix weakly related semantic responsibilities |
 | **CCC** | Co-Change Coupling | Files that repeatedly co-change without explicit import dependency |
+| **HSC** | Hardcoded Secret | Embedded secrets/tokens/credentials in source (CWE-798) |
+| **FOE** | Fan-Out Explosion | Modules/functions with unusually high dependency fan-out |
+| **PHR** | Phantom Reference | Unresolvable function/class references (AI hallucination indicator) |
 
 ### Report-only signals (weight 0.0, pending validation)
 
@@ -109,12 +112,10 @@ baselines per repository and automatically invalidates them when:
 |--------|--------|---------|
 | **TSA** | TypeScript Architecture | TS/JS layer leaks, cycles, cross-package imports |
 | **CXS** | Cognitive Complexity | Functions with deeply nested, hard-to-follow control flow |
-| **FOE** | Fan-Out Explosion | Modules/functions with unusually high dependency fan-out |
 | **CIR** | Circular Import | Circular dependency chains in the module import graph |
 | **DCA** | Dead Code Accumulation | Unreferenced functions/classes/symbols accumulating over time |
 | **MAZ** | Missing Authorization | API endpoints lacking auth/authz checks (CWE-862) |
 | **ISD** | Insecure Default | Unsafe default config patterns (CWE-1188) |
-| **HSC** | Hardcoded Secret | Embedded secrets/tokens/credentials in source (CWE-798) |
 
 Adding a new signal: see [CONTRIBUTING.md → Adding a new signal](CONTRIBUTING.md#adding-a-new-signal).
 
@@ -193,6 +194,43 @@ drift badge            Generate shields.io badge URL
 | Property-based | Fuzzing of config/path boundaries | `pytest tests/test_property_based.py` |
 
 **Shared fixture:** `conftest.py` → `tmp_repo` creates a complete 3-layer mini-project (services/api/db).
+
+### Quelldatei → Empfohlene Tests (Agents / Fix-Loop)
+
+Bei Drift-Fix-Loops gezielte Tests unmittelbar nach jeder Dateiänderung ausführen — **nicht** die volle Suite pro Iteration. Kürzeste Match-Regel (oben zuerst):
+
+| Geänderte Datei | Empfohlene Tests |
+|---|---|
+| `src/drift/signals/architecture_violation*` | `pytest tests/test_avs_*.py -q --tb=short` |
+| `src/drift/signals/doc_impl_drift*` | `pytest tests/test_dia_*.py -q --tb=short` |
+| `src/drift/signals/explainability_deficit*` | `pytest tests/test_eds_*.py -q --tb=short` |
+| `src/drift/signals/mutant_duplicates*` | `pytest tests/test_mutant_duplicates*.py -q --tb=short` |
+| `src/drift/signals/dead_code_accumulation*` | `pytest tests/test_dead_code*.py -q --tb=short` |
+| `src/drift/signals/pattern_fragmentation*` | `pytest tests/test_pattern_fragmentation*.py -q --tb=short` |
+| `src/drift/signals/naming_contract*` | `pytest tests/test_naming_contract*.py -q --tb=short` |
+| `src/drift/signals/test_polarity_deficit*` | `pytest tests/test_test_polarity_deficit*.py -q --tb=short` |
+| `src/drift/signals/cognitive_complexity*` | `pytest tests/test_cognitive_complexity*.py -q --tb=short` |
+| `src/drift/signals/circular_import*` | `pytest tests/test_circular_import*.py -q --tb=short` |
+| `src/drift/signals/guard_clause*` | `pytest tests/test_guard_clause*.py -q --tb=short` |
+| `src/drift/signals/insecure_default*` | `pytest tests/test_insecure_default*.py -q --tb=short` |
+| `src/drift/signals/missing_authorization*` | `pytest tests/test_missing_authorization*.py -q --tb=short` |
+| `src/drift/signals/hardcoded_secret*` | `pytest tests/test_hardcoded_secret*.py -q --tb=short` |
+| `src/drift/signals/exception_contract*` | `pytest tests/test_exception_contract*.py -q --tb=short` |
+| `src/drift/signals/fan_out_explosion*` | `pytest tests/test_fan_out_explosion*.py -q --tb=short` |
+| `src/drift/signals/cohesion_deficit*` | `pytest tests/test_cohesion_deficit*.py -q --tb=short` |
+| `src/drift/signals/bypass_accumulation*` | `pytest tests/test_bypass_accumulation*.py -q --tb=short` |
+| `src/drift/signals/*` (andere) | `pytest tests/test_precision_recall.py tests/test_mirofish_signal_improvements.py -q --tb=short` |
+| `src/drift/api.py` | `pytest tests/test_brief.py tests/test_integration.py tests/test_incremental.py tests/test_fix_actionability.py tests/test_nudge.py -q --tb=short` |
+| `src/drift/mcp_server.py` | `pytest tests/test_mcp_copilot.py tests/test_mcp_hardening.py tests/test_tool_metadata.py tests/test_negative_context_export.py -q --tb=short` |
+| `src/drift/output/*` | `pytest tests/test_json_output.py tests/test_csv_output.py tests/test_sarif_contract.py tests/test_output_golden.py tests/test_agent_tasks.py -q --tb=short` |
+| `src/drift/ingestion/*` | `pytest tests/test_ast_parser.py tests/test_file_discovery.py tests/test_scope_resolver.py tests/test_typescript_parser.py -q --tb=short` |
+| `src/drift/config.py` | `pytest tests/test_config.py tests/test_config_validate.py tests/test_model_consistency.py -q --tb=short` |
+| `src/drift/commands/*` | `pytest tests/test_self_command.py tests/test_patterns_command.py tests/test_ci_reality.py -q --tb=short` |
+| `src/drift/session.py` | `pytest tests/test_session.py -q --tb=short` |
+| `src/drift/incremental.py` | `pytest tests/test_incremental.py tests/test_nudge.py -q --tb=short` |
+| Fallback | `pytest tests/ -q --tb=short --ignore=tests/test_smoke_real_repos.py --maxfail=5` |
+
+Bei Testfehlschlag gilt: `AttributeError`/`TypeError` auf Interna → Test anpassen; `AssertionError` auf Public-API-Vertrag → Production-Fix überdenken. Vollständiger Entscheidungsbaum: `.github/prompts/drift-fix-loop.prompt.md` (Schritt 3b).
 
 ---
 

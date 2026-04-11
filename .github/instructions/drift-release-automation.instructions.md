@@ -16,7 +16,7 @@ Workflow: `.github/workflows/release.yml` — läuft bei jedem Push auf `main`.
    - `BREAKING CHANGE: ...` / `BREAKING: ...` → MAJOR (x.0.0)
 2. **Tests lokal ausführen** vor dem Commit:
    ```bash
-   python -m pytest tests/ --tb=short --ignore=tests/test_smoke.py -q --maxfail=1
+   make test-fast
    ```
 3. **Committen** — PSR übernimmt nach Push alles Weitere
 

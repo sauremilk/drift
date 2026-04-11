@@ -7,6 +7,7 @@ modules under ``src/drift/commands/`` to keep each file focused.
 
 from __future__ import annotations
 
+# ruff: noqa: E402
 import difflib
 import json
 import logging
@@ -17,7 +18,7 @@ import warnings
 import click
 
 from drift import __version__
-from drift.commands import console  # noqa: F401 — re-export for backwards compat
+from drift.commands import console
 from drift.errors import (
     ERROR_REGISTRY,
     EXIT_ANALYSIS_ERROR,
@@ -25,6 +26,8 @@ from drift.errors import (
     EXIT_SYSTEM_ERROR,
     DriftError,
 )
+
+__all__ = ["console"]
 
 # Suppress all SyntaxWarnings: drift is a static analyzer that parses
 # arbitrary source code — SyntaxWarnings from ast.parse / compile or from
@@ -94,7 +97,7 @@ def _build_error_payload(
     suggested_action = suggested_action_override or (info.action if info else hint)
     return {
         "error": True,
-        "schema_version": "2.0",
+        "schema_version": "2.1",
         "type": "error",
         "error_code": error_code,
         "category": category,
@@ -132,6 +135,8 @@ def _configure_logging(verbose: bool = False) -> None:
 class SuggestingGroup(click.Group):
     """Click Group that adds did-you-mean hints for unknown subcommands."""
 
+    _CORE_COMMANDS = ("status", "setup", "analyze", "fix-plan", "check")
+
     def get_command(self, ctx: click.Context, cmd_name: str) -> click.Command | None:
         command = super().get_command(ctx, cmd_name)
         if command is not None:
@@ -145,39 +150,118 @@ class SuggestingGroup(click.Group):
             )
         return None
 
+    def invoke(self, ctx: click.Context) -> None:
+        """Delegate bare ``drift`` to ``drift status`` for vibe-coding profile (OD-01)."""
+        if ctx.invoked_subcommand is None:
+            try:
+                from pathlib import Path
+
+                from drift.config import DriftConfig
+                from drift.profiles import get_profile
+
+                cfg = DriftConfig.load(Path("."))
+                prof = get_profile("vibe-coding")
+                if cfg.language is not None or (
+                    hasattr(cfg.weights, "mutant_duplicate")
+                    and float(cfg.weights.mutant_duplicate)
+                    == float(prof.weights.get("mutant_duplicate", 0))
+                    and float(cfg.weights.mutant_duplicate) >= 0.18
+                ):
+                    ctx.invoke(self.get_command(ctx, "status"))  # type: ignore[arg-type]
+                    return
+            except Exception:
+                pass
+        super().invoke(ctx)
+
+    def format_commands(self, ctx: click.Context, formatter: click.HelpFormatter) -> None:
+        """Render curated command sections for faster onboarding."""
+        commands: list[tuple[str, click.Command]] = []
+        for subcommand in self.list_commands(ctx):
+            cmd = self.get_command(ctx, subcommand)
+            if cmd is None or cmd.hidden:
+                continue
+            commands.append((subcommand, cmd))
+
+        if not commands:
+            return
+
+        limit = formatter.width - 6 - max(len(name) for name, _ in commands)
+        command_map = {name: cmd for name, cmd in commands}
+
+        core_rows = [
+            (name, command_map[name].get_short_help_str(limit))
+            for name in self._CORE_COMMANDS
+            if name in command_map
+        ]
+
+        advanced_rows = [
+            (name, cmd.get_short_help_str(limit))
+            for name, cmd in commands
+            if name not in self._CORE_COMMANDS
+        ]
+
+        if core_rows:
+            with formatter.section("Start Here (80% Path)"):
+                formatter.write_dl(core_rows)
+
+        if advanced_rows:
+            with formatter.section("Advanced Commands"):
+                formatter.write_dl(advanced_rows)
+
 
 @click.group(cls=SuggestingGroup)
 @click.version_option(version=__version__, prog_name="drift")
 @click.option("-v", "--verbose", is_flag=True, default=False, help="Enable debug logging.")
 def main(verbose: bool = False) -> None:
-    """Drift — Detect architectural erosion from AI-generated code."""
+    """Drift — Detect architectural erosion from AI-generated code.
+
+    Guided first run:
+      1) drift setup              # Konfiguration erstellen
+      2) drift status             # Projektzustand als Ampel
+      3) drift analyze --repo .   # Detailanalyse
+
+    Run 'drift start' for a concise onboarding walkthrough.
+    """
     _configure_logging(verbose)
 
 
 # --- Register subcommands -------------------------------------------------
-from drift.commands.analyze import analyze  # noqa: E402
-from drift.commands.badge import badge  # noqa: E402
-from drift.commands.baseline import baseline  # noqa: E402
-from drift.commands.brief import brief  # noqa: E402
-from drift.commands.check import check  # noqa: E402
-from drift.commands.config_cmd import config  # noqa: E402
-from drift.commands.copilot_context import copilot_context  # noqa: E402
-from drift.commands.diff_cmd import diff  # noqa: E402
-from drift.commands.explain import explain  # noqa: E402
-from drift.commands.export_context import export_context  # noqa: E402
-from drift.commands.fix_plan import fix_plan  # noqa: E402
-from drift.commands.init_cmd import init  # noqa: E402
-from drift.commands.mcp import mcp  # noqa: E402
-from drift.commands.patterns import patterns  # noqa: E402
-from drift.commands.scan import scan  # noqa: E402
-from drift.commands.self_analyze import self_analyze  # noqa: E402
-from drift.commands.timeline import timeline  # noqa: E402
-from drift.commands.trend import trend  # noqa: E402
-from drift.commands.validate_cmd import validate  # noqa: E402
+from drift.commands.analyze import analyze
+from drift.commands.badge import badge
+from drift.commands.baseline import baseline
+from drift.commands.brief import brief
+from drift.commands.calibrate import calibrate
+from drift.commands.check import check
+from drift.commands.config_cmd import config
+from drift.commands.copilot_context import copilot_context
+from drift.commands.diff_cmd import diff
+from drift.commands.explain import explain
+from drift.commands.export_context import export_context
+from drift.commands.feedback import feedback
+from drift.commands.fix_plan import fix_plan
+from drift.commands.init_cmd import init
+from drift.commands.mcp import mcp
+from drift.commands.patterns import patterns
+from drift.commands.precision_cmd import precision
+from drift.commands.preset import preset
+from drift.commands.roi_estimate import roi_estimate
+from drift.commands.scan import scan
+from drift.commands.self_analyze import self_analyze
+from drift.commands.serve import serve
+from drift.commands.session_report import session_report
+from drift.commands.setup import setup
+from drift.commands.start import start
+from drift.commands.status import status
+from drift.commands.timeline import timeline
+from drift.commands.trend import trend
+from drift.commands.validate_cmd import validate
+from drift.commands.visualize import visualize
+from drift.commands.watch import watch
 
 main.add_command(analyze)
 main.add_command(baseline)
 main.add_command(brief)
+main.add_command(calibrate)
 main.add_command(init)
 main.add_command(check)
 main.add_command(config)
@@ -185,15 +269,26 @@ main.add_command(copilot_context)
 main.add_command(diff)
 main.add_command(explain)
 main.add_command(export_context)
+main.add_command(feedback)
 main.add_command(fix_plan)
 main.add_command(mcp)
 main.add_command(patterns)
+main.add_command(precision)
+main.add_command(preset)
+main.add_command(roi_estimate)
 main.add_command(scan)
+main.add_command(serve)
+main.add_command(session_report)
+main.add_command(start)
+main.add_command(status)
+main.add_command(setup)
 main.add_command(timeline)
 main.add_command(trend)
 main.add_command(validate)
 main.add_command(self_analyze)
 main.add_command(badge)
+main.add_command(visualize)
+main.add_command(watch)
 
 
 def safe_main() -> None:
@@ -218,9 +313,13 @@ def safe_main() -> None:
                     message,
                     exit_code,
                     detail=message,
-                    hint="Run 'drift --help' or 'drift <command> --help' for usage.",
+                    hint=(
+                        "Run 'drift start' for the guided path or "
+                        "'drift --help' / 'drift <command> --help' for usage."
+                    ),
                     suggested_action_override=(
-                        "Run 'drift --help' or 'drift <command> --help' for usage."
+                        "Run 'drift start' for the guided path or "
+                        "'drift --help' / 'drift <command> --help' for usage."
                     ),
                 ),
             )

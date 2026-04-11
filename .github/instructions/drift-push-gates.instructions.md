@@ -141,7 +141,7 @@ git commit --amend --no-edit  # oder separater Commit
 | 1d | `python scripts/check_repo_hygiene.py --config .github/repo-guard.blocklist --root-allowlist .github/repo-root-allowlist` | – |
 | 2 | `ruff check src/ tests/` | – |
 | 3 | `python -m mypy src/drift` | – |
-| 4 | `pytest -v --tb=short --cov --ignore=tests/test_smoke_real_repos.py` | – |
+| 4 | `pytest -q --tb=short --cov --run-slow -p no:xdist --ignore=tests/test_smoke_real_repos.py` | – |
 | 5 | `drift analyze --repo . --format json --exit-zero` | – |
 
 **Diese Checks haben keinen Bypass-Mechanismus.**  

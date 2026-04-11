@@ -6,6 +6,7 @@ no LLM needed, pure pattern matching on findings and metadata.
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -307,7 +308,7 @@ def _recommend_co_change_coupling(finding: Finding) -> Recommendation | None:
 
 
 # Dispatcher: signal type → recommendation generator
-_RECOMMENDERS = {
+_RECOMMENDERS: dict[str, Callable[[Finding], Recommendation | None]] = {
     SignalType.PATTERN_FRAGMENTATION: _recommend_pattern_fragmentation,
     SignalType.ARCHITECTURE_VIOLATION: _recommend_architecture_violation,
     SignalType.MUTANT_DUPLICATE: _recommend_mutant_duplicate,

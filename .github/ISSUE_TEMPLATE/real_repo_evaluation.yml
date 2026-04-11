@@ -1,0 +1,103 @@
+name: Real-Repo Evaluation
+description: Share your experience running drift on a real-world repository
+title: "[Eval] "
+labels: ["real-repo-evaluation"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for trying drift on a real repository! Your feedback helps us improve signal quality and first-run experience.
+
+        **Tip:** Run `drift analyze --report report.md` to generate a shareable Markdown report, then paste it below or attach the file.
+
+  - type: input
+    id: repo
+    attributes:
+      label: Repository
+      description: Link to the repository or its name (public or description of private repo)
+      placeholder: "e.g. https://github.com/org/repo or 'internal Django monolith, ~50k LOC'"
+    validations:
+      required: true
+
+  - type: input
+    id: drift_version
+    attributes:
+      label: Drift version
+      description: "Output of `drift --version`"
+      placeholder: "e.g. 2.5.1"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: overall_impression
+    attributes:
+      label: Overall impression
+      description: How useful were drift's findings?
+      options:
+        - "Very useful — found real issues I should address"
+        - "Somewhat useful — some good findings mixed with noise"
+        - "Neutral — nothing surprising, nothing wrong"
+        - "Not useful — mostly false positives or irrelevant"
+        - "Confusing — output was hard to interpret"
+    validations:
+      required: true
+
+  - type: textarea
+    id: setup_experience
+    attributes:
+      label: Setup experience
+      description: "How was the installation and first run? Any friction?"
+      placeholder: |
+        e.g. "pip install worked cleanly, but first run timed out on our monorepo"
+        or "Had trouble with shallow clones in CI"
+    validations:
+      required: false
+
+  - type: textarea
+    id: useful_findings
+    attributes:
+      label: Most useful findings
+      description: "Which findings resonated? Were there any 'aha' moments?"
+      placeholder: |
+        e.g. "PFS correctly identified our duplicated validation logic across 3 modules"
+    validations:
+      required: false
+
+  - type: textarea
+    id: false_positives
+    attributes:
+      label: False positives or noise
+      description: "Any findings that were clearly wrong or unhelpful? Include signal ID + file if possible."
+      placeholder: |
+        e.g. "DIA flagged our generated API docs — these are auto-generated and intentionally diverge"
+    validations:
+      required: false
+
+  - type: textarea
+    id: missing_findings
+    attributes:
+      label: Things drift missed
+      description: "Any known issues in your codebase that drift did not detect?"
+      placeholder: |
+        e.g. "We have significant layering violations between api/ and core/ that weren't flagged"
+    validations:
+      required: false
+
+  - type: textarea
+    id: report
+    attributes:
+      label: Drift report (optional)
+      description: |
+        Paste the output of `drift analyze --report report.md` or attach the file.
+        Wrap in a details tag if it's long.
+      render: markdown
+    validations:
+      required: false
+
+  - type: textarea
+    id: suggestions
+    attributes:
+      label: Suggestions
+      description: "What would make drift more useful for your workflow?"
+    validations:
+      required: false

@@ -92,7 +92,7 @@ class TestNudgeAPI:
         """nudge() response has schema_version."""
         self._mock_nudge_deps(monkeypatch, tmp_path)
         result = nudge(tmp_path, changed_files=[])
-        assert result["schema_version"] == "2.0"
+        assert result["schema_version"] == "2.1"
 
     def test_nudge_direction_field(self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
         """nudge() response has direction field."""
@@ -159,6 +159,83 @@ class TestNudgeAPI:
         result = nudge(tmp_path, changed_files=[])
         assert "drift_nudge" in result["agent_instruction"]
 
+    def test_get_changed_files_from_git_uses_relative_scope(
+        self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+    ) -> None:
+        """Auto-detection requests cwd-relative git paths for sub-scope runs."""
+        from drift.api.nudge import _get_changed_files_from_git
+
+        captured: dict[str, object] = {}
+
+        def _fake_run(*args, **kwargs):
+            captured["args"] = args[0]
+            captured["cwd"] = kwargs.get("cwd")
+            return SimpleNamespace(stdout="src/a.py\n")
+
+        monkeypatch.setattr("subprocess.run", _fake_run)
+
+        changed = _get_changed_files_from_git(tmp_path, uncommitted=True)
+
+        assert changed == ["src/a.py"]
+        assert "--relative" in captured["args"]
+        assert "HEAD" in captured["args"]
+        assert captured["cwd"] == tmp_path
+
+    def test_is_derived_cache_artifact_detects_top_level_cache_paths(self) -> None:
+        """Derived drift cache artifacts are recognized and filterable."""
+        from drift.api.nudge import _is_derived_cache_artifact
+
+        assert _is_derived_cache_artifact(".drift-cache/history.json")
+        assert _is_derived_cache_artifact(".drift-cache-golden/parse/a.json")
+        assert _is_derived_cache_artifact(".drift-cache\\history.json")
+        assert not _is_derived_cache_artifact("src/a.py")
+        assert not _is_derived_cache_artifact("src/.drift-cache/history.json")
+
+    def test_nudge_filters_derived_cache_changed_files(
+        self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+    ) -> None:
+        """Cache artifact paths are removed from changed file processing."""
+        self._mock_nudge_deps(monkeypatch, tmp_path)
+
+        result = nudge(
+            tmp_path,
+            changed_files=[
+                ".drift-cache/history.json",
+                ".drift-cache-golden/parse/a.json",
+            ],
+        )
+
+        assert result["changed_files"] == []
+        assert result["analyzed_changed_files"] == []
+        assert result["ignored_changed_files"] == [
+            ".drift-cache-golden/parse/a.json",
+            ".drift-cache/history.json",
+        ]
+
+    def test_nudge_short_circuits_with_no_effective_changes(
+        self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+    ) -> None:
+        """No effective changed files bypasses incremental runner."""
+        self._mock_nudge_deps(monkeypatch, tmp_path)
+
+        def _should_not_run(*args, **kwargs):
+            raise AssertionError("IncrementalSignalRunner.run should not be called")
+
+        monkeypatch.setattr(
+            "drift.incremental.IncrementalSignalRunner.run",
+            _should_not_run,
+        )
+
+        result = nudge(
+            tmp_path,
+            changed_files=[".drift-cache/history.json"],
+        )
+
+        assert result["direction"] == "stable"
+        assert result["delta"] == 0.0
+        assert result["file_local_signals_run"] == []
+        assert result["cross_file_signals_estimated"] == []
+
     def test_nudge_uses_cached_baseline(
         self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
     ) -> None:
@@ -183,13 +260,172 @@ class TestNudgeAPI:
         assert call_count["n"] == 0
         assert result["baseline_refresh_reason"] is None
 
-    def test_nudge_error_returns_error_response(self, tmp_path: Path) -> None:
+    def test_nudge_error_returns_error_response(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+        tmp_path: Path,
+    ) -> None:
         """nudge() returns error_response on exception (not raised)."""
-        # Non-existent path that triggers config load error
+        # Force a fast deterministic failure path instead of relying on FS/git behavior.
+        from drift.config import DriftConfig
+
+        def _raise_load_error(*a, **kw):
+            raise RuntimeError("forced config load failure")
+
+        monkeypatch.setattr(DriftConfig, "load", staticmethod(_raise_load_error))
+
+        # Non-existent path still exercises error response contract.
         broken = tmp_path / "nonexistent_repo_xyz"
         result = nudge(broken, changed_files=[])
+
         # Should not crash, returns error dict
         assert "schema_version" in result or "error" in result
+
+    def test_nudge_skips_parse_for_hash_unchanged_changed_file(
+        self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+    ) -> None:
+        """Files listed as changed by git are skipped when hash matches baseline."""
+        from drift.cache import ParseCache
+        from drift.config import DriftConfig
+
+        rel = Path("src/a.py")
+        abs_file = tmp_path / rel
+        abs_file.parent.mkdir(parents=True, exist_ok=True)
+        abs_file.write_text("def a():\n    return 1\n", encoding="utf-8")
+
+        baseline_hash = ParseCache.file_hash(abs_file)
+        baseline = BaselineSnapshot(
+            file_hashes={rel.as_posix(): baseline_hash},
+            score=0.2,
+        )
+        baseline_parse = {
+            rel.as_posix(): ParseResult(file_path=rel, language="python")
+        }
+        BaselineManager.instance().store(
+            tmp_path.resolve(), baseline, [], baseline_parse
+        )
+
+        monkeypatch.setattr(
+            DriftConfig,
+            "load",
+            staticmethod(lambda *a, **kw: DriftConfig()),
+        )
+        monkeypatch.setattr(
+            "drift.ingestion.file_discovery.discover_files",
+            lambda *a, **kw: [
+                FileInfo(
+                    path=rel,
+                    language="python",
+                    size_bytes=abs_file.stat().st_size,
+                    line_count=2,
+                )
+            ],
+        )
+        monkeypatch.setattr("drift.api._emit_api_telemetry", lambda **kw: None)
+        monkeypatch.setattr("drift.signals.base.registered_signals", lambda: [])
+
+        parse_calls = {"n": 0}
+
+        def _count_parse(path: Path, repo: Path, language: str) -> ParseResult:
+            parse_calls["n"] += 1
+            return ParseResult(file_path=path, language=language)
+
+        monkeypatch.setattr("drift.ingestion.ast_parser.parse_file", _count_parse)
+
+        def _should_not_run(*args, **kwargs):
+            raise AssertionError("IncrementalSignalRunner.run should not be called")
+
+        monkeypatch.setattr(
+            "drift.incremental.IncrementalSignalRunner.run",
+            _should_not_run,
+        )
+
+        result = nudge(tmp_path, changed_files=[rel.as_posix()])
+
+        assert parse_calls["n"] == 0
+        assert result["analyzed_changed_files"] == []
+        assert result["unchanged_hash_skips"] == 1
+
+    def test_nudge_parses_changed_file_when_hash_differs(
+        self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+    ) -> None:
+        """Hash mismatch vs baseline keeps file in incremental parse path."""
+        from drift.cache import ParseCache
+        from drift.config import DriftConfig
+
+        rel = Path("src/a.py")
+        abs_file = tmp_path / rel
+        abs_file.parent.mkdir(parents=True, exist_ok=True)
+        abs_file.write_text("def a():\n    return 1\n", encoding="utf-8")
+        baseline_hash = ParseCache.file_hash(abs_file)
+
+        baseline = BaselineSnapshot(
+            file_hashes={rel.as_posix(): baseline_hash},
+            score=0.2,
+        )
+        baseline_parse = {
+            rel.as_posix(): ParseResult(file_path=rel, language="python")
+        }
+        BaselineManager.instance().store(
+            tmp_path.resolve(), baseline, [], baseline_parse
+        )
+
+        # Modify file after baseline snapshot.
+        abs_file.write_text("def a():\n    return 2\n", encoding="utf-8")
+
+        monkeypatch.setattr(
+            DriftConfig,
+            "load",
+            staticmethod(lambda *a, **kw: DriftConfig()),
+        )
+        monkeypatch.setattr(
+            "drift.ingestion.file_discovery.discover_files",
+            lambda *a, **kw: [
+                FileInfo(
+                    path=rel,
+                    language="python",
+                    size_bytes=abs_file.stat().st_size,
+                    line_count=2,
+                )
+            ],
+        )
+        monkeypatch.setattr("drift.api._emit_api_telemetry", lambda **kw: None)
+        monkeypatch.setattr("drift.signals.base.registered_signals", lambda: [])
+
+        parse_calls = {"n": 0}
+
+        def _count_parse(path: Path, repo: Path, language: str) -> ParseResult:
+            parse_calls["n"] += 1
+            return ParseResult(file_path=path, language=language)
+
+        monkeypatch.setattr("drift.ingestion.ast_parser.parse_file", _count_parse)
+
+        run_args: dict[str, object] = {}
+
+        def _fake_run(self, changed_files, current_parse_results):
+            run_args["changed_files"] = set(changed_files)
+            run_args["current_parse_results"] = dict(current_parse_results)
+            return SimpleNamespace(
+                direction="stable",
+                delta=0.0,
+                score=0.2,
+                new_findings=[],
+                resolved_findings=[],
+                confidence={},
+                file_local_signals_run=[],
+                cross_file_signals_estimated=[],
+                baseline_valid=True,
+            )
+
+        monkeypatch.setattr("drift.incremental.IncrementalSignalRunner.run", _fake_run)
+
+        result = nudge(tmp_path, changed_files=[rel.as_posix()])
+
+        assert parse_calls["n"] == 1
+        assert run_args["changed_files"] == {rel.as_posix()}
+        assert set(run_args["current_parse_results"].keys()) == {rel.as_posix()}
+        assert result["analyzed_changed_files"] == [rel.as_posix()]
+        assert result["unchanged_hash_skips"] == 0
 
     # -- Helpers ------------------------------------------------------------
 
@@ -279,6 +515,10 @@ class TestSafeToCommitHardrule:
         monkeypatch.setattr(
             "drift.api._emit_api_telemetry",
             lambda **kw: None,
+        )
+        monkeypatch.setattr(
+            "drift.analyzer.analyze_repo",
+            lambda *a, **kw: _stub_analysis(),
         )
         # Suppress git-state check (tmp_path is not a git repo)
         monkeypatch.setattr(
@@ -693,6 +933,36 @@ class TestGitEventInvalidation:
             {},
         )
         assert mgr.get(tmp_path) is None
+
+    def test_high_but_stable_changed_files_keeps_baseline(
+        self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+    ) -> None:
+        """Already-high changed count that stays high should not re-invalidate."""
+        from drift.incremental import (
+            _MAX_CHANGED_FILES_BEFORE_INVALIDATION,
+            _GitState,
+        )
+
+        high = _MAX_CHANGED_FILES_BEFORE_INVALIDATION + 5
+        stable_state = _GitState(
+            head_commit="aaa111",
+            stash_hash="s1",
+            changed_file_count=high,
+        )
+        monkeypatch.setattr(
+            "drift.incremental._capture_git_state",
+            lambda *a, **kw: stable_state,
+        )
+
+        mgr = BaselineManager.instance()
+        mgr.store(
+            tmp_path,
+            BaselineSnapshot(file_hashes={}, score=0.0),
+            [],
+            {},
+        )
+
+        assert mgr.get(tmp_path) is not None
 
     def test_no_change_keeps_baseline(
         self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path

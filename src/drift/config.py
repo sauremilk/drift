@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import importlib.util
 from pathlib import Path
 from typing import Any
 
@@ -41,6 +42,7 @@ class PolicyConfig(BaseModel):
     ai_attribution: dict[str, Any] = Field(default_factory=dict)
     allowed_cross_layer: list[str] = Field(default_factory=list)
     lazy_import_rules: list[LazyImportRule] = Field(default_factory=list)
+    omnilayer_dirs: list[str] = Field(default_factory=list)
 
 
 class ThresholdsConfig(BaseModel):
@@ -50,8 +52,8 @@ class ThresholdsConfig(BaseModel):
 
     high_complexity: int = 10
     medium_complexity: int = 5
-    min_function_loc: int = 10
-    min_complexity: int = 5
+    min_function_loc: int = 15
+    min_complexity: int = 8
     similarity_threshold: float = 0.80
     recency_days: int = 14
     volatility_z_threshold: float = 1.5
@@ -152,7 +154,7 @@ class SignalWeights(BaseModel):
     precision/recall is sufficiently validated.
     """
 
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="allow")  # Plugin signals add custom weight fields
 
     # Core signals (ablation-validated)
     pattern_fragmentation: float = 0.16
@@ -176,14 +178,17 @@ class SignalWeights(BaseModel):
     # New signals — report-only until precision/recall validated
     ts_architecture: float = 0.0
     cognitive_complexity: float = 0.0
-    fan_out_explosion: float = 0.0
     circular_import: float = 0.0
     dead_code_accumulation: float = 0.0
 
-    # Security-by-default signals (report-only until precision validated)
-    missing_authorization: float = 0.0
-    insecure_default: float = 0.0
-    hardcoded_secret: float = 0.0
+    # Promoted from report-only (ADR-039: agent-safety signals)
+    fan_out_explosion: float = 0.005
+    hardcoded_secret: float = 0.01
+    phantom_reference: float = 0.02
+
+    # Security-by-default signals (ADR-039: activated for scoring)
+    missing_authorization: float = 0.02
+    insecure_default: float = 0.01
 
     def as_dict(self) -> dict[str, float]:
         return self.model_dump()
@@ -254,6 +259,64 @@ class FindingContextPolicy(BaseModel):
     default_context: str = "production"
 
 
+class AgentEffectivenessThresholds(BaseModel):
+    """Thresholds for deterministic low-effect/high-churn warnings."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    low_effect_resolved_per_changed_file: float = Field(default=0.25)
+    low_effect_resolved_per_100_loc_changed: float = Field(default=0.5)
+    high_churn_min_changed_files: int = Field(default=5)
+    high_churn_min_loc_changed: int = Field(default=200)
+
+
+class AgentObjective(BaseModel):
+    """Declarative agent objective for drift.yaml.
+
+    Allows agents to declare their goal, out-of-scope areas,
+    and success criteria so drift can provide targeted feedback.
+
+    Example drift.yaml::
+
+        agent:
+          goal: "Migrate payment module to Stripe API"
+          out_of_scope:
+            - "legacy/"
+            - "tests/fixtures/"
+          success_criteria:
+            - "No new AVS findings in src/billing/"
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    goal: str = Field(
+        default="",
+        description="Natural-language description of the agent's current task.",
+    )
+    strict_guardrails: bool = Field(
+        default=False,
+        description=(
+            "When true, MCP orchestration enforces strict preconditions and "
+            "blocks unsafe tool transitions with recovery hints."
+        ),
+    )
+    out_of_scope: list[str] = Field(
+        default_factory=list,
+        description="Glob patterns or paths the agent should not modify or analyze.",
+    )
+    success_criteria: list[str] = Field(
+        default_factory=list,
+        description="Conditions that define task completion (human-readable).",
+    )
+    effectiveness_thresholds: AgentEffectivenessThresholds = Field(
+        default_factory=AgentEffectivenessThresholds,
+        description=(
+            "Thresholds used for deterministic effectiveness warnings "
+            "(e.g. low_effect_high_churn)."
+        ),
+    )
+
+
 class BriefConfig(BaseModel):
     """Configuration for ``drift brief`` pre-task briefings."""
 
@@ -271,20 +334,176 @@ class BriefConfig(BaseModel):
 def _default_includes() -> list[str]:
     """Return default include patterns, auto-extending for TypeScript when available."""
     patterns = ["**/*.py"]
-    try:
-        from drift.ingestion.ts_parser import tree_sitter_available
-
-        if tree_sitter_available():
-            patterns.extend(["**/*.ts", "**/*.tsx", "**/*.js", "**/*.jsx"])
-    except ImportError:
-        pass
+    # Avoid depending on ingestion module internals while still enabling
+    # TS/JS includes when optional parser dependencies are installed.
+    has_tree_sitter = importlib.util.find_spec("tree_sitter") is not None
+    has_ts_grammar = importlib.util.find_spec("tree_sitter_typescript") is not None
+    if has_tree_sitter and has_ts_grammar:
+        patterns.extend(["**/*.ts", "**/*.tsx", "**/*.js", "**/*.jsx"])
     return patterns
+
+
+class CalibrationConfig(BaseModel):
+    """Configuration for per-repo signal calibration (ADR-035).
+
+    When enabled, drift collects and uses feedback evidence to compute
+    project-specific signal weights via Bayesian weight calibration.
+
+    Example drift.yaml::
+
+        calibration:
+          enabled: true
+          min_samples: 20
+          bug_labels:
+            - bug
+            - regression
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    enabled: bool = Field(
+        default=False,
+        description="Enable per-repo signal calibration.",
+    )
+    min_samples: int = Field(
+        default=20,
+        description=(
+            "Minimum TP+FP observations per signal for full confidence. "
+            "Below this, calibration blends toward default weights."
+        ),
+    )
+    correlation_window_days: int = Field(
+        default=30,
+        description="Days after a scan to look for defect-fix commits (TP evidence).",
+    )
+    decay_days: int = Field(
+        default=90,
+        description="Days after which the calibration profile is considered stale.",
+    )
+    weak_fp_window_days: int = Field(
+        default=60,
+        description="Days without a defect-fix → weak FP evidence.",
+    )
+    fn_boost_factor: float = Field(
+        default=0.1,
+        description=(
+            "How much to boost weight for signals with high false-negative rate "
+            "(0.0 disables FN boosting, max 1.0)."
+        ),
+    )
+    github_token: str | None = Field(
+        default=None,
+        description="GitHub API token for issue/PR correlation (or use DRIFT_GITHUB_TOKEN env).",
+    )
+    bug_labels: list[str] = Field(
+        default_factory=lambda: ["bug", "regression", "defect"],
+        description="Issue labels that identify bug reports for GitHub correlation.",
+    )
+    auto_recalibrate: bool = Field(
+        default=False,
+        description="Automatically recalibrate after each drift analyze run.",
+    )
+    feedback_path: str = Field(
+        default=".drift/feedback.jsonl",
+        description="Path to the feedback JSONL file (relative to repo root).",
+    )
+    history_dir: str = Field(
+        default=".drift/history",
+        description="Directory for scan history snapshots (relative to repo root).",
+    )
+    max_snapshots: int = Field(
+        default=20,
+        description="Maximum number of scan snapshots to retain.",
+    )
+    threshold_adaptation_enabled: bool = Field(
+        default=False,
+        description=(
+            "Enable adaptive threshold adjustment per signal based on "
+            "feedback metrics.  Experimental — disabled by default."
+        ),
+    )
+
+
+class AttributionConfig(BaseModel):
+    """Configuration for causal attribution enrichment (ADR-034).
+
+    When enabled, findings are enriched with git-blame provenance data
+    identifying the commit, author, and date that introduced the drifting code.
+
+    Example drift.yaml::
+
+        attribution:
+          enabled: true
+          timeout_per_file_seconds: 3.0
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    enabled: bool = Field(
+        default=False,
+        description="Enable git-blame-based causal attribution on findings.",
+    )
+    cache_enabled: bool = Field(
+        default=True,
+        description="Cache blame results per file content hash.",
+    )
+    timeout_per_file_seconds: float = Field(
+        default=3.0,
+        description="Maximum seconds for a single git-blame subprocess call.",
+    )
+    max_parallel_workers: int = Field(
+        default=4,
+        description="Thread pool size for parallel blame calls.",
+    )
+    include_branch_hint: bool = Field(
+        default=True,
+        description="Attempt to extract branch name from merge-commit messages.",
+    )
+
+
+class PluginConfig(BaseModel):
+    """Configuration for Drift plugins.
+
+    Plugins are discovered via Python entry_points (see drift.plugins).
+    This configuration section allows selectively disabling specific plugins.
+
+    Example drift.yaml::
+
+        plugins:
+          disabled:
+            - my_broken_plugin
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    disabled: list[str] = Field(
+        default_factory=list,
+        description="List of plugin entry-point names to skip at discovery time.",
+    )
+
+
+class DocImplDriftConfig(BaseModel):
+    """DIA-specific configuration for doc-implementation drift detection."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    extra_auxiliary_dirs: list[str] = Field(default_factory=list)
+    extra_context_keywords: list[str] = Field(default_factory=list)
 
 
 class DriftConfig(BaseModel):
     """Main drift configuration, loaded from drift.yaml."""
 
     model_config = ConfigDict(extra="forbid")
+
+    extends: str | None = Field(
+        default=None,
+        description=(
+            "Name of a built-in preset to inherit from "
+            "(e.g. 'vibe-coding', 'strict', 'fastapi', 'library', 'monorepo'). "
+            "User-level fields override preset defaults."
+        ),
+    )
 
     include: list[str] = Field(default_factory=_default_includes)
     exclude: list[str] = Field(
@@ -321,6 +540,10 @@ class DriftConfig(BaseModel):
     fail_on_delta: float | None = None
     fail_on_delta_window: int = 5
     auto_calibrate: bool = True
+    language: str | None = Field(
+        default=None,
+        description="ISO 639-1 output language for guided mode (e.g. 'de', 'en').",
+    )
     embeddings_enabled: bool = True
     embedding_model: str = "all-MiniLM-L6-v2"
     embedding_batch_size: int = 64
@@ -328,6 +551,17 @@ class DriftConfig(BaseModel):
     deferred: list[DeferredArea] = Field(default_factory=list)
     finding_context: FindingContextPolicy = Field(default_factory=FindingContextPolicy)
     brief: BriefConfig = Field(default_factory=BriefConfig)
+    plugins: PluginConfig = Field(default_factory=PluginConfig)
+    dia: DocImplDriftConfig = Field(default_factory=DocImplDriftConfig)
+    calibration: CalibrationConfig = Field(default_factory=CalibrationConfig)
+    attribution: AttributionConfig = Field(default_factory=AttributionConfig)
+    agent: AgentObjective | None = Field(
+        default=None,
+        description=(
+            "Optional agent objective declaration. "
+            "Helps drift provide targeted feedback aligned with the agent's task."
+        ),
+    )
 
     @staticmethod
     def _find_config_file(repo_path: Path) -> Path | None:
@@ -371,6 +605,7 @@ class DriftConfig(BaseModel):
                 return cls()
 
         try:
+            data = cls._apply_extends(data)
             return cls.model_validate(data)
         except ValidationError as exc:
             from drift.errors import DriftConfigError
@@ -387,6 +622,78 @@ class DriftConfig(BaseModel):
                 line="?",
                 context=None,
             ) from exc
+
+    @staticmethod
+    def _apply_extends(data: Any) -> dict[str, Any]:
+        """Merge built-in preset defaults under user-supplied overrides.
+
+        If *data* contains an ``extends`` key naming a registered profile,
+        the profile's config dict is used as the base and *data* is merged on
+        top (user wins).  Nested dicts (weights, thresholds, policies) are
+        merged key-by-key; all other fields are replaced wholesale.
+        """
+        if not isinstance(data, dict):
+            from drift.errors import DriftConfigError
+
+            raise DriftConfigError(
+                "DRIFT-1001",
+                config_path="drift.yaml",
+                field="root",
+                reason="Top-level config must be a mapping/object.",
+                line="?",
+                context=None,
+            )
+
+        extends = data.get("extends")
+        if not extends:
+            return data
+
+        from drift.profiles import PROFILES, get_profile
+
+        try:
+            profile = get_profile(extends)
+        except KeyError as err:
+            from drift.errors import DriftConfigError
+
+            available = ", ".join(sorted(PROFILES))
+            raise DriftConfigError(
+                "DRIFT-1001",
+                config_path="drift.yaml",
+                field="extends",
+                reason=(
+                    f"Unknown preset '{extends}'. "
+                    f"Available: {available}"
+                ),
+                line="?",
+                context=None,
+            ) from err
+
+        # Build base dict from profile
+        base: dict[str, Any] = {
+            "weights": dict(profile.weights),
+            "fail_on": profile.fail_on,
+            "auto_calibrate": profile.auto_calibrate,
+        }
+        if profile.thresholds:
+            base["thresholds"] = dict(profile.thresholds)
+        if profile.policies:
+            base["policies"] = dict(profile.policies)
+        if profile.guided_thresholds:
+            base.setdefault("thresholds", {})
+            base["thresholds"]["guided"] = dict(profile.guided_thresholds)
+
+        # Deep-merge: user data wins over preset base
+        for key, value in data.items():
+            if key == "extends":
+                continue
+            if isinstance(value, dict) and isinstance(base.get(key), dict):
+                base[key] = {**base[key], **value}
+            else:
+                base[key] = value
+
+        # Keep extends in the merged output so it is stored on the model
+        base["extends"] = extends
+        return base
 
     @classmethod
     def load(cls, repo_path: Path, config_path: Path | None = None) -> DriftConfig:
@@ -416,6 +723,7 @@ class DriftConfig(BaseModel):
                 ) from exc
 
             try:
+                data = cls._apply_extends(data)
                 return cls.model_validate(data)
             except ValidationError as exc:
                 from drift.errors import (
@@ -458,31 +766,44 @@ def build_config_json_schema() -> dict[str, Any]:
 # Signal abbreviation map & CLI filter helpers
 # ---------------------------------------------------------------------------
 
-SIGNAL_ABBREV: dict[str, str] = {
-    "PFS": "pattern_fragmentation",
-    "AVS": "architecture_violation",
-    "MDS": "mutant_duplicate",
-    "EDS": "explainability_deficit",
-    "TVS": "temporal_volatility",
-    "SMS": "system_misalignment",
-    "DIA": "doc_impl_drift",
-    "BEM": "broad_exception_monoculture",
-    "TPD": "test_polarity_deficit",
-    "GCD": "guard_clause_deficit",
-    "COD": "cohesion_deficit",
-    "NBV": "naming_contract_violation",
-    "BAT": "bypass_accumulation",
-    "ECM": "exception_contract_drift",
-    "CCC": "co_change_coupling",
-    "TSA": "ts_architecture",
-    "CXS": "cognitive_complexity",
-    "FOE": "fan_out_explosion",
-    "CIR": "circular_import",
-    "DCA": "dead_code_accumulation",
-    "MAZ": "missing_authorization",
-    "ISD": "insecure_default",
-    "HSC": "hardcoded_secret",
-}
+def _build_signal_abbrev() -> dict[str, str]:
+    """Build abbrev→signal_id map from the central registry, with static fallback."""
+    try:
+        from drift.signal_registry import get_abbrev_map
+
+        return get_abbrev_map()
+    except ImportError:
+        pass
+    # Static fallback for environments where signals haven't been imported yet
+    return {
+        "PFS": "pattern_fragmentation",
+        "AVS": "architecture_violation",
+        "MDS": "mutant_duplicate",
+        "EDS": "explainability_deficit",
+        "TVS": "temporal_volatility",
+        "SMS": "system_misalignment",
+        "DIA": "doc_impl_drift",
+        "BEM": "broad_exception_monoculture",
+        "TPD": "test_polarity_deficit",
+        "GCD": "guard_clause_deficit",
+        "COD": "cohesion_deficit",
+        "NBV": "naming_contract_violation",
+        "BAT": "bypass_accumulation",
+        "ECM": "exception_contract_drift",
+        "CCC": "co_change_coupling",
+        "TSA": "ts_architecture",
+        "CXS": "cognitive_complexity",
+        "FOE": "fan_out_explosion",
+        "CIR": "circular_import",
+        "DCA": "dead_code_accumulation",
+        "MAZ": "missing_authorization",
+        "ISD": "insecure_default",
+        "HSC": "hardcoded_secret",
+        "PHR": "phantom_reference",
+    }
+
+
+SIGNAL_ABBREV: dict[str, str] = _build_signal_abbrev()
 
 
 def resolve_signal_names(raw: str) -> list[str]:

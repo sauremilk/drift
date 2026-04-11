@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import logging
 import subprocess
+import threading
 import time
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -148,7 +149,7 @@ def _direction_for_delta(delta: float) -> Literal["improving", "stable", "degrad
 def _finding_key(f: Finding) -> str:
     """Deterministic identity key for a finding (signal + file + location)."""
     fp = f.file_path.as_posix() if f.file_path else ""
-    return f"{f.signal_type.value}::{fp}::{f.start_line}::{f.title}"
+    return f"{f.signal_type}::{fp}::{f.start_line}::{f.title}"
 
 
 # ---------------------------------------------------------------------------
@@ -156,6 +157,13 @@ def _finding_key(f: Finding) -> str:
 # ---------------------------------------------------------------------------
 
 _MAX_CHANGED_FILES_BEFORE_INVALIDATION = 10
+
+# Short TTL cache for _capture_git_state to avoid spawning 3 subprocesses
+# per BaselineManager.get() call.  During a nudge loop the git state is
+# unlikely to change between consecutive calls separated by < 5 s.
+_GIT_STATE_CACHE_LOCK = threading.Lock()
+_GIT_STATE_CACHE: dict[str, tuple[float, _GitState | None]] = {}
+_GIT_STATE_CACHE_TTL = 5.0
 
 
 @dataclass(slots=True)
@@ -171,7 +179,25 @@ def _capture_git_state(repo_path: Path) -> _GitState | None:
     """Snapshot current HEAD, stash list, and dirty-file count.
 
     Returns ``None`` when git is unavailable or the path is not a repo.
+    Uses a short TTL cache (5 s) to avoid repeated subprocess spawns
+    within rapid-fire nudge loops.
     """
+    posix_key = repo_path.resolve().as_posix()
+    now = time.monotonic()
+    with _GIT_STATE_CACHE_LOCK:
+        cached = _GIT_STATE_CACHE.get(posix_key)
+        if cached is not None and (now - cached[0]) < _GIT_STATE_CACHE_TTL:
+            return cached[1]
+
+    result = _capture_git_state_uncached(repo_path)
+
+    with _GIT_STATE_CACHE_LOCK:
+        _GIT_STATE_CACHE[posix_key] = (now, result)
+    return result
+
+
+def _capture_git_state_uncached(repo_path: Path) -> _GitState | None:
+    """Perform the actual subprocess calls for git state capture."""
     import hashlib
 
     def _git(*args: str) -> str | None:
@@ -344,8 +370,13 @@ class BaselineManager:
         if current.stash_hash != previous.stash_hash:
             return "stash_changed"
 
-        # (c) Many files changed since baseline was stored
-        if current.changed_file_count > _MAX_CHANGED_FILES_BEFORE_INVALIDATION:
+        # (c) Invalidate only when crossing from <= threshold to > threshold.
+        # This avoids repeated invalidations in persistently dirty repos where
+        # the changed-file count remains high but stable across calls.
+        if (
+            previous.changed_file_count <= _MAX_CHANGED_FILES_BEFORE_INVALIDATION
+            and current.changed_file_count > _MAX_CHANGED_FILES_BEFORE_INVALIDATION
+        ):
             return "changed_file_threshold"
 
         return None
@@ -473,7 +504,7 @@ class IncrementalSignalRunner:
 
         carried_findings: list[Finding] = []
         for f in self._baseline_findings:
-            if f.signal_type.value in file_local_st_values:
+            if f.signal_type in file_local_st_values:
                 # File-local findings for unchanged files — keep them
                 fp = f.file_path.as_posix() if f.file_path else ""
                 if fp not in changed_files:
@@ -484,9 +515,9 @@ class IncrementalSignalRunner:
 
         cross_file_signal_names: list[str] = sorted(
             {
-                f.signal_type.value
+                f.signal_type
                 for f in carried_findings
-                if f.signal_type.value not in file_local_st_values
+                if f.signal_type not in file_local_st_values
             },
         )
 

@@ -62,7 +62,7 @@ python scripts/release_automation.py --full-release
 ### 1. Code-Qualität prüfen
 
 ```bash
-python -m pytest tests/ --tb=short --ignore=tests/test_smoke.py -q --maxfail=1
+make test-fast
 ```
 
 - Bei Testfailures: **STOPP** — nicht mit dem Release fortfahren.

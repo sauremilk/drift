@@ -79,7 +79,7 @@ def _run_audit(repo_path: Path, label: str) -> dict:
         audit_entries.append(
             {
                 "id": i + 1,
-                "signal": finding.signal_type.value,
+                "signal": finding.signal_type,
                 "severity": finding.severity.value,
                 "score": round(finding.score, 3),
                 "impact": round(finding.impact, 3),

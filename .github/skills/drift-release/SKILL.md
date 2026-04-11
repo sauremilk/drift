@@ -42,7 +42,7 @@ BREAKING: remove deprecated API    →  MAJOR bump (X.0.0)
 ### Step 2: Run Tests Locally
 
 ```bash
-python -m pytest tests/ --tb=short --ignore=tests/test_smoke.py -q --maxfail=1
+make test-fast
 ```
 
 ### Step 3: Commit and Push

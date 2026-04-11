@@ -5,12 +5,15 @@ from __future__ import annotations
 import datetime
 from pathlib import Path
 
+import pytest
 from click.testing import CliRunner
 
 from drift.cli import main
 from drift.config import DriftConfig
 from drift.errors import DriftSystemError
 from drift.models import RepoAnalysis
+
+pytestmark = pytest.mark.slow
 
 
 class TestSelfCommand:

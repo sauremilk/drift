@@ -1,0 +1,111 @@
+{
+  "benchmark": "agent_loop_efficiency",
+  "scenarios": {
+    "gate_check": {
+      "scenario": "gate_check",
+      "api_calls": 2,
+      "iterations": 1,
+      "findings_before": 50,
+      "findings_after": 50,
+      "score_before": 0.372,
+      "score_after": 0.372,
+      "duration_seconds": 4.922,
+      "duration_p95_seconds": 5.259,
+      "runs": 2,
+      "details": {
+        "safe_to_commit": false,
+        "blocking_reasons": [
+          "New high finding: Zero-assertion tests in examples/agent-framework/",
+          "Score degradation of +0.0660 exceeds threshold",
+          "Parse failures in 1 file(s): affected files were skipped or only partially analyzable"
+        ],
+        "direction": "degrading",
+        "severity": "low"
+      },
+      "per_call": {
+        "nudge": {
+          "count": 2,
+          "mean_seconds": 4.547,
+          "p50_seconds": 4.547,
+          "p95_seconds": 4.6451
+        },
+        "scan": {
+          "count": 2,
+          "mean_seconds": 0.375,
+          "p50_seconds": 0.375,
+          "p95_seconds": 0.6144
+        }
+      }
+    },
+    "fix_cycle": {
+      "scenario": "fix_cycle",
+      "api_calls": 3,
+      "iterations": 2,
+      "findings_before": 50,
+      "findings_after": 50,
+      "score_before": 0.372,
+      "score_after": 0.372,
+      "duration_seconds": 0.383,
+      "duration_p95_seconds": 0.389,
+      "runs": 2,
+      "details": {
+        "tasks_proposed": 0,
+        "task_signals": [],
+        "task_efforts": []
+      },
+      "per_call": {
+        "fix_plan": {
+          "count": 2,
+          "mean_seconds": 0.172,
+          "p50_seconds": 0.172,
+          "p95_seconds": 0.172
+        },
+        "scan": {
+          "count": 4,
+          "mean_seconds": 0.10525,
+          "p50_seconds": 0.1015,
+          "p95_seconds": 0.1226
+        }
+      }
+    },
+    "context_export": {
+      "scenario": "context_export",
+      "api_calls": 2,
+      "iterations": 1,
+      "findings_before": 50,
+      "findings_after": 50,
+      "score_before": 0.372,
+      "score_after": 0.372,
+      "duration_seconds": 0.196,
+      "duration_p95_seconds": 0.202,
+      "runs": 2,
+      "details": {
+        "forbidden_patterns": 0,
+        "compact_token_estimate": 0,
+        "verbose_token_estimate": 0,
+        "token_saving_percent": 0,
+        "signals_covered": []
+      },
+      "per_call": {
+        "negative_context": {
+          "count": 2,
+          "mean_seconds": 0.1015,
+          "p50_seconds": 0.1015,
+          "p95_seconds": 0.10825
+        },
+        "scan": {
+          "count": 2,
+          "mean_seconds": 0.094,
+          "p50_seconds": 0.094,
+          "p95_seconds": 0.094
+        }
+      }
+    }
+  },
+  "summary": {
+    "total_api_calls": 7,
+    "total_iterations": 4,
+    "runs_per_scenario": 2,
+    "narrative": "Pre-v0.10.5: agents needed scan + manual JSON parsing for gate decisions. Post-v0.10.5: nudge() provides safe_to_commit in 1 API call. fix_plan() replaces manual triage. negative_context() enriches agent prompts without re-analysis."
+  }
+}

@@ -2,9 +2,17 @@
 
 from pathlib import Path
 
+import pytest
+
 from drift.config import DriftConfig
 from drift.models import ClassInfo, FunctionInfo, ParseResult, SignalType
+from drift.precision import (
+    ensure_signals_registered,
+    has_matching_finding,
+    run_fixture,
+)
 from drift.signals.cohesion_deficit import CohesionDeficitSignal
+from tests.fixtures.ground_truth import FIXTURES_BY_SIGNAL, GroundTruthFixture
 
 
 def _function(name: str, file_path: str, line: int) -> FunctionInfo:
@@ -97,3 +105,38 @@ def test_cod_ignores_tiny_files() -> None:
 
     findings = CohesionDeficitSignal().analyze([parse_result], {}, DriftConfig())
     assert findings == []
+
+
+# ---------------------------------------------------------------------------
+# Parametrized ground-truth fixture tests
+# ---------------------------------------------------------------------------
+
+ensure_signals_registered()
+
+_COD_FIXTURES = FIXTURES_BY_SIGNAL.get(SignalType.COHESION_DEFICIT, [])
+
+
+@pytest.mark.parametrize(
+    "fixture",
+    _COD_FIXTURES,
+    ids=[f.name for f in _COD_FIXTURES],
+)
+def test_cod_ground_truth(fixture: GroundTruthFixture, tmp_path: Path) -> None:
+    """Verify COD ground-truth fixtures produce expected findings."""
+    findings, _warnings = run_fixture(
+        fixture, tmp_path, signal_filter={SignalType.COHESION_DEFICIT}
+    )
+    for exp in fixture.expected:
+        if exp.signal_type != SignalType.COHESION_DEFICIT:
+            continue
+        detected = has_matching_finding(findings, exp)
+        if exp.should_detect:
+            assert detected, (
+                f"[FN] {fixture.name}: expected COD at {exp.file_path} "
+                f"but not found. Findings: {[(f.signal_type, f.file_path) for f in findings]}"
+            )
+        else:
+            assert not detected, (
+                f"[FP] {fixture.name}: did NOT expect COD at {exp.file_path} "
+                f"but found. Findings: {[(f.signal_type, f.file_path) for f in findings]}"
+            )
