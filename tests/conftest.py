@@ -170,6 +170,144 @@ def tmp_repo(tmp_path: Path) -> Path:
 
 
 @pytest.fixture
+def tmp_ts_repo(tmp_path: Path) -> Path:
+    """Create a minimal repo structure with TypeScript files.
+
+    Mirrors tmp_repo but uses TypeScript: services, API endpoints,
+    models, utils, and a test file — suitable for multi-signal testing.
+    """
+    # Service layer
+    svc = tmp_path / "services"
+    svc.mkdir()
+    (svc / "payment.service.ts").write_text(
+        textwrap.dedent("""\
+        export class PaymentError extends Error {
+            constructor(message: string) {
+                super(message);
+                this.name = "PaymentError";
+            }
+        }
+
+        export async function processPayment(
+            amount: number,
+            currency: string,
+        ): Promise<{ status: string; amount: number }> {
+            /** Process a payment transaction. */
+            try {
+                if (amount <= 0) {
+                    throw new Error("Amount must be positive");
+                }
+                return { status: "ok", amount };
+            } catch (e: unknown) {
+                throw new PaymentError(String(e));
+            }
+        }
+
+        export async function refundPayment(transactionId: string): Promise<boolean> {
+            try {
+                const result = await lookupTransaction(transactionId);
+                return true;
+            } catch (e) {
+                console.error(e);
+                return false;
+            }
+        }
+
+        export function lookupTransaction(tid: string): Promise<{ id: string }> {
+            return Promise.resolve({ id: tid });
+        }
+    """),
+        encoding="utf-8",
+    )
+
+    # API layer (Express-style)
+    api = tmp_path / "api"
+    api.mkdir()
+    (api / "routes.ts").write_text(
+        textwrap.dedent("""\
+        import { Router, Request, Response } from "express";
+        import { processPayment } from "../services/payment.service";
+
+        const router = Router();
+
+        router.get("/payments", (req: Request, res: Response) => {
+            res.json([]);
+        });
+
+        router.post("/payments", async (req: Request, res: Response) => {
+            const result = await processPayment(req.body.amount, req.body.currency);
+            res.json(result);
+        });
+
+        export default router;
+    """),
+        encoding="utf-8",
+    )
+
+    # Models
+    models = tmp_path / "models"
+    models.mkdir()
+    (models / "user.ts").write_text(
+        textwrap.dedent("""\
+        export interface User {
+            id: string;
+            email: string;
+            createdAt: Date;
+        }
+
+        export interface Payment {
+            id: string;
+            amount: number;
+            currency: string;
+            userId: string;
+        }
+    """),
+        encoding="utf-8",
+    )
+
+    # Utils
+    utils = tmp_path / "utils"
+    utils.mkdir()
+    (utils / "formatters.ts").write_text(
+        textwrap.dedent("""\
+        export function formatCurrency(amount: number, currency: string = "EUR"): string {
+            return `${amount.toFixed(2)} ${currency}`;
+        }
+
+        export function formatMoney(value: number, cur: string = "EUR"): string {
+            /** Almost identical to formatCurrency — a near-duplicate. */
+            return `${value.toFixed(2)} ${cur}`;
+        }
+    """),
+        encoding="utf-8",
+    )
+
+    # Test file
+    tests = tmp_path / "tests"
+    tests.mkdir()
+    (tests / "payment.spec.ts").write_text(
+        textwrap.dedent("""\
+        import { processPayment, refundPayment } from "../services/payment.service";
+
+        describe("Payment", () => {
+            it("should process payment", async () => {
+                const result = await processPayment(100, "EUR");
+                expect(result.status).toBe("ok");
+            });
+
+            it("should refund payment", async () => {
+                const result = await refundPayment("tx-1");
+                expect(result).toBe(true);
+            });
+        });
+    """),
+        encoding="utf-8",
+    )
+
+    return tmp_path
+
+
+@pytest.fixture
 def sample_python_source() -> str:
     """A sample Python file with various patterns."""
     return textwrap.dedent("""\
