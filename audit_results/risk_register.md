@@ -1,5 +1,19 @@
 # Risk Register
 
+## 2026-04-11 - Issue #234: Test-file detection erweitert fuer test-harness/test-helpers Konventionen
+
+- Risk ID: RISK-INGESTION-2026-04-11-234
+- Component: `src/drift/ingestion/test_detection.py`, `tests/test_test_detection.py`
+- Type: Ingestion precision hardening (false-positive reduction)
+- Description: Die zentrale Testdatei-Erkennung stuft jetzt `*.test-harness.{ts,js,tsx,jsx}`, `*.test-helpers.{ts,js,tsx,jsx}` sowie Verzeichnisse `test-support/` und `test-helpers/` als Testkontext ein.
+- Trigger: Repositories mit testnahen Konventionen ausserhalb klassischer `tests/`- oder `*.spec/*test`-Namen (z. B. OpenClaw).
+- Impact: High-positive. Reduziert grosse FP-Cluster ueber mehrere Signale durch korrekte `finding_context=test` Klassifikation.
+- Mitigation:
+  - Erweiterte zentrale Regex-Muster in `is_test_file` statt signal-spezifischer Sonderlogik.
+  - Regressionen fuer alle neuen Muster in `tests/test_test_detection.py`.
+  - Bestehende Fixture-Ausnahmen (`tests/fixtures`, `test/fixtures`) bleiben unveraendert.
+- Residual risk: Low-Medium. Projekte mit produktiven Dateinamen, die absichtlich `test-helpers`/`test-support` verwenden, koennten in Einzelfaellen als Testcode klassifiziert werden.
+
 ## 2026-04-11 - Issue #232: SMS excludes test-only framework imports from production novel-import analysis
 
 - Risk ID: RISK-SIGNAL-2026-04-11-232

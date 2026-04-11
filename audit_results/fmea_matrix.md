@@ -1,5 +1,12 @@
 # FMEA Matrix
 
+## 2026-04-11 - Issue #234: Testkontext-Erkennung fuer test-harness/test-helpers erweitert
+
+| Signal | Failure Mode | Cause | Effect | Detection | Mitigation | S | O | D | RPN | Status |
+|---|---|---|---|---|---|---:|---:|---:|---:|---|
+| ALL (context-driven) | FP: testnahe Dateien als Produktionscode klassifiziert (`finding_context=production`) | Zentrale Erkennung kannte Konventionen `*.test-harness.*`, `*.test-helpers.*`, `test-support/`, `test-helpers/` nicht | Stark erhoehte Finding-Mengen und Severity-Noise ueber mehrere Signale | Regressionen in `tests/test_test_detection.py` fuer Datei- und Verzeichnismuster | Erweiterung der zentralen Muster in `is_test_file`; keine signal-spezifischen Sonderregeln notwendig | 7 | 8 | 2 | 112 | Mitigated |
+| ALL (context-driven) | FN-Risiko: produktive Dateien mit helper/support-Namen werden als Testcode gewertet | Neue Verzeichnisregeln sind konservativ, aber breiter als vorher | Potenzielle Unterberichtung in Randfaellen | Bestehende Klassifikations-Tests + unveraenderte Fixture-Ausnahmen | Regeln auf klar benannte Testkonventionen beschraenkt; Fixture-Ausnahmen bleiben aktiv | 4 | 3 | 4 | 48 | Mitigated |
+
 ## 2026-04-11 - Issue #232: SMS test-only framework imports counted as production novel imports
 
 | Signal | Failure Mode | Cause | Effect | Detection | Mitigation | S | O | D | RPN | Status |

@@ -9,10 +9,12 @@ _TEST_FILE_PATTERNS: tuple[re.Pattern[str], ...] = (
     re.compile(r"(?:^|/)__tests__/(?:|.*)$"),
     re.compile(r"(?:^|/)__mocks__/(?:|.*)$"),
     re.compile(r"(?:^|/)__fixtures__/(?:|.*)$"),
+    re.compile(r"(?:^|/)test-(?:support|helpers)/(?:|.*)$"),
     re.compile(r"(^|/)conftest\.py$"),
     re.compile(r"(^|/)test_[^/]+\.py$"),
     re.compile(r"(^|/)[^/]+_test\.py$"),
     re.compile(r"\.(?:test|spec)\.[tj]sx?$"),
+    re.compile(r"\.test-(?:harness|helpers)\.[tj]sx?$"),
     re.compile(r"\.stories\.[tj]sx?$"),
 )
 

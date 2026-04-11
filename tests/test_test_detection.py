@@ -9,7 +9,11 @@ def test_is_test_file_patterns() -> None:
     assert is_test_file(Path("tests/test_api.py"))
     assert is_test_file(Path("src/foo_test.py"))
     assert is_test_file(Path("src/app.spec.ts"))
+    assert is_test_file(Path("extensions/discord/src/send.test-harness.ts"))
+    assert is_test_file(Path("extensions/shared/src/time.test-helpers.ts"))
     assert is_test_file(Path("src/__tests__/api.ts"))
+    assert is_test_file(Path("src/test-support/mocks.ts"))
+    assert is_test_file(Path("src/test-helpers/factories.ts"))
     assert is_test_file(Path("tests/conftest.py"))
     assert not is_test_file(Path("src/app.py"))
 
