@@ -1,5 +1,23 @@
 # Risk Register
 
+## 2026-04-12 - Issue #250: MAZ suppresses outbound API-client FPs in unknown TS frameworks
+
+- Risk ID: RISK-SIGNAL-2026-04-12-250
+- Component: `src/drift/signals/missing_authorization.py`, `tests/test_missing_authorization.py`
+- Type: Signal precision hardening (false-positive reduction)
+- Description: Missing Authorization (MAZ) now requires inbound-handler-like TypeScript/JavaScript function parameters (`req/request/res/response/reply/ctx/context/next`) when `framework=unknown` and the finding originates from route-like path evidence. This suppresses outbound API client helper false positives.
+- Trigger: `drift analyze` on TS/JS repositories where SDK client wrappers call external APIs with route-looking paths (for example `/channels/...`) but do not expose inbound HTTP handlers.
+- Impact: High-positive. Reduces CRITICAL-grade false positives for outbound client helpers and improves MAZ trust/actionability.
+- Mitigation:
+  - Added `_has_ts_inbound_handler_signature()` guard in MAZ unknown-framework branch.
+  - Kept existing strong route-path requirement for unknown TS/JS framework detections.
+  - Added regression `test_typescript_unknown_framework_skips_outbound_api_client_signature`.
+  - Updated existing unknown-framework positive regression to include inbound handler params (`req`, `res`).
+- Verification:
+  - `python -m pytest tests/test_missing_authorization.py -q`
+  - `python -m ruff check src/drift/signals/missing_authorization.py tests/test_missing_authorization.py`
+- Residual risk: Low-Medium. Unknown-framework handlers that use non-standard parameter names may be down-prioritized; known framework branches are unaffected.
+
 ## 2026-04-12 - Issue #248: EDS TS/TSX self-documenting signature heuristic
 
 - Risk ID: RISK-SIGNAL-2026-04-12-248

@@ -1,5 +1,30 @@
 # Fault Tree Analysis
 
+## 2026-04-12 - Issue #250: MAZ outbound API-client false positives (TS unknown framework)
+
+### Top Event (TE-MAZ-250)
+MAZ reports outbound TypeScript API client helpers as inbound HTTP endpoints missing authorization.
+
+### FT-1: false-positive branch
+
+```
+          TE-FP: outbound TS client helper reported as missing-auth endpoint
+                         |
+                      OR-Gate
+               +---------+---------+
+              IE-1      IE-2
+```
+
+- **IE-1 (MCS)**: Unknown-framework branch trusted route-like path strings (`/channels/...`) as sufficient endpoint evidence.
+  - Mitigation: Keep strong route-path gate and add an inbound-handler-signature requirement for unknown TS/JS frameworks.
+- **IE-2 (MCS)**: Function-level context (client-style parameters like `rest`, `payload`) was not used before emitting MAZ findings.
+  - Mitigation: Require inbound-style parameter markers (`req/request/res/response/reply/ctx/context/next`) before reporting unknown-framework TS/JS findings.
+
+### FT-2: false-negative guard
+
+- **IE-3 (Guard)**: Unconventional inbound handlers without standard parameter names may be missed in unknown-framework contexts.
+  - Mitigation: Scope is narrow to TS/JS unknown-framework branch; known framework detections remain unchanged and regressions keep route-like unknown-handler coverage active.
+
 ## 2026-04-12 - Issue #248: EDS false positives on typed TypeScript/TSX functions without JSDoc
 
 ### Top Event (TE-EDS-248)

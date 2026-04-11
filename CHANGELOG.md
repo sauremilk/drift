@@ -42,6 +42,7 @@
 
 ### Fixed
 
+- MAZ Issue #250: reduce false positives for outbound TypeScript API client helpers in unknown-framework contexts by requiring inbound handler-like parameters (`req/request/res/response/reply/ctx/context/next`) in addition to route-like path evidence.
 - GCD Issue #247: reduce false positives for TypeScript declarative wrappers by treating one-statement delegation call-through functions and strongly typed non-imperative functions as guarded; add targeted regressions for delegation and typed patterns.
 - EDS Issue #248: treat typed TypeScript/TSX signatures as explainability evidence (including inferred return scenarios) so missing JSDoc/explicit return annotations are no longer over-penalized; add targeted TS and JS guard regressions.
 - PFS Issue #245: cap findings to `INFO` when both `framework_context_dampened` and `plugin_context_dampened` are true, reducing residual false positives for intentional cross-extension plugin diversity while preserving metadata traceability.

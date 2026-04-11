@@ -1,5 +1,12 @@
 # FMEA Matrix
 
+## 2026-04-12 - Issue #250: MAZ FP bei outbound API-Client-Funktionen (TS unknown framework)
+
+| Signal | Failure Mode | Cause | Effect | Detection | Mitigation | S | O | D | RPN | Status |
+|---|---|---|---|---|---|---:|---:|---:|---:|---|
+| MAZ | FP: outbound API-Client-Helper (`rest.put/get/delete`, SDK-Wrapper) als ungeschuetzte Inbound-Endpunkte gemeldet | Bei `framework=unknown` reichte route-aehnlicher Pfad (`/channels/...`) als Endpoint-Indiz; Inbound-Handler-Signatur wurde nicht geprueft | Security-Noise (teils CRITICAL) in Extension-/Plugin-Clients, reduzierte Glaubwuerdigkeit von MAZ | Neue Regression in `tests/test_missing_authorization.py` (`test_typescript_unknown_framework_skips_outbound_api_client_signature`) | Zusaetzliche Unknown-Framework-Grenze: MAZ meldet TS/JS nur noch mit route-aehnlichem Pfad **und** inbound-typischer Handler-Signatur (`req/request/res/response/reply/ctx/context/next`) | 7 | 8 | 2 | 112 | Mitigated |
+| MAZ | FN-Risiko: echte unbekannte TS-Endpunkte ohne typische Handler-Parameter werden nicht gemeldet | Neue Signatur-Grenze priorisiert Praezision in Unknown-Framework-Faellen | Potenziell spaetere Priorisierung einzelner unkonventioneller Handler-Signaturen | Bestehende Guard-Regression `test_typescript_unknown_framework_keeps_route_like_path` wurde auf `req/res` angepasst und bleibt aktiv | Scope ist auf TS/JS mit `framework=unknown` begrenzt; bekannte Framework-Pfade und Python bleiben unveraendert | 4 | 3 | 4 | 48 | Mitigated |
+
 ## 2026-04-12 - Issue #248: EDS FP-Reduktion fuer typisierte TypeScript/TSX-Funktionen ohne JSDoc
 
 | Signal | Failure Mode | Cause | Effect | Detection | Mitigation | S | O | D | RPN | Status |

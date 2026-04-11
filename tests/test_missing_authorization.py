@@ -715,6 +715,7 @@ class TestMAZEdgeCases:
                     start_line=10,
                     end_line=30,
                     language="typescript",
+                    parameters=["req", "res"],
                 )
             ],
             imports=[],
@@ -739,6 +740,43 @@ class TestMAZEdgeCases:
         findings = signal.analyze([pr], {}, DriftConfig())
         assert len(findings) == 1
         assert findings[0].metadata["framework"] == "unknown"
+
+    def test_typescript_unknown_framework_skips_outbound_api_client_signature(self) -> None:
+        """Unknown TS route-like paths in outbound client helpers should be suppressed."""
+        pr = ParseResult(
+            file_path=Path("extensions/discord/src/send.channels.ts"),
+            language="typescript",
+            functions=[
+                FunctionInfo(
+                    name="setChannelPermissionDiscord",
+                    file_path=Path("extensions/discord/src/send.channels.ts"),
+                    start_line=10,
+                    end_line=45,
+                    language="typescript",
+                    parameters=["rest", "payload"],
+                )
+            ],
+            imports=[],
+            patterns=[
+                PatternInstance(
+                    category=PatternCategory.API_ENDPOINT,
+                    file_path=Path("extensions/discord/src/send.channels.ts"),
+                    function_name="setChannelPermissionDiscord",
+                    start_line=14,
+                    end_line=14,
+                    fingerprint={
+                        "method": "PUT",
+                        "route": "/channels/${payload.channelId}/permissions/${payload.targetId}",
+                        "framework": "express",
+                        "has_auth": False,
+                    },
+                )
+            ],
+        )
+
+        signal = MissingAuthorizationSignal()
+        findings = signal.analyze([pr], {}, DriftConfig())
+        assert findings == []
 
     def test_route_allowlist_skips_login_path_even_without_name_hint(self) -> None:
         """Public route allowlist should also work on route path metadata."""

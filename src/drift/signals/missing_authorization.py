@@ -108,6 +108,32 @@ def _normalize_param_name(param: str) -> str:
     return re.sub(r"[^a-z0-9]", "", lower)
 
 
+_TS_INBOUND_HANDLER_PARAM_MARKERS: frozenset[str] = frozenset({
+    "req",
+    "request",
+    "res",
+    "response",
+    "reply",
+    "ctx",
+    "context",
+    "next",
+})
+
+
+def _has_ts_inbound_handler_signature(fn_info: FunctionInfo | None) -> bool:
+    """Return True when TS/JS function params look like inbound HTTP handlers."""
+    if fn_info is None:
+        return False
+    if fn_info.language not in {"typescript", "tsx", "javascript", "jsx"}:
+        return True
+
+    for param in fn_info.parameters:
+        normalized = _normalize_param_name(param)
+        if normalized in _TS_INBOUND_HANDLER_PARAM_MARKERS:
+            return True
+    return False
+
+
 def _is_public_allowlisted(fn_name: str, allowlist: list[str]) -> bool:
     """Return True if the function name matches a known public endpoint."""
     lower = fn_name.lower().replace("_", "")
@@ -337,6 +363,8 @@ class MissingAuthorizationSignal(BaseSignal):
                         continue
 
                 fn_info = functions_by_name.get(fn_name)
+                if framework == "unknown" and not _has_ts_inbound_handler_signature(fn_info):
+                    continue
                 is_documented_public_safe = _is_documented_public_safe_endpoint(
                     fn_name,
                     fn_info,
