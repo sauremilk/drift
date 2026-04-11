@@ -1,5 +1,19 @@
 # Risk Register
 
+## 2026-04-11 - Issue #235: CCC suppresses intra-package monorepo co-change pairs
+
+- Risk ID: RISK-SIGNAL-2026-04-11-235
+- Component: `src/drift/signals/co_change_coupling.py`, `tests/test_co_change_coupling.py`
+- Type: Signal precision hardening (false-positive reduction)
+- Description: Co-Change Coupling now suppresses file pairs that belong to the same monorepo subpackage, using nearest subpackage `package.json` (below repo root) and a bounded `extensions/<name>/` fallback. This prevents expected extension-internal co-changes from being reported as hidden coupling.
+- Trigger: `drift analyze` on monorepos with extension/package layout where config/types/index/tool files co-change inside a single extension.
+- Impact: High-positive. Removes dominant CCC FP cluster in extension-based monorepos and improves finding actionability.
+- Mitigation:
+  - Intra-subpackage suppression gate in CCC pair evaluation.
+  - Root-level package manifest intentionally ignored to avoid globally suppressing single-package repos.
+  - Regressions added for suppressed intra-extension pair and preserved cross-extension detection.
+- Residual risk: Low-Medium. Real coupling within one extension package may be under-reported; bounded by intentional package-local interpretation and retained cross-package detection.
+
 ## 2026-04-11 - Issue #236: HSC suppression fuer test-prefix fixture secrets
 
 - Risk ID: RISK-SIGNAL-2026-04-11-236

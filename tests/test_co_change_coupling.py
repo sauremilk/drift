@@ -169,6 +169,109 @@ class TestCoChangeCouplingSignal:
         findings = _run_signal(parse_results, commits)
         assert findings == []
 
+    def test_monorepo_intra_extension_pair_is_suppressed(self) -> None:
+        parse_results = [
+            _pr("extensions/bluebubbles/src/config-schema.ts"),
+            _pr("extensions/bluebubbles/src/types.ts"),
+            _pr("extensions/bluebubbles/src/actions.ts"),
+        ]
+        commits = [
+            _commit(
+                1,
+                [
+                    "extensions/bluebubbles/src/config-schema.ts",
+                    "extensions/bluebubbles/src/types.ts",
+                ],
+            ),
+            _commit(
+                2,
+                [
+                    "extensions/bluebubbles/src/config-schema.ts",
+                    "extensions/bluebubbles/src/types.ts",
+                ],
+            ),
+            _commit(
+                3,
+                [
+                    "extensions/bluebubbles/src/config-schema.ts",
+                    "extensions/bluebubbles/src/types.ts",
+                ],
+            ),
+            _commit(
+                4,
+                [
+                    "extensions/bluebubbles/src/config-schema.ts",
+                    "extensions/bluebubbles/src/types.ts",
+                ],
+            ),
+            _commit(
+                5,
+                [
+                    "extensions/bluebubbles/src/config-schema.ts",
+                    "extensions/bluebubbles/src/types.ts",
+                ],
+            ),
+            _commit(6, ["extensions/bluebubbles/src/actions.ts"]),
+            _commit(7, ["extensions/bluebubbles/src/actions.ts"]),
+            _commit(8, ["extensions/bluebubbles/src/actions.ts"]),
+        ]
+
+        findings = _run_signal(parse_results, commits)
+        assert findings == []
+
+    def test_monorepo_cross_extension_pair_still_detects_hidden_coupling(self) -> None:
+        parse_results = [
+            _pr("extensions/bluebubbles/src/config-schema.ts"),
+            _pr("extensions/nostr/src/config-schema.ts"),
+            _pr("extensions/nostr/src/types.ts"),
+        ]
+        commits = [
+            _commit(
+                1,
+                [
+                    "extensions/bluebubbles/src/config-schema.ts",
+                    "extensions/nostr/src/config-schema.ts",
+                ],
+            ),
+            _commit(
+                2,
+                [
+                    "extensions/bluebubbles/src/config-schema.ts",
+                    "extensions/nostr/src/config-schema.ts",
+                ],
+            ),
+            _commit(
+                3,
+                [
+                    "extensions/bluebubbles/src/config-schema.ts",
+                    "extensions/nostr/src/config-schema.ts",
+                ],
+            ),
+            _commit(
+                4,
+                [
+                    "extensions/bluebubbles/src/config-schema.ts",
+                    "extensions/nostr/src/config-schema.ts",
+                ],
+            ),
+            _commit(
+                5,
+                [
+                    "extensions/bluebubbles/src/config-schema.ts",
+                    "extensions/nostr/src/config-schema.ts",
+                ],
+            ),
+            _commit(6, ["extensions/nostr/src/types.ts"]),
+            _commit(7, ["extensions/nostr/src/types.ts"]),
+            _commit(8, ["extensions/nostr/src/types.ts"]),
+        ]
+
+        findings = _run_signal(parse_results, commits)
+        assert len(findings) == 1
+        first = findings[0]
+        assert first.file_path == Path("extensions/bluebubbles/src/config-schema.ts")
+        assert Path("extensions/nostr/src/config-schema.ts") in first.related_files
+
 
 # ---------------------------------------------------------------------------
 # Parametrized ground-truth fixture tests

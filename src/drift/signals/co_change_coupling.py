@@ -43,6 +43,42 @@ _AUTOMATION_MARKERS = (
 )
 
 
+def _find_nearest_subpackage_root(file_path: str, repo_root: Path | None) -> str | None:
+    """Return a subpackage scope key for monorepo-aware coupling suppression.
+
+    Scope detection prefers the nearest ``package.json`` below repository root.
+    A root-level ``package.json`` is intentionally ignored to avoid suppressing
+    valid findings for single-package repositories. For repos where package
+    manifests are not present in the analysis workspace, use a conservative
+    path heuristic for ``extensions/<name>/...``.
+    """
+    rel_path = Path(file_path)
+    posix = rel_path.as_posix().lstrip("./")
+
+    if repo_root is not None:
+        candidate = repo_root / rel_path
+        for parent in [candidate.parent, *candidate.parents]:
+            if parent == repo_root or not str(parent).startswith(str(repo_root)):
+                break
+            if (parent / "package.json").is_file():
+                return parent.relative_to(repo_root).as_posix()
+
+    parts = [p for p in posix.split("/") if p]
+    if len(parts) >= 2 and parts[0] == "extensions":
+        return f"extensions/{parts[1]}"
+
+    return None
+
+
+def _shares_monorepo_subpackage(file_a: str, file_b: str, repo_root: Path | None) -> bool:
+    """Return True when both files belong to the same monorepo subpackage."""
+    scope_a = _find_nearest_subpackage_root(file_a, repo_root)
+    if scope_a is None:
+        return False
+    scope_b = _find_nearest_subpackage_root(file_b, repo_root)
+    return scope_a == scope_b
+
+
 def _module_candidates(file_path: Path) -> set[str]:
     """Return plausible python module names for a file path."""
     normalized = file_path.as_posix().lstrip("./")
@@ -182,6 +218,7 @@ class CoChangeCouplingSignal(BaseSignal):
             return []
 
         explicit_pairs = _explicit_dependency_pairs(parse_results)
+        repo_root = self.repo_path.resolve() if self.repo_path is not None else None
 
         file_weights: dict[str, float] = defaultdict(float)
         pair_weights: dict[tuple[str, str], float] = defaultdict(float)
@@ -224,6 +261,8 @@ class CoChangeCouplingSignal(BaseSignal):
             if weighted_count < _MIN_CO_CHANGE_WEIGHT:
                 continue
             if pair in explicit_pairs:
+                continue
+            if _shares_monorepo_subpackage(pair[0], pair[1], repo_root):
                 continue
 
             total_a = file_weights[pair[0]]

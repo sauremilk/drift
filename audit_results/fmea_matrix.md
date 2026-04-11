@@ -1,5 +1,12 @@
 # FMEA Matrix
 
+## 2026-04-11 - Issue #235: CCC monorepo intra-package co-change FP reduction
+
+| Signal | Failure Mode | Cause | Effect | Detection | Mitigation | S | O | D | RPN | Status |
+|---|---|---|---|---|---|---:|---:|---:|---:|---|
+| CCC | FP: intra-package co-change in monorepo extension reported as hidden coupling | CCC lacked package-boundary awareness and treated all repeated co-change pairs equally when no explicit import edge was found | High false-positive volume in `extensions/<name>/...` structures and reduced signal trust | New regressions in `tests/test_co_change_coupling.py` (`test_monorepo_intra_extension_pair_is_suppressed`) | Suppress pairs that share same monorepo subpackage scope (nearest subpackage `package.json` below repo root, fallback: `extensions/<name>/`) | 7 | 8 | 2 | 112 | Mitigated |
+| CCC | FN risk: true hidden coupling inside same extension package is suppressed | Intra-package suppression can hide accidental coupling within one extension boundary | Potential under-reporting for poor internal module boundaries inside one package | Regression `test_monorepo_cross_extension_pair_still_detects_hidden_coupling` keeps cross-package detection active | Scope is intentionally bounded to same subpackage only; cross-extension coupling remains reportable | 4 | 3 | 4 | 48 | Mitigated |
+
 ## 2026-04-11 - Issue #236: HSC FP bei testnahen Secret-Fixtures mit TEST_/MOCK_-Praefix
 
 | Signal | Failure Mode | Cause | Effect | Detection | Mitigation | S | O | D | RPN | Status |

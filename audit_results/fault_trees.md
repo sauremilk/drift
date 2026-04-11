@@ -1,5 +1,30 @@
 # Fault Tree Analysis
 
+## 2026-04-11 - Issue #235: CCC intra-package monorepo coupling false positives
+
+### Top Event (TE-CCC-235)
+CCC reports expected intra-package extension co-changes as hidden coupling.
+
+### FT-1: false-positive branch
+
+```
+          TE-FP: expected extension-internal co-change reported as CCC finding
+                         |
+                      OR-Gate
+               +---------+---------+
+              IE-1      IE-2
+```
+
+- **IE-1 (MCS)**: Pair scoring had no package-boundary awareness and flagged co-change inside one extension package.
+  - Mitigation: Suppress pairs sharing same monorepo subpackage scope.
+- **IE-2 (MCS)**: Repositories without parseable in-scope package manifests still produced extension-internal FPs.
+  - Mitigation: Fallback scope heuristic for `extensions/<name>/...`.
+
+### FT-2: false-negative guard
+
+- **IE-3 (Guard)**: Suppression could hide real accidental coupling within one extension.
+  - Mitigation: Suppression remains strictly intra-subpackage; cross-extension pairs are still flagged and covered by regression tests.
+
 ## 2026-04-11 - Issue #236: HSC false positives fuer test-prefix secrets
 
 ### Top Event (TE-HSC-236)
