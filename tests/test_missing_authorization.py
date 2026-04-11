@@ -346,7 +346,7 @@ class TestMAZTrueNegatives:
         signal = MissingAuthorizationSignal()
         findings = signal.analyze([pr], {}, DriftConfig())
         assert len(findings) == 1
-        assert findings[0].severity == Severity.HIGH
+        assert findings[0].severity == Severity.CRITICAL
         assert findings[0].metadata["public_safe_documented"] is False
 
 
