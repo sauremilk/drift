@@ -1,5 +1,59 @@
 # Fault Tree Analysis
 
+## 2026-04-11 - Issue #229: PFS Plugin-/Extension-Architektur FP-Reduktion
+
+### Top Event (TE-PFS-229)
+PFS bewertet absichtliche Plugin-Grenzvariation als HIGH-Drift in extension-basierten Repos.
+
+### FT-1: false-positive branch
+
+```
+           TE-FP: plugin architecture reported as severe PFS fragmentation
+                         |
+                      OR-Gate
+               +---------+---------+
+              IE-1      IE-2
+```
+
+- **IE-1 (MCS)**: Modulpfad liegt unter `extensions/<plugin>/...`, aber PFS behandelt Varianten ohne Plugin-Grenzkontext.
+  - Mitigation: Plugin-Layout-Erkennung (`extensions`/`plugins`/`packages`) im PFS-Signal.
+- **IE-2 (MCS)**: Mehrere Plugin-Namensraeume koexistieren (`>=3`), Severity bleibt dennoch hoch.
+  - Mitigation: Starke Score-Dempfung + Severity-Cap `HIGH/MEDIUM -> LOW` bei Multi-Plugin-Surface.
+
+### FT-2: false-negative guard
+
+- **IE-3 (Guard)**: Dempfung versteckt echte Fragmentierung in Core-Modulen.
+  - Mitigation: Guard bleibt auf Plugin-Kontext begrenzt; Core-Module ohne Plugin-Scope bleiben unveraendert (Regression `test_core_error_handling_is_not_dampened`).
+
+## 2026-04-11 - Issue #227: HSC FP bei Prefix/Endpoint/Test-Fixture/Profile-ID
+
+### Top Event (TE-HSC-227)
+HSC meldet nicht-geheime Konfigurations- und Fixture-Konstanten als Hardcoded Secret.
+
+### FT-1: false-positive branch
+
+```
+          TE-FP: non-secret constants reported as HSC finding
+                         |
+                      OR-Gate
+            +------------+------------+------------+
+           IE-1         IE-2         IE-3         IE-4
+```
+
+- **IE-1 (MCS)**: Known-prefix-Pfad meldet kurze Token-Prefix-Marker (`sk-ant-oat01-`) als echte Token.
+  - Mitigation: Prefix-Marker-Filter fuer markerartige kurze Literale mit Trailing-Delimiter.
+- **IE-2 (MCS)**: Endpoint-Template-Literale (`${ISSUER}/idp/token`) werden nicht als Endpoint-Metadaten erkannt.
+  - Mitigation: Suppression fuer endpointartige Variablennamen mit URL-/Template-Endpunktliteral.
+- **IE-3 (MCS)**: `test-fixture`-Pfadvarianten werden nicht als Testkontext behandelt.
+  - Mitigation: Zusätzliche test-fixture-Pfaderkennung in HSC.
+- **IE-4 (MCS)**: Profil-ID-Konstanten (`*_PROFILE_ID = "anthropic:qa-setup-token"`) werden als Secret-Werte interpretiert.
+  - Mitigation: Suppression fuer config-/profile-id-Literale.
+
+### FT-2: false-negative guard
+
+- **IE-5 (Guard)**: Prefix-Marker-Suppression verdeckt echte Known-Prefix-Secrets.
+  - Mitigation: Suppression nur fuer kurze markerartige Prefix-Literale; Guard-Test fuer volle Known-Prefix-Tokens bleibt aktiv.
+
 ## 2026-04-11 - Issue #219: NBV TS style-only findings and duplicate output
 
 ### Top Event (TE-NBV-219)

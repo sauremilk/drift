@@ -120,6 +120,16 @@ _MARKER_CONST_NAME_RE = re.compile(
     re.IGNORECASE,
 )
 
+_ENDPOINT_CONST_NAME_RE = re.compile(
+    r"(?:^|_)(?:endpoint|issuer|url|uri)(?:_|$)",
+    re.IGNORECASE,
+)
+
+_CONFIG_IDENTIFIER_NAME_RE = re.compile(
+    r"(?:^|_)(?:profile_id|config_id|credential_id|token_profile_id)(?:_|$)",
+    re.IGNORECASE,
+)
+
 _ENUM_BASE_NAMES: frozenset[str] = frozenset({
     "Enum",
     "StrEnum",
@@ -340,6 +350,36 @@ def _is_marker_constant_name(var_name: str) -> bool:
     return bool(_MARKER_CONST_NAME_RE.search(var_name))
 
 
+def _is_prefix_literal_candidate(value: str) -> bool:
+    """Return True when a literal looks like a token prefix, not a full token."""
+    stripped = value.strip()
+    return len(stripped) <= 24 and stripped.endswith(("-", "_"))
+
+
+def _is_endpoint_template_literal(var_name: str, string_val: str) -> bool:
+    """Return True for endpoint/issuer constants composed as templates."""
+    if not _ENDPOINT_CONST_NAME_RE.search(var_name):
+        return False
+    if "${" in string_val and "/" in string_val:
+        return True
+    return _is_endpoint_url_literal(string_val)
+
+
+def _is_config_identifier_literal(var_name: str, string_val: str) -> bool:
+    """Return True for profile/config identifier constants, not secrets."""
+    if not _CONFIG_IDENTIFIER_NAME_RE.search(var_name):
+        return False
+    if " " in string_val:
+        return False
+    return bool(re.match(r"^[a-z0-9][a-z0-9:_-]{3,}$", string_val, flags=re.IGNORECASE))
+
+
+def _is_test_fixture_like_path(file_path: Path) -> bool:
+    """Return True for test-fixture style paths not covered by generic test detection."""
+    value = file_path.as_posix().lower()
+    return "test-fixture" in value or "test_fixture" in value
+
+
 @register_signal
 class HardcodedSecretSignal(BaseSignal):
     """Detect hardcoded secrets and credentials in source code."""
@@ -367,7 +407,7 @@ class HardcodedSecretSignal(BaseSignal):
         min_length = config.thresholds.hsc_min_length
 
         for pr in parse_results:
-            if is_test_file(pr.file_path):
+            if is_test_file(pr.file_path) or _is_test_fixture_like_path(pr.file_path):
                 continue
 
             if pr.language == "python":
@@ -478,6 +518,8 @@ class HardcodedSecretSignal(BaseSignal):
         candidate = _normalize_secret_literal_candidate(string_val)
         for prefix in _KNOWN_PREFIXES:
             if candidate.startswith(prefix):
+                if _is_marker_constant_name(var_name) and _is_prefix_literal_candidate(candidate):
+                    continue
                 return self._make_finding(
                     var_name, file_path, lineno,
                     rule_id="hardcoded_api_token",
@@ -506,7 +548,11 @@ class HardcodedSecretSignal(BaseSignal):
 
         if _is_endpoint_url_literal(string_val):
             return None
+        if _is_endpoint_template_literal(var_name, string_val):
+            return None
         if _is_env_var_name_literal(var_name, string_val):
+            return None
+        if _is_config_identifier_literal(var_name, string_val):
             return None
         if _is_marker_constant_name(var_name):
             return None
@@ -646,6 +692,8 @@ class HardcodedSecretSignal(BaseSignal):
 
         for prefix in _KNOWN_PREFIXES:
             if candidate.startswith(prefix):
+                if _is_marker_constant_name(var_name) and _is_prefix_literal_candidate(candidate):
+                    continue
                 return self._make_finding(
                     var_name,
                     file_path,
@@ -684,6 +732,11 @@ class HardcodedSecretSignal(BaseSignal):
         normalized_literal = _normalize_secret_literal_candidate(string_val)
         for prefix in _KNOWN_PREFIXES:
             if normalized_literal.startswith(prefix):
+                if (
+                    _is_marker_constant_name(var_name)
+                    and _is_prefix_literal_candidate(normalized_literal)
+                ):
+                    continue
                 return self._make_finding(
                     var_name, file_path, lineno,
                     rule_id="hardcoded_api_token",
@@ -695,6 +748,8 @@ class HardcodedSecretSignal(BaseSignal):
         # common and are not credentials by themselves.
         if _is_endpoint_url_literal(string_val):
             return None
+        if _is_endpoint_template_literal(var_name, string_val):
+            return None
 
         # Constants such as API_KEY_ENV = "OPENAI_API_KEY" describe env-var
         # names, not hardcoded credential material.
@@ -704,6 +759,9 @@ class HardcodedSecretSignal(BaseSignal):
         # Sentinel/marker constants (for example *_TOKEN_PREFIX, *_ERROR_CODE)
         # are often operational metadata rather than credentials.
         if _is_marker_constant_name(var_name):
+            return None
+
+        if _is_config_identifier_literal(var_name, string_val):
             return None
 
         # Filename/path constants can contain "token"/"secret" in their symbol

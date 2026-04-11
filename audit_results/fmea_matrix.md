@@ -1,5 +1,21 @@
 # FMEA Matrix
 
+## 2026-04-11 - Issue #229: PFS FP-Reduktion fuer Plugin-/Extension-Architekturen
+
+| Signal | Failure Mode | Cause | Effect | Detection | Mitigation | S | O | D | RPN | Status |
+|---|---|---|---|---|---|---:|---:|---:|---:|---|
+| PFS | FP: Plugin-spezifische API-Varianten als kritische Fragmentierung gemeldet | PFS bewertet starke Variantenvielfalt innerhalb `extensions/<plugin>/src` ohne Beruecksichtigung mehrerer koexistierender Plugin-Grenzen | Hohe Noise-Last (viele HIGH-Findings) und sinkende Glaubwuerdigkeit in Plugin-basierten Repos | Neue Regression `test_plugin_architecture_api_fragmentation_is_dampened_to_low` | Plugin-Layout-Heuristik (`extensions`/`plugins`/`packages` + >=3 Plugin-Namen) aktiviert starke Dempfung und Severity-Cap auf LOW; Kontext-Hinweise in Metadata | 7 | 8 | 3 | 168 | Mitigated |
+| PFS | FN: Echte Fragmentierung in Plugin-Modulen wird zu stark abgewertet | Neue Dempfung kann auch reale Inkonsistenz innerhalb eines Plugins abschwaechen | Potenziell spaetere Erkennung echter Refactoring-Bedarfe | Bestehende Core-Regression `test_core_error_handling_is_not_dampened` bleibt aktiv | Dempfung greift nur bei klarer Multi-Plugin-Struktur; nicht in zentralen Core-Modulen ohne Plugin-Kontext | 5 | 3 | 4 | 60 | Mitigated |
+
+## 2026-04-11 - Issue #227: HSC FP-Reduktion (Token-Prefixe, Endpoint-Templates, Test-Fixtures, Profile-IDs)
+
+| Signal | Failure Mode | Cause | Effect | Detection | Mitigation | S | O | D | RPN | Status |
+|---|---|---|---|---|---|---:|---:|---:|---:|---|
+| HSC | FP: Prefix-Konstanten wie `*_TOKEN_PREFIX = "sk-...-"` als Secret gemeldet | Known-prefix-Pfad meldete bisher auch kurze Prefix-Marker-Literale | Hohe Noise-Quote bei Setup-/Validierungs-Konstanten, sinkendes Signal-Vertrauen | Neue Regression `test_token_prefix_constant_not_flagged_when_literal_is_only_prefix` | Known-prefix-Detection ignoriert Marker-Variablen, wenn Literal klar wie Prefix-Marker aussieht (kurz + endet auf `-`/`_`) | 6 | 8 | 3 | 144 | Mitigated |
+| HSC | FP: TS Endpoint-Templates (`${ISSUER}/idp/token`) als Secret gemeldet | Endpoint-URL-Suppression deckte interpolierte Template-Literale nicht ab | OAuth-Konstanten erzeugen unnoetige Security-Findings | Neue Regression `test_ts_token_endpoint_template_constant_not_flagged` | Neue Suppression fuer Endpoint-/Issuer-Template-Literale bei endpointartigen Variablennamen | 5 | 7 | 3 | 105 | Mitigated |
+| HSC | FP: Test-Fixture-Platzhalter in `test-fixture`-Dateien als Secret gemeldet | Zentrale Testdatei-Erkennung deckte `test-fixture`/`test_fixture`-Pfadvarianten nicht vollstaendig ab | Testdatenrauschen dominiert HSC-Ausgabe in Monorepos | Neue Regression `test_ts_test_fixture_placeholder_not_flagged` | Zusatzregel fuer test-fixture-Pfade im HSC-Analyze-Loop | 4 | 6 | 3 | 72 | Mitigated |
+| HSC | FN-Risiko: echte Known-Prefix-Secrets koennten durch neue Prefix-Marker-Suppression verdeckt werden | Zu aggressive Suppression koennte auch volle Tokenwerte treffen | Unterberichtung echter Secret-Leaks | Bestehende Guard-Regression `test_marker_suppression_does_not_hide_known_prefix` bleibt gruen | Prefix-Suppression nur fuer markerartige kurze Literale mit Trailing-Delimiter; volle Tokens bleiben detektierbar | 8 | 2 | 3 | 48 | Mitigated |
+
 ## 2026-04-11 - Issue #219: NBV TS style-check FP and duplicate finding reduction
 
 | Signal | Failure Mode | Cause | Effect | Detection | Mitigation | S | O | D | RPN | Status |

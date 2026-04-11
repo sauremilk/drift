@@ -1,5 +1,37 @@
 # Risk Register
 
+## 2026-04-11 - Issue #229: PFS Plugin-/Extension-Boundary Dempfung
+
+- Risk ID: RISK-SIGNAL-2026-04-11-229
+- Component: `src/drift/signals/pattern_fragmentation.py`, `tests/test_pattern_fragmentation.py`
+- Type: Signal precision hardening (false-positive reduction)
+- Description: Pattern Fragmentation (PFS) erkennt jetzt Plugin-Architekturkontext (`extensions`/`plugins`/`packages`) und reduziert Severity in Multi-Plugin-Surfaces, damit absichtliche extension-spezifische API-Varianten nicht als HIGH-Drift priorisiert werden.
+- Trigger: `drift analyze` auf Repositories mit pluginbasierter Struktur wie `extensions/<plugin>/src` und heterogenen Endpunkt-/Handler-Mustern pro Plugin.
+- Impact: High-positive. Reduziert FP-Cluster und verbessert Handlungsfaehigkeit bei PFS in Monorepos mit Plugin-System.
+- Mitigation:
+  - Neue Plugin-Scope-Erkennung ueber Modulpfad.
+  - Dempfung nur bei nachweisbarer Multi-Plugin-Struktur (`>=3` Plugin-Namen unter gleichem Root).
+  - Severity-Cap auf LOW bei aktivem Plugin-Kontext.
+  - Metadata-Erweiterung: `plugin_context_dampened`, `plugin_context_hints`.
+  - Regressionstest: `test_plugin_architecture_api_fragmentation_is_dampened_to_low`.
+- Residual risk: Low-Medium. In seltenen Faellen kann echte Fragmentierung in Plugin-Modulen unterpriorisiert werden; Core-Module ohne Plugin-Kontext bleiben unbeeinflusst.
+
+## 2026-04-11 - Issue #227: HSC FP-Reduktion fuer Prefix-/Endpoint-/Fixture-/Profile-ID-Konstanten
+
+- Risk ID: RISK-SIGNAL-2026-04-11-227
+- Component: `src/drift/signals/hardcoded_secret.py`, `tests/test_hardcoded_secret.py`
+- Type: Signal precision hardening (false-positive reduction)
+- Description: Hardcoded Secret (HSC) unterdrueckt jetzt vier dominante FP-Klassen aus OpenClaw-Validierung: (1) kurze Token-Prefix-Marker-Literale, (2) Endpoint/Issuer-Template-Konstanten, (3) `test-fixture`-Pfadkontexte, (4) Profil-/Config-ID-Literale.
+- Trigger: `drift analyze` auf TS/Python-Repos mit OAuth-Endpoint-Konstanten, Token-Prefix-Validatoren oder test-fixture-Dateinamen ausserhalb klassischer `tests/`-Pfade.
+- Impact: Medium-positive. Erwartete deutliche FP-Reduktion im HSC-Signal und bessere Actionability.
+- Mitigation:
+  - Prefix-Marker-Suppression nur fuer markerartige kurze Literale mit `-`/`_`-Suffix.
+  - Endpoint-Template-Suppression fuer endpointartige Variablennamen.
+  - Extra test-fixture-Pfaderkennung (`test-fixture`, `test_fixture`).
+  - Config/Profile-ID-Suppression fuer identifierartige Literale ohne Leerzeichen.
+  - Regressionssuite erweitert (`test_token_prefix_constant_not_flagged_when_literal_is_only_prefix`, `test_ts_token_endpoint_template_constant_not_flagged`, `test_config_profile_id_constant_not_flagged`, `test_ts_test_fixture_placeholder_not_flagged`).
+- Residual risk: Low-Medium. Edge-Cases mit absichtlich geheimen Werten in identifierartigen Konstanten bleiben moeglich; Known-Prefix-Guard-Test fuer volle Tokenwerte bleibt aktiv.
+
 ## 2026-04-11 - Issue #219: NBV TS style-only naming checks removed + duplicate findings eliminated
 
 - Risk ID: RISK-SIGNAL-2026-04-11-219

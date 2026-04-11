@@ -601,6 +601,70 @@ class TestHSCTrueNegatives:
         assert len(findings) == 1
         assert findings[0].rule_id == "hardcoded_api_token"
 
+    def test_token_prefix_constant_not_flagged_when_literal_is_only_prefix(
+        self,
+        tmp_path: Path,
+    ) -> None:
+        _write_source(
+            tmp_path,
+            "constants.py",
+            '''\
+            ANTHROPIC_SETUP_TOKEN_PREFIX = "sk-ant-oat01-"
+            ''',
+        )
+        signal = HardcodedSecretSignal(repo_path=tmp_path)
+        findings = signal.analyze([_make_pr("constants.py")], {}, DriftConfig())
+        assert len(findings) == 0
+
+    def test_ts_token_endpoint_template_constant_not_flagged(self, tmp_path: Path) -> None:
+        _write_source(
+            tmp_path,
+            "src/agents/chutes-oauth.ts",
+            '''\
+            export const CHUTES_OAUTH_ISSUER = "https://api.chutes.ai";
+            export const CHUTES_TOKEN_ENDPOINT = `${CHUTES_OAUTH_ISSUER}/idp/token`;
+            ''',
+        )
+        signal = HardcodedSecretSignal(repo_path=tmp_path)
+        pr = ParseResult(
+            file_path=Path("src/agents/chutes-oauth.ts"),
+            language="typescript",
+        )
+        findings = signal.analyze([pr], {}, DriftConfig())
+        assert len(findings) == 0
+
+    def test_config_profile_id_constant_not_flagged(self, tmp_path: Path) -> None:
+        _write_source(
+            tmp_path,
+            "extensions/qa-lab/src/gateway-child.ts",
+            '''\
+            const QA_LIVE_ANTHROPIC_SETUP_TOKEN_PROFILE_ID = "anthropic:qa-setup-token";
+            ''',
+        )
+        signal = HardcodedSecretSignal(repo_path=tmp_path)
+        pr = ParseResult(
+            file_path=Path("extensions/qa-lab/src/gateway-child.ts"),
+            language="typescript",
+        )
+        findings = signal.analyze([pr], {}, DriftConfig())
+        assert len(findings) == 0
+
+    def test_ts_test_fixture_placeholder_not_flagged(self, tmp_path: Path) -> None:
+        _write_source(
+            tmp_path,
+            "extensions/nostr/src/test-fixtures.ts",
+            '''\
+            const TEST_RESOLVED_PRIVATE_KEY = "resolved-nostr-private-key";
+            ''',
+        )
+        signal = HardcodedSecretSignal(repo_path=tmp_path)
+        pr = ParseResult(
+            file_path=Path("extensions/nostr/src/test-fixtures.ts"),
+            language="typescript",
+        )
+        findings = signal.analyze([pr], {}, DriftConfig())
+        assert len(findings) == 0
+
 
 # ---------------------------------------------------------------------------
 # Edge cases
