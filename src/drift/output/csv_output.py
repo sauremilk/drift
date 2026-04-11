@@ -7,6 +7,7 @@ import io
 
 from drift.api_helpers import signal_abbrev
 from drift.models import Finding, RepoAnalysis
+from drift.signal_registry import get_meta
 
 
 def _finding_sort_key(finding: Finding) -> tuple[float, str, str, int, int]:
@@ -29,13 +30,18 @@ def analysis_to_csv(analysis: RepoAnalysis) -> str:
     """Serialize findings to CSV with one finding per row."""
     buffer = io.StringIO(newline="")
     writer = csv.writer(buffer, lineterminator="\n")
-    writer.writerow(["signal", "severity", "score", "title", "file", "start_line", "end_line"])
+    writer.writerow(
+        ["signal", "signal_label", "severity", "score", "title", "file", "start_line", "end_line"]
+    )
 
     ranked_findings = sorted(analysis.findings, key=_finding_sort_key)
     for finding in ranked_findings:
+        meta = get_meta(finding.signal_type)
+        signal_label = meta.signal_name if meta else finding.signal_type
         writer.writerow(
             [
                 signal_abbrev(finding.signal_type),
+                signal_label,
                 finding.severity.value,
                 _format_score(finding.score),
                 finding.title,

@@ -6839,6 +6839,391 @@ TSA_CLEAN_TN = GroundTruthFixture(
 )
 
 
+# ── Phase 2 — TS ground-truth fixtures: BEM, EDS, MDS, PFS ──────────────
+
+BEM_TS_TRUE_POSITIVE = GroundTruthFixture(
+    name="bem_ts_tp",
+    description="TS module with broad catch + swallowing in every handler → should fire BEM",
+    files={
+        "connectors/db.ts": (
+            "import { logger } from './logger';\n"
+            "\n"
+            "export function getUser(uid: string): object | undefined {\n"
+            "  try {\n"
+            "    return { id: uid };\n"
+            "  } catch (e) {\n"
+            "    logger.error('db get failed');\n"
+            "  }\n"
+            "}\n"
+        ),
+        "connectors/cache.ts": (
+            "import { logger } from './logger';\n"
+            "\n"
+            "export function invalidate(key: string): boolean | undefined {\n"
+            "  try {\n"
+            "    return true;\n"
+            "  } catch (e) {\n"
+            "    logger.error('cache invalidate failed');\n"
+            "  }\n"
+            "}\n"
+        ),
+        "connectors/queue.ts": (
+            "import { logger } from './logger';\n"
+            "\n"
+            "export function publish(topic: string, msg: string): boolean | undefined {\n"
+            "  try {\n"
+            "    return true;\n"
+            "  } catch (e) {\n"
+            "    logger.error('queue publish failed');\n"
+            "  }\n"
+            "}\n"
+        ),
+        "connectors/logger.ts": (
+            "export const logger = {\n"
+            "  error: (msg: string) => console.error(msg),\n"
+            "};\n"
+        ),
+    },
+    expected=[
+        ExpectedFinding(
+            signal_type=SignalType.BROAD_EXCEPTION_MONOCULTURE,
+            file_path="connectors/",
+            should_detect=True,
+            description="3 handlers all catch bare exception + log-only swallowing",
+        ),
+    ],
+)
+
+BEM_TS_TRUE_NEGATIVE = GroundTruthFixture(
+    name="bem_ts_tn",
+    description="TS module with specific catches and re-throws → should NOT fire BEM",
+    files={
+        "services/user.ts": (
+            "export class UserNotFoundError extends Error {\n"
+            "  constructor(id: string) { super(`User ${id} not found`); }\n"
+            "}\n"
+            "\n"
+            "export function getUser(uid: string): object {\n"
+            "  try {\n"
+            "    return { id: uid };\n"
+            "  } catch (e: unknown) {\n"
+            "    if (e instanceof UserNotFoundError) {\n"
+            "      throw e;\n"
+            "    }\n"
+            "    throw new Error(`Unexpected error: ${e}`);\n"
+            "  }\n"
+            "}\n"
+        ),
+        "services/order.ts": (
+            "export class OrderError extends Error {}\n"
+            "\n"
+            "export function createOrder(data: object): object {\n"
+            "  try {\n"
+            "    return { ...data, id: 1 };\n"
+            "  } catch (e: unknown) {\n"
+            "    if (e instanceof OrderError) {\n"
+            "      throw e;\n"
+            "    }\n"
+            "    throw new Error(`Order creation failed: ${e}`);\n"
+            "  }\n"
+            "}\n"
+        ),
+    },
+    expected=[
+        ExpectedFinding(
+            signal_type=SignalType.BROAD_EXCEPTION_MONOCULTURE,
+            file_path="services/",
+            should_detect=False,
+            description="Typed catches with re-throw — not a broad exception monoculture",
+        ),
+    ],
+)
+
+EDS_TS_TRUE_POSITIVE = GroundTruthFixture(
+    name="eds_ts_tp",
+    description="Complex TS function without docs or tests → should fire EDS",
+    files={
+        "core/processor.ts": (
+            "export function processBatch(\n"
+            "  items: any[],\n"
+            "  config: Record<string, any>,\n"
+            "  retryCount: number = 3,\n"
+            "  timeout: number = 30\n"
+            "): any[] {\n"
+            "  const results: any[] = [];\n"
+            "  for (const item of items) {\n"
+            "    if (item.type === 'A') {\n"
+            "      if (item.priority > 5) {\n"
+            "        results.push(handleHighPriority(item));\n"
+            "      } else if (item.status === 'pending') {\n"
+            "        results.push(handlePending(item));\n"
+            "      } else {\n"
+            "        results.push(handleDefault(item));\n"
+            "      }\n"
+            "    } else if (item.type === 'B') {\n"
+            "      if (config.fastMode) {\n"
+            "        results.push(fastProcess(item));\n"
+            "      } else {\n"
+            "        results.push(slowProcess(item));\n"
+            "      }\n"
+            "    } else {\n"
+            "      if (retryCount > 0) {\n"
+            "        results.push(...processBatch([item], config, retryCount - 1));\n"
+            "      } else {\n"
+            "        results.push(null);\n"
+            "      }\n"
+            "    }\n"
+            "  }\n"
+            "  return results.filter(r => r !== null);\n"
+            "}\n"
+            "\n"
+            "function handleHighPriority(item: any): any { return item; }\n"
+            "function handlePending(item: any): any { return item; }\n"
+            "function handleDefault(item: any): any { return item; }\n"
+            "function fastProcess(item: any): any { return item; }\n"
+            "function slowProcess(item: any): any { return item; }\n"
+        ),
+    },
+    expected=[
+        ExpectedFinding(
+            signal_type=SignalType.EXPLAINABILITY_DEFICIT,
+            file_path="core/processor.ts",
+            should_detect=True,
+            description="High complexity (nested branches), no JSDoc, no test file",
+        ),
+    ],
+)
+
+EDS_TS_TRUE_NEGATIVE = GroundTruthFixture(
+    name="eds_ts_tn",
+    description="Well-documented simple TS function → should NOT fire EDS",
+    files={
+        "lib/format.ts": (
+            "/**\n"
+            " * Format a currency amount.\n"
+            " * @param amount - The numeric amount\n"
+            " * @param currency - ISO 4217 currency code\n"
+            " * @returns Formatted string like '12.50 EUR'\n"
+            " */\n"
+            "export function formatCurrency(amount: number, currency: string = 'EUR'): string {\n"
+            "  return `${amount.toFixed(2)} ${currency}`;\n"
+            "}\n"
+        ),
+        "lib/format.spec.ts": (
+            "import { formatCurrency } from './format';\n"
+            "\n"
+            "describe('formatCurrency', () => {\n"
+            "  it('formats positive amounts', () => {\n"
+            "    expect(formatCurrency(12.5)).toBe('12.50 EUR');\n"
+            "  });\n"
+            "  it('formats with custom currency', () => {\n"
+            "    expect(formatCurrency(100, 'USD')).toBe('100.00 USD');\n"
+            "  });\n"
+            "});\n"
+        ),
+    },
+    expected=[
+        ExpectedFinding(
+            signal_type=SignalType.EXPLAINABILITY_DEFICIT,
+            file_path="lib/format.ts",
+            should_detect=False,
+            description="Simple function with JSDoc + test file — well explained",
+        ),
+    ],
+)
+
+MDS_TS_TRUE_POSITIVE = GroundTruthFixture(
+    name="mds_ts_tp",
+    description="Near-duplicate TS functions (copy-paste with minor changes) → should fire MDS",
+    files={
+        "utils/formatters.ts": (
+            "export function formatCurrency(amount: number, currency: string = 'EUR'): string {\n"
+            "  let prefix = '';\n"
+            "  let absAmount = amount;\n"
+            "  if (amount < 0) {\n"
+            "    prefix = '-';\n"
+            "    absAmount = Math.abs(amount);\n"
+            "  }\n"
+            "  const formatted = absAmount.toFixed(2);\n"
+            "  const parts = formatted.split('.');\n"
+            "  const integerPart = parts[0];\n"
+            "  const decimalPart = parts[1];\n"
+            "  return `${prefix}${integerPart}.${decimalPart} ${currency}`;\n"
+            "}\n"
+        ),
+        "utils/money.ts": (
+            "export function formatMoney(amount: number, currency: string = 'EUR'): string {\n"
+            "  let prefix = '';\n"
+            "  let absAmount = amount;\n"
+            "  if (amount < 0) {\n"
+            "    prefix = '-';\n"
+            "    absAmount = Math.abs(amount);\n"
+            "  }\n"
+            "  const formatted = absAmount.toFixed(2);\n"
+            "  const parts = formatted.split('.');\n"
+            "  const integerPart = parts[0];\n"
+            "  const decimalPart = parts[1];\n"
+            "  return `${prefix}${integerPart}.${decimalPart} ${currency}`;\n"
+            "}\n"
+        ),
+    },
+    expected=[
+        ExpectedFinding(
+            signal_type=SignalType.MUTANT_DUPLICATE,
+            file_path="utils/",
+            should_detect=True,
+            description="Near-identical functions across two TS files — copy-paste mutation",
+        ),
+    ],
+)
+
+MDS_TS_TRUE_NEGATIVE = GroundTruthFixture(
+    name="mds_ts_tn",
+    description="Distinct TS functions with different logic → should NOT fire MDS",
+    files={
+        "utils/validators.ts": (
+            "export function validateEmail(email: string): boolean {\n"
+            "  const regex = /^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/;\n"
+            "  return regex.test(email);\n"
+            "}\n"
+        ),
+        "utils/parsers.ts": (
+            "export function parseDate(input: string): Date | null {\n"
+            "  const timestamp = Date.parse(input);\n"
+            "  if (isNaN(timestamp)) {\n"
+            "    return null;\n"
+            "  }\n"
+            "  return new Date(timestamp);\n"
+            "}\n"
+        ),
+    },
+    expected=[
+        ExpectedFinding(
+            signal_type=SignalType.MUTANT_DUPLICATE,
+            file_path="utils/",
+            should_detect=False,
+            description="Completely different functions — no duplication",
+        ),
+    ],
+)
+
+PFS_TS_TRUE_POSITIVE = GroundTruthFixture(
+    name="pfs_ts_tp",
+    description="Multiple incompatible error-handling patterns in one TS module → should fire PFS",
+    files={
+        "services/handler_a.ts": (
+            "export function handleA(data: unknown): void {\n"
+            "  try {\n"
+            "    process(data);\n"
+            "  } catch (e: unknown) {\n"
+            "    if (e instanceof Error) {\n"
+            "      throw new AppError(e.message);\n"
+            "    }\n"
+            "    throw e;\n"
+            "  }\n"
+            "}\n"
+            "function process(data: unknown): void {}\n"
+            "class AppError extends Error {}\n"
+        ),
+        "services/handler_b.ts": (
+            "export function handleB(data: unknown): null | void {\n"
+            "  try {\n"
+            "    process(data);\n"
+            "  } catch (e) {\n"
+            "    console.error('Failed:', e);\n"
+            "    return null;\n"
+            "  }\n"
+            "}\n"
+            "function process(data: unknown): void {}\n"
+        ),
+        "services/handler_c.ts": (
+            "export function handleC(data: unknown): void {\n"
+            "  try {\n"
+            "    process(data);\n"
+            "  } catch (e) {\n"
+            "    console.error('error', e);\n"
+            "    process.exit(1);\n"
+            "  }\n"
+            "}\n"
+            "function process(data: unknown): void {}\n"
+        ),
+    },
+    expected=[
+        ExpectedFinding(
+            signal_type=SignalType.PATTERN_FRAGMENTATION,
+            file_path="services/",
+            should_detect=True,
+            description="3 different error-handling patterns in TS services/",
+        ),
+    ],
+)
+
+PFS_TS_TRUE_NEGATIVE = GroundTruthFixture(
+    name="pfs_ts_tn",
+    description="Consistent error-handling pattern across TS module → should NOT fire PFS",
+    files={
+        "handlers/create.ts": (
+            "import { AppError } from './errors';\n"
+            "\n"
+            "export function create(data: unknown): object {\n"
+            "  try {\n"
+            "    return { data };\n"
+            "  } catch (e: unknown) {\n"
+            "    if (e instanceof Error) {\n"
+            "      throw new AppError(e.message);\n"
+            "    }\n"
+            "    throw e;\n"
+            "  }\n"
+            "}\n"
+        ),
+        "handlers/update.ts": (
+            "import { AppError } from './errors';\n"
+            "\n"
+            "export function update(id: string, data: unknown): object {\n"
+            "  try {\n"
+            "    return { id, data };\n"
+            "  } catch (e: unknown) {\n"
+            "    if (e instanceof Error) {\n"
+            "      throw new AppError(e.message);\n"
+            "    }\n"
+            "    throw e;\n"
+            "  }\n"
+            "}\n"
+        ),
+        "handlers/delete.ts": (
+            "import { AppError } from './errors';\n"
+            "\n"
+            "export function remove(id: string): boolean {\n"
+            "  try {\n"
+            "    return true;\n"
+            "  } catch (e: unknown) {\n"
+            "    if (e instanceof Error) {\n"
+            "      throw new AppError(e.message);\n"
+            "    }\n"
+            "    throw e;\n"
+            "  }\n"
+            "}\n"
+        ),
+        "handlers/errors.ts": (
+            "export class AppError extends Error {\n"
+            "  constructor(message: string) {\n"
+            "    super(message);\n"
+            "    this.name = 'AppError';\n"
+            "  }\n"
+            "}\n"
+        ),
+    },
+    expected=[
+        ExpectedFinding(
+            signal_type=SignalType.PATTERN_FRAGMENTATION,
+            file_path="handlers/",
+            should_detect=False,
+            description="Consistent re-throw via AppError across all handlers",
+        ),
+    ],
+)
+
+
 # Append NBV + BAT + PHR fixtures to ALL_FIXTURES
 ALL_FIXTURES.extend(
     [
@@ -6986,6 +7371,15 @@ ALL_FIXTURES.extend(
         GCD_TS_TRUE_NEGATIVE,
         TSA_CIRCULAR_TP,
         TSA_CLEAN_TN,
+        # ── TypeScript ground-truth fixtures (Phase 2 — BEM/EDS/MDS/PFS) ──
+        BEM_TS_TRUE_POSITIVE,
+        BEM_TS_TRUE_NEGATIVE,
+        EDS_TS_TRUE_POSITIVE,
+        EDS_TS_TRUE_NEGATIVE,
+        MDS_TS_TRUE_POSITIVE,
+        MDS_TS_TRUE_NEGATIVE,
+        PFS_TS_TRUE_POSITIVE,
+        PFS_TS_TRUE_NEGATIVE,
     ]
 )
 

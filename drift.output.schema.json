@@ -153,6 +153,13 @@
             "number",
             "null"
           ]
+        },
+        "skipped_languages": {
+          "type": ["object", "null"],
+          "description": "Languages skipped due to missing runtime (e.g. tree-sitter). Keys are language names, values are file counts.",
+          "additionalProperties": {
+            "type": "integer"
+          }
         }
       }
     },
@@ -226,6 +233,11 @@
               "string",
               "null"
             ]
+          },
+          "language": {
+            "type": ["string", "null"],
+            "description": "Source language of the file (e.g. python, typescript).",
+            "enum": ["python", "typescript", "tsx", "javascript", "jsx", null]
           },
           "start_line": {
             "type": [
@@ -335,6 +347,11 @@
               "string",
               "null"
             ]
+          },
+          "language": {
+            "type": ["string", "null"],
+            "description": "Source language of the file (e.g. python, typescript).",
+            "enum": ["python", "typescript", "tsx", "javascript", "jsx", null]
           },
           "start_line": {
             "type": [
@@ -501,6 +518,11 @@
               "string",
               "null"
             ]
+          },
+          "language": {
+            "type": ["string", "null"],
+            "description": "Source language of the file (e.g. python, typescript).",
+            "enum": ["python", "typescript", "tsx", "javascript", "jsx", null]
           },
           "start_line": {
             "type": [
@@ -732,6 +754,11 @@
               "string",
               "null"
             ]
+          },
+          "language": {
+            "type": ["string", "null"],
+            "description": "Source language of the file (e.g. python, typescript).",
+            "enum": ["python", "typescript", "tsx", "javascript", "jsx", null]
           },
           "start_line": {
             "type": [

@@ -1,3 +1,15 @@
+exclude:
+  - ".venv/**"
+  - ".venv-1/**"
+  - "benchmarks/**"
+  - "benchmark_results/**"
+  - "data/**"
+  - "community_flywheel_output/**"
+  - "work_artifacts/**"
+  - "tagesplanung/**"
+  - "site/**"
+  - "overrides/**"
+
 calibration:
   enabled: true
   auto_recalibrate: true

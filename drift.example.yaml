@@ -95,6 +95,10 @@ policies:
   # ai_attribution:
   #   manual_ratio: 0.95  # 0.0-1.0; omit for automatic detection
 
+  # Language scanning settings
+  # languages:
+  #   typescript: true  # Enable TypeScript/TSX/JS/JSX analysis (requires tree-sitter)
+
 # CI severity gate: exit 1 if findings meet or exceed this level
 # Options: critical, high, medium, low, none
 # NOTE: The library default (when no drift.yaml is present) is "high".

@@ -31,6 +31,24 @@
       "ref": "main",
       "name": "pytest",
       "description": "Testing framework — mature, high quality"
+    },
+    {
+      "url": "https://github.com/expressjs/express",
+      "ref": "main",
+      "name": "express",
+      "description": "Minimal TS/JS web framework — mature, well-maintained"
+    },
+    {
+      "url": "https://github.com/nestjs/nest",
+      "ref": "master",
+      "name": "nestjs",
+      "description": "Enterprise TS framework — well-typed, decorator-heavy"
+    },
+    {
+      "url": "https://github.com/colinhacks/zod",
+      "ref": "main",
+      "name": "zod",
+      "description": "TypeScript schema validation — small, strictly typed"
     }
   ],
   "fp_budget": {
@@ -48,6 +66,8 @@
     "pattern_fragmentation": 0.08,
     "system_misalignment": 0.10,
     "temporal_volatility": 0.08,
-    "test_polarity_deficit": 0.10
+    "test_polarity_deficit": 0.10,
+    "ts_architecture": 0.10,
+    "type_safety_bypass": 0.08
   }
 }

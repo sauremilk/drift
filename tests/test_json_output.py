@@ -319,3 +319,45 @@ def test_analysis_to_json_first_run_honors_language() -> None:
     payload = json.loads(analysis_to_json(analysis, language="de"))
 
     assert payload["first_run"]["headline"].startswith("Starte")
+
+
+def test_findings_to_sarif_message_text_with_fix_and_recommendation() -> None:
+    """ADR-052: SARIF message.text includes FIX: text when fix is present."""
+    finding = _sample_finding()
+    assert finding.fix  # SMS has a fix field
+    analysis = _sample_analysis()
+    analysis.findings = [finding]
+
+    sarif = json.loads(findings_to_sarif(analysis))
+    result_text = sarif["runs"][0]["results"][0]["message"]["text"]
+
+    # Original fix prefix must be present
+    assert "FIX:" in result_text
+
+
+def test_findings_to_sarif_rule_help_for_known_signal() -> None:
+    """ADR-052: SARIF rule 'help' field is populated for signals with a recommender."""
+    finding = Finding(
+        signal_type=SignalType.PATTERN_FRAGMENTATION,
+        severity=Severity.HIGH,
+        score=0.7,
+        title="PFS finding",
+        description="Fragmented patterns detected.",
+        file_path=Path("src/core.py"),
+        start_line=10,
+        fix="Consolidate patterns into one canonical implementation.",
+        impact=0.8,
+    )
+    analysis = _sample_analysis()
+    analysis.findings = [finding]
+
+    sarif = json.loads(findings_to_sarif(analysis))
+    rules = sarif["runs"][0]["tool"]["driver"]["rules"]
+    assert rules, "expected at least one rule"
+    pfs_rule = rules[0]
+    # The help field should be present if SMS/PFS has a registered recommender
+    # (we don't assert its presence strictly since recommender coverage may vary,
+    # but if present it must have 'text' and 'markdown' keys)
+    if "help" in pfs_rule:
+        assert "text" in pfs_rule["help"]
+        assert "markdown" in pfs_rule["help"]

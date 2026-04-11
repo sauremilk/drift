@@ -91,6 +91,17 @@ def _json_progress_callback(phase: str, current: int, total: int) -> None:
     default=None,
     help="Write JSON output to a file instead of stdout.",
 )
+@click.option(
+    "--format",
+    "-f",
+    "output_format",
+    type=click.Choice(["auto", "rich", "json"]),
+    default="auto",
+    help=(
+        "Output format: auto (rich in terminal, json for pipes/CI), "
+        "rich (always rich), json (always JSON, default for --output)."
+    ),
+)
 def fix_plan(
     path: Path,
     finding_id: str | None,
@@ -103,8 +114,13 @@ def fix_plan(
     include_non_operational: bool,
     progress: str,
     output: Path | None,
+    output_format: str,
 ) -> None:
-    """Generate a prioritized, agent-friendly repair plan as JSON."""
+    """Generate a prioritized, agent-friendly repair plan.
+
+    Outputs Rich tables in a terminal (auto-detected) and JSON for pipes/CI.
+    Use --format json to force JSON, or --format rich to force Rich output.
+    """
     # Auto-detect: use JSON progress for non-TTY consumers (#155)
     if progress == "auto" and _is_non_tty_stdout():
         progress = "json"
@@ -133,9 +149,23 @@ def fix_plan(
     if bool(result.get("error")):
         raise click.UsageError(str(result.get("message", "Invalid fix-plan input")))
 
-    text = to_json(result)
+    # --output always writes JSON regardless of --format
     if output is not None:
+        text = to_json(result)
         output.write_text(text + "\n", encoding="utf-8")
         click.echo(f"Output written to {output}", err=True)
+        return
+
+    # Resolve effective output format
+    use_json = (
+        output_format == "json"
+        or (output_format == "auto" and _is_non_tty_stdout())
+    )
+
+    if use_json:
+        click.echo(to_json(result))
     else:
-        click.echo(text)
+        from drift.commands import console
+        from drift.output.fix_plan_rich import render_fix_plan
+
+        render_fix_plan(result, console)

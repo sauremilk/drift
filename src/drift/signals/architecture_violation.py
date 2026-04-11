@@ -401,7 +401,7 @@ class ArchitectureViolationSignal(BaseSignal):
         findings.extend(self._check_circular_deps(graph))
 
         # --- Check for high transitive blast radius ---
-        findings.extend(self._check_blast_radius(blast_radius, internal_nodes))
+        findings.extend(self._check_blast_radius(blast_radius, internal_nodes, file_histories))
 
         # --- Check instability / distance from main sequence ---
         findings.extend(
@@ -708,6 +708,7 @@ class ArchitectureViolationSignal(BaseSignal):
         self,
         blast_radius: dict[str, int],
         internal_nodes: list[str],
+        file_histories: dict[str, FileHistory],
     ) -> list[Finding]:
         """Flag modules whose transitive blast radius is unusually high.
 
@@ -731,9 +732,16 @@ class ArchitectureViolationSignal(BaseSignal):
             br = blast_radius.get(node, 0)
             if br < threshold:
                 continue
+            # Churn guard: stable modules (change_frequency_30d <= 1.0) with
+            # modest blast radius are not urgent — skip to avoid noise (ADR-050).
+            fh = file_histories.get(node)
+            churn = float(fh.change_frequency_30d) if fh is not None else 0.0
+            if churn <= 1.0 and br <= 50:
+                continue
             total = len(internal_nodes)
             pct = round(br / max(1, total - 1) * 100)
             score = min(1.0, round(br / max(1, total) * 0.8, 2))
+            churn_note = f" Churn: {churn:.1f} changes/week." if churn > 0 else ""
             findings.append(
                 Finding(
                     signal_type=self.signal_type,
@@ -747,7 +755,7 @@ class ArchitectureViolationSignal(BaseSignal):
                     description=(
                         f"A change in {node} transitively affects {br} of "
                         f"{total} modules ({pct}%). This indicates tight "
-                        f"coupling and poor encapsulation."
+                        f"coupling and poor encapsulation.{churn_note}"
                     ),
                     file_path=Path(node),
                     fix=(
@@ -759,6 +767,7 @@ class ArchitectureViolationSignal(BaseSignal):
                         "blast_radius": br,
                         "total_modules": total,
                         "blast_pct": pct,
+                        "churn_per_week": round(churn, 2),
                     },
                 )
             )

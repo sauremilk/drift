@@ -103,6 +103,7 @@ extra:
 nav:
   - Home: index.md
   - What is Architectural Drift?: what-is-architectural-drift.md
+  - "Try It — No Install": prove-it.md
   - Start Here: start-here.md
   - Getting Started:
     - Quickstart: getting-started/quickstart.md
@@ -117,6 +118,7 @@ nav:
     - Quickstart: getting-started/quickstart.md
     - Agent Workflow: getting-started/prompts.md
     - Configuration Levels: guides/configuration-levels.md
+    - Configuration Profiles: guides/configuration-profiles.md
     - Guided Mode (Vibe-Coders): guides/guided-mode.md
     - Cursor MCP Setup: guides/cursor-mcp-setup.md
     - Feedback & Calibration: guides/feedback-calibration.md

@@ -45,6 +45,37 @@ Die Aufgabe ist erst abgeschlossen, wenn du beantworten kannst:
 - Analysiere echte Finding-Texte auf Klarheit, Priorisierung und Next-Step-Qualität.
 - Keine allgemeinen Schreibtipps — nur Drift-spezifische Output-Verbesserungen.
 
+## Reasoning-Anforderungen
+
+### Spannungsfelder
+
+Navigiere aktiv folgende Spannungen — mache deine Abwägung transparent:
+
+- **Diagnosetiefe vs. Handlungsdruck:** Je tiefer die Analyse, desto weniger klar oft der nächste Schritt. Wo endet Diagnose und wo beginnt Handlungsfähigkeit?
+- **Allgemeingültigkeit vs. Kontextspezifik:** Eine universelle Empfehlung trifft nie ganz. Eine kontextspezifische ist nicht portabel. Wo ist der Optimalpunkt?
+- **Automatisierbarkeit vs. Urteilsbedarf:** Manche Findings brauchen menschliches Urteil. Ist das ein Mängel des Findings oder ein Merkmal des Problems?
+
+### Vor-Schlussfolgerungs-Checks
+
+Bevor du ein Finding als „nicht handlungsfähig“ klassifizierst:
+- Liegt es am Finding-Text oder an der Natur des Problems? (Nicht jedes Problem hat eine einfache nächste Aktion.)
+- Wäre das Finding für eine andere Rolle (Staff Engineer vs. Junior Dev) doch handlungsfähig?
+- Verwechselst du „handlungsfähig“ mit „sofort automatisierbar“?
+
+### Konfidenz-Kalibrierung
+
+Gib für jede Actionability-Lücke an:
+- **Konfidenz:** hoch / mittel / niedrig — dass die Lücke real ist
+- **Evidenz:** Woran machst du fest, dass ein Maintainer hier nicht handeln würde?
+- **Entkräftung:** In welchem Kontext wäre dieses Finding doch ausreichend handlungsfähig?
+
+### Fehlerschluss-Wächter
+
+Prüfe aktiv gegen:
+- **Illusion of Actionability:** Ein Finding klingt operativ („refactor X“), führt aber zu keiner klaren, scoped Aktion. Prüfe ob „handlungsfähig“ wirklich „durchführbar“ bedeutet.
+- **Metric Fixation:** Actionability-Score als Selbstzweck statt als Proxy für reales Handeln.
+- **Expert Bias:** Du bewertest als KI mit Vollzugriff auf den Code. Ein Maintainer hat 5 Minuten. Kalibriere darauf.
+
 ## Bewertungs-Labels
 
 Verwende ausschließlich Labels aus `.github/prompts/_partials/bewertungs-taxonomie.md`:
@@ -108,4 +139,8 @@ Für jede Empfehlung:
 
 ## Abschlussentscheidung
 
-Formuliere die 5 stärksten Änderungen, mit denen Drift-Findings deutlich operativer und priorisierbarer würden.
+1. Formuliere die 5 stärksten Änderungen, mit denen Drift-Findings deutlich operativer und priorisierbarer würden.
+2. **Gegenposition:** Für welche deiner Top-5-Empfehlungen gibt es ein starkes Gegenargument? Formuliere es.
+3. **Grenzfall:** Nenne ein Finding, bei dem du unsicher bist, ob mangelnde Actionability ein Bug oder ein Feature ist.
+4. **Falsifikation:** Wie könnte man empirisch testen, ob deine Empfehlungen tatsächlich zu mehr Handlung führen?
+5. **Was du nicht beurteilen kannst:** Welche Aspekte der Handlungsfähigkeit liegen außerhalb deiner Beurteilungsfähigkeit (z.B. Team-Dynamik, Organisationskultur)?

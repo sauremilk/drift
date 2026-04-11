@@ -41,9 +41,9 @@ def _badge_color_for_score(score: float) -> str:
 @click.option(
     "--format",
     "fmt",
-    type=click.Choice(["url", "svg"]),
+    type=click.Choice(["url", "svg", "markdown"]),
     default="url",
-    help="Output format: shields.io URL or self-contained SVG.",
+    help="Output format: shields.io URL, self-contained SVG, or Markdown snippet.",
 )
 @click.option(
     "--output",
@@ -85,6 +85,15 @@ def badge(
     url = f"https://img.shields.io/badge/{label}-{value}-{color}?style={style}"
 
     md_snippet = f"[![Drift Score]({url})](https://github.com/mick-gsk/drift)"
+
+    if fmt == "markdown":
+        text = md_snippet
+        if output:
+            output.write_text(text, encoding="utf-8")
+            console.print(f"Badge Markdown written to {output}")
+        else:
+            click.echo(text)
+        return
 
     if output:
         output.write_text(url, encoding="utf-8")

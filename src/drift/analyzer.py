@@ -217,6 +217,7 @@ def analyze_repo(
         exclude=config.exclude,
         max_files=config.thresholds.max_discovery_files,
         skipped_out=skipped_langs,
+        ts_enabled=config.languages.typescript,
     )
 
     if target_path:
@@ -339,6 +340,7 @@ def analyze_diff(
         include=config.include,
         exclude=config.exclude,
         max_files=config.thresholds.max_discovery_files,
+        ts_enabled=config.languages.typescript,
     )
     changed_set = set(changed_files)
     files = [f for f in all_files if f.path.as_posix() in changed_set]

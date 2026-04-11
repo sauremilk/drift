@@ -170,6 +170,7 @@ def _finding_to_dict(f: Finding, *, impact_rank: int | None = None) -> dict[str,
         "description": f.description,
         "fix": f.fix,
         "file": f.file_path.as_posix() if f.file_path else None,
+        "language": f.language,
         "start_line": f.start_line,
         "end_line": f.end_line,
         "finding_context": classify_finding_context(f, DriftConfig()),
@@ -239,6 +240,7 @@ def _finding_compact_dict(
         "score_contribution": finding.score_contribution,
         "title": finding.title,
         "file": finding.file_path.as_posix() if finding.file_path else None,
+        "language": finding.language,
         "start_line": finding.start_line,
         "duplicate_count": duplicate_count,
         "next_step": _next_step_for_finding(finding),
@@ -314,6 +316,7 @@ def analysis_to_json(
             "ai_attributed_ratio": analysis.ai_attributed_ratio,
             "ai_tools_detected": analysis.ai_tools_detected,
             "analysis_duration_seconds": analysis.analysis_duration_seconds,
+            "skipped_languages": analysis.skipped_languages or None,
         },
         "first_run": build_first_run_summary(
             analysis,
@@ -406,6 +409,18 @@ def findings_to_sarif(analysis: RepoAnalysis) -> str:
                 rule_obj["helpUri"] = (
                     f"https://cwe.mitre.org/data/definitions/{cwe_id}.html"
                 )
+            # ADR-052: attach recommendation as rule-level help text.
+            try:
+                from drift.recommendations import generate_recommendation
+
+                rule_rec = generate_recommendation(f)
+                if rule_rec:
+                    rule_obj["help"] = {
+                        "text": rule_rec.description,
+                        "markdown": f"**{rule_rec.title}**: {rule_rec.description}",
+                    }
+            except Exception:
+                pass
             rules.append(rule_obj)
 
         result: dict[str, Any] = {
@@ -462,15 +477,29 @@ def findings_to_sarif(analysis: RepoAnalysis) -> str:
                 for idx, rf in enumerate(f.related_files)
             ]
 
-        # Include fix as a help text in the SARIF rule
+        # ADR-052: enrich message with fix text and recommendation action.
         if f.fix:
-            result["message"]["text"] = f"{f.title}\n{f.description}\nFIX: {f.fix}"
+            base_text = f"{f.title}\n{f.description}\nFIX: {f.fix}"
+            try:
+                from drift.recommendations import generate_recommendation
+
+                msg_rec = generate_recommendation(f)
+                if msg_rec:
+                    combined = f"{base_text} | {msg_rec.title}"
+                    base_text = combined[:400] if len(combined) > 400 else combined
+            except Exception:
+                pass
+            result["message"]["text"] = base_text
 
         # ADR-006: context tags as SARIF result properties
         props: dict[str, Any] = {}
 
         # ADR-042: stable finding ID for cross-referencing
         props["drift:findingId"] = finding_fingerprint(f)
+
+        # Language annotation for multi-language repositories.
+        if f.language:
+            props["drift:language"] = f.language
 
         ctx_tags = f.metadata.get("context_tags")
         if ctx_tags:

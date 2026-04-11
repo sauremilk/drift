@@ -185,6 +185,7 @@ class CoChangeCouplingSignal(BaseSignal):
         pair_weights: dict[tuple[str, str], float] = defaultdict(float)
         pair_raw_counts: dict[tuple[str, str], int] = defaultdict(int)
         pair_commit_hashes: dict[tuple[str, str], list[str]] = defaultdict(list)
+        pair_commit_messages: dict[tuple[str, str], list[str]] = defaultdict(list)
 
         effective_commits = 0.0
 
@@ -211,6 +212,7 @@ class CoChangeCouplingSignal(BaseSignal):
                 pair_weights[pair] += weight
                 pair_raw_counts[pair] += 1
                 pair_commit_hashes[pair].append(commit.hash)
+                pair_commit_messages[pair].append(commit.message[:60])
 
         if effective_commits < _MIN_EFFECTIVE_COMMITS:
             return []
@@ -244,6 +246,12 @@ class CoChangeCouplingSignal(BaseSignal):
             path_b = Path(str(pair[1]))
             sample_hashes = sorted(set(pair_commit_hashes[pair]))[:5]
             raw_count = pair_raw_counts[pair]
+            sample_messages = pair_commit_messages[pair][:3]
+            msg_context = (
+                "\n".join(f'  - "{m}"' for m in sample_messages)
+                if sample_messages
+                else ""
+            )
 
             findings.append(
                 Finding(
@@ -263,11 +271,14 @@ class CoChangeCouplingSignal(BaseSignal):
                     file_path=path_a,
                     related_files=[path_b],
                     fix=(
-                        f"Analyze the implicit coupling between {path_a.name} "
-                        f"and {path_b.name}. Extract shared logic into a clearly "
-                        "named shared module or introduce an explicit interface. "
-                        "Protect the boundary with an integration test against "
-                        "accidental co-changes."
+                        f"Co-change coupling: {path_a.name} \u2194 {path_b.name}."
+                        + (f"\nRecent context:\n{msg_context}" if msg_context else "")
+                        + "\n\nIf intentional (shared boundary):\n"
+                        + "  \u2192 Add integration test: "
+                        + f"def test_{path_a.stem}_{path_b.stem}_sync():\n"
+                        + "        # Verify consistent contracts between both modules\n"
+                        + "\nIf accidental (layering issue):\n"
+                        + "  \u2192 Extract shared logic into src/<domain>/shared.py"
                     ),
                     metadata={
                         "file_a": pair[0],
@@ -279,6 +290,7 @@ class CoChangeCouplingSignal(BaseSignal):
                         "total_weight_file_b": round(total_b, 3),
                         "explicit_dependency": False,
                         "commit_samples": sample_hashes,
+                        "commit_messages": sample_messages,
                     },
                 )
             )

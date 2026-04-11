@@ -298,6 +298,20 @@
       "title": "FindingContextPolicy",
       "type": "object"
     },
+    "LanguagesConfig": {
+      "additionalProperties": false,
+      "description": "Per-language scanning settings (drift.yaml → languages:).",
+      "properties": {
+        "typescript": {
+          "default": true,
+          "description": "Enable TypeScript/TSX/JS/JSX analysis. Requires drift-analyzer[typescript] (tree-sitter). Set to false to skip TS files even when tree-sitter is installed.",
+          "title": "Typescript",
+          "type": "boolean"
+        }
+      },
+      "title": "LanguagesConfig",
+      "type": "object"
+    },
     "FindingContextRule": {
       "additionalProperties": false,
       "description": "Classify findings by file path using glob patterns.",
@@ -920,6 +934,9 @@
       "default": null,
       "description": "ISO 639-1 output language for guided mode (e.g. 'de', 'en').",
       "title": "Language"
+    },
+    "languages": {
+      "$ref": "#/$defs/LanguagesConfig"
     },
     "path_overrides": {
       "additionalProperties": {

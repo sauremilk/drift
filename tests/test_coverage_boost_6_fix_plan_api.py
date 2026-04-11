@@ -2,10 +2,14 @@
 
 from __future__ import annotations
 
+import json
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
+from click.testing import CliRunner
+
 from drift.api.fix_plan import _build_fix_plan_response_from_analysis
+from drift.commands.fix_plan import fix_plan as fix_plan_cmd
 from drift.models import Severity
 from drift.output.agent_tasks import AgentTask
 
@@ -397,3 +401,79 @@ def test_include_deferred_true_keeps_deferred_tasks(tmp_path: Path) -> None:
     warnings = result.get("warnings", [])
     assert not any("deferred" in w.lower() for w in warnings)
     assert result.get("task_count", 0) >= 1
+
+
+# ---------------------------------------------------------------------------
+# --format option: CLI TTY/non-TTY routing (ADR-047)
+# ---------------------------------------------------------------------------
+
+_FAKE_RESULT = {
+    "tasks": [
+        {
+            "id": "pfs-abc",
+            "signal_type": "PFS",
+            "severity": "medium",
+            "file_path": "src/foo.py",
+            "start_line": 10,
+            "title": "Add docstring",
+            "description": "Missing docstring",
+            "action": "Add a docstring",
+            "automation_fit": "high",
+        }
+    ],
+    "task_count": 1,
+    "total_available": 3,
+    "drift_score": 0.42,
+    "recommended_next_actions": ["Apply the fix and run drift check"],
+}
+
+
+def _run_format(tmp_path: Path, extra_args: list[str]) -> str:
+    """Invoke fix_plan CLI and return output string."""
+    runner = CliRunner()
+    with patch("drift.commands.fix_plan.api_fix_plan", return_value=_FAKE_RESULT):
+        result = runner.invoke(
+            fix_plan_cmd,
+            ["--repo", str(tmp_path), "--max-tasks", "5"] + extra_args,
+        )
+    assert result.exit_code == 0, result.output + (result.exception and str(result.exception) or "")
+    return result.output
+
+
+def test_fix_plan_format_json_explicit(tmp_path: Path) -> None:
+    """--format json always emits valid JSON regardless of TTY state."""
+    output = _run_format(tmp_path, ["--format", "json"])
+    data = json.loads(output)
+    assert data["task_count"] == 1
+    assert "tasks" in data
+
+
+def test_fix_plan_format_rich_explicit(tmp_path: Path) -> None:
+    """--format rich emits Rich-formatted output (no raw JSON object)."""
+    output = _run_format(tmp_path, ["--format", "rich"])
+    # Rich output contains the task title, not a raw JSON structure
+    assert "Add docstring" in output
+    # Should NOT be a bare JSON document
+    assert not output.lstrip().startswith("{")
+
+
+def test_fix_plan_format_auto_non_tty_produces_json(tmp_path: Path) -> None:
+    """In auto mode with non-TTY stdout (mocked), output is JSON."""
+    runner = CliRunner()
+    # Force _is_non_tty_stdout to True to simulate pipe/CI environment
+    with patch("drift.commands.fix_plan.api_fix_plan", return_value=_FAKE_RESULT), \
+         patch("drift.commands.fix_plan._is_non_tty_stdout", return_value=True):
+        result = runner.invoke(
+            fix_plan_cmd,
+            ["--repo", str(tmp_path), "--max-tasks", "5", "--format", "auto"],
+        )
+    assert result.exit_code == 0, result.output
+    data = json.loads(result.output)
+    assert data["task_count"] == 1
+
+
+def test_fix_plan_format_json_via_shorthand(tmp_path: Path) -> None:
+    """-f json shorthand works identically to --format json."""
+    output = _run_format(tmp_path, ["-f", "json"])
+    data = json.loads(output)
+    assert "tasks" in data

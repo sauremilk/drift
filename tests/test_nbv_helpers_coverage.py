@@ -19,6 +19,7 @@ from drift.signals.naming_contract_violation import (
     _has_raise,
     _has_rejection_path,
     _has_try_except,
+    _is_bool_like_return_type,
     _is_utility_context,
     _looks_like_comparison_semantics,
     _match_rule,
@@ -170,6 +171,25 @@ class TestHasBoolReturn:
         """
         fn = _fn_info(return_type=None)
         assert _has_bool_return(_parse(src), fn) is False
+
+
+class TestIsBoolLikeReturnType:
+    def test_plain_bool_types(self):
+        assert _is_bool_like_return_type("bool") is True
+        assert _is_bool_like_return_type("builtins.bool") is True
+        assert _is_bool_like_return_type("boolean") is True
+
+    def test_async_wrapper_bool_types(self):
+        assert _is_bool_like_return_type("Promise<boolean>") is True
+        assert _is_bool_like_return_type("PromiseLike<boolean>") is True
+        assert _is_bool_like_return_type("Observable<boolean>") is True
+
+    def test_nested_async_wrapper_bool_types(self):
+        assert _is_bool_like_return_type("Promise<PromiseLike<boolean>>") is True
+
+    def test_non_bool_wrapped_types(self):
+        assert _is_bool_like_return_type("Promise<string>") is False
+        assert _is_bool_like_return_type("Observable<number>") is False
 
 
 # -- _has_try_except -----------------------------------------------------------

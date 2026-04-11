@@ -1,5 +1,18 @@
 # FMEA Matrix
 
+## 2026-04-11 - Phase 2 TS Parity: BEM/EDS/MDS/PFS TypeScript validation
+
+| Signal | Failure Mode | Cause | Effect | Detection | Mitigation | S | O | D | RPN | Status |
+|---|---|---|---|---|---|---:|---:|---:|---:|---|
+| BEM | FP: TS bare catch flagged when handler performs typed re-throw | tree-sitter catch clause without type annotation classified as "bare" even when throw follows | Over-reporting on idiomatic TS error handling | Ground-truth TN fixture `bem_ts_tn` with typed re-throws | BEM already checks for re-throw actions; TS TN fixture validates | 5 | 3 | 3 | 45 | Mitigated |
+| BEM | FN: TS catch with `console.error` only not detected | TS parser may not classify `console.error` as log action | Under-reporting of swallowed exceptions | Ground-truth TP fixture `bem_ts_tp` with console.error handlers | ts_parser extracts `log` action for console.error; validated | 4 | 2 | 3 | 24 | Mitigated |
+| EDS | FP: Simple TS function with JSDoc flagged as unexplained | JSDoc detection in tree-sitter might miss block comments | Over-reporting on documented functions | Ground-truth TN fixture `eds_ts_tn` with JSDoc | ts_parser detects `/** */` comments as docstrings; validated | 5 | 2 | 3 | 30 | Mitigated |
+| EDS | FN: Complex TS function without docs not detected | Complexity heuristic may under-count TS branching constructs | Under-reporting of hard-to-understand TS code | Ground-truth TP fixture `eds_ts_tp` with deep nesting | ts_parser counts if/for/while/switch/ternary; validated | 4 | 3 | 3 | 36 | Mitigated |
+| MDS | FP: Distinct TS functions flagged as duplicates | n-gram overlap on small functions with common patterns | Over-reporting of non-duplicate code | Ground-truth TN fixture `mds_ts_tn` with distinct functions | MDS Jaccard threshold + LOC bucket + name-diversity filters | 5 | 3 | 3 | 45 | Mitigated |
+| MDS | FN: Copy-paste TS functions not detected | ts_parser n-gram normalization differs from Python ast | Under-reporting of cloned TS code | Ground-truth TP fixture `mds_ts_tp` + mutation benchmark | ts_parser `_compute_ts_ast_ngrams` produces comparable n-grams; validated | 4 | 2 | 3 | 24 | Mitigated |
+| PFS | FP: Consistent TS error handling flagged as fragmented | Fingerprint normalization may not fully equalize TS patterns | Over-reporting on consistent codebases | Ground-truth TN fixture `pfs_ts_tn` with uniform AppError pattern | PFS `_normalize_fingerprint` removes async/sync; consistent patterns pass | 5 | 2 | 3 | 30 | Mitigated |
+| PFS | FN: Fragmented TS error patterns not detected | TS error-handling fingerprints may not distinguish patterns | Under-reporting of inconsistent error handling | Ground-truth TP fixture `pfs_ts_tp` with 3 different patterns | ts_parser extracts distinct handler fingerprints; validated | 4 | 3 | 3 | 36 | Mitigated |
+
 ## 2026-04-11 - Issue #210: NBV TS/JS ensure_* upsert FP reduction
 
 | Signal | Failure Mode | Cause | Effect | Detection | Mitigation | S | O | D | RPN | Status |

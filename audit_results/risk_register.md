@@ -1,5 +1,35 @@
 # Risk Register
 
+## 2026-06-15 — Phase 3: TypeScript Verständlichkeit & Einführbarkeit
+
+- Risk ID: RISK-OUTPUT-2026-06-15-TS-PHASE3
+- Component: `src/drift/models.py`, `src/drift/output/json_output.py`, `src/drift/output/rich_output.py`, `src/drift/ingestion/file_discovery.py`, `src/drift/config.py`
+- Type: Output enrichment + configuration extension (TypeScript visibility)
+- Description: Phase 3 adds four capabilities: (1) `language` field on Finding model with auto-inference from file extension, (2) Rich console warning when TS files are skipped due to missing tree-sitter, (3) `tmp_ts_repo` conftest fixture for TypeScript-centric tests, (4) `LanguagesConfig` sub-model allowing `languages.typescript: false` in drift.yaml.
+- Trigger: Any `drift analyze` run that encounters TypeScript files without tree-sitter installed, or any output consumption (JSON, SARIF, Rich).
+- Impact: Low — all changes are additive, backward-compatible, and default-preserving. `language` field defaults to `None` (auto-inferred from extension). `languages.typescript` defaults to `true`. Warning panel only appears when `skipped_languages` is non-empty.
+- Mitigation:
+  - `language` field uses hardcoded `_LANG_MAP` ClassVar — no user input, no injection risk.
+  - `LanguagesConfig` is Pydantic-validated with `extra="forbid"`.
+  - Rich warning uses `Text.assemble()` — no markup injection.
+  - JSON/SARIF schema updated with nullable `language` enum.
+  - 1600 tests pass; no regressions.
+- Residual risk: Minimal. `language` field is informational only — no scoring, filtering, or routing depends on it yet.
+
+## 2026-04-11 - Phase 2 TS Parity: BEM/EDS/MDS/PFS validated for TypeScript
+
+- Risk ID: RISK-SIGNAL-2026-04-11-TS-PHASE2
+- Component: `tests/fixtures/ground_truth.py`, `scripts/_mutation_benchmark.py`, `docs/language-support-matrix.md`
+- Type: Signal coverage extension (TypeScript language validation for 4 additional signals)
+- Description: BEM, EDS, MDS, and PFS were already language-neutral in implementation but lacked TypeScript ground-truth fixtures and mutation benchmarks. Phase 2 added 8 TS fixtures (TP+TN per signal) and 10 TS mutation scenarios to the benchmark, raising validated TS signal count from 13/24 to 17/24.
+- Trigger: `drift analyze` on TypeScript repositories now reports findings for BEM, EDS, MDS, and PFS signals.
+- Impact: Medium-positive. Increases TS signal coverage from 54% to 71% and provides precision/recall evidence.
+- Mitigation:
+  - 8 ground-truth fixtures (BEM TP/TN, EDS TP/TN, MDS TP/TN, PFS TP/TN) in precision/recall suite.
+  - 10 TS mutation scenarios in mutation benchmark (BEM, EDS, MDS, PFS, NBV, GCD, TSB).
+  - All 187 precision/recall tests pass; mutation benchmark overall recall 96.9%.
+- Residual risk: Low. No signal logic was changed; only validation artifacts added. TS FP rates on real-world repos not yet measured beyond oracle repo set.
+
 ## 2026-04-11 - Issue #210: NBV TS/JS ensure_* upsert false positives
 
 - Risk ID: RISK-SIGNAL-2026-04-11-210

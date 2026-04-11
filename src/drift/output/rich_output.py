@@ -62,6 +62,9 @@ _SIGNAL_LABELS: dict[str, str] = {
     SignalType.HARDCODED_SECRET: "HSC",
 }
 
+# Signal abbreviations for security findings — these get a dedicated section (ADR-047)
+_SECURITY_SIGNAL_ABBREVS: frozenset[str] = frozenset({"MAZ", "HSC", "ISD"})
+
 # --explain: concise signal explanations (why it matters → what to do)
 _SIGNAL_EXPLANATIONS: dict[str, tuple[str, str]] = {
     SignalType.PATTERN_FRAGMENTATION: (
@@ -172,6 +175,9 @@ def _signal_label(signal_type: str) -> str:
     return _SIGNAL_LABELS.get(signal, signal)
 
 
+_MAX_SNIPPET_LINES: int = 8  # Hard cap per finding; prevents scroll-flooding
+
+
 def _read_code_snippet(
     file_path: Path | None,
     start_line: int | None,
@@ -214,6 +220,12 @@ def _read_code_snippet(
     if not lines:
         return None
 
+    # Enforce hard cap — truncate and add a "more lines" marker
+    truncated_count = 0
+    if len(lines) > _MAX_SNIPPET_LINES:
+        truncated_count = len(lines) - _MAX_SNIPPET_LINES
+        lines = lines[:_MAX_SNIPPET_LINES]
+
     text = Text()
     gutter_width = len(str(lines[-1][0]))
     for lineno, content in lines:
@@ -221,6 +233,11 @@ def _read_code_snippet(
         marker = "→" if is_target else " "
         text.append(f"  {marker} {lineno:>{gutter_width}} │ ", style="dim")
         text.append(f"{content}\n", style="bold" if is_target else "dim")
+    if truncated_count:
+        text.append(
+            f"  … ({truncated_count} more lines — use --no-code to hide snippets)\n",
+            style="dim italic",
+        )
     return text
 
 
@@ -342,6 +359,9 @@ def render_summary(
     grade_letter, grade_label = analysis.grade
     grade_text = f"  Grade {grade_letter} — {grade_label}"
 
+    # First-run context hint: typical range seen across open-source repos
+    first_run_hint = "  │  Typical first-run range: 0.30–0.65"
+
     # Build trend suffix (ADR-005)
     trend = analysis.trend
     if trend and trend.direction != "baseline" and trend.delta is not None:
@@ -370,6 +390,7 @@ def render_summary(
                 ("DRIFT SCORE  ", "bold"),
                 (f"{analysis.drift_score:.2f}", f"bold {header_color}"),
                 (grade_text, f"bold {header_color}"),
+                (first_run_hint, "dim"),
                 *trend_parts,
                 ("  │  ", "dim"),
                 (f"{analysis.total_files} files", ""),
@@ -418,6 +439,21 @@ def render_summary(
         console.print(
             f"  [bold yellow]Analysis degraded[/bold yellow]: causes={causes}; "
             f"components={components}",
+        )
+
+    # Warn when TypeScript/JS files were skipped due to missing tree-sitter
+    if analysis.skipped_languages:
+        summary = ", ".join(
+            f"{lang} ({n})" for lang, n in sorted(analysis.skipped_languages.items())
+        )
+        console.print(
+            Text.assemble(
+                ("  ⚠ Skipped ", "bold yellow"),
+                (f"{sum(analysis.skipped_languages.values())} file(s)", "bold yellow"),
+                (f": {summary}. ", ""),
+                ("Install: ", ""),
+                ("pip install drift-analyzer[typescript]", "bold"),
+            ),
         )
 
     # Trend sparkline (ADR-005)
@@ -651,6 +687,14 @@ def render_findings(
             )
         return
 
+    # Render dedicated security section before the main findings table (ADR-047)
+    _render_security_section(
+        sorted_findings,
+        console,
+        repo_root=repo_root,
+        show_code=show_code,
+    )
+
     _render_findings_table(
         sorted_findings[:max_items],
         console,
@@ -663,6 +707,45 @@ def render_findings(
     remaining = len(sorted_findings) - max_items
     if remaining > 0:
         console.print(f"[dim]... and {remaining} more findings[/dim]")
+
+
+def _render_security_section(
+    findings: list[Finding],
+    console: Console,
+    *,
+    repo_root: Path | None = None,
+    show_code: bool = True,
+) -> bool:
+    """Render a dedicated security findings panel (ADR-047).
+
+    Returns True if any security findings were rendered.
+    """
+    security = [
+        f for f in findings
+        if _signal_label(f.signal_type) in _SECURITY_SIGNAL_ABBREVS
+    ]
+    if not security:
+        return False
+
+    table = Table(title="Security Findings", show_lines=True, border_style="bold red")
+    table.add_column("", width=2)
+    table.add_column("Signal", min_width=5)
+    table.add_column("Score", justify="right", min_width=6)
+    table.add_column("Title / Details", min_width=50)
+
+    for f in security:
+        icon = _SEVERITY_ICONS.get(f.severity, "?")
+        color = _SEVERITY_COLORS.get(f.severity, "white")
+        signal = _signal_label(f.signal_type)
+        table.add_row(
+            Text(icon, style=color),
+            signal,
+            Text(f"{f.score:.2f}", style=color),
+            _format_finding_detail(f, repo_root=repo_root, show_code=show_code),
+        )
+
+    console.print(table)
+    return True
 
 
 def _render_findings_table(

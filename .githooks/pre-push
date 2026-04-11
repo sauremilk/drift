@@ -29,6 +29,9 @@ if [ -z "$PYTHON_CMD" ]; then
 	exit 1
 fi
 
+GIT_DIR_PATH=$(git rev-parse --git-dir 2>/dev/null || echo ".git")
+LAST_SUCCESS_SHA_FILE="$GIT_DIR_PATH/.drift-prepush-last-success"
+
 # Escape hatches (export VAR=1 to skip a specific gate):
 # DRIFT_SKIP_CHANGELOG, DRIFT_SKIP_VERSION_BUMP,
 # DRIFT_SKIP_LOCKFILE, DRIFT_SKIP_DOCSTRING, DRIFT_SKIP_RISK_AUDIT
@@ -454,6 +457,37 @@ else
 	enforce_risk_audit_gate
 fi
 
+can_reuse_previous_local_ci_success=0
+current_head_sha=$(git rev-parse HEAD 2>/dev/null || true)
+if [ -n "$current_head_sha" ] && [ -f "$LAST_SUCCESS_SHA_FILE" ]; then
+	last_success_sha=$(cat "$LAST_SUCCESS_SHA_FILE" | tr -d '\r\n')
+	if [ "$last_success_sha" = "$current_head_sha" ]; then
+		all_updates_match_head=1
+		while IFS='|' read -r local_sha remote_sha; do
+			if [ -z "$local_sha" ] || [ -z "$remote_sha" ]; then
+				continue
+			fi
+			if [ "$local_sha" != "$current_head_sha" ]; then
+				all_updates_match_head=0
+				break
+			fi
+		done <<EOF
+$push_ref_updates
+EOF
+
+		if [ "$all_updates_match_head" -eq 1 ]; then
+			can_reuse_previous_local_ci_success=1
+		fi
+	fi
+fi
+
+if [ "$can_reuse_previous_local_ci_success" -eq 1 ]; then
+	echo ">>> [pre-push] Reusing successful local CI checks for unchanged commit $current_head_sha."
+	echo ">>> [pre-push] Gates were re-evaluated; expensive checks are skipped for this retry."
+	echo ">>> [pre-push] Push continues."
+	exit 0
+fi
+
 echo ">>> [pre-push] Starting local CI checks..."
 
 # Unset git context variables that git injects when running hooks.
@@ -498,5 +532,9 @@ fi
 # 5. Self-analysis
 echo ">>> [5/6] Running self-analysis..."
 drift analyze --repo . --format json --exit-zero > /dev/null
+
+if [ -n "$current_head_sha" ]; then
+	printf "%s\n" "$current_head_sha" > "$LAST_SUCCESS_SHA_FILE"
+fi
 
 echo ">>> [pre-push] All checks passed. Push continues."

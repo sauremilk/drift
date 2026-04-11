@@ -179,13 +179,19 @@ class ExplainabilityDeficitSignal(BaseSignal):
             # Combine complexity-weighted deficit with LOC and visibility.
             weighted_score = weighted_score * (0.7 + 0.3 * loc_factor) * visibility_factor
 
-            if weighted_score < 0.3:
-                continue
-
-            # Check AI attribution for the file
+            # Check AI attribution and defect correlation for this file (ADR-048)
             fpath_str = func.file_path.as_posix()
             history = file_histories.get(fpath_str)
             ai_related = history.ai_attributed_commits > 0 if history else False
+            defect_correlated = history is not None and history.defect_correlated_commits > 0
+
+            # Raise threshold for private functions — reduce noise on internal helpers.
+            # Defect-correlated files always keep the lower threshold (actionable).
+            min_threshold = 0.45 if is_private else 0.30
+            if defect_correlated:
+                min_threshold = min(min_threshold, 0.30)
+            if weighted_score < min_threshold:
+                continue
 
             severity = Severity.INFO
             if weighted_score >= 0.7:

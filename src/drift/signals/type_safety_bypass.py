@@ -129,7 +129,7 @@ class TypeSafetyBypassSignal(BaseSignal):
             if pr.language not in _TS_LANGUAGES:
                 continue
 
-            source = _read_source(pr.file_path)
+            source = _read_source(pr.file_path, self.repo_path)
             if source is None:
                 continue
 
@@ -186,9 +186,10 @@ class TypeSafetyBypassSignal(BaseSignal):
         return findings
 
 
-def _read_source(file_path: Path) -> str | None:
+def _read_source(file_path: Path, repo_path: Path | None = None) -> str | None:
     """Read source file, returning None on error."""
+    target = repo_path / file_path if repo_path else file_path
     try:
-        return file_path.read_text(encoding="utf-8", errors="replace")
+        return target.read_text(encoding="utf-8", errors="replace")
     except (OSError, UnicodeDecodeError):
         return None

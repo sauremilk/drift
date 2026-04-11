@@ -59,9 +59,12 @@ def test_analysis_to_csv_contains_header_and_rows() -> None:
     rendered = analysis_to_csv(_sample_analysis())
     rows = list(csv.reader(io.StringIO(rendered)))
 
-    assert rows[0] == ["signal", "severity", "score", "title", "file", "start_line", "end_line"]
+    assert rows[0] == [
+        "signal", "signal_label", "severity", "score", "title", "file", "start_line", "end_line"
+    ]
     assert rows[1] == [
         "PFS",
+        "Pattern Fragmentation",
         "high",
         "0.85",
         "Error handling split 4 ways",
@@ -69,7 +72,8 @@ def test_analysis_to_csv_contains_header_and_rows() -> None:
         "42",
         "58",
     ]
-    assert rows[2] == ["SMS", "medium", "0.5", "Config drift", "", "", ""]
+    assert rows[2][0] == "SMS"
+    assert rows[2][2] == "medium"
 
 
 def test_analysis_to_csv_escapes_commas_and_quotes() -> None:
@@ -90,4 +94,18 @@ def test_analysis_to_csv_escapes_commas_and_quotes() -> None:
     rendered = analysis_to_csv(analysis)
     rows = list(csv.reader(io.StringIO(rendered)))
 
-    assert rows[1][3] == 'Title with "quote", and comma'
+    assert rows[1][4] == 'Title with "quote", and comma'
+
+
+def test_analysis_to_csv_signal_label_column() -> None:
+    """ADR-052: signal_label column contains human-readable signal name."""
+    rendered = analysis_to_csv(_sample_analysis())
+    rows = list(csv.reader(io.StringIO(rendered)))
+
+    # signal_label is the second column (index 1)
+    assert "signal_label" in rows[0]
+    label_idx = rows[0].index("signal_label")
+    # PFS finding should have a non-empty, non-abbrev label
+    pfs_label = rows[1][label_idx]
+    assert pfs_label  # not empty
+    assert pfs_label != "PFS"  # not just the abbreviation

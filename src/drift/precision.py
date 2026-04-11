@@ -53,6 +53,8 @@ def ensure_signals_registered() -> None:
     import drift.signals.system_misalignment  # noqa: F401
     import drift.signals.temporal_volatility  # noqa: F401
     import drift.signals.test_polarity_deficit  # noqa: F401
+    import drift.signals.ts_architecture  # noqa: F401
+    import drift.signals.type_safety_bypass  # noqa: F401
 
 
 __all__ = [
@@ -118,8 +120,13 @@ def run_fixture(
     else:
         fixture_dir = fixture.materialize(tmp_path)
 
+    # Build include patterns from file extensions present in the fixture.
+    _exts = {Path(p).suffix.lower() for p in fixture.files}
+    include = ["**/*.py"]
+    if _exts & {".ts", ".tsx", ".js", ".jsx"}:
+        include.extend(["**/*.ts", "**/*.tsx", "**/*.js", "**/*.jsx"])
     config = DriftConfig(
-        include=["**/*.py"],
+        include=include,
         exclude=["**/__pycache__/**"],
         embeddings_enabled=False,
     )

@@ -14,7 +14,7 @@ MYPY     ?= $(PYTHON) -m mypy
 SRC      := src/
 TESTS    := tests/
 
-.PHONY: help install lint lint-fix typecheck test test-fast test-contract smoke-pr smoke-nightly test-all coverage check self ci markdown-lint package-kpis-github-usage package-kpis-downloads package-kpis-real-public package-kpis-example clean
+.PHONY: help install lint lint-fix typecheck test test-fast test-dev test-lf test-contract smoke-pr smoke-nightly test-all coverage check self ci markdown-lint package-kpis-github-usage package-kpis-downloads package-kpis-real-public package-kpis-example clean
 
 help:  ## Show all available commands
 	@grep -E '^[a-zA-Z_-]+:.*##' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*##"}; {printf "  \033[36m%-15s\033[0m %s\n", $$1, $$2}'
@@ -38,6 +38,12 @@ test:  ## Run tests in parallel (skip slow smoke tests)
 
 test-fast:  ## Fast unit tests — parallel, skip slow tests, stop on first failure
 	$(PYTEST) -v --tb=short -m "not slow" -x --ignore=tests/test_smoke_real_repos.py -n auto --dist=loadscope
+
+test-dev:  ## Local dev loop — skip slow/performance/ground-truth tests
+	$(PYTEST) -q --tb=short -m "not slow and not performance and not ground_truth" --ignore=tests/test_smoke_real_repos.py --maxfail=1 -n auto --dist=loadscope
+
+test-lf:  ## Local dev loop — rerun last failed, with fast-marker filter
+	$(PYTEST) -q --tb=short --lf -m "not slow and not performance and not ground_truth" --ignore=tests/test_smoke_real_repos.py --maxfail=1 -n auto --dist=loadscope
 
 test-contract:  ## SARIF/JSON contract tests only
 	$(PYTEST) -v --tb=short -m contract

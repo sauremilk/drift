@@ -494,6 +494,21 @@ class DocImplDriftConfig(BaseModel):
     extra_context_keywords: list[str] = Field(default_factory=list)
 
 
+class LanguagesConfig(BaseModel):
+    """Per-language scanning settings (drift.yaml → ``languages:``)."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    typescript: bool = Field(
+        default=True,
+        description=(
+            "Enable TypeScript/TSX/JS/JSX analysis. "
+            "Requires drift-analyzer[typescript] (tree-sitter). "
+            "Set to false to skip TS files even when tree-sitter is installed."
+        ),
+    )
+
+
 class DriftConfig(BaseModel):
     """Main drift configuration, loaded from drift.yaml."""
 
@@ -558,6 +573,7 @@ class DriftConfig(BaseModel):
     dia: DocImplDriftConfig = Field(default_factory=DocImplDriftConfig)
     calibration: CalibrationConfig = Field(default_factory=CalibrationConfig)
     attribution: AttributionConfig = Field(default_factory=AttributionConfig)
+    languages: LanguagesConfig = Field(default_factory=LanguagesConfig)
     agent: AgentObjective | None = Field(
         default=None,
         description=(

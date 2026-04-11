@@ -33,6 +33,7 @@ Quick reference:
 ## Triage workflow
 
 1. **Issues:** Respond within 72 hours. Label with appropriate category.
+   Claim coordination for contributor-facing issues can be assisted by the issue-claim workflows and the playbook in [docs/issue-claim-playbook.md](issue-claim-playbook.md).
 2. **PRs:** Run `make check` locally. Review against [POLICY.md](../POLICY.md) and the quality workflow in [drift-quality-workflow.instructions.md](../.github/instructions/drift-quality-workflow.instructions.md).
 3. **Security reports:** Follow [SECURITY.md](../SECURITY.md) — private advisory, 72h acknowledgment, 7-day resolution timeline.
 

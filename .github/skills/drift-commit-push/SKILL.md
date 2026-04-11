@@ -22,7 +22,7 @@ Use this skill for repository-safe commit and push workflows in Drift.
 2. **Never commit blocked paths.** Anything under `tagesplanung/` is excluded from pushes.
 3. **Use conventional commits.** Release automation depends on `feat:`, `fix:`, and `BREAKING:` semantics.
 4. **Releases are CI-automated.** Do not run manual release flows in normal operation; do not handcraft versioning beyond commit semantics.
-5. **Run validation before commit and again before push when relevant.**
+5. **Run lightweight validation before commit; run full validation once per push cycle.**
 6. **Do not bypass hooks by default.** Environment-variable bypasses are emergency-only and must be justified.
 
 ## Step 0: Run The Drift Policy Gate
@@ -82,10 +82,18 @@ Release-specific note for `src/drift/**` changes:
 
 ## Step 4: Run Validation
 
-Minimum expectation before commit:
+Minimum expectation before commit (fast feedback):
 
 ```bash
 make test-fast
+```
+
+For very fast local loops, prefer targeted checks first:
+
+```bash
+make test-dev
+# or rerun only previous failures
+make test-lf
 ```
 
 If smoke confidence is needed locally, use the split profiles instead of always running the full matrix:
@@ -102,7 +110,13 @@ Before push, the repository standard is:
 make check
 ```
 
-If the change is narrowly scoped and a faster targeted check is used first, do not treat that as a substitute for the required pre-push validation.
+Important for speed: do not duplicate full-matrix runs.
+
+- Use exactly one full validation run per push cycle:
+  - either run `make check` manually before push,
+  - or rely on the pre-push hook's mandatory full checks.
+- Do not run `make check` and then immediately push if the hook will rerun the same matrix anyway, unless maintainers explicitly asked for preflight output.
+- For commit-only checkpoints, fast tests are sufficient; keep full validation for push readiness.
 
 ## Step 5: Create The Commit
 
@@ -134,7 +148,7 @@ Before any push, confirm all of the following:
 - explicit maintainer approval to push exists
 - no blocked paths are included
 - the relevant pre-push gates are satisfied
-- `make check` is green
+- full validation is green for this push cycle (either manual `make check` preflight or the pre-push hook run)
 - the branch and target are intentional
 
 Useful checks:

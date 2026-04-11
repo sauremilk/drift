@@ -98,6 +98,7 @@ def discover_files(
     exclude: list[str] | None = None,
     max_files: int | None = None,
     skipped_out: dict[str, int] | None = None,
+    ts_enabled: bool = True,
 ) -> list[FileInfo]:
     """Walk the repo and return all source files matching include/exclude patterns.
 
@@ -107,8 +108,14 @@ def discover_files(
         If a mutable dict is passed, it is populated with ``{language: count}``
         entries for files that were recognized but skipped because their
         language runtime is not installed (e.g. TypeScript without tree-sitter).
+    ts_enabled:
+        When *False*, TypeScript/TSX/JS/JSX files are excluded from discovery
+        even when tree-sitter is installed.  Controlled via
+        ``drift.yaml → languages.typescript: false``.
     """
     supported = _detect_supported_languages()
+    if not ts_enabled:
+        supported.discard("typescript")
 
     if include is None:
         include = ["**/*.py"]

@@ -263,6 +263,7 @@ def generate_agent_prompt(finding: Any, analysis: Any | None = None) -> str:
 
     The prompt uses everyday German, references files by functional role
     (not raw paths), and includes an expected-outcome sentence (PRD F-07).
+    Raw file paths are intentionally omitted (PRD F-06).
 
     Parameters
     ----------

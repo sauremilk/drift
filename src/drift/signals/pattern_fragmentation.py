@@ -134,6 +134,17 @@ def _framework_surface_hints(
     return hints
 
 
+def _extract_canonical_snippet(file_path: str, start_line: int, max_lines: int = 8) -> str:
+    """Read source lines around start_line for canonical pattern display (ADR-049)."""
+    try:
+        with open(file_path, encoding="utf-8") as f:
+            lines = f.readlines()
+        snippet_lines = lines[start_line - 1 : start_line - 1 + max_lines]
+        return "".join(snippet_lines).rstrip()
+    except (OSError, IndexError):
+        return ""
+
+
 @register_signal
 class PatternFragmentationSignal(BaseSignal):
     """Detect multiple incompatible pattern variants within architectural modules."""
@@ -236,6 +247,17 @@ class PatternFragmentationSignal(BaseSignal):
                 if framework_hints and severity is Severity.HIGH:
                     severity = Severity.MEDIUM
 
+                # Canonical-ratio downgrade: weak patterns (very few canonical instances)
+                # should not fire with the same urgency as dominant ones (ADR-049).
+                canonical_ratio = canonical_count / total if total > 0 else 1.0
+                if canonical_ratio < 0.10:
+                    if severity is Severity.HIGH:
+                        severity = Severity.MEDIUM
+                    elif severity is Severity.MEDIUM:
+                        severity = Severity.LOW
+                elif canonical_ratio < 0.15 and severity is Severity.HIGH:
+                    severity = Severity.MEDIUM
+
                 nc_count = len(non_canonical)
                 canonical_examples = sorted(
                     variants[canonical],
@@ -252,6 +274,11 @@ class PatternFragmentationSignal(BaseSignal):
                 ]
                 if nc_count > 3:
                     deviation_refs.append(f"+{nc_count - 3} more")
+
+                canonical_snippet = _extract_canonical_snippet(
+                    canonical_exemplar.file_path.as_posix(),
+                    canonical_exemplar.start_line,
+                )
 
                 fix = (
                     f"Consolidate to the dominant pattern ({canonical_count}x, "
@@ -279,6 +306,8 @@ class PatternFragmentationSignal(BaseSignal):
                             "canonical_count": canonical_count,
                             "canonical_variant": canonical[:60],
                             "canonical_exemplar": _instance_ref(canonical_exemplar),
+                            "canonical_snippet": canonical_snippet[:400],
+                            "canonical_ratio": round(canonical_ratio, 3),
                             "module": module_path.as_posix(),
                             "total_instances": total,
                             "framework_context_dampened": bool(framework_hints),

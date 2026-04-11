@@ -122,6 +122,20 @@ def _render_or_emit_output(
         _emit_machine_output(gh_text, output_file)
         return
 
+    if output_format == "junit":
+        from drift.output.junit_output import analysis_to_junit
+
+        junit_text = analysis_to_junit(analysis)
+        _emit_machine_output(junit_text, output_file)
+        return
+
+    if output_format == "llm":
+        from drift.output.llm_output import analysis_to_llm
+
+        llm_text = analysis_to_llm(analysis)
+        _emit_machine_output(llm_text, output_file)
+        return
+
     from drift.output.rich_output import render_full_report
 
     render_full_report(
@@ -135,6 +149,7 @@ def _print_check_result(
     quiet: bool,
     effective_console: Console,
     exit_zero: bool,
+    diff_ref: str = "HEAD~1",
 ) -> None:
     from drift.scoring.engine import severity_gate_pass
 
@@ -152,6 +167,18 @@ def _print_check_result(
         effective_console.print(
             f"\n[bold green]✓ Drift check passed[/bold green] (threshold: {threshold}).",
         )
+        if not analysis.findings and diff_ref == "HEAD~1":
+            from rich.panel import Panel
+
+            effective_console.print(
+                Panel(
+                    "[dim]drift check scans only changed files (vs. HEAD~1 by default).\n"
+                    "To scan the full repository:  [bold]drift analyze --repo .[/bold]\n"
+                    "To check more history:        [bold]drift check --diff HEAD~3[/bold][/dim]",
+                    title="[dim]Note[/dim]",
+                    border_style="dim",
+                )
+            )
 
 
 @click.command()
@@ -179,7 +206,7 @@ def _print_check_result(
     "--format",
     "-f",
     "output_format",
-    type=click.Choice(["rich", "json", "sarif", "csv", "agent-tasks", "github"]),
+    type=click.Choice(["rich", "json", "sarif", "csv", "agent-tasks", "github", "junit", "llm"]),
     default="rich",
     help="Output format.",
 )
@@ -394,4 +421,5 @@ def check(
         quiet=quiet,
         effective_console=effective_console,
         exit_zero=exit_zero,
+        diff_ref=diff_ref,
     )

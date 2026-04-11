@@ -103,7 +103,7 @@ class TestCoChangeCouplingSignal:
         assert first.metadata["co_change_commits"] >= 4
         assert first.score >= 0.2
         assert first.fix is not None
-        assert "Analyze the implicit coupling" in first.fix
+        assert "Co-change coupling" in first.fix
         assert "Analysiere" not in first.fix
 
     def test_true_negative_when_explicit_import_exists(self) -> None:

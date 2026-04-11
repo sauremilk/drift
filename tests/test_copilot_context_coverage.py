@@ -43,6 +43,8 @@ from tests.fixtures.ground_truth import (
     GroundTruthFixture,
 )
 
+pytestmark = pytest.mark.performance
+
 # ---------------------------------------------------------------------------
 # Signal → expected heading (mirrors copilot_context._format_rule)
 # ---------------------------------------------------------------------------

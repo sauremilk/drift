@@ -15,6 +15,13 @@ from drift.errors import EXIT_FINDINGS_ABOVE_THRESHOLD
 
 
 @click.command()
+@click.argument(
+    "repo_arg",
+    default=None,
+    required=False,
+    type=click.Path(exists=True, file_okay=False, path_type=Path),
+    metavar="[REPO]",
+)
 @click.option(
     "--repo",
     "-r",
@@ -33,7 +40,12 @@ from drift.errors import EXIT_FINDINGS_ABOVE_THRESHOLD
     "--format",
     "-f",
     "output_format",
-    type=click.Choice(["rich", "json", "sarif", "csv", "markdown", "agent-tasks", "github"]),
+    type=click.Choice(
+        [
+            "rich", "json", "sarif", "csv", "markdown",
+            "agent-tasks", "github", "junit", "llm", "pr-comment",
+        ],
+    ),
     default="rich",
     help="Output format.",
 )
@@ -177,6 +189,7 @@ from drift.errors import EXIT_FINDINGS_ABOVE_THRESHOLD
     help="Disable the compact first-run output even when no drift.yaml exists.",
 )
 def analyze(
+    repo_arg: Path | None,
     repo: Path,
     path: str | None,
     since: int,
@@ -214,6 +227,10 @@ def analyze(
     from drift.analyzer import _DEFAULT_WORKERS, analyze_repo
     from drift.api_helpers import build_drift_score_scope, signal_scope_label
     from drift.config import DriftConfig
+
+    # Positional [REPO] argument takes precedence over --repo option
+    if repo_arg is not None:
+        repo = repo_arg
 
     def _recompute_summary() -> None:
         from drift.scoring.engine import (
@@ -386,13 +403,33 @@ def analyze(
     elif output_format == "markdown":
         from drift.output.markdown_report import analysis_to_markdown
 
-        md_text = analysis_to_markdown(analysis, max_findings=max_findings)
+        md_text = analysis_to_markdown(
+            analysis,
+            max_findings=5 if compact_json else max_findings,
+            include_modules=not compact_json,
+            include_signal_coverage=not compact_json,
+        )
         _emit_machine_output(md_text, output_file)
+    elif output_format == "pr-comment":
+        from drift.output.pr_comment import analysis_to_pr_comment
+
+        pr_text = analysis_to_pr_comment(analysis, max_findings=5)
+        _emit_machine_output(pr_text, output_file)
     elif output_format == "github":
         from drift.output.github_format import findings_to_github_annotations
 
         gh_text = findings_to_github_annotations(analysis)
         _emit_machine_output(gh_text, output_file)
+    elif output_format == "junit":
+        from drift.output.junit_output import analysis_to_junit
+
+        junit_text = analysis_to_junit(analysis)
+        _emit_machine_output(junit_text, output_file)
+    elif output_format == "llm":
+        from drift.output.llm_output import analysis_to_llm
+
+        llm_text = analysis_to_llm(analysis)
+        _emit_machine_output(llm_text, output_file)
     else:
         from drift.output.rich_output import render_full_report, render_recommendations
 

@@ -1,5 +1,64 @@
 # STRIDE Threat Model
 
+## 2026-06-15 — Phase 3: TypeScript Verständlichkeit & Einführbarkeit
+
+- Scope: Four additive changes for TypeScript support visibility: (1) `language` field on Finding model with auto-inference from file extension, (2) `skipped_languages` in JSON summary + new Rich warning panel, (3) `ts_enabled` parameter on `discover_files()` wired to `DriftConfig.languages.typescript`, (4) `LanguagesConfig` sub-model in config. No signal or scoring changes.
+- Input path changes: Yes — `discover_files()` gains `ts_enabled: bool = True` parameter. When False, removes "typescript" from supported-language set before scanning. No new external file input.
+- Output path changes: Yes — (a) `_finding_to_dict()`, `_finding_compact_dict()` and `findings_to_sarif()` emit new `language` field from Finding model. (b) JSON summary gains `skipped_languages` dict. (c) Rich `render_summary()` gains a yellow warning line when `analysis.skipped_languages` is non-empty. All derived from existing in-process data.
+- External interface changes: Additive only. New `language` field in JSON/SARIF output (nullable, backward-compatible). New `languages.typescript: bool` config key (defaults to `true`, backward-compatible). New `skipped_languages` in JSON summary (nullable). No existing field semantics changed.
+- Trust boundary: No new trust boundary. `Finding.language` is derived from `file_path.suffix` via a hardcoded ClassVar dict — no user input. `LanguagesConfig.typescript` is a Pydantic-validated boolean from drift.yaml. Rich output warning uses `Text.assemble()` (no markup injection risk).
+- STRIDE review:
+	- S (Spoofing): No identity or authentication boundary change.
+	- T (Tampering): No risk. Language inference is a pure suffix→string lookup. Config validation is Pydantic-enforced.
+	- R (Repudiation): Improved — `language` field provides per-finding provenance of which parser was used.
+	- I (Information Disclosure): No new data classes. `language` is a simple string derived from file path already visible in output.
+	- D (Denial of Service): No risk. Suffix lookup is O(1); Rich warning is a single print call.
+	- E (Elevation of Privilege): No privilege change.
+
+## 2026-04-12 - ADR-053: External Report Import (drift import)
+
+- Scope: New `drift import` CLI command reads external tool reports (SonarQube, pylint, CodeClimate) as JSON and compares findings side-by-side with Drift's own analysis. Read-only comparison — imported findings do NOT affect drift score or severity.
+- Input path changes: Yes — new external file input path. `load_external_report()` in `src/drift/ingestion/external_report.py` reads user-supplied JSON files via `Path.read_text()` + `json.loads()`.
+- Output path changes: Yes — new Rich comparison table and optional JSON comparison output via `drift import --json`.
+- External interface changes: Additive only. New `drift import <report> --format <tool>` command. Existing commands and formats unchanged.
+- Trust boundary: New trust boundary at external JSON file ingestion. User-supplied JSON is parsed by stdlib `json.loads()` (safe, no code execution). Parsed data flows through adapter functions that extract only expected fields with `.get()` defaults — no dynamic attribute access, no `eval`, no `exec`. Imported `Finding` objects have `score=0.0` and are never fed into scoring pipeline.
+- STRIDE review:
+	- S (Spoofing): No identity or authentication boundary change.
+	- T (Tampering): Low risk. Malformed JSON could produce findings with misleading `file_path` values in comparison output. Mitigation: `file_path` is only used for set-intersection comparison, not for file I/O operations.
+	- R (Repudiation): Improved — comparison output provides auditable evidence of what an external tool found vs. Drift's analysis.
+	- I (Information Disclosure): No risk. External report content is shown in comparison output only. No data from external reports is persisted or transmitted.
+	- D (Denial of Service): Low risk. Very large JSON files could consume memory. Mitigation: standard `json.loads()` has inherent memory limits; no recursion in adapter logic; finding lists are O(n).
+	- E (Elevation of Privilege): No privilege change. Imported findings are read-only comparison data with `score=0.0`.
+
+## 2026-04-11 - ADR-052: PR-Comment Output + SARIF Enrichment + Markdown Compact + CSV signal_label
+
+- Scope: Four additive output-layer improvements: (1) new `--format pr-comment` formatter generating compact Markdown for PR comments/Slack, (2) SARIF `message.text` enriched with `generate_recommendation()` title and rule `help` field, (3) `analysis_to_markdown()` gains `include_modules`/`include_signal_coverage` params wired to `--compact` CLI flag, (4) CSV output gains `signal_label` column (breaking column-index change). No signal, scoring, or ingestion changes.
+- Input path changes: No — all changes are pure output composition using existing in-process `RepoAnalysis`.
+- Output path changes: Yes — new formatter `pr_comment.py` and enriched SARIF/CSV/Markdown output paths.
+- External interface changes: Additive (`--format pr-comment`) plus breaking CSV column-index change (documented in CHANGELOG). JUnit/LLM/SARIF/Markdown choices unchanged in semantics.
+- Trust boundary: No new trust boundary. `analysis_to_pr_comment()` calls `generate_recommendation()` and `get_meta()` — both pure in-process lookups with no I/O, no sys.path manipulation, no external calls. SARIF `help` field populates from the same recommender dictionary. CSV and Markdown formatters remain pure string composition.
+- STRIDE review:
+	- S (Spoofing): No identity or authentication boundary change.
+	- T (Tampering): No risk. All outputs are derived from pre-computed in-process analysis data. `generate_recommendation()` is a pure lookup with no side effects.
+	- R (Repudiation): Improved — PR-comment format provides a shareable, auditable snapshot of analysis state for PR review workflows.
+	- I (Information Disclosure): No new data classes exposed. PR-comment renders same finding fields (signal_type, severity, score, file_path, title, fix) already present in JSON/markdown output. SARIF rule `help.markdown` renders only recommender description text, no internal state.
+	- D (Denial of Service): No risk. All formatters are pure string/list composition with no external calls, no recursion, and O(n) complexity on findings list.
+	- E (Elevation of Privilege): No privilege change.
+
+
+- Scope: Five additive DX features: (1) `drift completions` generates shell completion scripts, (2) `--format junit` JUnit XML output, (3) `--format llm` token-efficient AI output, (4) `drift ci` zero-config CI command with auto-environment detection, (5) `drift gate` alias for `drift check`. No signal, scoring, or ingestion changes.
+- Input path changes: Yes — `drift ci` reads CI environment variables (`GITHUB_ACTIONS`, `GITLAB_CI`, `CIRCLECI`, `BUILD_BUILDID`, `CI`) for auto-detection. No user-supplied file input.
+- Output path changes: Yes — two new output formatters (`junit_output.py`, `llm_output.py`) and one new CLI dispatch path (`ci.py`). All consume existing in-process `RepoAnalysis` data.
+- External interface changes: Additive only. New `--format junit` and `--format llm` choices in `analyze` + `check`. New `drift ci`, `drift completions`, `drift gate` commands. Existing formats and commands unchanged.
+- Trust boundary: No new trust boundary. CI env-var reading uses `os.getenv()` only. Output formatters are pure string/XML composition with no external calls. Completions use Click's built-in `shell_complete` template — no shell execution.
+- STRIDE review:
+	- S (Spoofing): No identity or authentication boundary change. CI env vars are read-only and not trusted for security decisions.
+	- T (Tampering): No risk. All outputs are derived from existing pre-computed analysis data. JUnit uses `xml.etree.ElementTree` with proper escaping.
+	- R (Repudiation): Improved — JUnit and LLM outputs provide additional audit-compatible formats for CI and agent workflows.
+	- I (Information Disclosure): No new data classes exposed. JUnit/LLM render same finding fields as existing JSON/CSV/SARIF outputs.
+	- D (Denial of Service): No risk. All formatters are pure computation, no external calls, no file reads beyond existing analysis.
+	- E (Elevation of Privilege): No privilege change. CI detection is purely informational.
+
 ## 2026-04-11 - ADR-046: Markdown CLI format + Guidance footer
 
 - Scope: `drift analyze --format markdown` wires the existing `analysis_to_markdown()` formatter to CLI output. Rich output gains a "What's Next?" guidance footer for unconfigured repos. No new input paths, no scoring changes.

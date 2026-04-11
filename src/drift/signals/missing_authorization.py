@@ -207,10 +207,11 @@ def _fix_suggestion(framework: str) -> str:
         "starlette": "Add requires() decorator or auth middleware.",
         "sanic": "Add @authorized() decorator or check request.ctx.user.",
     }
-    return suggestions.get(
+    base = suggestions.get(
         framework,
         "Add an authorization check (decorator, dependency injection, or body check).",
     )
+    return base + " (Exempt if endpoint is intentionally public, e.g. A2A agent card.)"
 
 
 @register_signal
@@ -284,8 +285,8 @@ class MissingAuthorizationSignal(BaseSignal):
                     fn_info,
                 )
 
-                score = 0.35 if is_documented_public_safe else 0.7
-                severity = Severity.LOW if is_documented_public_safe else Severity.HIGH
+                score = 0.35 if is_documented_public_safe else 0.85
+                severity = Severity.LOW if is_documented_public_safe else Severity.CRITICAL
 
                 description = (
                     f"The route handler '{fn_name}' in {pr.file_path} "
@@ -353,8 +354,8 @@ class MissingAuthorizationSignal(BaseSignal):
                     fn_info,
                 )
 
-                score = 0.35 if is_documented_public_safe else 0.7
-                severity = Severity.LOW if is_documented_public_safe else Severity.HIGH
+                score = 0.35 if is_documented_public_safe else 0.85
+                severity = Severity.LOW if is_documented_public_safe else Severity.CRITICAL
 
                 description = (
                     f"The route handler '{fn_name}' in {pr.file_path} "

@@ -1,0 +1,67 @@
+{
+  "version": "2.9.0",
+  "feature": "actionability-hardening",
+  "adrs": ["ADR-047", "ADR-048", "ADR-049", "ADR-050", "ADR-051"],
+  "description": "Actionability hardening across 5 signals (MAZ, EDS, PFS, AVS, CCC) plus Rich output security section",
+  "signals_changed": [
+    {
+      "signal": "MAZ",
+      "adr": "ADR-047",
+      "changes": [
+        "score raised from 0.7 to 0.85",
+        "severity raised from HIGH to CRITICAL",
+        "fix text appends A2A agent-card exemption note",
+        "_render_security_section() added to Rich output for MAZ+HSC+ISD"
+      ]
+    },
+    {
+      "signal": "EDS",
+      "adr": "ADR-048",
+      "changes": [
+        "private function threshold raised from 0.30 to 0.45",
+        "defect_correlated override reduces threshold to 0.30",
+        "file_histories lookup moved before threshold guard"
+      ]
+    },
+    {
+      "signal": "PFS",
+      "adr": "ADR-049",
+      "changes": [
+        "_extract_canonical_snippet() reads up to 8 source lines for canonical exemplar",
+        "canonical_ratio severity downgrade: <10% HIGH->MED or MED->LOW; <15% HIGH->MED",
+        "metadata gains canonical_snippet (up to 400 chars) and canonical_ratio"
+      ]
+    },
+    {
+      "signal": "AVS",
+      "adr": "ADR-050",
+      "changes": [
+        "_check_blast_radius gains file_histories parameter",
+        "churn guard: change_frequency_30d <= 1.0 AND blast_radius <= 50 => skip",
+        "metadata gains churn_per_week"
+      ]
+    },
+    {
+      "signal": "CCC",
+      "adr": "ADR-051",
+      "changes": [
+        "pair_commit_messages accumulates up to 3 truncated (60-char) commit messages",
+        "fix text presents intentional-vs-accidental branch with test scaffold",
+        "metadata gains commit_messages list"
+      ]
+    }
+  ],
+  "tests": {
+    "total_passing": 1179,
+    "total_failing": 1,
+    "failing_note": "test_scope_from_finding_module_scope_standalone is a pre-existing unrelated failure",
+    "changed_test_files": [
+      "tests/test_co_change_coupling.py"
+    ]
+  },
+  "audit_artifacts_updated": [
+    "audit_results/fmea_matrix.md",
+    "audit_results/fault_trees.md",
+    "audit_results/risk_register.md"
+  ]
+}

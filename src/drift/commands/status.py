@@ -17,7 +17,7 @@ import click
 from drift.commands import console
 
 
-@click.command("status", short_help="Zeigt den Projektzustand als Ampel an.")
+@click.command("status", short_help="Show repository health as a traffic-light summary.")
 @click.option(
     "--repo",
     "-r",
@@ -50,12 +50,13 @@ def status(
     output_json: bool,
     top: int,
 ) -> None:
-    """Zeigt den Projektzustand als Ampel (grün/gelb/rot) mit Alltagssprache.
+    """Show repository health as a traffic-light (green/yellow/red).
 
-    Liefert für jedes Finding einen kopierbaren Prompt, den du direkt
-    an deinen KI-Assistenten weitergeben kannst.
+    Uses plain-language explanations and copy-paste-ready AI prompts for each finding.
 
-    Exit-Code ist immer 0 (PRD NF-08).
+    For each finding, outputs a copy-paste-ready prompt for your AI assistant.
+
+    Exit code is always 0 (PRD NF-08).
     """
     from drift.analyzer import analyze_repo
     from drift.config import DriftConfig
@@ -123,34 +124,41 @@ def status(
 
     if not is_calibrated(thresholds):
         console.print(
-            "  [dim]Hinweis: Kein kalibriertes Profil aktiv. "
-            "Führe [bold]drift setup[/bold] aus für bessere Ergebnisse.[/dim]"
+            "  [dim]Note: No calibrated profile active. "
+            "Run [bold]drift setup[/bold] for better results.[/dim]"
         )
         console.print()
 
     if not top_findings:
-        console.print("  Keine Auffälligkeiten gefunden.", style="green")
+        console.print("  No issues found.", style="green")
     else:
-        console.print(f"  Top-{len(top_findings)} Auffälligkeiten:", style="bold")
+        console.print(f"  Top {len(top_findings)} issues:", style="bold")
         console.print()
         for i, f in enumerate(top_findings, 1):
             sev = severity_label(f.severity.value)
             plain = plain_text_for_signal(f.signal_type)
             prompt = generate_agent_prompt(f, analysis)
             console.print(f"  {i}. [{_severity_color(f.severity.value)}]{sev}[/]: {plain}")
+            # Show file:line reference as a separate navigation hint (PRD F-06: not in prompt)
+            fp = getattr(f, "file_path", None)
+            sl = getattr(f, "start_line", None)
+            if fp is not None and sl is not None:
+                console.print(f"     [dim]Location:[/dim] {fp}:{sl}")
+            elif fp is not None:
+                console.print(f"     [dim]Location:[/dim] {fp}")
             console.print("     [dim]Prompt:[/dim]")
             console.print(f"     {prompt}")
             console.print()
 
     # --- Separator + can_continue ---
     if continue_flag:
-        console.print("  [green]Du kannst weiterarbeiten.[/green]")
+        console.print("  [green]Everything looks good — proceed with confidence.[/green]")
     else:
         console.print(
-            "  [yellow]Tipp: Kopiere einen der Prompts oben "
-            "und gib ihn deinem KI-Assistenten.[/yellow]"
+            "  [yellow]Tip: Copy one of the prompts above "
+            "and paste it into your AI assistant.[/yellow]"
         )
-    console.print(f"  [bold]Naechster Schritt:[/bold] {first_run['next_step']}")
+    console.print(f"  [bold]Next step:[/bold] {first_run['next_step']}")
     console.print()
 
     sys.exit(0)

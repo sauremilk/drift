@@ -116,3 +116,28 @@ class TestBadgeSvgRenderer:
 
         svg = render_badge_svg("drift score", "0.15", "brightgreen")
         assert "#4c1" in svg
+
+
+class TestBadgeMarkdownFormat:
+    """Test ``drift badge --format markdown``."""
+
+    def test_markdown_outputs_only_snippet(self, tmp_repo: Path) -> None:
+        runner = CliRunner()
+        result = runner.invoke(main, ["badge", "--repo", str(tmp_repo), "--format", "markdown"])
+        assert result.exit_code == 0
+        assert result.output.strip().startswith("[![Drift Score]")
+        # Should not include the Rich-formatted "Drift Badge" header
+        assert "Drift Badge" not in result.output
+
+    def test_markdown_write_to_file(self, tmp_repo: Path) -> None:
+        out_file = tmp_repo / "badge.md"
+        runner = CliRunner()
+        result = runner.invoke(
+            main,
+            ["badge", "--repo", str(tmp_repo), "--format", "markdown", "--output", str(out_file)],
+        )
+        assert result.exit_code == 0
+        assert out_file.exists()
+        content = out_file.read_text(encoding="utf-8")
+        assert "[![Drift Score]" in content
+        assert "img.shields.io" in content

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from enum import StrEnum
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, ClassVar
 
 if TYPE_CHECKING:
     import datetime
@@ -300,6 +300,16 @@ class Finding:
     rule_id: str | None = None
     attribution: Attribution | None = None
     logical_location: LogicalLocation | None = None
+    language: str | None = None
+
+    #: Suffix → language for auto-inference (kept minimal to avoid imports).
+    _LANG_MAP: ClassVar[dict[str, str]] = {
+        ".py": "python",
+        ".ts": "typescript",
+        ".tsx": "tsx",
+        ".js": "javascript",
+        ".jsx": "jsx",
+    }
 
     def __post_init__(self) -> None:
         if self.rule_id is None:
@@ -308,6 +318,9 @@ class Finding:
         # is known — agents cannot parse file paths from free-text fields.
         if self.file_path is not None and self.start_line is None:
             self.start_line = 1
+        # Auto-infer language from file extension when not set explicitly.
+        if self.language is None and self.file_path is not None:
+            self.language = self._LANG_MAP.get(self.file_path.suffix.lower())
 
 
 @dataclass

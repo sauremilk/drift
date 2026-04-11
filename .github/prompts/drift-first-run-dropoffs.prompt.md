@@ -46,6 +46,37 @@ Die Aufgabe ist erst abgeschlossen, wenn du beantworten kannst:
 - Keine allgemeinen UX-Ratschläge — nur Drift-spezifische Beobachtungen.
 - Unsicherheiten explizit benennen.
 
+## Reasoning-Anforderungen
+
+### Spannungsfelder
+
+Navigiere aktiv folgende Spannungen — löse sie nicht vorschnell auf, sondern mache deine Abwägung transparent:
+
+- **Einfachheit vs. Vollständigkeit:** Ein einfacher Quickstart lässt Features aus. Ein vollständiger Einstieg überfordert. Wo liegt der Optimalpunkt für Drift?
+- **Kürze vs. Überzeugungskraft:** Schneller erster Output ≠ überzeugender erster Output. Was braucht der Nutzer zuerst — Speed oder Aha-Moment?
+- **Selbsterklärender Output vs. Dokumentationsbedarf:** Wenn der Output Erklärung braucht, ist er dann schlecht oder ist das Feature komplex?
+
+### Vor-Schlussfolgerungs-Checks
+
+Bevor du eine Empfehlung finalisierst, prüfe:
+- Welche Abbruchpunkte könntest du systematisch übersehen, weil du Drift bereits kennst?
+- Gibt es Abbruchpunkte, die nur bei bestimmten Repo-Typen oder Nutzergruppen auftreten?
+- Verwechselst du persönliche Irritation mit einem realen Nutzerproblem?
+
+### Konfidenz-Kalibrierung
+
+Gib für jeden identifizierten Abbruchpunkt an:
+- **Konfidenz:** hoch / mittel / niedrig — dass er real ist (nicht nur theoretisch)
+- **Evidenz:** Woraus leitest du ab, dass hier Nutzer tatsächlich abspringen?
+- **Entkräftung:** Was müsste wahr sein, damit dieser Punkt kein echtes Problem ist?
+
+### Fehlerschluss-Wächter
+
+Prüfe aktiv gegen:
+- **Curse of Knowledge:** Du kennst Drift. Erstnutzer nicht. Prüfe bei jeder Bewertung: Wüsste jemand ohne Vorwissen, was gemeint ist?
+- **Survivorship Bias:** Du beobachtest nur die Punkte, die du selbst erlebst. Welche Stellen könnten Nutzer zum stillen Abbruch bringen, bevor sie überhaupt klicken?
+- **Solutionism:** Schlage keine Lösung vor, bevor du das Problem vollständig artikuliert hast.
+
 ## Bewertungs-Labels
 
 Verwende ausschließlich Labels aus `.github/prompts/_partials/bewertungs-taxonomie.md`:
@@ -127,4 +158,9 @@ Für jeden Fix:
 ## Abschlussentscheidung
 
 Beantworte abschließend:
-Wenn Drift in den nächsten 30 Tagen nur 3 Abbruchpunkte beseitigen dürfte, welche wären das und warum?
+
+1. Wenn Drift nur 3 Abbruchpunkte beseitigen dürfte, welche wären das und warum?
+2. **Gegenposition:** Argumentiere, warum der von dir am höchsten priorisierte Abbruchpunkt möglicherweise gar keiner ist. Was spricht dagegen?
+3. **Falsifikation:** Was müsste beobachtbar sein, um deine Empfehlung zu widerlegen?
+4. **Konfidenz-Statement:** Wie sicher bist du dir bei deinem Ranking? Was fehlt dir an Information, um sicherer zu sein?
+5. **Blinder Fleck:** Welche Art von Abbruchpunkt könntest du mit deiner Methodik prinzipiell nicht entdecken?

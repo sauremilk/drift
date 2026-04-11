@@ -232,6 +232,8 @@ from drift.commands.baseline import baseline
 from drift.commands.brief import brief
 from drift.commands.calibrate import calibrate
 from drift.commands.check import check
+from drift.commands.ci import ci
+from drift.commands.completions import completions
 from drift.commands.config_cmd import config
 from drift.commands.copilot_context import copilot_context
 from drift.commands.diff_cmd import diff
@@ -239,6 +241,7 @@ from drift.commands.explain import explain
 from drift.commands.export_context import export_context
 from drift.commands.feedback import feedback
 from drift.commands.fix_plan import fix_plan
+from drift.commands.import_cmd import import_report
 from drift.commands.init_cmd import init
 from drift.commands.mcp import mcp
 from drift.commands.patterns import patterns
@@ -271,6 +274,7 @@ main.add_command(explain)
 main.add_command(export_context)
 main.add_command(feedback)
 main.add_command(fix_plan)
+main.add_command(import_report)
 main.add_command(mcp)
 main.add_command(patterns)
 main.add_command(precision)
@@ -287,6 +291,9 @@ main.add_command(trend)
 main.add_command(validate)
 main.add_command(self_analyze)
 main.add_command(badge)
+main.add_command(check, "gate")
+main.add_command(ci)
+main.add_command(completions)
 main.add_command(visualize)
 main.add_command(watch)
 

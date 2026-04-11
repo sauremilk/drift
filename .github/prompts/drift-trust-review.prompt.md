@@ -46,6 +46,37 @@ Die Aufgabe ist erst abgeschlossen, wenn du beantworten kannst:
 - Keine reine FP/FN-Analyse — sondern Vertrauensanalyse.
 - Unsicherheiten explizit benennen.
 
+## Reasoning-Anforderungen
+
+### Spannungsfelder
+
+Navigiere aktiv folgende Spannungen — mache deine Abwägung transparent:
+
+- **Transparenz vs. Overloading:** Zu viel Erklärung pro Finding erdrückt den Nutzer. Zu wenig wirkt intransparent. Wo endet hilfreiche Erklärung und wo beginnt Noise?
+- **Confidence zeigen vs. Unsicherheit eingestehen:** Ein Finding mit „Confidence: 0.4“ ist ehrlich — aber untergräbt es das Vertrauen stärker als es Ehrlichkeit aufbaut?
+- **Strenge vs. Fairness:** Ein strenges Tool produziert wertvolle Findings, aber empfindliche Maintainer könnten sich angegriffen fühlen. Wie scharf darf Drift sein?
+
+### Vor-Schlussfolgerungs-Checks
+
+Bevor du ein Finding als „vertrauensschädigend“ klassifizierst:
+- Liegt es am Finding oder an der Erwartungshaltung des Nutzers? Nicht jede Ablehnung ist ein Vertrauensproblem des Tools.
+- Würde ein erfahrener Maintainer dieses Finding anders bewerten als ein unerfahrener? Für wen optimierst du?
+- Ist das Vertrauensproblem dauerhaft oder nur ein First-Run-Effekt, der bei regelmäßiger Nutzung verschwindet?
+
+### Konfidenz-Kalibrierung
+
+Gib für jedes bewertete Vertrauensrisiko an:
+- **Konfidenz:** hoch / mittel / niedrig — dass es Adoption real beeinflusst
+- **Evidenz:** Woraus leitest du ab, dass ein Maintainer hier Vertrauen verliert (nicht nur lästig findet)?
+- **Schwelle:** Ab welcher Finding-Häufigkeit wird dieses Vertrauensrisiko adoption-relevant?
+
+### Fehlerschluss-Wächter
+
+Prüfe aktiv gegen:
+- **Projection Bias:** Du projizierst dein eigenes Vertrauensmodell auf Maintainer. Verschiedene Maintainer reagieren unterschiedlich auf dieselben Findings.
+- **Perfektionismus-Falle:** Kein Tool hat 100% Vertrauen. Prüfe ob dein Standard realistisch ist oder ob du ein unerreichbares Ideal anlegen.
+- **FP-Fixierung:** Nicht nur False Positives zerstören Vertrauen. Auch zu viele True Positives mittlerer Severity können zu Erschöpfung führen.
+
 ## Bewertungs-Labels
 
 Verwende ausschließlich Labels aus `.github/prompts/_partials/bewertungs-taxonomie.md`:
@@ -106,4 +137,8 @@ Für jeden Hebel:
 
 ## Abschlussentscheidung
 
-Nenne die 3 kurzfristig wirksamsten Änderungen, um das Vertrauen in Drift-Findings spürbar zu erhöhen.
+1. Nenne die 3 kurzfristig wirksamsten Änderungen, um das Vertrauen in Drift-Findings spürbar zu erhöhen.
+2. **Gegenposition:** Für welche deiner Empfehlungen könnte mehr Transparenz/Erklärung das Vertrauen paradoxerweise senken? Begründe.
+3. **Differenzierung:** Welches Vertrauensproblem ist drift-spezifisch und welches teilen alle statischen Analysetools? Nur die drift-spezifischen sind adressierbar.
+4. **Vertrauen vs. Korrektheit:** Falls Vertrauen und technische Korrektheit in Konflikt stehen — z.B. ein korrektes aber unbeliebtes Finding — wie sollte Drift sich positionieren? Begründe.
+5. **Messbares Kriterium:** Wie würde man Vertrauensgewinn messen, ohne auf Bauchgefühl zu setzen?

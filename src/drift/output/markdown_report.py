@@ -55,6 +55,8 @@ def analysis_to_markdown(
     max_findings: int = 30,
     include_preflight: bool = True,
     include_interpretation: bool = True,
+    include_modules: bool = True,
+    include_signal_coverage: bool = True,
 ) -> str:
     """Generate a shareable Markdown report from analysis results."""
     lines: list[str] = []
@@ -141,7 +143,7 @@ def analysis_to_markdown(
         lines.append("")
 
     # Module scores
-    if analysis.module_scores:
+    if include_modules and analysis.module_scores:
         lines.append("## Module Scores")
         lines.append("")
         lines.append("| Module | Score | Findings |")
@@ -153,7 +155,7 @@ def analysis_to_markdown(
         lines.append("")
 
     # Signal coverage
-    if pf is not None:
+    if include_signal_coverage and pf is not None:
         lines.append("## Signal Coverage")
         lines.append("")
         active_str = (

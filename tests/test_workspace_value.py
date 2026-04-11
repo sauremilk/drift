@@ -13,6 +13,8 @@ from pathlib import Path
 
 import pytest
 
+pytestmark = pytest.mark.performance
+
 # ---------------------------------------------------------------------------
 # Paths
 # ---------------------------------------------------------------------------
@@ -158,12 +160,12 @@ class TestBenchmarkCorpus:
 class TestAgentLoopBenchmark:
     """Smoke tests for agent-loop benchmark scenarios."""
 
-    @pytest.fixture()
-    def workspace(self, tmp_path):
+    @pytest.fixture(scope="class")
+    def workspace(self, tmp_path_factory):
         """Create a minimal workspace from corpus for API testing."""
         import shutil
 
-        ws = tmp_path / "ws"
+        ws = tmp_path_factory.mktemp("agent_loop_ws") / "ws"
         shutil.copytree(BENCHMARKS_CORPUS, ws)
         # Init git.
         import os

@@ -38,6 +38,8 @@ uvx drift-analyzer analyze --repo .
 
 > One command. No pre-install. Results in ~30 seconds.
 
+🌐 **No install at all?** [Analyze any public repo in your browser →](https://mick-gsk.github.io/drift/prove-it/)
+
 **Permanent install:** `pip install drift-analyzer` · Python 3.11+ · also via [pipx, Homebrew, Docker, GitHub Action, pre-commit →](docs-site/getting-started/installation.md)
 
 | Metric | Value | Evidence |
@@ -209,6 +211,26 @@ Or auto-generate: `pip install drift-analyzer[mcp] && drift init --mcp`
 
 ---
 
+## 🎛️ Configuration profiles
+
+Pick a profile that matches your project — or start with `default` and calibrate later:
+
+| Profile | Best for | Command |
+|---|---|---|
+| **default** | Most projects | `drift init` |
+| **vibe-coding** | AI-heavy codebases (Copilot, Cursor, Claude) | `drift init -p vibe-coding` |
+| **strict** | Mature projects, zero tolerance | `drift init -p strict` |
+| **fastapi** | Web APIs with router/service/DB layers | `drift init -p fastapi` |
+| **library** | Reusable PyPI packages | `drift init -p library` |
+| **monorepo** | Multi-package repos | `drift init -p monorepo` |
+| **quick** | First exploration, demos | `drift init -p quick` |
+
+> **Team workflow:** Commit `drift.yaml` to your repo → CI enforces the same thresholds → team inherits calibrated weights.
+
+📖 [Profile gallery with full details →](docs-site/guides/configuration-profiles.md) · [Configuration reference →](docs-site/getting-started/configuration.md)
+
+---
+
 <details>
 <summary><b>Advanced: Adaptive learning, Negative context library, Guided mode</b></summary>
 
@@ -270,13 +292,32 @@ If your team ships most changes via AI coding tools (Copilot, Cursor, Claude), d
 | Bayesian per-repo calibration | ✔ | — | — | — | — |
 | MCP server for AI agents | ✔ | — | — | — | — |
 | Zero server setup | ✔ | — | ✔ | ✔ | ✔ |
-| TypeScript support | Experimental ¹ | ✔ | — | ✔ | ✔ |
+| TypeScript support | Partial ¹ | ✔ | — | ✔ | ✔ |
 
 ✔ = within primary design scope · — = not a primary design target · Partial = limited coverage
 
-¹ Via `drift-analyzer[typescript]`. Python is the primary analysis target.
+¹ Via `drift-analyzer[typescript]`. 17/24 signals supported via tree-sitter. Python is the primary analysis target.
 
 Comparison reflects primary design scope per [STUDY.md §9](docs/STUDY.md).
+
+---
+
+## 🏷️ Add a drift badge to your README
+
+Show your repo's drift score with a shields.io badge:
+
+```bash
+drift badge                    # prints URL + Markdown snippet
+drift badge --format svg -o badge.svg  # self-contained SVG
+```
+
+Paste the Markdown output into your README:
+
+```markdown
+[![Drift Score](https://img.shields.io/badge/drift%20score-12.50-brightgreen?style=flat)](https://github.com/mick-gsk/drift)
+```
+
+**Automate in CI:** The [GitHub Action](https://github.com/marketplace/actions/drift-ai-code-coherence-monitor) exposes a `badge-svg` output — pipe it into your repo or a dashboard.
 
 ---
 
