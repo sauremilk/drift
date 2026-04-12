@@ -25,6 +25,7 @@ from drift.api.explain import _repo_examples_for_signal, explain
 from drift.api.fix_plan import _fix_plan_agent_instruction, fix_plan
 from drift.api.neg_context import negative_context
 from drift.api.nudge import _baseline_store, invalidate_nudge_baseline, nudge
+from drift.api.shadow_verify import shadow_verify
 from drift.api.scan import (
     _BATCH_SCAN_THRESHOLD,
     _DIVERSE_MIN_TOP_IMPACT_SHARE,

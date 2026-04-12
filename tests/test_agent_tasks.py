@@ -726,7 +726,7 @@ class TestRepairMaturity:
         tasks = analysis_to_agent_tasks(analysis)
         assert tasks[0].repair_maturity == "experimental"
 
-    def test_tvs_indirect_only(self) -> None:
+    def test_tvs_experimental(self) -> None:
         f = _make_finding(
             signal_type=SignalType.TEMPORAL_VOLATILITY,
             title="High churn",
@@ -734,9 +734,10 @@ class TestRepairMaturity:
         )
         analysis = _make_analysis(findings=[f])
         tasks = analysis_to_agent_tasks(analysis)
-        assert tasks[0].repair_maturity == "indirect-only"
+        # TVS is plannable → maps to experimental in legacy maturity
+        assert tasks[0].repair_maturity == "experimental"
 
-    def test_sms_indirect_only(self) -> None:
+    def test_sms_experimental(self) -> None:
         f = _make_finding(
             signal_type=SignalType.SYSTEM_MISALIGNMENT,
             title="Novel deps",
@@ -744,9 +745,10 @@ class TestRepairMaturity:
         )
         analysis = _make_analysis(findings=[f])
         tasks = analysis_to_agent_tasks(analysis)
-        assert tasks[0].repair_maturity == "indirect-only"
+        # SMS is plannable → maps to experimental in legacy maturity
+        assert tasks[0].repair_maturity == "experimental"
 
-    def test_unknown_signal_defaults_experimental(self) -> None:
+    def test_bem_verified(self) -> None:
         f = _make_finding(
             signal_type=SignalType.BROAD_EXCEPTION_MONOCULTURE,
             title="Broad exceptions",
@@ -755,7 +757,8 @@ class TestRepairMaturity:
         )
         analysis = _make_analysis(findings=[f])
         tasks = analysis_to_agent_tasks(analysis)
-        assert tasks[0].repair_maturity == "experimental"
+        # BEM is example_based → maps to verified in legacy maturity
+        assert tasks[0].repair_maturity == "verified"
 
     def test_maturity_in_json(self) -> None:
         f = _make_finding()
@@ -778,3 +781,747 @@ class TestRepairMaturity:
         }
         for sig in scored_signals:
             assert sig.value in REPAIR_MATURITY or sig in REPAIR_MATURITY
+
+    def test_repair_maturity_covers_all_registry_signals(self) -> None:
+        """Every signal in the registry must have a REPAIR_MATURITY entry."""
+        from drift.signal_registry import get_all_meta
+
+        for meta in get_all_meta():
+            assert meta.signal_id in REPAIR_MATURITY, (
+                f"Signal {meta.signal_id!r} ({meta.abbrev}) missing from REPAIR_MATURITY"
+            )
+
+    def test_repair_maturity_values_consistent(self) -> None:
+        """Maturity values must be one of the allowed legacy strings."""
+        allowed = {"verified", "experimental", "indirect-only"}
+        for sid, entry in REPAIR_MATURITY.items():
+            assert entry["maturity"] in allowed, (
+                f"Signal {sid}: maturity={entry['maturity']!r} not in {allowed}"
+            )
+
+    def test_repair_level_in_task_metadata(self) -> None:
+        """Tasks must carry the granular repair_level in metadata."""
+        f = _make_finding()
+        analysis = _make_analysis(findings=[f])
+        tasks = analysis_to_agent_tasks(analysis)
+        assert "repair_level" in tasks[0].metadata
+        assert tasks[0].metadata["repair_level"] in (
+            "diagnosis", "plannable", "example_based", "verifiable",
+        )
+
+    def test_coverage_gaps_in_json(self) -> None:
+        """Agent-tasks JSON must include a coverage_gaps section."""
+        f = _make_finding()
+        analysis = _make_analysis(findings=[f])
+        raw = analysis_to_agent_tasks_json(analysis)
+        data = json.loads(raw)
+        assert "coverage_gaps" in data
+        gaps = data["coverage_gaps"]
+        assert "total_findings" in gaps
+        assert "total_actionable" in gaps
+        assert "actionable_ratio" in gaps
+        assert "repair_level_distribution" in gaps
+        assert isinstance(gaps["gaps"], list)
+
+    def test_repair_maturity_covers_all_registry_signals(self) -> None:
+        """Every signal in the registry must have a REPAIR_MATURITY entry."""
+        from drift.signal_registry import get_all_meta
+
+        for meta in get_all_meta():
+            assert meta.signal_id in REPAIR_MATURITY, (
+                f"Signal {meta.signal_id!r} ({meta.abbrev}) missing from REPAIR_MATURITY"
+            )
+
+    def test_repair_maturity_values_consistent(self) -> None:
+        """Maturity values must be one of the allowed legacy strings."""
+        allowed = {"verified", "experimental", "indirect-only"}
+        for sid, entry in REPAIR_MATURITY.items():
+            assert entry["maturity"] in allowed, (
+                f"Signal {sid}: maturity={entry['maturity']!r} not in {allowed}"
+            )
+
+    def test_repair_level_in_task_metadata(self) -> None:
+        """Tasks must carry the granular repair_level in metadata."""
+        f = _make_finding()
+        analysis = _make_analysis(findings=[f])
+        tasks = analysis_to_agent_tasks(analysis)
+        assert "repair_level" in tasks[0].metadata
+        assert tasks[0].metadata["repair_level"] in (
+            "diagnosis", "plannable", "example_based", "verifiable",
+        )
+
+    def test_coverage_gaps_in_json(self) -> None:
+        """Agent-tasks JSON must include a coverage_gaps section."""
+        f = _make_finding()
+        analysis = _make_analysis(findings=[f])
+        raw = analysis_to_agent_tasks_json(analysis)
+        data = json.loads(raw)
+        assert "coverage_gaps" in data
+        gaps = data["coverage_gaps"]
+        assert "total_findings" in gaps
+        assert "total_actionable" in gaps
+        assert "actionable_ratio" in gaps
+        assert "repair_level_distribution" in gaps
+        assert isinstance(gaps["gaps"], list)
+
+
+# ---------------------------------------------------------------------------
+# Signal-specific verify_plan
+# ---------------------------------------------------------------------------
+
+_REQUIRED_STEP_KEYS = {"step", "tool", "action", "predicate", "target"}
+
+
+def _assert_verify_plan_shape(verify_plan: list) -> None:
+    """Assert structural invariants that must hold for every verify_plan."""
+    assert isinstance(verify_plan, list)
+    assert len(verify_plan) >= 2, "Must have at least 2 steps (check + nudge)"
+    for i, step in enumerate(verify_plan, start=1):
+        assert step["step"] == i, f"Step numbering broken at position {i}"
+        missing = _REQUIRED_STEP_KEYS - step.keys()
+        assert not missing, f"Step {i} missing keys: {missing}"
+        assert isinstance(step["target"], dict)
+    assert verify_plan[-1]["tool"] == "drift_nudge", "Last step must always be drift_nudge"
+
+
+class TestVerifyPlan:
+    # --- DCA ---
+
+    def test_dca_verify_plan_shape(self) -> None:
+        f = _make_finding(
+            signal_type=SignalType.DEAD_CODE_ACCUMULATION,
+            title="Dead symbol: orphaned_helper",
+            metadata={"dead_symbols": [{"name": "orphaned_helper", "kind": "function", "line": 42}]},
+            file_path="utils/helpers.py",
+        )
+        f.symbol = "orphaned_helper"
+        analysis = _make_analysis(findings=[f])
+        tasks = analysis_to_agent_tasks(analysis)
+        vp = tasks[0].verify_plan
+        _assert_verify_plan_shape(vp)
+
+    def test_dca_step1_tool_is_grep(self) -> None:
+        f = _make_finding(
+            signal_type=SignalType.DEAD_CODE_ACCUMULATION,
+            title="Dead symbol: orphaned_helper",
+            metadata={},
+            file_path="utils/helpers.py",
+        )
+        f.symbol = "orphaned_helper"
+        analysis = _make_analysis(findings=[f])
+        tasks = analysis_to_agent_tasks(analysis)
+        step1 = tasks[0].verify_plan[0]
+        assert step1["tool"] == "grep"
+        assert step1["target"]["symbol"] == "orphaned_helper"
+        assert step1["target"]["scope"] == "repo"
+        assert "orphaned_helper" in step1["action"]
+
+    def test_dca_step1_predicate(self) -> None:
+        f = _make_finding(
+            signal_type=SignalType.DEAD_CODE_ACCUMULATION,
+            title="Dead symbol",
+            metadata={},
+        )
+        f.symbol = "my_sym"
+        analysis = _make_analysis(findings=[f])
+        tasks = analysis_to_agent_tasks(analysis)
+        assert "reference_count >= 1" in tasks[0].verify_plan[0]["predicate"]
+
+    # --- CCC ---
+
+    def test_ccc_verify_plan_shape(self) -> None:
+        f = _make_finding(
+            signal_type=SignalType.CO_CHANGE_COUPLING,
+            title="Co-change coupling: run.ts ↔ types.ts",
+            metadata={
+                "file_a": "src/run.ts",
+                "file_b": "src/types.ts",
+                "co_change_weight": 0.9,
+                "explicit_dependency": False,
+            },
+        )
+        analysis = _make_analysis(findings=[f])
+        tasks = analysis_to_agent_tasks(analysis)
+        vp = tasks[0].verify_plan
+        _assert_verify_plan_shape(vp)
+
+    def test_ccc_step1_has_file_a_and_file_b(self) -> None:
+        f = _make_finding(
+            signal_type=SignalType.CO_CHANGE_COUPLING,
+            title="Co-change coupling",
+            metadata={"file_a": "src/run.ts", "file_b": "src/types.ts"},
+        )
+        analysis = _make_analysis(findings=[f])
+        tasks = analysis_to_agent_tasks(analysis)
+        step1 = tasks[0].verify_plan[0]
+        assert step1["tool"] == "ast_check"
+        assert step1["target"]["file_a"] == "src/run.ts"
+        assert step1["target"]["file_b"] == "src/types.ts"
+        assert "explicit_import_edge_present" in step1["predicate"]
+
+    def test_ccc_scan_step_includes_file_pair(self) -> None:
+        f = _make_finding(
+            signal_type=SignalType.CO_CHANGE_COUPLING,
+            title="Co-change coupling",
+            metadata={"file_a": "a.py", "file_b": "b.py"},
+        )
+        analysis = _make_analysis(findings=[f])
+        tasks = analysis_to_agent_tasks(analysis)
+        scan_step = next(s for s in tasks[0].verify_plan if s["tool"] == "drift_scan")
+        assert scan_step["target"].get("file_a") == "a.py"
+        assert scan_step["target"].get("file_b") == "b.py"
+
+    # --- PFS ---
+
+    def test_pfs_verify_plan_shape(self) -> None:
+        f = _make_finding(
+            signal_type=SignalType.PATTERN_FRAGMENTATION,
+            metadata={"variant_count": 4, "module": "services"},
+        )
+        analysis = _make_analysis(findings=[f])
+        tasks = analysis_to_agent_tasks(analysis)
+        vp = tasks[0].verify_plan
+        _assert_verify_plan_shape(vp)
+
+    def test_pfs_step1_predicate_variant_count(self) -> None:
+        f = _make_finding(
+            signal_type=SignalType.PATTERN_FRAGMENTATION,
+            metadata={"variant_count": 4, "module": "services"},
+        )
+        analysis = _make_analysis(findings=[f])
+        tasks = analysis_to_agent_tasks(analysis)
+        step1 = tasks[0].verify_plan[0]
+        assert step1["tool"] == "drift_scan"
+        assert "variant_count <= 1" in step1["predicate"]
+        assert step1["target"].get("module") == "services"
+
+    # --- AVS circular ---
+
+    def test_avs_circular_verify_plan_shape(self) -> None:
+        f = _make_finding(
+            signal_type=SignalType.ARCHITECTURE_VIOLATION,
+            title="Circular dependency in core",
+            metadata={"cycle": ["core.a", "core.b", "core.c"]},
+        )
+        analysis = _make_analysis(findings=[f])
+        tasks = analysis_to_agent_tasks(analysis)
+        vp = tasks[0].verify_plan
+        _assert_verify_plan_shape(vp)
+
+    def test_avs_circular_step1_tool_is_import_check(self) -> None:
+        f = _make_finding(
+            signal_type=SignalType.ARCHITECTURE_VIOLATION,
+            title="Circular dependency in core",
+            metadata={"cycle": ["core.a", "core.b"]},
+        )
+        analysis = _make_analysis(findings=[f])
+        tasks = analysis_to_agent_tasks(analysis)
+        step1 = tasks[0].verify_plan[0]
+        assert step1["tool"] == "import_check"
+        assert step1["predicate"] == "cycle_length == 0"
+        assert step1["target"]["kind"] == "circular"
+        assert "core.a" in step1["target"]["modules"]
+
+    def test_avs_layer_verify_plan_ends_with_nudge(self) -> None:
+        f = _make_finding(
+            signal_type=SignalType.ARCHITECTURE_VIOLATION,
+            title="Upward layer import in services",
+            metadata={},
+        )
+        analysis = _make_analysis(findings=[f])
+        tasks = analysis_to_agent_tasks(analysis)
+        vp = tasks[0].verify_plan
+        _assert_verify_plan_shape(vp)
+        assert vp[-1]["tool"] == "drift_nudge"
+
+    # --- TSB ---
+
+    def test_tsb_verify_plan_shape(self) -> None:
+        f = _make_finding(
+            signal_type=SignalType.TYPE_SAFETY_BYPASS,
+            title="Type safety bypass",
+            metadata={
+                "bypass_count": 3,
+                "effective_bypass_count": 3,
+                "bypasses": [{"kind": "double_cast", "line": 10}],
+            },
+        )
+        analysis = _make_analysis(findings=[f])
+        tasks = analysis_to_agent_tasks(analysis)
+        vp = tasks[0].verify_plan
+        _assert_verify_plan_shape(vp)
+
+    def test_tsb_step1_tool_is_ast_check(self) -> None:
+        f = _make_finding(
+            signal_type=SignalType.TYPE_SAFETY_BYPASS,
+            title="Type safety bypass",
+            metadata={
+                "bypasses": [{"kind": "double_cast", "line": 5}, {"kind": "any_cast", "line": 9}]
+            },
+        )
+        analysis = _make_analysis(findings=[f])
+        tasks = analysis_to_agent_tasks(analysis)
+        step1 = tasks[0].verify_plan[0]
+        assert step1["tool"] == "ast_check"
+        assert "effective_bypass_count" in step1["predicate"]
+        assert "double_cast" in step1["target"]["bypass_kinds"]
+
+    # --- MDS ---
+
+    def test_mds_verify_plan_shape(self) -> None:
+        f = _make_finding(
+            signal_type=SignalType.MUTANT_DUPLICATE,
+            title="Near-duplicate: foo and bar",
+            metadata={"function_a": "foo", "function_b": "bar", "similarity": 0.95},
+        )
+        analysis = _make_analysis(findings=[f])
+        tasks = analysis_to_agent_tasks(analysis)
+        _assert_verify_plan_shape(tasks[0].verify_plan)
+
+    def test_mds_step1_references_both_functions(self) -> None:
+        f = _make_finding(
+            signal_type=SignalType.MUTANT_DUPLICATE,
+            title="Near-duplicate: foo and bar",
+            metadata={"function_a": "foo", "function_b": "bar", "similarity": 0.95},
+        )
+        analysis = _make_analysis(findings=[f])
+        tasks = analysis_to_agent_tasks(analysis)
+        step1 = tasks[0].verify_plan[0]
+        assert step1["tool"] == "ast_check"
+        assert step1["target"]["function_a"] == "foo"
+        assert step1["target"]["function_b"] == "bar"
+        assert "single_definition_remains" in step1["predicate"]
+        assert "body_hash_differs" in step1["predicate"]
+
+    # --- SMS ---
+
+    def test_sms_verify_plan_shape(self) -> None:
+        f = _make_finding(
+            signal_type=SignalType.SYSTEM_MISALIGNMENT,
+            title="Novel deps",
+            metadata={"novel_packages": ["redis", "celery"]},
+        )
+        analysis = _make_analysis(findings=[f])
+        tasks = analysis_to_agent_tasks(analysis)
+        _assert_verify_plan_shape(tasks[0].verify_plan)
+
+    def test_sms_step1_targets_novel_packages(self) -> None:
+        f = _make_finding(
+            signal_type=SignalType.SYSTEM_MISALIGNMENT,
+            title="Novel deps",
+            metadata={"novel_packages": ["redis"]},
+        )
+        analysis = _make_analysis(findings=[f])
+        tasks = analysis_to_agent_tasks(analysis)
+        step1 = tasks[0].verify_plan[0]
+        assert step1["tool"] == "grep"
+        assert step1["target"]["novel_packages"] == ["redis"]
+        assert "novel_import_count" in step1["predicate"]
+
+    # --- TVS ---
+
+    def test_tvs_verify_plan_shape(self) -> None:
+        f = _make_finding(
+            signal_type=SignalType.TEMPORAL_VOLATILITY,
+            title="High churn",
+            metadata={"ai_ratio": 0.5, "change_frequency_30d": 3.0},
+        )
+        analysis = _make_analysis(findings=[f])
+        tasks = analysis_to_agent_tasks(analysis)
+        _assert_verify_plan_shape(tasks[0].verify_plan)
+
+    def test_tvs_step1_targets_score_reduction(self) -> None:
+        f = _make_finding(
+            signal_type=SignalType.TEMPORAL_VOLATILITY,
+            title="High churn",
+            metadata={"ai_ratio": 0.5, "change_frequency_30d": 3.0},
+        )
+        analysis = _make_analysis(findings=[f])
+        tasks = analysis_to_agent_tasks(analysis)
+        step1 = tasks[0].verify_plan[0]
+        assert step1["tool"] == "drift_scan"
+        assert "score" in step1["predicate"] or "finding_count" in step1["predicate"]
+
+    # --- NBV ---
+
+    def test_nbv_verify_plan_shape(self) -> None:
+        f = _make_finding(
+            signal_type=SignalType.NAMING_CONTRACT_VIOLATION,
+            title="Naming contract violation: validate_foo()",
+            fix="Rename or fix validate_foo()",
+            metadata={"function_name": "validate_foo", "prefix_rule": "validate_"},
+        )
+        analysis = _make_analysis(findings=[f])
+        tasks = analysis_to_agent_tasks(analysis)
+        _assert_verify_plan_shape(tasks[0].verify_plan)
+
+    def test_nbv_step1_targets_function(self) -> None:
+        f = _make_finding(
+            signal_type=SignalType.NAMING_CONTRACT_VIOLATION,
+            title="Naming contract violation: validate_foo()",
+            fix="Rename or fix validate_foo()",
+            metadata={"function_name": "validate_foo", "prefix_rule": "validate_"},
+        )
+        analysis = _make_analysis(findings=[f])
+        tasks = analysis_to_agent_tasks(analysis)
+        step1 = tasks[0].verify_plan[0]
+        assert step1["tool"] == "ast_check"
+        assert step1["target"]["function_name"] == "validate_foo"
+        assert step1["target"]["prefix_rule"] == "validate_"
+
+    # --- BEM ---
+
+    def test_bem_verify_plan_shape(self) -> None:
+        f = _make_finding(
+            signal_type=SignalType.BROAD_EXCEPTION_MONOCULTURE,
+            title="Broad exception monoculture",
+            fix="Replace broad exceptions",
+            metadata={"broad_count": 5, "total_handlers": 8},
+        )
+        analysis = _make_analysis(findings=[f])
+        tasks = analysis_to_agent_tasks(analysis)
+        _assert_verify_plan_shape(tasks[0].verify_plan)
+
+    def test_bem_step1_targets_broad_count(self) -> None:
+        f = _make_finding(
+            signal_type=SignalType.BROAD_EXCEPTION_MONOCULTURE,
+            title="Broad exception monoculture",
+            fix="Replace broad exceptions",
+            metadata={"broad_count": 5, "total_handlers": 8},
+        )
+        analysis = _make_analysis(findings=[f])
+        tasks = analysis_to_agent_tasks(analysis)
+        step1 = tasks[0].verify_plan[0]
+        assert step1["tool"] == "grep"
+        assert step1["target"]["previous_broad"] == 5
+        assert "broad_handler_count" in step1["predicate"]
+
+    # --- GCD ---
+
+    def test_gcd_module_verify_plan_shape(self) -> None:
+        f = _make_finding(
+            signal_type=SignalType.GUARD_CLAUSE_DEFICIT,
+            title="Guard clause deficit",
+            fix="Add guard clauses",
+            metadata={"guarded_ratio": 0.3, "total_qualifying": 10},
+        )
+        analysis = _make_analysis(findings=[f])
+        tasks = analysis_to_agent_tasks(analysis)
+        _assert_verify_plan_shape(tasks[0].verify_plan)
+
+    def test_gcd_nesting_verify_plan_targets_depth(self) -> None:
+        f = _make_finding(
+            signal_type=SignalType.GUARD_CLAUSE_DEFICIT,
+            title="Deep nesting in foo()",
+            fix="Reduce nesting",
+            metadata={"nesting_depth": 6, "threshold": 4, "function_name": "foo"},
+        )
+        analysis = _make_analysis(findings=[f])
+        tasks = analysis_to_agent_tasks(analysis)
+        step1 = tasks[0].verify_plan[0]
+        assert step1["tool"] == "ast_check"
+        assert step1["target"]["function_name"] == "foo"
+        assert step1["target"]["previous_depth"] == 6
+        assert "nesting_depth" in step1["predicate"]
+
+    # --- CXS ---
+
+    def test_cxs_verify_plan_shape(self) -> None:
+        f = _make_finding(
+            signal_type=SignalType.COGNITIVE_COMPLEXITY,
+            title="High cognitive complexity in process()",
+            fix="Reduce complexity",
+            metadata={"cognitive_complexity": 25, "threshold": 15, "function_name": "process"},
+        )
+        analysis = _make_analysis(findings=[f])
+        tasks = analysis_to_agent_tasks(analysis)
+        _assert_verify_plan_shape(tasks[0].verify_plan)
+
+    def test_cxs_step1_targets_function(self) -> None:
+        f = _make_finding(
+            signal_type=SignalType.COGNITIVE_COMPLEXITY,
+            title="High cognitive complexity in handle()",
+            fix="Reduce complexity",
+            metadata={"cognitive_complexity": 20, "threshold": 15, "function_name": "handle"},
+        )
+        analysis = _make_analysis(findings=[f])
+        tasks = analysis_to_agent_tasks(analysis)
+        step1 = tasks[0].verify_plan[0]
+        assert step1["tool"] == "ast_check"
+        assert step1["target"]["function_name"] == "handle"
+        assert step1["target"]["previous_cc"] == 20
+        assert step1["target"]["threshold"] == 15
+        assert "cognitive_complexity" in step1["predicate"]
+
+    # --- HSC ---
+
+    def test_hsc_verify_plan_shape(self) -> None:
+        f = _make_finding(
+            signal_type=SignalType.HARDCODED_SECRET,
+            title="Hardcoded secret in 'api_key'",
+            fix="Use env var",
+            metadata={"variable": "api_key", "cwe": "CWE-798", "rule_id": "entropy"},
+        )
+        analysis = _make_analysis(findings=[f])
+        tasks = analysis_to_agent_tasks(analysis)
+        _assert_verify_plan_shape(tasks[0].verify_plan)
+
+    def test_hsc_step1_targets_variable(self) -> None:
+        f = _make_finding(
+            signal_type=SignalType.HARDCODED_SECRET,
+            title="Hardcoded secret in 'db_password'",
+            fix="Use env var",
+            metadata={"variable": "db_password", "cwe": "CWE-798", "rule_id": "pattern"},
+        )
+        analysis = _make_analysis(findings=[f])
+        tasks = analysis_to_agent_tasks(analysis)
+        step1 = tasks[0].verify_plan[0]
+        assert step1["tool"] == "grep"
+        assert step1["target"]["variable"] == "db_password"
+        assert "hardcoded_literal_count" in step1["predicate"]
+
+    # --- MAZ ---
+
+    def test_maz_verify_plan_shape(self) -> None:
+        f = _make_finding(
+            signal_type=SignalType.MISSING_AUTHORIZATION,
+            title="Endpoint 'get_users' has no authorization check",
+            fix="Add auth decorator",
+            metadata={"endpoint_name": "get_users", "framework": "fastapi", "cwe": "CWE-862"},
+        )
+        analysis = _make_analysis(findings=[f])
+        tasks = analysis_to_agent_tasks(analysis)
+        _assert_verify_plan_shape(tasks[0].verify_plan)
+
+    def test_maz_step1_targets_endpoint(self) -> None:
+        f = _make_finding(
+            signal_type=SignalType.MISSING_AUTHORIZATION,
+            title="Endpoint 'delete_user' has no authorization check",
+            fix="Add auth",
+            metadata={"endpoint_name": "delete_user", "framework": "django", "cwe": "CWE-862"},
+        )
+        analysis = _make_analysis(findings=[f])
+        tasks = analysis_to_agent_tasks(analysis)
+        step1 = tasks[0].verify_plan[0]
+        assert step1["tool"] == "ast_check"
+        assert step1["target"]["endpoint_name"] == "delete_user"
+        assert step1["target"]["framework"] == "django"
+        assert "auth_mechanism" in step1["predicate"]
+
+    # --- BAT (Bypass Accumulation) ---
+
+    def test_bat_verify_plan_shape(self) -> None:
+        f = _make_finding(
+            signal_type=SignalType.BYPASS_ACCUMULATION,
+            title="High bypass density",
+            fix="Remove stale bypass markers",
+            metadata={"total_markers": 12, "bypass_density": 0.042},
+        )
+        analysis = _make_analysis(findings=[f])
+        tasks = analysis_to_agent_tasks(analysis)
+        _assert_verify_plan_shape(tasks[0].verify_plan)
+
+    def test_bat_step1_targets_markers(self) -> None:
+        f = _make_finding(
+            signal_type=SignalType.BYPASS_ACCUMULATION,
+            title="High bypass density",
+            fix="Remove stale bypass markers",
+            metadata={"total_markers": 12, "bypass_density": 0.042},
+        )
+        analysis = _make_analysis(findings=[f])
+        tasks = analysis_to_agent_tasks(analysis)
+        step1 = tasks[0].verify_plan[0]
+        assert step1["tool"] == "grep"
+        assert step1["target"]["previous_total"] == 12
+
+    # --- ECM (Exception Contract Drift) ---
+
+    def test_ecm_verify_plan_shape(self) -> None:
+        f = _make_finding(
+            signal_type=SignalType.EXCEPTION_CONTRACT_DRIFT,
+            title="Exception contract drift in module",
+            fix="Align exception contracts",
+            metadata={"diverged_functions": ["parse", "validate"], "comparison_ref": "HEAD~3"},
+        )
+        analysis = _make_analysis(findings=[f])
+        tasks = analysis_to_agent_tasks(analysis)
+        _assert_verify_plan_shape(tasks[0].verify_plan)
+
+    def test_ecm_step1_targets_functions(self) -> None:
+        f = _make_finding(
+            signal_type=SignalType.EXCEPTION_CONTRACT_DRIFT,
+            title="Exception contract drift in module",
+            fix="Align exception contracts",
+            metadata={"diverged_functions": ["parse", "validate"], "comparison_ref": "HEAD~3"},
+        )
+        analysis = _make_analysis(findings=[f])
+        tasks = analysis_to_agent_tasks(analysis)
+        step1 = tasks[0].verify_plan[0]
+        assert step1["tool"] == "ast_check"
+        assert step1["target"]["diverged_functions"] == ["parse", "validate"]
+        assert step1["target"]["comparison_ref"] == "HEAD~3"
+
+    # --- FOE (Fan-Out Explosion) ---
+
+    def test_foe_verify_plan_shape(self) -> None:
+        f = _make_finding(
+            signal_type=SignalType.FAN_OUT_EXPLOSION,
+            title="Excessive fan-out",
+            fix="Extract facade module",
+            metadata={"unique_import_count": 22, "threshold": 15},
+        )
+        analysis = _make_analysis(findings=[f])
+        tasks = analysis_to_agent_tasks(analysis)
+        _assert_verify_plan_shape(tasks[0].verify_plan)
+
+    def test_foe_step1_targets_imports(self) -> None:
+        f = _make_finding(
+            signal_type=SignalType.FAN_OUT_EXPLOSION,
+            title="Excessive fan-out",
+            fix="Extract facade module",
+            metadata={"unique_import_count": 22, "threshold": 15},
+        )
+        analysis = _make_analysis(findings=[f])
+        tasks = analysis_to_agent_tasks(analysis)
+        step1 = tasks[0].verify_plan[0]
+        assert step1["tool"] == "import_check"
+        assert step1["target"]["previous_count"] == 22
+        assert step1["target"]["threshold"] == 15
+
+    # --- PHR (Phantom Reference) ---
+
+    def test_phr_verify_plan_shape(self) -> None:
+        f = _make_finding(
+            signal_type=SignalType.PHANTOM_REFERENCE,
+            title="Unresolvable reference",
+            fix="Import or implement missing symbol",
+            metadata={"phantom_names": [{"name": "do_thing", "line": 42}], "phantom_count": 1},
+        )
+        analysis = _make_analysis(findings=[f])
+        tasks = analysis_to_agent_tasks(analysis)
+        _assert_verify_plan_shape(tasks[0].verify_plan)
+
+    def test_phr_step1_targets_phantoms(self) -> None:
+        f = _make_finding(
+            signal_type=SignalType.PHANTOM_REFERENCE,
+            title="Unresolvable reference",
+            fix="Import or implement missing symbol",
+            metadata={"phantom_names": [{"name": "do_thing", "line": 42}], "phantom_count": 1},
+        )
+        analysis = _make_analysis(findings=[f])
+        tasks = analysis_to_agent_tasks(analysis)
+        step1 = tasks[0].verify_plan[0]
+        assert step1["tool"] == "ast_check"
+        assert "do_thing" in step1["target"]["phantom_names"]
+        assert step1["target"]["previous_count"] == 1
+
+    # --- TPD (Test Polarity Deficit) ---
+
+    def test_tpd_negative_verify_plan_shape(self) -> None:
+        f = _make_finding(
+            signal_type=SignalType.TEST_POLARITY_DEFICIT,
+            title="Missing negative tests",
+            fix="Add pytest.raises or assertRaises tests",
+            metadata={"negative_ratio": 0.02, "negative_assertions": 1},
+        )
+        analysis = _make_analysis(findings=[f])
+        tasks = analysis_to_agent_tasks(analysis)
+        _assert_verify_plan_shape(tasks[0].verify_plan)
+
+    def test_tpd_negative_step1_targets_ratio(self) -> None:
+        f = _make_finding(
+            signal_type=SignalType.TEST_POLARITY_DEFICIT,
+            title="Missing negative tests",
+            fix="Add pytest.raises or assertRaises tests",
+            metadata={"negative_ratio": 0.02, "negative_assertions": 1},
+        )
+        analysis = _make_analysis(findings=[f])
+        tasks = analysis_to_agent_tasks(analysis)
+        step1 = tasks[0].verify_plan[0]
+        assert step1["tool"] == "ast_check"
+        assert step1["target"]["previous_ratio"] == 0.02
+
+    def test_tpd_zero_assertion_verify_plan(self) -> None:
+        f = _make_finding(
+            signal_type=SignalType.TEST_POLARITY_DEFICIT,
+            title="Zero-assertion tests detected",
+            fix="Add assertions",
+            metadata={"zero_assertion_tests": ["test_foo", "test_bar"], "zero_assertion_count": 2},
+        )
+        analysis = _make_analysis(findings=[f])
+        tasks = analysis_to_agent_tasks(analysis)
+        step1 = tasks[0].verify_plan[0]
+        assert step1["tool"] == "ast_check"
+        assert "zero_assertion_count" in step1["predicate"]
+        assert step1["target"]["zero_assertion_tests"] == ["test_foo", "test_bar"]
+
+    # --- TSA (TS Architecture) ---
+
+    def test_tsa_circular_verify_plan_shape(self) -> None:
+        f = _make_finding(
+            signal_type=SignalType.TS_ARCHITECTURE,
+            title="Circular module dependency",
+            fix="Break the cycle",
+            metadata={"rule_id": "circular-module-detection", "cycle_nodes": ["a.ts", "b.ts"]},
+        )
+        analysis = _make_analysis(findings=[f])
+        tasks = analysis_to_agent_tasks(analysis)
+        _assert_verify_plan_shape(tasks[0].verify_plan)
+        step1 = tasks[0].verify_plan[0]
+        assert step1["tool"] == "import_check"
+        assert step1["target"]["kind"] == "circular"
+
+    def test_tsa_layer_verify_plan(self) -> None:
+        f = _make_finding(
+            signal_type=SignalType.TS_ARCHITECTURE,
+            title="Cross-package import violation",
+            fix="Move import behind package boundary",
+            metadata={"rule_id": "cross-package-import-ban"},
+        )
+        analysis = _make_analysis(findings=[f])
+        tasks = analysis_to_agent_tasks(analysis)
+        _assert_verify_plan_shape(tasks[0].verify_plan)
+        step1 = tasks[0].verify_plan[0]
+        assert step1["tool"] == "drift_scan"
+        assert step1["target"]["rule_id"] == "cross-package-import-ban"
+
+    # --- Generic fallback ---
+
+    def test_generic_fallback_verify_plan(self) -> None:
+        f = _make_finding(
+            signal_type=SignalType.COHESION_DEFICIT,
+            title="Low cohesion detected",
+            fix="Split module into focused sub-modules",
+            metadata={},
+        )
+        analysis = _make_analysis(findings=[f])
+        tasks = analysis_to_agent_tasks(analysis)
+        vp = tasks[0].verify_plan
+        _assert_verify_plan_shape(vp)
+        assert vp[0]["tool"] == "drift_scan"
+        assert vp[0]["predicate"] == "finding_count == 0"
+
+    # --- Serialization ---
+
+    def test_verify_plan_in_json(self) -> None:
+        f = _make_finding()
+        analysis = _make_analysis(findings=[f])
+        raw = analysis_to_agent_tasks_json(analysis)
+        data = json.loads(raw)
+        task = data["tasks"][0]
+        assert "verify_plan" in task
+        assert isinstance(task["verify_plan"], list)
+        assert len(task["verify_plan"]) >= 2
+
+    def test_verify_plan_step_keys_in_json(self) -> None:
+        f = _make_finding(
+            signal_type=SignalType.DEAD_CODE_ACCUMULATION,
+            title="Dead code",
+            metadata={},
+        )
+        f.symbol = "stale_fn"
+        analysis = _make_analysis(findings=[f])
+        raw = analysis_to_agent_tasks_json(analysis)
+        data = json.loads(raw)
+        step1 = data["tasks"][0]["verify_plan"][0]
+        assert set(step1.keys()) >= _REQUIRED_STEP_KEYS

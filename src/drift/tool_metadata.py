@@ -223,9 +223,13 @@ def _build_catalog() -> dict[str, ToolMetadataEntry]:
             name="drift_task_complete",
             cost=ToolCostMetadata("low", "none", 50, 50),
             context=ToolContextHint(
-                when_to_use="Mark a claimed task as completed.",
-                prerequisite_tools=("drift_task_claim",),
-                follow_up_tools=("drift_nudge", "drift_task_claim"),
+                when_to_use=(
+                    "Mark a claimed task as completed. When the task has a"
+                    " verify_plan, you MUST call drift_nudge first and pass"
+                    " the result as verify_evidence (safe_to_commit=true required)."
+                ),
+                prerequisite_tools=("drift_task_claim", "drift_nudge"),
+                follow_up_tools=("drift_task_claim",),
             ),
             phases=("fix",),
         ),

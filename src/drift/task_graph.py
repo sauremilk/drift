@@ -14,6 +14,8 @@ from collections import defaultdict
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any
 
+from drift.api_helpers import _derive_repair_exemplar
+from drift.fix_intent import derive_fix_intent
 from drift.next_step_contract import DONE_SAFE_TO_COMMIT
 from drift.signal_mapping import signal_abbrev
 
@@ -80,7 +82,8 @@ def _task_to_api_dict(t: Any) -> dict[str, Any]:
         "expected_score_delta": round(t.expected_score_delta, 4),
         "batch_eligible": t.metadata.get("batch_eligible", False),
         "pattern_instance_count": t.metadata.get("pattern_instance_count", 1),
-        "affected_files_for_pattern": t.metadata.get("affected_files_for_pattern", []),
+        "affected_files_for_pattern": t.metadata.get("affected_files_for_pattern", [])[:15],
+        "affected_files_total": len(t.metadata.get("affected_files_for_pattern", [])),
         "fix_template_class": t.metadata.get("fix_template_class", ""),
         "canonical_refs": canonical_refs,
         # ADR-025 Phase A: task-graph fields
@@ -91,6 +94,10 @@ def _task_to_api_dict(t: Any) -> dict[str, Any]:
     }
     # ADR-025 Phase F: task contracts
     result.update(_derive_task_contract(result))
+    # ADR-063: structured fix-intent object
+    result["fix_intent"] = derive_fix_intent(t, result)
+    # ADR-064: concrete repair exemplar (snippet + patch_shape) for batch-eligible tasks
+    result["repair_exemplar"] = _derive_repair_exemplar(t)
     return result
 
 
@@ -346,7 +353,6 @@ class WorkflowPlan:
             "estimated_score_delta": round(self.estimated_score_delta, 4),
             "plan_id": self.plan_id,
             "created_at": self.created_at,
-            "depended_on_repo_state": self.depended_on_repo_state,
             "plan_fingerprint": self.plan_fingerprint,
             "invalidated": self.invalidated,
             "invalidation_reason": self.invalidation_reason,

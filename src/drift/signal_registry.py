@@ -1,7 +1,7 @@
 """Central signal metadata registry.
 
 Single source of truth for signal IDs, abbreviations, display names,
-categories, and default weights for all core signals.
+categories, default weights, and **repair coverage** for all core signals.
 
 Plugin signals can register themselves at import time via
 ``register_signal_meta()``. The registry is intentionally kept free of
@@ -12,7 +12,20 @@ early in the module graph.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Final
+from typing import Final, Literal
+
+# ---------------------------------------------------------------------------
+# Repair-level type (lightweight alias — authoritative enum lives in models)
+# ---------------------------------------------------------------------------
+
+RepairLevelLiteral = Literal["diagnosis", "plannable", "example_based", "verifiable"]
+"""Repair-coverage maturity level for a signal.
+
+* ``diagnosis``     – Finding description only, no actionable repair hints.
+* ``plannable``     – Structured recommendation (effort/impact), no code examples.
+* ``example_based`` – Exemplary fix snippets or code-level suggestions.
+* ``verifiable``    – Repair + machine-executable verification plan.
+"""
 
 # ---------------------------------------------------------------------------
 # Metadata dataclass
@@ -45,6 +58,23 @@ class SignalMeta:
     is_core: bool = True
     """False for plugin-provided signals."""
 
+    # -- Repair coverage metadata ------------------------------------------
+
+    repair_level: RepairLevelLiteral = "diagnosis"
+    """Repair-coverage maturity level (see ``RepairLevelLiteral`` docstring)."""
+
+    has_recommender: bool = False
+    """True when ``recommendations.py`` has a dedicated ``_recommend_*`` function."""
+
+    has_fix_field: bool = False
+    """True when the signal populates ``Finding.fix`` with actionable text."""
+
+    has_verify_plan: bool = False
+    """True when ``agent_tasks.py`` generates a signal-specific verify_plan."""
+
+    benchmark_coverage: Literal["strong", "moderate", "limited", "none"] = "none"
+    """Strength of repair-benchmark evidence (real-world + mutation tests)."""
+
 
 # ---------------------------------------------------------------------------
 # Core signal table
@@ -56,125 +86,197 @@ _CORE_SIGNALS: Final[list[SignalMeta]] = [
         "pattern_fragmentation", "PFS", "Pattern Fragmentation",
         "structural_risk", 0.16,
         "Detects inconsistent structural patterns across similar files.",
+        repair_level="verifiable",
+        has_recommender=True, has_fix_field=True, has_verify_plan=True,
+        benchmark_coverage="moderate",
     ),
     SignalMeta(
         "mutant_duplicate", "MDS", "Mutant Duplicate",
         "structural_risk", 0.13,
         "Detects near-duplicate functions that diverged over time.",
+        repair_level="verifiable",
+        has_recommender=True, has_fix_field=True, has_verify_plan=True,
+        benchmark_coverage="strong",
     ),
     SignalMeta(
         "temporal_volatility", "TVS", "Temporal Volatility",
         "structural_risk", 0.0,
         "Measures churn-based instability (report-only, weight=0).",
+        repair_level="plannable",
+        has_recommender=True, has_fix_field=True, has_verify_plan=True,
+        benchmark_coverage="none",
     ),
     SignalMeta(
         "system_misalignment", "SMS", "System Misalignment",
         "structural_risk", 0.08,
         "Detects structural inconsistencies across subsystem boundaries.",
+        repair_level="plannable",
+        has_recommender=True, has_fix_field=True, has_verify_plan=True,
+        benchmark_coverage="none",
     ),
     SignalMeta(
         "test_polarity_deficit", "TPD", "Test Polarity Deficit",
         "structural_risk", 0.04,
         "Detects missing negative test coverage.",
+        repair_level="example_based",
+        has_recommender=False, has_fix_field=True, has_verify_plan=True,
+        benchmark_coverage="none",
     ),
     SignalMeta(
         "bypass_accumulation", "BAT", "Bypass Accumulation",
         "structural_risk", 0.03,
         "Detects accumulation of bypass patterns (noqa, pragma, type: ignore).",
+        repair_level="example_based",
+        has_recommender=False, has_fix_field=True, has_verify_plan=True,
+        benchmark_coverage="none",
     ),
     SignalMeta(
         "exception_contract_drift", "ECM", "Exception Contract Drift",
         "structural_risk", 0.03,
         "Detects inconsistent exception handling contracts across the codebase.",
+        repair_level="plannable",
+        has_recommender=False, has_fix_field=True, has_verify_plan=True,
+        benchmark_coverage="none",
     ),
     SignalMeta(
         "ts_architecture", "TSA", "TS Architecture",
         "structural_risk", 0.0,
         "TypeScript-specific architecture signals (report-only).",
+        repair_level="plannable",
+        has_recommender=False, has_fix_field=True, has_verify_plan=True,
+        benchmark_coverage="none",
     ),
     # ── architecture_boundary ─────────────────────────────────────────────
     SignalMeta(
         "architecture_violation", "AVS", "Architecture Violation",
         "architecture_boundary", 0.16,
         "Detects imports that cross declared architecture layer boundaries.",
+        repair_level="plannable",
+        has_recommender=True, has_fix_field=False, has_verify_plan=True,
+        benchmark_coverage="limited",
     ),
     SignalMeta(
         "circular_import", "CIR", "Circular Import",
         "architecture_boundary", 0.0,
         "Detects circular import chains (report-only).",
+        repair_level="plannable",
+        has_recommender=False, has_fix_field=False, has_verify_plan=True,
+        benchmark_coverage="none",
     ),
     SignalMeta(
         "co_change_coupling", "CCC", "Co-Change Coupling",
         "architecture_boundary", 0.005,
         "Detects files that always change together, indicating hidden coupling.",
+        repair_level="verifiable",
+        has_recommender=True, has_fix_field=True, has_verify_plan=True,
+        benchmark_coverage="moderate",
     ),
     SignalMeta(
         "cohesion_deficit", "COD", "Cohesion Deficit",
         "architecture_boundary", 0.01,
         "Detects modules with low internal cohesion.",
+        repair_level="example_based",
+        has_recommender=True, has_fix_field=True, has_verify_plan=False,
+        benchmark_coverage="none",
     ),
     SignalMeta(
         "fan_out_explosion", "FOE", "Fan-Out Explosion",
         "architecture_boundary", 0.0,
         "Detects modules with excessive outgoing dependencies (report-only).",
+        repair_level="plannable",
+        has_recommender=False, has_fix_field=True, has_verify_plan=True,
+        benchmark_coverage="none",
     ),
     # ── style_hygiene ─────────────────────────────────────────────────────
     SignalMeta(
         "naming_contract_violation", "NBV", "Naming Contract Violation",
         "style_hygiene", 0.04,
         "Detects naming inconsistencies and contract violations.",
+        repair_level="example_based",
+        has_recommender=False, has_fix_field=True, has_verify_plan=True,
+        benchmark_coverage="none",
     ),
     SignalMeta(
         "doc_impl_drift", "DIA", "Doc/Impl Drift",
         "style_hygiene", 0.04,
         "Detects divergence between docstrings and implementation.",
+        repair_level="verifiable",
+        has_recommender=True, has_fix_field=False, has_verify_plan=False,
+        benchmark_coverage="strong",
     ),
     SignalMeta(
         "explainability_deficit", "EDS", "Explainability Deficit",
         "style_hygiene", 0.09,
         "Detects under-documented complex code.",
+        repair_level="plannable",
+        has_recommender=True, has_fix_field=False, has_verify_plan=False,
+        benchmark_coverage="moderate",
     ),
     SignalMeta(
         "broad_exception_monoculture", "BEM", "Broad Exception Monoculture",
         "style_hygiene", 0.04,
         "Detects overuse of broad exception catches.",
+        repair_level="example_based",
+        has_recommender=False, has_fix_field=True, has_verify_plan=True,
+        benchmark_coverage="none",
     ),
     SignalMeta(
         "guard_clause_deficit", "GCD", "Guard Clause Deficit",
         "style_hygiene", 0.03,
         "Detects missing guard clauses in complex functions.",
+        repair_level="example_based",
+        has_recommender=False, has_fix_field=True, has_verify_plan=True,
+        benchmark_coverage="none",
     ),
     SignalMeta(
         "dead_code_accumulation", "DCA", "Dead Code Accumulation",
         "style_hygiene", 0.0,
         "Detects unused code accumulation (report-only).",
+        repair_level="verifiable",
+        has_recommender=False, has_fix_field=True, has_verify_plan=True,
+        benchmark_coverage="limited",
     ),
     SignalMeta(
         "cognitive_complexity", "CXS", "Cognitive Complexity",
         "style_hygiene", 0.0,
         "Detects high cognitive complexity (report-only).",
+        repair_level="example_based",
+        has_recommender=False, has_fix_field=True, has_verify_plan=True,
+        benchmark_coverage="none",
     ),
     # ── security ──────────────────────────────────────────────────────────
     SignalMeta(
         "missing_authorization", "MAZ", "Missing Authorization",
         "security", 0.0,
         "Detects endpoints or functions lacking authorization checks (report-only).",
+        repair_level="example_based",
+        has_recommender=False, has_fix_field=True, has_verify_plan=True,
+        benchmark_coverage="none",
     ),
     SignalMeta(
         "insecure_default", "ISD", "Insecure Default",
         "security", 0.0,
         "Detects insecure default configurations (report-only).",
+        repair_level="example_based",
+        has_recommender=False, has_fix_field=True, has_verify_plan=False,
+        benchmark_coverage="none",
     ),
     SignalMeta(
         "hardcoded_secret", "HSC", "Hardcoded Secret",
         "security", 0.0,
         "Detects hardcoded secrets and credentials (report-only).",
+        repair_level="example_based",
+        has_recommender=False, has_fix_field=True, has_verify_plan=True,
+        benchmark_coverage="none",
     ),
     # ── ai_quality ────────────────────────────────────────────────────────
     SignalMeta(
         "phantom_reference", "PHR", "Phantom Reference",
         "ai_quality", 0.0,
         "Detects unresolvable function/class references (AI hallucination indicator, report-only).",
+        repair_level="example_based",
+        has_recommender=False, has_fix_field=True, has_verify_plan=True,
+        benchmark_coverage="none",
     ),
 ]
 
@@ -243,6 +345,29 @@ def get_signals_by_category(category: str) -> list[SignalMeta]:
 def resolve_abbrev(abbrev: str) -> str | None:
     """Resolve an abbreviation to its signal_id, case-insensitive."""
     return _ABBREV_MAP.get(abbrev.upper())
+
+
+def get_repair_coverage_summary() -> dict[str, dict[str, object]]:
+    """Return repair-coverage metadata for every registered signal.
+
+    Returns a dict keyed by ``signal_id``, each value containing the
+    repair-level classification and capability flags.  Used by the
+    coverage-matrix generator and by ``agent_tasks`` to derive
+    ``repair_maturity``.
+    """
+    return {
+        m.signal_id: {
+            "abbrev": m.abbrev,
+            "signal_name": m.signal_name,
+            "category": m.category,
+            "repair_level": m.repair_level,
+            "has_recommender": m.has_recommender,
+            "has_fix_field": m.has_fix_field,
+            "has_verify_plan": m.has_verify_plan,
+            "benchmark_coverage": m.benchmark_coverage,
+        }
+        for m in _REGISTRY.values()
+    }
 
 
 # ---------------------------------------------------------------------------

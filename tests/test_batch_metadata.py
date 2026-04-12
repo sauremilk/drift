@@ -475,3 +475,171 @@ class TestFixPlanAgentInstructionADR021:
         instr = _fix_plan_agent_instruction([task])
         assert "drift_nudge" in instr
         assert "Do not batch changes across unrelated" in instr
+
+
+# ---------------------------------------------------------------------------
+# ADR-064: repair_exemplar — concrete snippet + patch_shape
+# ---------------------------------------------------------------------------
+
+
+class TestRepairExemplar:
+    def test_pfs_uses_canonical_snippet_from_metadata(self):
+        """PFS finding with canonical_snippet produces exemplar_snippet from metadata."""
+        from drift.api_helpers import _task_to_api_dict
+
+        task = _make_task(
+            signal=SignalType.PATTERN_FRAGMENTATION,
+            metadata={
+                "canonical_snippet": "def login(request):\n    return JWT.create(request.user)",
+                "canonical_variant": "jwt_factory_pattern",
+                "category": "auth_handler",
+                "num_variants": 3,
+            },
+        )
+        d = _task_to_api_dict(task)
+        exemplar = d["repair_exemplar"]
+        assert exemplar is not None
+        assert "def login" in exemplar["exemplar_snippet"]
+        assert exemplar["patch_shape"]["canonical_structure"] == "jwt_factory_pattern"
+        assert exemplar["patch_shape"]["local_deviation"] == "auth_handler has 3 variants; align to canonical"
+        assert "function signature" in exemplar["patch_shape"]["immutable_parts"]
+
+    def test_nc_repair_exemplar_uses_canonical_alternative_multiline(self):
+        """Without canonical_snippet, NegativeContext.canonical_alternative is used as-is (multiline)."""
+        from drift.api_helpers import _task_to_api_dict
+        from drift.models import (
+            NegativeContext,
+            NegativeContextCategory,
+            NegativeContextScope,
+        )
+
+        nc = NegativeContext(
+            anti_pattern_id="neg-bem",
+            category=NegativeContextCategory.ERROR_HANDLING,
+            source_signal=SignalType.BROAD_EXCEPTION_MONOCULTURE,
+            severity=Severity.MEDIUM,
+            scope=NegativeContextScope.FILE,
+            description="bare except",
+            forbidden_pattern="except Exception:\n    pass",
+            canonical_alternative=(
+                "# REQUIRED: Catch specific exceptions, re-raise or handle\n"
+                "try:\n"
+                "    result = dangerous_operation()\n"
+                "except SpecificError as exc:\n"
+                "    logger.warning('Operation failed: %s', exc)\n"
+                "    raise"
+            ),
+        )
+        task = _make_task(
+            signal=SignalType.BROAD_EXCEPTION_MONOCULTURE,
+            metadata={"handler_action": "pass"},
+        )
+        task.negative_context = [nc]
+        d = _task_to_api_dict(task)
+        exemplar = d["repair_exemplar"]
+        assert exemplar is not None
+        # Must preserve multiline structure (no stripping)
+        assert "\n" in exemplar["exemplar_snippet"]
+        assert "SpecificError" in exemplar["exemplar_snippet"]
+        assert exemplar["patch_shape"]["canonical_structure"] == "specific-exception-with-recovery"
+        assert "broad 'except' with 'pass'" in exemplar["patch_shape"]["local_deviation"]
+        assert "exception message text" in exemplar["patch_shape"]["immutable_parts"]
+
+    def test_repair_exemplar_none_when_no_data(self):
+        """Task with neither canonical_snippet in metadata nor NC returns None for repair_exemplar."""
+        from drift.api_helpers import _task_to_api_dict
+
+        task = _make_task(metadata={})
+        d = _task_to_api_dict(task)
+        assert d["repair_exemplar"] is None
+
+    def test_patch_shape_immutable_parts_includes_task_constraints(self):
+        """task.constraints are prepended to signal-specific immutable_parts defaults."""
+        from drift.api_helpers import _task_to_api_dict
+        from drift.models import (
+            NegativeContext,
+            NegativeContextCategory,
+            NegativeContextScope,
+        )
+
+        nc = NegativeContext(
+            anti_pattern_id="neg-gcd",
+            category=NegativeContextCategory.COMPLEXITY,
+            source_signal=SignalType.GUARD_CLAUSE_DEFICIT,
+            severity=Severity.MEDIUM,
+            scope=NegativeContextScope.FILE,
+            description="no guard",
+            forbidden_pattern="def f(x): return x * 2",
+            canonical_alternative=(
+                "# REQUIRED: Add early-return guard clause\n"
+                "def f(x):\n"
+                "    if x is None:\n"
+                "        return None\n"
+                "    return x * 2"
+            ),
+        )
+        task = _make_task(
+            signal=SignalType.GUARD_CLAUSE_DEFICIT,
+            metadata={},
+        )
+        task.negative_context = [nc]
+        task.constraints = ["do not change return type"]
+        d = _task_to_api_dict(task)
+        exemplar = d["repair_exemplar"]
+        assert exemplar is not None
+        parts = exemplar["patch_shape"]["immutable_parts"]
+        # task constraints come first
+        assert parts[0] == "do not change return type"
+        # signal default follows
+        assert "main logic body" in parts
+
+    def test_batch_eligible_pfs_task_has_repair_exemplar(self):
+        """A batch-eligible PFS task with canonical_snippet delivers repair_exemplar."""
+        from drift.api_helpers import _task_to_api_dict
+
+        task = _make_task(
+            signal=SignalType.PATTERN_FRAGMENTATION,
+            metadata={
+                "canonical_snippet": "return JsonResponse({'status': 'ok'})",
+                "canonical_variant": "json_response_pattern",
+                "batch_eligible": True,
+                "pattern_instance_count": 4,
+                "affected_files_for_pattern": ["a.py", "b.py", "c.py", "d.py"],
+            },
+        )
+        d = _task_to_api_dict(task)
+        assert d["batch_eligible"] is True
+        assert d["repair_exemplar"] is not None
+        assert "JsonResponse" in d["repair_exemplar"]["exemplar_snippet"]
+        assert d["repair_exemplar"]["patch_shape"]["canonical_structure"] == "json_response_pattern"
+
+    def test_mds_canonical_structure_names_source_function(self):
+        """MDS canonical_structure includes the function to be reused."""
+        from drift.api_helpers import _task_to_api_dict
+        from drift.models import (
+            NegativeContext,
+            NegativeContextCategory,
+            NegativeContextScope,
+        )
+
+        nc = NegativeContext(
+            anti_pattern_id="neg-mds",
+            category=NegativeContextCategory.ARCHITECTURE,
+            source_signal=SignalType.MUTANT_DUPLICATE,
+            severity=Severity.MEDIUM,
+            scope=NegativeContextScope.MODULE,
+            description="duplicate",
+            forbidden_pattern="# copy-paste",
+            canonical_alternative="# REQUIRED: Reuse 'process_payment'\n# Parameterize differences",
+        )
+        task = _make_task(
+            signal=SignalType.MUTANT_DUPLICATE,
+            metadata={"function_a": "process_payment", "function_b": "process_refund"},
+        )
+        task.negative_context = [nc]
+        d = _task_to_api_dict(task)
+        exemplar = d["repair_exemplar"]
+        assert exemplar is not None
+        assert exemplar["patch_shape"]["canonical_structure"] == "reuse-process_payment"
+        assert "call sites" in exemplar["patch_shape"]["immutable_parts"]
+

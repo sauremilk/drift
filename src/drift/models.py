@@ -64,6 +64,53 @@ class SignalType(StrEnum):
     TYPE_SAFETY_BYPASS = "type_safety_bypass"
 
 
+class RegressionReasonCode(StrEnum):
+    """Reason why a particular (signal, edit_kind) combination caused a regression.
+
+    Used in :class:`RegressionPattern` to give agents a closed-set explanation
+    of what went wrong — no free text, deterministically actionable.
+    """
+
+    COSMETIC_ONLY = "cosmetic_only"
+    INCOMPLETE_BATCH = "incomplete_batch"
+    SIDE_EFFECT_VOLATILITY = "side_effect_volatility"
+    RESIDUAL_FINDINGS = "residual_findings"
+    WRONG_SCOPE = "wrong_scope"
+    SIGNALING_LAG = "signaling_lag"
+
+
+@dataclass
+class RegressionPattern:
+    """A (signal, edit_kind, context_feature) combination that historically caused regressions.
+
+    Agents consume these to avoid repeating known failure modes when applying repairs.
+    Derived deterministically from outcome logs — no LLM involved.
+    """
+
+    edit_kind: str  # e.g. "rename_symbol" — closed set of fix_intent.EDIT_KIND_* values
+    context_feature: str  # descriptive qualifier, e.g. "cross_file", "test", "batch_incomplete"
+    reason_code: RegressionReasonCode
+
+
+class RepairLevel(StrEnum):
+    """Repair-coverage maturity level for a signal.
+
+    Ordered from least to most capable:
+
+    * ``diagnosis`` – Finding description only, no actionable repair hints.
+    * ``plannable`` – Structured recommendation with effort/impact,
+      but no concrete code examples.
+    * ``example_based`` – Exemplary fix snippets or code-level suggestions.
+    * ``verifiable`` – Repair **plus** machine-executable verification plan
+      (verify_plan / success_criteria evaluable by agent).
+    """
+
+    DIAGNOSIS = "diagnosis"
+    PLANNABLE = "plannable"
+    EXAMPLE_BASED = "example_based"
+    VERIFIABLE = "verifiable"
+
+
 class PatternCategory(StrEnum):
     ERROR_HANDLING = "error_handling"
     DATA_ACCESS = "data_access"
@@ -470,6 +517,15 @@ class AgentTask:
     batch_group: str | None = None  # cluster ID for co-fixable tasks
     preferred_order: int = 0  # topological sort index within session
     parallel_with: list[str] = field(default_factory=list)  # task IDs safe to run concurrently
+    # Signal-specific, ordered verification steps (machine-executable)
+    verify_plan: list[dict[str, Any]] = field(default_factory=list)
+    # ADR-064: shadow-verify for cross-file-risky edit_kinds
+    shadow_verify: bool = False  # True when drift_nudge is insufficient for verification
+    shadow_verify_scope: list[str] = field(default_factory=list)  # files to re-scan
+    # Repair template registry fields (ADR-065)
+    # None = insufficient outcome data in the registry (<3 entries)
+    template_confidence: float | None = None
+    regression_guidance: list[RegressionPattern] = field(default_factory=list)
 
 
 # ---------------------------------------------------------------------------

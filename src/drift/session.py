@@ -719,6 +719,13 @@ class DriftSession:
                 "reclaim_count": reclaim_count,
             }
 
+    def _find_task(self, task_id: str) -> "dict[str, Any] | None":
+        """Return the task dict for *task_id* from ``selected_tasks``, or ``None``."""
+        for t in self.selected_tasks or []:
+            if t.get("id", t.get("task_id", "")) == task_id:
+                return t
+        return None
+
     def complete_task(
         self,
         agent_id: str,
@@ -728,7 +735,8 @@ class DriftSession:
         """Mark a claimed task as completed.
 
         Returns a status dict.  Possible ``status`` values: ``"completed"``,
-        ``"already_completed"``, ``"not_found"``, ``"wrong_agent"``.
+        ``"already_completed"``, ``"not_found"``, ``"verify_plan_required"``,
+        ``"wrong_agent"``.
         Thread-safe via ``_lock``.
         """
         with self._lock:
@@ -757,6 +765,20 @@ class DriftSession:
                     "status": "wrong_agent",
                     "error": "Lease belongs to a different agent.",
                 }
+            # Verify-plan gate: tasks with a non-empty verify_plan require
+            # explicit evidence that safe_to_commit == true from drift_nudge.
+            task_dict = self._find_task(task_id)
+            if task_dict and task_dict.get("verify_plan"):
+                evidence = (result or {}).get("verify_evidence", {})
+                if not (isinstance(evidence, dict) and evidence.get("safe_to_commit") is True):
+                    return {
+                        "task_id": task_id,
+                        "status": "verify_plan_required",
+                        "error": (
+                            "Task has a verify_plan — call drift_nudge first and pass"
+                            " verify_evidence with safe_to_commit == true."
+                        ),
+                    }
             # Track lease duration
             now = time.time()
             self.metrics.total_lease_time_seconds += now - lease.get("acquired_at", now)

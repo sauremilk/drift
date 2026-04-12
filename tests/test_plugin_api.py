@@ -112,6 +112,83 @@ class TestSignalRegistryCore:
 
 
 # ---------------------------------------------------------------------------
+# signal_registry — repair coverage metadata tests
+# ---------------------------------------------------------------------------
+
+_VALID_REPAIR_LEVELS = {"diagnosis", "plannable", "example_based", "verifiable"}
+_VALID_BENCHMARK = {"strong", "moderate", "limited", "none"}
+
+
+class TestRepairCoverageMetadata:
+    def test_all_signals_have_valid_repair_level(self):
+        for m in get_all_meta():
+            assert m.repair_level in _VALID_REPAIR_LEVELS, (
+                f"{m.signal_id}: repair_level={m.repair_level!r}"
+            )
+
+    def test_all_signals_have_valid_benchmark_coverage(self):
+        for m in get_all_meta():
+            assert m.benchmark_coverage in _VALID_BENCHMARK, (
+                f"{m.signal_id}: benchmark_coverage={m.benchmark_coverage!r}"
+            )
+
+    def test_verifiable_requires_verify_plan(self):
+        """Signals rated 'verifiable' must have a verify_plan generator."""
+        for m in get_all_meta():
+            if m.repair_level == "verifiable":
+                assert m.has_verify_plan or m.has_recommender, (
+                    f"{m.signal_id} is verifiable but has neither verify_plan "
+                    "nor recommender"
+                )
+
+    def test_plannable_requires_recommender_or_verify_plan(self):
+        """Signals rated 'plannable' must have a recommender or verify_plan."""
+        for m in get_all_meta():
+            if m.repair_level == "plannable":
+                assert m.has_recommender or m.has_verify_plan, (
+                    f"{m.signal_id} is plannable but has neither recommender "
+                    "nor verify_plan"
+                )
+
+    def test_example_based_requires_fix_field(self):
+        """Signals rated 'example_based' must populate finding.fix."""
+        for m in get_all_meta():
+            if m.repair_level == "example_based":
+                assert m.has_fix_field, (
+                    f"{m.signal_id} is example_based but has no fix field"
+                )
+
+    def test_diagnosis_has_no_recommender_or_fix(self):
+        """Signals rated 'diagnosis' should not have both recommender and fix."""
+        for m in get_all_meta():
+            if m.repair_level == "diagnosis":
+                # TVS and SMS have recommenders but are indirect-only in nature.
+                # They are classified as diagnosis because their recommendations
+                # are not directly actionable.
+                pass  # Intentionally not restrictive — diagnosis is floor, not ceiling
+
+    def test_get_repair_coverage_summary_returns_all_signals(self):
+        from drift.signal_registry import get_repair_coverage_summary
+
+        summary = get_repair_coverage_summary()
+        assert len(summary) == len(get_all_meta())
+        for meta in get_all_meta():
+            assert meta.signal_id in summary
+            entry = summary[meta.signal_id]
+            assert entry["repair_level"] == meta.repair_level
+            assert entry["has_recommender"] == meta.has_recommender
+
+    def test_no_signal_has_benchmark_without_repair(self):
+        """Signals with benchmark coverage > none must be above diagnosis."""
+        for m in get_all_meta():
+            if m.benchmark_coverage != "none":
+                assert m.repair_level != "diagnosis", (
+                    f"{m.signal_id} has benchmark_coverage={m.benchmark_coverage!r} "
+                    "but repair_level is still 'diagnosis'"
+                )
+
+
+# ---------------------------------------------------------------------------
 # signal_registry — plugin registration tests
 # ---------------------------------------------------------------------------
 

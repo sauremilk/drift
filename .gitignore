@@ -41,6 +41,7 @@ docs/issue-claim-playbook.md
 action_rate_err.txt
 action_rate_test.txt
 diag_err.txt
+data/repair_templates/outcomes.jsonl
 
 outreach/
 examples/agent-framework/

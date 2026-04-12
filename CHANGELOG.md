@@ -2,6 +2,8 @@
 
 ### Added
 
+- **Shadow-Verify fuer cross-file-risky edit_kinds (ADR-064):** Tasks mit `fix_intent.edit_kind` in `{remove_import, relocate_import, reduce_dependencies, extract_module, decouple_modules, delete_symbol, rename_symbol}` erhalten jetzt `shadow_verify=true` und `completion_evidence.tool="drift_shadow_verify"`. Der neue MCP-Tool `drift_shadow_verify` fuehrt einen vollen, nicht-inkrementellen `analyze_repo()`-Lauf durch, filtert auf `scope_files` (Union aus `allowed_files`, `related_files` und Task-Graph-Nachbarn) und vergleicht mit der aktuellen Baseline. Gibt `shadow_clean`, `safe_to_merge`, `new_findings_in_scope` und `agent_instruction` zurueck. Verhindert falsch-positive `safe_to_commit`-Ergebnisse von `drift_nudge` nach Import-Graph- und Symbol-Sichtbarkeits-Edits.
+
 - **EDS private-function recall guard (ADR-048):** Private functions now require a weighted score ≥ 0.45 (vs 0.30 for public) before being reported. Files tagged as `defect_correlated` in git history override the threshold back down to 0.30, preserving recall on historically buggy helpers.
 - **PFS canonical code snippet (ADR-049):** Pattern fragmentation findings now embed up to 8 source lines of the canonical exemplar in `metadata["canonical_snippet"]`. Severity is downgraded (HIGH→MEDIUM or MEDIUM→LOW) when the canonical pattern covers < 10 % of instances, and HIGH→MEDIUM when it covers < 15 % (`canonical_ratio` in metadata).
 - DCA Issue #260: reduce false positives for plugin/extension workspace exports by applying a bounded workspace-aware dampening (`extensions/*`, `plugins/*`, including nested paths like `.pi/extensions/*`) with LOW severity cap (`score <= 0.39`) and metadata traceability (`runtime_plugin_workspace_heuristic_applied`).

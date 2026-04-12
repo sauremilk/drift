@@ -1,0 +1,117 @@
+{
+  "schema_version": "1.0",
+  "demo_run": {
+    "repo": "openclaw/openclaw",
+    "session_id": "b93cc066158743d28b4b8358d7e3c622",
+    "started_at": "2026-04-12T17:32:39Z",
+    "ended_at": "2026-04-12T17:48:32Z",
+    "duration_seconds": 943,
+    "score_before": 0.495,
+    "score_after": 0.506,
+    "score_delta": 0.011,
+    "tool_time_pct": 19.7
+  },
+  "findings_summary": {
+    "total_identified": 9811,
+    "total_fixed": 4,
+    "total_skipped": 1,
+    "top_signals": [
+      { "signal": "CXS", "count": 2870, "description": "Cognitive Complexity" },
+      { "signal": "TVS", "count": 590, "description": "Temporal Volatility" },
+      { "signal": "TYP", "count": 258, "description": "Type Safety Bypass" }
+    ]
+  },
+  "tasks": [
+    {
+      "task_id": "cxs-03cb7b355f",
+      "signal": "CXS",
+      "severity": "high",
+      "fix_description": "Extract getUserText, setPromptUrlWidget, applySessionName from promptUrlWidgetExtension to module-level functions",
+      "affected_files": [".pi/extensions/prompt-url-widget.ts"],
+      "batch_eligible": true,
+      "nudge_direction": "stable",
+      "nudge_delta": 0.0,
+      "diff_stat": "1 file changed, 74 insertions(+), 74 deletions(-)"
+    },
+    {
+      "task_id": "cxs-5e0a978e4a",
+      "signal": "CXS",
+      "severity": "high",
+      "fix_description": "Reduce complexity of register() (complexity 58) — failed after 3 attempts due to persistent degradation",
+      "affected_files": ["extensions/active-memory/index.ts"],
+      "batch_eligible": true,
+      "nudge_direction": "degrading",
+      "nudge_delta": 0.012,
+      "diff_stat": "reverted — max_reclaim reached"
+    },
+    {
+      "task_id": "cxs-8025a4ca92",
+      "signal": "CXS",
+      "severity": "high",
+      "fix_description": "Extract parseStatusLabel, parseGitStatusOutput, openInDiffView to module-level from anonymous handler",
+      "affected_files": [".pi/extensions/diff.ts"],
+      "batch_eligible": true,
+      "nudge_direction": "degrading",
+      "nudge_delta": 0.011,
+      "diff_stat": "1 file changed, 55 insertions(+), 56 deletions(-)"
+    },
+    {
+      "task_id": "cxs-b19ea73eb9",
+      "signal": "CXS",
+      "severity": "high",
+      "fix_description": "Extract fetchAndMergeModels from discoverBedrockModels async IIFE to module-level function",
+      "affected_files": ["extensions/amazon-bedrock/discovery.ts"],
+      "batch_eligible": true,
+      "nudge_direction": "degrading",
+      "nudge_delta": 0.011,
+      "diff_stat": "1 file changed, 57 insertions(+), 58 deletions(-)"
+    },
+    {
+      "task_id": "cxs-f9dcc6f6d6",
+      "signal": "CXS",
+      "severity": "high",
+      "fix_description": "Extract collectToolCalls, buildFileMap, formatOpsLabel, openFileInEditor to module-level from anonymous handler",
+      "affected_files": [".pi/extensions/files.ts"],
+      "batch_eligible": true,
+      "nudge_direction": "degrading",
+      "nudge_delta": 0.011,
+      "diff_stat": "1 file changed, 100 insertions(+), 84 deletions(-)"
+    }
+  ],
+  "verification": {
+    "accept_change": false,
+    "drift_detected": true,
+    "new_findings": 10,
+    "new_high_or_critical": 0,
+    "blocking_reasons": ["New high finding: Happy-path-only test suite in tests/"],
+    "tool": "drift_diff"
+  },
+  "orchestration_metrics": {
+    "tasks_claimed": 7,
+    "tasks_completed": 4,
+    "tasks_failed": 1,
+    "tasks_released": 3,
+    "nudge_checks": 4,
+    "nudge_improving": 0,
+    "nudge_stable": 1,
+    "nudge_degrading": 3,
+    "total_lease_time_seconds": 558,
+    "verification_runs": 1,
+    "changed_files_total": 4,
+    "loc_changed_total": 558,
+    "resolved_findings_total": 4,
+    "new_findings_total": 10
+  },
+  "timing": {
+    "total_tool_ms": 186043,
+    "total_inter_call_ms": 346084,
+    "total_wall_ms": 943157,
+    "tool_pct": 19.7
+  },
+  "environment": {
+    "drift_version": "2.9.14",
+    "copilot_mode": "agent",
+    "api_key_required": false,
+    "transport": "stdio"
+  }
+}

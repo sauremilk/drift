@@ -1,6 +1,21 @@
 # STRIDE Threat Model
 
-## 2026-04-11 - ADR-061: Pflichtmaessige Phasen-Telemetrie im Analyze-Output
+## 2025-07-22 - ADR-064: Shadow-Verify fuer cross-file-risky edit_kinds
+
+- Scope: Neuer API-Endpunkt [src/drift/api/shadow_verify.py](src/drift/api/shadow_verify.py), neues MCP-Tool `drift_shadow_verify` in [src/drift/mcp_server.py](src/drift/mcp_server.py), Erweiterung von `AgentTask` in [src/drift/models.py](src/drift/models.py), `_derive_task_contract` in [src/drift/api_helpers.py](src/drift/api_helpers.py), `_compute_shadow_verify_scope` in [src/drift/output/agent_tasks.py](src/drift/output/agent_tasks.py).
+- Input path changes: Neu: `scope_files` als Eingabe für `drift_shadow_verify` (Comma-separated Dateilisten vom Agent).
+- Output path changes: Yes - Tasks mit cross-file-risky edit_kind erhalten `shadow_verify=true` und `completion_evidence.tool="drift_shadow_verify"` im fix_plan-Output.
+- External interface changes: Additiv. Neues MCP-Tool, neue API-Funktion, neue Felder in `AgentTask`. Bestehende Felder unveraendert.
+- Trust boundary: Neues MCP-Tool-Eingangspfad für `scope_files`. Pfade werden durch `Path(path).resolve()` kanonisiert; Scope-Liste wird als Menge verarbeitet (keine Datei-I/O darauf).
+- STRIDE review:
+	- S (Spoofing): Kein neue Identitaets- oder Authentisierungsgrenze. `drift_shadow_verify` laedt Konfiguration aus dem Repo-Root wie alle anderen API-Endpunkte.
+	- T (Tampering): Niedriges Risiko. `scope_files` beeinflusst nur den Filterbereich; `analyze_repo()` liest das Repo unveraendert. Ein Angreifer koennte den Scope einschraenken, nicht aber Findings faelschen.
+	- R (Repudiation): Verbesserte Nachvollziehbarkeit durch explizite `scope_files`-Liste im Response und Telemetrie-Eintrag.
+	- I (Information Disclosure): Niedriges Risiko. Findings aus dem Baseline-Store werden gefiltert auf `scope_files`; keine neuen externen Ausgabepfade.
+	- D (Denial of Service): Mittleres Risiko. `shadow_verify` laedt eine volle `analyze_repo()`-Analyse. Bei grossen Repos und breitem Scope koennte dies langsam sein. Mitigiert: Scope ist durch Task-Graph-Nachbarn begrenzt; kein automatisches Auslösen ohne Agent-Aufruf.
+	- E (Elevation of Privilege): Keine Privileg-Aenderung. Sandbox-Grenzen identisch zu `drift_nudge` und `drift_scan`.
+
+
 
 - Scope: Additive Telemetrie-Erweiterung in [src/drift/analyzer.py](src/drift/analyzer.py), [src/drift/pipeline.py](src/drift/pipeline.py), [src/drift/output/json_output.py](src/drift/output/json_output.py), [src/drift/output/rich_output.py](src/drift/output/rich_output.py).
 - Input path changes: No.

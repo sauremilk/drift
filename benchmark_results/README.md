@@ -9,6 +9,7 @@ Use it as an index, not as a single headline metric.
 ## What lives here
 
 - `mutation_benchmark.json`: controlled mutation-benchmark output.
+- `repair_coverage_matrix.json`: per-signal repair-level taxonomy (diagnosis / plannable / example_based / verifiable) with capability flags.
 - `vX.Y.Z*_feature_evidence.json`: versioned feature-evidence artifacts for specific releases or improvement waves.
 - `ground_truth_analysis.json`: precision-study support artifact.
 - `all_results.json`: aggregated benchmark summaries.

@@ -1,5 +1,58 @@
 # FMEA Matrix
 
+## 2025-07-22 - ADR-064: Shadow-Verify fuer cross-file-risky edit_kinds
+
+| Component | Failure Mode | Cause | Effect | Detection | Mitigation | S | O | D | RPN | Status |
+|---|---|---|---|---|---|---:|---:|---:|---:|---|
+| fix_intent.py `CROSS_FILE_RISKY_EDIT_KINDS` | Fehlende edit_kind im Set — risky Task wird faelschlicherweise nur mit nudge verifiziert | Neue risky edit_kind hinzugefuegt aber Set nicht gepflegt | Agent erhaelt `safe_to_commit=true` obwohl cross-file-Signal betroffen; Fehlschlag unerkannt | `TestIsCrossFileRisky` parametrisiert alle bekannten risky Kinds; ergaenzbar | Set als `frozenset`-Konstante mit Testkatalog; jede neue risky Kind muss in Set + Test aufgenommen werden | 5 | 3 | 2 | 30 | Mitigated |
+| `_compute_shadow_verify_scope` | Scope zu eng — Nachbar-Files fehlen | Task-Graph-Kanten (`depends_on`/`blocks`) bereits leer zum Zeitpunkt der Scope-Berechnung | Shadow-Verify prueft nicht alle betroffenen Dateien; regression unerkannt | `TestComputeShadowVerifyScope::test_scope_expands_to_task_graph_neighbors` | Seed aus `related_files` des Tasks selbst bietet minimale Abdeckung auch ohne Nachbarn | 4 | 3 | 2 | 24 | Mitigated |
+| `shadow_verify()` Baseline-Vergleich | Finding-Identitaet schlaegt fehl bei Dateiumbenennung | Schluessel = `signal_type:file_path:title`; umbenannte Datei aendert Schluessel | Bestehende Findings werden als neu gezaehlt (False Positive) | Kein automatisierter Test — bekannte Limitierung, dokumentiert in ADR-064 | Scope-Filterung begrenz Auswirkung auf wenige Dateien; zukuenftig stabiler Hash via Finding-UUID | 3 | 2 | 3 | 18 | Accepted (documented) |
+| `drift_shadow_verify` MCP-Tool | `analyze_repo()` laeuft zu lang fuer grosse Repos mit breitem Scope | Kein `--max-scope`-Parameter implementiert | User-facing Latenz; Agent-Loop-Timeout moeglich | Performance-Test in `test_shadow_verify.py` (mock-basiert; kein echtes Repo) | Scope durch Task-Graph-Nachbarn begrenzt; kein Full-Repo-Scan noetig; `--max-scope` als Follow-up-Verbesserung | 3 | 3 | 2 | 18 | Accepted (follow-up) |
+
+
+
+| Component | Failure Mode | Cause | Effect | Detection | Mitigation | S | O | D | RPN | Status |
+|---|---|---|---|---|---|---:|---:|---:|---:|---|
+| signal_registry | Signal misclassified at wrong repair level (e.g. diagnosis rated as verifiable) | Manual classification without automated capability probe | Agents attempt unsupported repair operations; user frustration | `TestRepairCoverageMetadata` invariant tests (verify_plan, recommender, fix_field guards) in `tests/test_plugin_api.py` | Structural tests enforce that declared level matches capability flags; `repair_coverage_matrix.json` artifact enables trend auditing | 5 | 3 | 2 | 30 | Mitigated |
+| agent_tasks.py | REPAIR_MATURITY fallthrough returns stale default for new signals not yet in registry | New signal added to `SignalType` but not to `_CORE_SIGNALS` | Agent sees `indirect-only` for a signal that actually has repair support | `test_repair_maturity_covers_all_registry_signals` checks registry completeness | Registry-derived `_build_repair_maturity()` eliminates hardcoded dict; completeness guard in tests | 4 | 3 | 2 | 24 | Mitigated |
+| coverage_gaps output | `coverage_gaps` section absent or malformed in agent-tasks JSON | Serializer path skipped or exception swallowed | Agent loses repair-transparency metadata; no functional breakage | `test_coverage_gaps_in_json` asserts structure in `tests/test_agent_tasks.py` | Dedicated test validates keys and types | 3 | 2 | 2 | 12 | Mitigated |
+
+## 2026-04-12 - Repair-Coverage Upgrades: SMS, TVS → plannable; NBV, BEM, GCD → example_based
+
+| Component | Failure Mode | Cause | Effect | Detection | Mitigation | S | O | D | RPN | Status |
+|---|---|---|---|---|---|---:|---:|---:|---:|---|
+| agent_tasks.py verify_plan | SMS/TVS verify_plan produces wrong predicate or target for novel-import / churn findings | Metadata keys changed in signal without updating verify_plan builder | Agent executes meaningless verification step; false confidence in fix | `test_sms_step1_targets_novel_packages`, `test_tvs_step1_targets_score_reduction` in `tests/test_agent_tasks.py` | Tests assert tool, target field, and predicate content per signal | 4 | 2 | 2 | 16 | Mitigated |
+| agent_tasks.py verify_plan | NBV/BEM/GCD verify_plan builder uses wrong metadata key | Signal metadata schema evolved without updating agent_tasks | Verify step targets stale field; predicate always fails | `test_nbv_step1_targets_function`, `test_bem_step1_targets_broad_count`, `test_gcd_nesting_verify_plan_targets_depth` | Per-signal tests check target dict keys match current signal metadata | 4 | 2 | 2 | 16 | Mitigated |
+| signal_registry | `has_fix_field=True` declared but signal drops fix text in edge path | Signal's analyze() skips fix population for certain code patterns | Agent trusts repair_level but receives empty action; falls back to description | `test_example_based_requires_fix_field` invariant in `tests/test_plugin_api.py` guards registry; signal-level unit tests guard production paths | Invariant tests + existing signal unit test coverage | 3 | 3 | 3 | 27 | Mitigated |
+
+## 2026-04-12 - Repair-Coverage Upgrades: CXS, HSC, MAZ → example_based
+
+| Component | Failure Mode | Cause | Effect | Detection | Mitigation | S | O | D | RPN | Status |
+|---|---|---|---|---|---|---:|---:|---:|---:|---|
+| agent_tasks.py verify_plan | CXS verify_plan targets wrong function_name or threshold | Signal metadata key for CC value or function name renamed | Agent verifies against wrong target; false pass | `test_cxs_step1_targets_function` in `tests/test_agent_tasks.py` | Test asserts tool, function_name, previous_cc, threshold in target dict | 4 | 2 | 2 | 16 | Mitigated |
+| agent_tasks.py verify_plan | HSC verify_plan references wrong variable name from metadata | Secret variable name stored under different key | Agent greps for wrong variable; secret remains undetected | `test_hsc_step1_targets_variable` in `tests/test_agent_tasks.py` | Test asserts variable name and predicate content | 5 | 2 | 2 | 20 | Mitigated |
+| agent_tasks.py verify_plan | MAZ verify_plan misses framework or endpoint_name from metadata | MAZ metadata schema changed (e.g. framework key renamed) | Agent cannot verify auth decorator for correct framework; false confidence | `test_maz_step1_targets_endpoint` in `tests/test_agent_tasks.py` | Test asserts endpoint_name, framework, and auth_mechanism predicate | 5 | 2 | 2 | 20 | Mitigated |
+
+## 2026-07-25 - Repair-Coverage Upgrades: BAT, PHR, TPD → example_based; ECM, FOE, TSA → plannable (actionable_ratio 100%)
+
+| Component | Failure Mode | Cause | Effect | Detection | Mitigation | S | O | D | RPN | Status |
+|---|---|---|---|---|---|---:|---:|---:|---:|---|
+| agent_tasks.py verify_plan | BAT verify_plan targets wrong marker count metadata key | `total_markers` or `bypass_density` renamed in signal | Agent verifies against stale target; bypass markers remain | `test_bat_step1_targets_markers` in `tests/test_agent_tasks.py` | Test asserts tool, previous_total, and previous_density in target | 4 | 2 | 2 | 16 | Mitigated |
+| agent_tasks.py verify_plan | ECM verify_plan uses wrong diverged_functions key or comparison_ref | Signal metadata schema changed for exception contract comparisons | Agent verifies wrong functions; contract drift persists | `test_ecm_step1_targets_functions` in `tests/test_agent_tasks.py` | Test asserts diverged_functions and comparison_ref in target dict | 4 | 2 | 2 | 16 | Mitigated |
+| agent_tasks.py verify_plan | FOE verify_plan uses wrong threshold or import count key | `unique_import_count` or `threshold` renamed in signal | Agent checks wrong count; fan-out remains excessive | `test_foe_step1_targets_imports` in `tests/test_agent_tasks.py` | Test asserts previous_count and threshold in target dict | 4 | 2 | 2 | 16 | Mitigated |
+| agent_tasks.py verify_plan | PHR verify_plan uses wrong phantom_names format | `phantom_names` schema changed (list of dicts vs list of strings) | Agent targets wrong phantom symbols; references remain unresolvable | `test_phr_step1_targets_phantoms` in `tests/test_agent_tasks.py` | Test asserts phantom_names list and previous_count in target | 4 | 2 | 2 | 16 | Mitigated |
+| agent_tasks.py verify_plan | TPD verify_plan path selection wrong for zero-assertion vs negative-ratio variant | `zero_assertion_tests` key present but ignored due to wrong branch | Agent verifies wrong polarity metric; test weakness persists | `test_tpd_zero_assertion_verify_plan`, `test_tpd_negative_step1_targets_ratio` in `tests/test_agent_tasks.py` | Both finding-type branches tested separately | 4 | 2 | 2 | 16 | Mitigated |
+| agent_tasks.py verify_plan | TSA circular vs rule-based verify_plan dispatches to wrong sub-rule | `rule_id` key missing or renamed in TSA metadata | Agent checks wrong architecture rule; violation persists | `test_tsa_circular_verify_plan_shape`, `test_tsa_layer_verify_plan` in `tests/test_agent_tasks.py` | Both sub-rule paths tested with distinct assertions | 4 | 2 | 2 | 16 | Mitigated |
+| signal_registry | `has_fix_field=True` declared but signal drops fix on edge paths | BAT/ECM/FOE/PHR/TPD/TSA analyze() skips fix for rare patterns | Agent trusts repair_level but receives empty action | `test_example_based_requires_fix_field` / `test_plannable_requires_fix_field` invariants | Existing structural invariant tests + signal unit coverage | 3 | 3 | 3 | 27 | Mitigated |
+
+## 2026-04-12 - ADR-063: fix_intent structured output field
+
+| Component | Failure Mode | Cause | Effect | Detection | Mitigation | S | O | D | RPN | Status |
+|---|---|---|---|---|---|---:|---:|---:|---:|---|
+| fix_plan API output | `edit_kind` mapping missing for a new signal | New signal added without updating `_EDIT_KIND_FOR_SIGNAL` lookup | Agent receives `unspecified` edit_kind, weaker but not harmful boundary contract | Test `test_all_signal_types_have_mapping` fails at CI on next signal addition | Checklist in ADR-063 and `TestEditKindMapping::test_all_signal_types_have_mapping` guard ensures mapping stays complete | 3 | 3 | 2 | 18 | Mitigated |
+| fix_plan API output | `fix_intent.allowed_files` deviates from top-level `allowed_files` | `derive_fix_intent` called before `_derive_task_contract` populates `task_dict` | Agent uses stale/empty allowed_files list; potential over-editing | Integration test `TestIntegration::test_fix_intent_allowed_files_consistent_with_top_level` detects this | Convention: `_derive_task_contract` must be called before `derive_fix_intent`; enforced by call-site order in `_task_to_api_dict` | 4 | 2 | 2 | 16 | Mitigated |
+| fix_plan API output | `forbidden_changes` contains duplicates | Universal constants also appear in signal-specific list | Cosmetic redundancy; no functional harm | `TestDeriveFixIntent::test_forbidden_changes_no_duplicates` asserts uniqueness | `dict.fromkeys()` deduplication in `derive_fix_intent` | 2 | 2 | 2 | 8 | Mitigated |
+
 ## 2026-04-12 - Issue #317-332 follow-up: test-context + CCC precision hardening
 
 | Signal | Failure Mode | Cause | Effect | Detection | Mitigation | S | O | D | RPN | Status |

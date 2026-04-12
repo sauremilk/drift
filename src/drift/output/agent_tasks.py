@@ -8,9 +8,12 @@ from typing import Any
 
 from drift import __version__
 from drift.api_helpers import build_drift_score_scope
-from drift.models import AgentTask, Finding, RepoAnalysis, Severity, SignalType
+from drift.fix_intent import CROSS_FILE_RISKY_EDIT_KINDS, _EDIT_KIND_FOR_SIGNAL, _refine_edit_kind, is_cross_file_risky
+from drift.models import AgentTask, Finding, RepoAnalysis, RegressionPattern, Severity, SignalType
 from drift.negative_context import findings_to_negative_context, negative_context_to_dict
 from drift.recommendations import Recommendation, generate_recommendations
+from drift.repair_template_registry import get_registry
+from drift.signal_registry import get_meta
 
 # ---------------------------------------------------------------------------
 # Deterministic task ID
@@ -62,44 +65,39 @@ def _finding_fingerprint(finding: Finding) -> str:
 # ---------------------------------------------------------------------------
 # Repair maturity matrix (Phase 4)
 # ---------------------------------------------------------------------------
+# Derived from signal_registry.SignalMeta.repair_level.
+# Maps the 4-level repair taxonomy to legacy 3-level maturity strings
+# so that downstream consumers (API, tests, agents) remain compatible.
 
-REPAIR_MATURITY: dict[str, dict[str, str | bool]] = {
-    SignalType.MUTANT_DUPLICATE: {
-        "maturity": "verified",
-        "benchmark_coverage": "strong",
-        "real_world": True,
-    },
-    SignalType.DOC_IMPL_DRIFT: {
-        "maturity": "verified",
-        "benchmark_coverage": "strong",
-        "real_world": True,
-    },
-    SignalType.PATTERN_FRAGMENTATION: {
-        "maturity": "verified",
-        "benchmark_coverage": "moderate",
-        "real_world": False,
-    },
-    SignalType.EXPLAINABILITY_DEFICIT: {
-        "maturity": "verified",
-        "benchmark_coverage": "moderate",
-        "real_world": False,
-    },
-    SignalType.ARCHITECTURE_VIOLATION: {
-        "maturity": "experimental",
-        "benchmark_coverage": "limited",
-        "real_world": False,
-    },
-    SignalType.TEMPORAL_VOLATILITY: {
-        "maturity": "indirect-only",
-        "benchmark_coverage": "cascade",
-        "real_world": False,
-    },
-    SignalType.SYSTEM_MISALIGNMENT: {
-        "maturity": "indirect-only",
-        "benchmark_coverage": "cascade",
-        "real_world": False,
-    },
+_REPAIR_LEVEL_TO_MATURITY: dict[str, str] = {
+    "verifiable": "verified",
+    "example_based": "verified",
+    "plannable": "experimental",
+    "diagnosis": "indirect-only",
 }
+
+
+def _build_repair_maturity() -> dict[str, dict[str, str | bool]]:
+    """Build REPAIR_MATURITY dict from signal registry metadata."""
+    from drift.signal_registry import get_all_meta
+
+    result: dict[str, dict[str, str | bool]] = {}
+    for meta in get_all_meta():
+        result[meta.signal_id] = {
+            "maturity": _REPAIR_LEVEL_TO_MATURITY.get(
+                meta.repair_level, "indirect-only",
+            ),
+            "repair_level": meta.repair_level,
+            "benchmark_coverage": meta.benchmark_coverage,
+            "has_recommender": meta.has_recommender,
+            "has_fix_field": meta.has_fix_field,
+            "has_verify_plan": meta.has_verify_plan,
+            "real_world": meta.benchmark_coverage in ("strong",),
+        }
+    return result
+
+
+REPAIR_MATURITY: dict[str, dict[str, str | bool]] = _build_repair_maturity()
 
 
 # ---------------------------------------------------------------------------
@@ -354,6 +352,575 @@ def _generate_constraints(finding: Finding) -> list[str]:
     signal_specific = _SIGNAL_CONSTRAINTS.get(finding.signal_type, [])
     constraints.extend(signal_specific)
     return constraints
+
+
+# ---------------------------------------------------------------------------
+# Signal-specific verify plan (machine-executable verification steps)
+# ---------------------------------------------------------------------------
+
+_NUDGE_STEP: dict[str, Any] = {
+    "tool": "drift_nudge",
+    "action": "Confirm that the fix does not increase the drift score",
+    "predicate": "safe_to_commit == true",
+    "target": {},
+}
+
+_SHADOW_VERIFY_STEP_TEMPLATE: dict[str, Any] = {
+    "tool": "drift_shadow_verify",
+    "action": (
+        "Run a scope-bounded full re-scan on allowed_files + related_files + "
+        "task_graph neighbours — cross-file signals are estimated by drift_nudge "
+        "and unreliable for this edit_kind"
+    ),
+    "predicate": "shadow_clean == true",
+}
+
+
+def _shadow_verify_step(n: int, scope_files: list[str]) -> dict[str, Any]:
+    """Build a shadow_verify verification step at the given 1-based index."""
+    return {
+        "step": n,
+        **_SHADOW_VERIFY_STEP_TEMPLATE,
+        "target": {"scope_files": list(scope_files)},
+    }
+
+
+def _compute_shadow_verify_scope(
+    task: AgentTask,
+    all_tasks: list[AgentTask],
+) -> list[str]:
+    """Compute the scope for a shadow-verify run.
+
+    The scope is the union of:
+    - task.file_path (primary file of this task)
+    - task.related_files
+    - related_files of all directly adjacent tasks in the task graph
+      (tasks listed in task.depends_on or task.blocks)
+
+    The result is deduplicated and sorted for stable output.
+    """
+    seen: dict[str, None] = {}  # ordered dedup via insertion-ordered dict
+    if task.file_path:
+        seen[task.file_path] = None
+    for f in task.related_files:
+        seen[f] = None
+
+    neighbour_ids: set[str] = set(task.depends_on) | set(task.blocks)
+    if neighbour_ids:
+        task_by_id: dict[str, AgentTask] = {t.id: t for t in all_tasks}
+        for nid in neighbour_ids:
+            neighbour = task_by_id.get(nid)
+            if neighbour is None:
+                continue
+            if neighbour.file_path:
+                seen[neighbour.file_path] = None
+            for f in neighbour.related_files:
+                seen[f] = None
+
+    return sorted(seen.keys())
+
+
+def _verify_plan_for(
+    finding: Finding,
+    *,
+    shadow_verify_scope: list[str] | None = None,
+) -> list[dict[str, Any]]:
+    """Return an ordered list of machine-executable verification steps.
+
+    Each step has:
+      step    — 1-based index
+      tool    — logical tool name (drift_scan / grep / ast_check / import_check / drift_nudge)
+      action  — imperative description of what the agent must check
+      predicate — the condition that must hold true for the step to pass
+      target  — signal-specific lookup data (symbol, file_path, module, etc.)
+
+    The final step is always a drift_nudge check.
+    """
+    st = finding.signal_type
+    meta = finding.metadata
+    path_str = finding.file_path.as_posix() if finding.file_path else ""
+
+    needs_shadow = bool(shadow_verify_scope)
+
+    def nudge(n: int) -> dict[str, Any]:
+        return {"step": n, **_NUDGE_STEP}
+
+    def shadow(n: int) -> dict[str, Any]:
+        return _shadow_verify_step(n, shadow_verify_scope or [])
+
+    def scan_zero(n: int, **extra_target: Any) -> dict[str, Any]:
+        target: dict[str, Any] = {"signal": st, "file_path": path_str}
+        target.update(extra_target)
+        return {
+            "step": n,
+            "tool": "drift_scan",
+            "action": f"Re-scan and assert no {st} finding for this target",
+            "predicate": "finding_count == 0",
+            "target": target,
+        }
+
+    if st == SignalType.DEAD_CODE_ACCUMULATION:
+        symbol = finding.symbol or meta.get("symbol", "?")
+        steps: list[dict[str, Any]] = [
+            {
+                "step": 1,
+                "tool": "grep",
+                "action": f"Assert that '{symbol}' is referenced at least once or no longer exported",
+                "predicate": "reference_count >= 1 OR symbol_absent_from_exports",
+                "target": {"symbol": symbol, "file_path": path_str, "scope": "repo"},
+            },
+            scan_zero(2),
+        ]
+        if needs_shadow:
+            steps.append(shadow(3))
+        steps.append(nudge(len(steps) + 1))
+        return steps
+
+    if st == SignalType.CO_CHANGE_COUPLING:
+        file_a = meta.get("file_a", path_str)
+        file_b = meta.get("file_b", meta.get("coupled_file", "?"))
+        steps = [
+            {
+                "step": 1,
+                "tool": "ast_check",
+                "action": (
+                    f"Assert that an explicit import edge exists between '{file_a}' and '{file_b}'"
+                    " (or the co-change coupling is intentionally eliminated)"
+                ),
+                "predicate": "explicit_import_edge_present == true OR coupling_removed == true",
+                "target": {"file_a": file_a, "file_b": file_b},
+            },
+            scan_zero(2, file_a=file_a, file_b=file_b),
+        ]
+        if needs_shadow:
+            steps.append(shadow(3))
+        steps.append(nudge(len(steps) + 1))
+        return steps
+
+    if st == SignalType.PATTERN_FRAGMENTATION:
+        module = meta.get("module", path_str)
+        return [
+            {
+                "step": 1,
+                "tool": "drift_scan",
+                "action": f"Assert that variant_count for the pattern in '{module}' is at most 1",
+                "predicate": "metadata.variant_count <= 1",
+                "target": {"signal": st, "module": module},
+            },
+            scan_zero(2, module=module),
+            nudge(3),
+        ]
+
+    if st == SignalType.ARCHITECTURE_VIOLATION:
+        if "circular" in finding.title.lower():
+            cycle = meta.get("cycle", [])
+            steps = [
+                {
+                    "step": 1,
+                    "tool": "import_check",
+                    "action": "Assert that the circular import cycle is fully broken",
+                    "predicate": "cycle_length == 0",
+                    "target": {"modules": [str(m) for m in cycle[:5]], "kind": "circular"},
+                },
+                scan_zero(2, kind="circular", modules=[str(m) for m in cycle[:5]]),
+            ]
+            if needs_shadow:
+                steps.append(shadow(3))
+            steps.append(nudge(len(steps) + 1))
+            return steps
+        # layer violation or blast radius
+        if needs_shadow:
+            return [scan_zero(1), shadow(2), nudge(3)]
+        return [
+            scan_zero(1),
+            nudge(2),
+        ]
+
+    if st == SignalType.CIRCULAR_IMPORT:
+        cycle = meta.get("cycle", [])
+        steps = [
+            {
+                "step": 1,
+                "tool": "import_check",
+                "action": "Assert that the circular import cycle is fully broken",
+                "predicate": "cycle_length == 0",
+                "target": {"modules": [str(m) for m in cycle[:5]], "kind": "circular"},
+            },
+            scan_zero(2),
+        ]
+        if needs_shadow:
+            steps.append(shadow(3))
+        steps.append(nudge(len(steps) + 1))
+        return steps
+
+    if st == SignalType.TYPE_SAFETY_BYPASS:
+        bypass_kinds = list(
+            dict.fromkeys(b.get("kind") for b in meta.get("bypasses", []) if b.get("kind"))
+        )
+        return [
+            {
+                "step": 1,
+                "tool": "ast_check",
+                "action": (
+                    f"Assert that effective_bypass_count in '{path_str}' is 0"
+                    " or meaningfully reduced"
+                ),
+                "predicate": "effective_bypass_count == 0 OR count_reduced == true",
+                "target": {"file_path": path_str, "bypass_kinds": bypass_kinds},
+            },
+            scan_zero(2),
+            nudge(3),
+        ]
+
+    if st == SignalType.MUTANT_DUPLICATE:
+        func_a = meta.get("function_a", "?")
+        func_b = meta.get("function_b", "?")
+        return [
+            {
+                "step": 1,
+                "tool": "ast_check",
+                "action": (
+                    f"Assert that only one definition of '{func_a}'/'{func_b}' remains"
+                    " and its body hash differs from both originals"
+                ),
+                "predicate": "single_definition_remains == true AND body_hash_differs == true",
+                "target": {"function_a": func_a, "function_b": func_b, "file_path": path_str},
+            },
+            scan_zero(2),
+            nudge(3),
+        ]
+
+    if st == SignalType.SYSTEM_MISALIGNMENT:
+        packages = meta.get("novel_packages", [])
+        return [
+            {
+                "step": 1,
+                "tool": "grep",
+                "action": (
+                    f"Assert that novel imports {packages!r} in '{path_str}' are either "
+                    "removed or added to drift config allowed_imports"
+                ),
+                "predicate": "novel_import_count == 0 OR imports_in_allowed_list == true",
+                "target": {"novel_packages": packages, "file_path": path_str, "scope": "module"},
+            },
+            scan_zero(2),
+            nudge(3),
+        ]
+
+    if st == SignalType.TEMPORAL_VOLATILITY:
+        freq = meta.get("change_frequency_30d", 0)
+        return [
+            {
+                "step": 1,
+                "tool": "drift_scan",
+                "action": (
+                    f"Re-scan '{path_str}' and assert temporal_volatility score "
+                    "is reduced (churn stabilised or file refactored)"
+                ),
+                "predicate": "finding_count == 0 OR score < previous_score",
+                "target": {"signal": st, "file_path": path_str, "previous_freq": freq},
+            },
+            nudge(2),
+        ]
+
+    if st == SignalType.NAMING_CONTRACT_VIOLATION:
+        func_name = meta.get("function_name", finding.symbol or "?")
+        prefix = meta.get("prefix_rule", "")
+        steps = [
+            {
+                "step": 1,
+                "tool": "ast_check",
+                "action": (
+                    f"Assert that '{func_name}' either satisfies the '{prefix}' "
+                    "contract or has been renamed to match its behaviour"
+                ),
+                "predicate": "contract_satisfied == true OR function_renamed == true",
+                "target": {"function_name": func_name, "prefix_rule": prefix, "file_path": path_str},
+            },
+            scan_zero(2),
+        ]
+        if needs_shadow:
+            steps.append(shadow(3))
+        steps.append(nudge(len(steps) + 1))
+        return steps
+
+    if st == SignalType.BROAD_EXCEPTION_MONOCULTURE:
+        broad = meta.get("broad_count", 0)
+        total = meta.get("total_handlers", 0)
+        return [
+            {
+                "step": 1,
+                "tool": "grep",
+                "action": (
+                    f"Assert that broad exception handlers in '{path_str}' are reduced "
+                    f"(was {broad}/{total} broad)"
+                ),
+                "predicate": "broad_handler_count < previous_broad_count",
+                "target": {"file_path": path_str, "previous_broad": broad, "previous_total": total},
+            },
+            scan_zero(2),
+            nudge(3),
+        ]
+
+    if st == SignalType.GUARD_CLAUSE_DEFICIT:
+        if meta.get("nesting_depth"):
+            func_name = meta.get("function_name", finding.symbol or "?")
+            depth = meta.get("nesting_depth", 0)
+            return [
+                {
+                    "step": 1,
+                    "tool": "ast_check",
+                    "action": (
+                        f"Assert that nesting depth of '{func_name}' in '{path_str}' "
+                        f"is at or below threshold (was {depth})"
+                    ),
+                    "predicate": "nesting_depth <= threshold",
+                    "target": {"function_name": func_name, "file_path": path_str, "previous_depth": depth},
+                },
+                scan_zero(2),
+                nudge(3),
+            ]
+        guarded_ratio = meta.get("guarded_ratio", 0)
+        return [
+            {
+                "step": 1,
+                "tool": "drift_scan",
+                "action": (
+                    f"Re-scan '{path_str}' and assert guarded_ratio is improved "
+                    f"(was {guarded_ratio:.1%})"
+                ),
+                "predicate": "finding_count == 0 OR metadata.guarded_ratio > previous_ratio",
+                "target": {"signal": st, "file_path": path_str, "previous_ratio": guarded_ratio},
+            },
+            nudge(2),
+        ]
+
+    if st == SignalType.COGNITIVE_COMPLEXITY:
+        func_name = meta.get("function_name", finding.symbol or "?")
+        cc = meta.get("cognitive_complexity", 0)
+        threshold = meta.get("threshold", 15)
+        return [
+            {
+                "step": 1,
+                "tool": "ast_check",
+                "action": (
+                    f"Assert that cognitive complexity of '{func_name}' in '{path_str}' "
+                    f"is at or below threshold (was {cc}, threshold {threshold})"
+                ),
+                "predicate": "cognitive_complexity <= threshold",
+                "target": {
+                    "function_name": func_name,
+                    "file_path": path_str,
+                    "previous_cc": cc,
+                    "threshold": threshold,
+                },
+            },
+            scan_zero(2),
+            nudge(3),
+        ]
+
+    if st == SignalType.HARDCODED_SECRET:
+        var_name = meta.get("variable", finding.symbol or "?")
+        return [
+            {
+                "step": 1,
+                "tool": "grep",
+                "action": (
+                    f"Assert that '{var_name}' in '{path_str}' no longer contains "
+                    "a hardcoded literal value (replaced by env-var or secrets manager)"
+                ),
+                "predicate": "hardcoded_literal_count == 0",
+                "target": {"variable": var_name, "file_path": path_str, "scope": "file"},
+            },
+            scan_zero(2),
+            nudge(3),
+        ]
+
+    if st == SignalType.MISSING_AUTHORIZATION:
+        endpoint = meta.get("endpoint_name", finding.symbol or "?")
+        framework = meta.get("framework", "unknown")
+        return [
+            {
+                "step": 1,
+                "tool": "ast_check",
+                "action": (
+                    f"Assert that endpoint '{endpoint}' in '{path_str}' now has "
+                    f"an authorization decorator or middleware ({framework})"
+                ),
+                "predicate": "auth_mechanism != 'none'",
+                "target": {
+                    "endpoint_name": endpoint,
+                    "framework": framework,
+                    "file_path": path_str,
+                },
+            },
+            scan_zero(2),
+            nudge(3),
+        ]
+
+    if st == SignalType.BYPASS_ACCUMULATION:
+        total = meta.get("total_markers", 0)
+        density = meta.get("bypass_density", 0)
+        return [
+            {
+                "step": 1,
+                "tool": "grep",
+                "action": (
+                    f"Assert that bypass markers in '{path_str}' are reduced "
+                    f"(was {total} markers, density {density:.4f})"
+                ),
+                "predicate": "total_markers < previous_total OR bypass_density < previous_density",
+                "target": {
+                    "file_path": path_str,
+                    "previous_total": total,
+                    "previous_density": density,
+                },
+            },
+            scan_zero(2),
+            nudge(3),
+        ]
+
+    if st == SignalType.EXCEPTION_CONTRACT_DRIFT:
+        funcs = meta.get("diverged_functions", [])
+        ref = meta.get("comparison_ref", "HEAD~5")
+        return [
+            {
+                "step": 1,
+                "tool": "ast_check",
+                "action": (
+                    f"Assert that exception contracts in '{path_str}' for "
+                    f"{funcs[:3]!r} are restored or intentionally updated"
+                ),
+                "predicate": "divergence_count == 0 OR contracts_documented == true",
+                "target": {
+                    "file_path": path_str,
+                    "diverged_functions": funcs[:5],
+                    "comparison_ref": ref,
+                },
+            },
+            scan_zero(2),
+            nudge(3),
+        ]
+
+    if st == SignalType.FAN_OUT_EXPLOSION:
+        count = meta.get("unique_import_count", 0)
+        threshold = meta.get("threshold", 15)
+        return [
+            {
+                "step": 1,
+                "tool": "import_check",
+                "action": (
+                    f"Assert that import fan-out of '{path_str}' is at or below "
+                    f"threshold (was {count}, threshold {threshold})"
+                ),
+                "predicate": "unique_import_count <= threshold",
+                "target": {
+                    "file_path": path_str,
+                    "previous_count": count,
+                    "threshold": threshold,
+                },
+            },
+            scan_zero(2),
+            nudge(3),
+        ]
+
+    if st == SignalType.PHANTOM_REFERENCE:
+        names = [
+            p.get("name", "?") if isinstance(p, dict) else str(p)
+            for p in meta.get("phantom_names", [])[:5]
+        ]
+        count = meta.get("phantom_count", 0)
+        return [
+            {
+                "step": 1,
+                "tool": "ast_check",
+                "action": (
+                    f"Assert that phantom references {names!r} in '{path_str}' "
+                    "are now resolvable (imported, implemented, or removed)"
+                ),
+                "predicate": "phantom_count == 0 OR all_names_resolvable == true",
+                "target": {
+                    "file_path": path_str,
+                    "phantom_names": names,
+                    "previous_count": count,
+                },
+            },
+            scan_zero(2),
+            nudge(3),
+        ]
+
+    if st == SignalType.TEST_POLARITY_DEFICIT:
+        neg_ratio = meta.get("negative_ratio", 0)
+        neg_count = meta.get("negative_assertions", 0)
+        zero_tests = meta.get("zero_assertion_tests", [])
+        if zero_tests:
+            return [
+                {
+                    "step": 1,
+                    "tool": "ast_check",
+                    "action": (
+                        f"Assert that zero-assertion tests in '{path_str}' "
+                        f"now contain at least one assertion each ({zero_tests[:3]!r})"
+                    ),
+                    "predicate": "zero_assertion_count == 0",
+                    "target": {
+                        "file_path": path_str,
+                        "zero_assertion_tests": zero_tests[:5],
+                    },
+                },
+                scan_zero(2),
+                nudge(3),
+            ]
+        return [
+            {
+                "step": 1,
+                "tool": "ast_check",
+                "action": (
+                    f"Assert that negative_ratio in '{path_str}' is improved "
+                    f"(was {neg_ratio:.1%}, {neg_count} negative assertions)"
+                ),
+                "predicate": "negative_ratio > previous_ratio",
+                "target": {
+                    "file_path": path_str,
+                    "previous_ratio": neg_ratio,
+                    "previous_negative": neg_count,
+                },
+            },
+            scan_zero(2),
+            nudge(3),
+        ]
+
+    if st == SignalType.TS_ARCHITECTURE:
+        rule_id = meta.get("rule_id", "")
+        if rule_id == "circular-module-detection":
+            cycle_nodes = meta.get("cycle_nodes", [])
+            return [
+                {
+                    "step": 1,
+                    "tool": "import_check",
+                    "action": "Assert that the circular module dependency is broken",
+                    "predicate": "cycle_length == 0",
+                    "target": {
+                        "modules": [str(n) for n in cycle_nodes[:5]],
+                        "kind": "circular",
+                    },
+                },
+                scan_zero(2),
+                nudge(3),
+            ]
+        # cross-package, layer-leak, ui-to-infra — all re-scan verifiable
+        return [
+            scan_zero(1, rule_id=rule_id),
+            nudge(2),
+        ]
+
+    # Generic fallback: re-scan + [shadow +] nudge
+    if needs_shadow:
+        return [scan_zero(1), shadow(2), nudge(3)]
+    return [
+        scan_zero(1),
+        nudge(2),
+    ]
 
 
 # ---------------------------------------------------------------------------
@@ -749,7 +1316,15 @@ def _finding_to_task(
 
     # Repair maturity from signal matrix
     maturity_entry = REPAIR_MATURITY.get(finding.signal_type, {})
-    maturity = str(maturity_entry.get("maturity", "experimental"))
+    maturity = str(maturity_entry.get("maturity", "indirect-only"))
+    repair_level = str(maturity_entry.get("repair_level", "diagnosis"))
+
+    # Determine shadow_verify flag from base edit_kind for this signal
+    base_edit_kind = _EDIT_KIND_FOR_SIGNAL.get(finding.signal_type, "unspecified")
+    refined_edit_kind = _refine_edit_kind(
+        finding.signal_type, finding.metadata or {}, base_edit_kind
+    )
+    needs_shadow_verify = is_cross_file_risky(refined_edit_kind)
 
     task = AgentTask(
         id=_task_id(finding),
@@ -767,11 +1342,13 @@ def _finding_to_task(
         complexity=complexity,
         expected_effect=_expected_effect_for(finding),
         success_criteria=_success_criteria_for(finding),
+        verify_plan=[],  # populated in second pass with shadow_verify_scope
+        shadow_verify=needs_shadow_verify,
         metadata={
             k: v
             for k, v in finding.metadata.items()
             if k not in ("ast_fingerprint", "body_hash")
-        },
+        } | {"repair_level": repair_level},
         constraints=_generate_constraints(finding),
         repair_maturity=maturity,
         negative_context=findings_to_negative_context(
@@ -793,7 +1370,31 @@ def _finding_to_task(
     # Apply automation fitness classification (mutates task in place)
     _classify_task(finding, task)
 
+    # Repair template registry enrichment (ADR-065)
+    _enrich_task_from_registry(finding, task, refined_edit_kind)
+
     return task
+
+
+def _enrich_task_from_registry(
+    finding: Finding,
+    task: AgentTask,
+    edit_kind: str,
+) -> None:
+    """Populate template_confidence and regression_guidance from the repair registry.
+
+    Mutates *task* in place.  Failures are silenced so that registry
+    unavailability never breaks task generation.
+    """
+    try:
+        context_class = finding.finding_context or "production"
+        registry = get_registry()
+        entry = registry.lookup(finding.signal_type, edit_kind, context_class)
+        if entry is not None:
+            task.template_confidence = registry.confidence(entry)
+            task.regression_guidance = list(entry.regression_patterns)
+    except Exception:  # pragma: no cover
+        pass  # registry failure must never block task generation
 
 
 def analysis_to_agent_tasks(analysis: RepoAnalysis) -> list[AgentTask]:
@@ -802,6 +1403,9 @@ def analysis_to_agent_tasks(analysis: RepoAnalysis) -> list[AgentTask]:
     Only findings with recommendation coverage are included (report-only
     signals without recommenders are excluded — they don't yet have
     actionable remediation patterns).
+
+    Returns a list of tasks. Use ``analysis_to_agent_tasks_json`` for the
+    full output including ``coverage_gaps``.
     """
     # Generate recommendations and map them by stable finding fingerprint.
     recs = generate_recommendations(analysis.findings, max_recommendations=9999)
@@ -845,6 +1449,26 @@ def analysis_to_agent_tasks(analysis: RepoAnalysis) -> list[AgentTask]:
         if t.depends_on:
             risk_idx = _RISK_LEVELS.index(t.review_risk) if t.review_risk in _RISK_LEVELS else 1
             t.review_risk = _RISK_LEVELS[min(risk_idx + 1, len(_RISK_LEVELS) - 1)]
+
+    # Second pass: compute shadow_verify_scope and final verify_plan for risky tasks.
+    # Must run after _compute_dependencies so that depends_on/blocks are populated.
+    for t in tasks:
+        if t.shadow_verify:
+            t.shadow_verify_scope = _compute_shadow_verify_scope(t, tasks)
+
+    # Now that shadow_verify_scope is available, build verify_plan for all tasks.
+    # We need the original finding for each task; build a lookup by task ID.
+    _task_id_to_finding: dict[str, Finding] = {}
+    for finding in scored:
+        tid = _task_id(finding)
+        if tid not in _task_id_to_finding:
+            _task_id_to_finding[tid] = finding
+
+    for t in tasks:
+        f = _task_id_to_finding.get(t.id)
+        if f is not None:
+            scope = t.shadow_verify_scope if t.shadow_verify else None
+            t.verify_plan = _verify_plan_for(f, shadow_verify_scope=scope)
 
     # Compute batch metadata (fix-template equivalence classes)
     _inject_batch_metadata(tasks)
@@ -923,8 +1547,16 @@ def _inject_batch_metadata(tasks: list[AgentTask]) -> None:
 # ---------------------------------------------------------------------------
 
 
-def _task_to_dict(t: AgentTask) -> dict[str, Any]:
+def _regression_pattern_to_api_dict(rp: RegressionPattern) -> dict[str, Any]:
     return {
+        "edit_kind": rp.edit_kind,
+        "context_feature": rp.context_feature,
+        "reason_code": str(rp.reason_code),
+    }
+
+
+def _task_to_dict(t: AgentTask) -> dict[str, Any]:
+    d: dict[str, Any] = {
         "id": t.id,
         "signal_type": t.signal_type,
         "severity": t.severity.value,
@@ -940,6 +1572,7 @@ def _task_to_dict(t: AgentTask) -> dict[str, Any]:
         "complexity": t.complexity,
         "expected_effect": t.expected_effect,
         "success_criteria": t.success_criteria,
+        "verify_plan": t.verify_plan,
         "depends_on": t.depends_on,
         "metadata": t.metadata,
         "automation_fit": t.automation_fit,
@@ -949,6 +1582,90 @@ def _task_to_dict(t: AgentTask) -> dict[str, Any]:
         "constraints": t.constraints,
         "repair_maturity": t.repair_maturity,
         "negative_context": [negative_context_to_dict(nc) for nc in t.negative_context],
+        "template_confidence": t.template_confidence,
+        "regression_guidance": [_regression_pattern_to_api_dict(rp) for rp in t.regression_guidance],
+    }
+    return d
+
+
+# ---------------------------------------------------------------------------
+# Coverage-gap summary for findings without actionable repair
+# ---------------------------------------------------------------------------
+
+
+def _build_coverage_gaps(
+    findings: list[Finding],
+    tasks: list[AgentTask],
+) -> dict[str, Any]:
+    """Build a summary of findings that could not be converted to tasks.
+
+    Returns a dict suitable for inclusion in the agent-tasks JSON output.
+    """
+    task_signals = {t.signal_type for t in tasks}
+
+    # Count findings per signal that were skipped (no task generated)
+    task_fingerprints = {
+        f"{t.signal_type}:{t.file_path or ''}:{t.start_line or ''}:{t.title}"
+        for t in tasks
+    }
+
+    skipped_by_signal: dict[str, int] = {}
+    for f in findings:
+        fp = _finding_fingerprint(f)
+        # Check if this finding produced a task (approximate match)
+        if f.signal_type not in task_signals or fp not in {
+            _finding_fingerprint(ff) for ff in findings
+            if any(
+                t.signal_type == ff.signal_type
+                and t.title == ff.title
+                for t in tasks
+            )
+        }:
+            # Simpler: count findings whose signal has no tasks at all
+            pass
+
+    # Simpler approach: per-signal counts
+    finding_count_by_signal: dict[str, int] = {}
+    task_count_by_signal: dict[str, int] = {}
+    for f in findings:
+        finding_count_by_signal[f.signal_type] = finding_count_by_signal.get(f.signal_type, 0) + 1
+    for t in tasks:
+        task_count_by_signal[t.signal_type] = task_count_by_signal.get(t.signal_type, 0) + 1
+
+    gaps: list[dict[str, Any]] = []
+    for signal_id, finding_count in sorted(finding_count_by_signal.items()):
+        task_count = task_count_by_signal.get(signal_id, 0)
+        skipped = finding_count - task_count
+        if skipped <= 0:
+            continue
+
+        meta = get_meta(signal_id)
+        repair_level = meta.repair_level if meta else "diagnosis"
+        gaps.append({
+            "signal": signal_id,
+            "abbrev": meta.abbrev if meta else signal_id[:3].upper(),
+            "findings_total": finding_count,
+            "findings_actionable": task_count,
+            "findings_skipped": skipped,
+            "repair_level": repair_level,
+            "reason": "no_recommender_no_fix",
+        })
+
+    # Aggregate
+    total_findings = len(findings)
+    total_actionable = len(tasks)
+    level_counts: dict[str, int] = {}
+    for meta in (get_meta(s) for s in finding_count_by_signal):
+        if meta:
+            level_counts[meta.repair_level] = level_counts.get(meta.repair_level, 0) + 1
+
+    return {
+        "total_findings": total_findings,
+        "total_actionable": total_actionable,
+        "total_skipped": total_findings - total_actionable,
+        "actionable_ratio": round(total_actionable / max(total_findings, 1), 3),
+        "repair_level_distribution": level_counts,
+        "gaps": gaps,
     }
 
 
@@ -966,6 +1683,7 @@ def analysis_to_agent_tasks_json(analysis: RepoAnalysis, indent: int = 2) -> str
         "severity": analysis.severity.value,
         "task_count": len(tasks),
         "tasks": [_task_to_dict(t) for t in tasks],
+        "coverage_gaps": _build_coverage_gaps(analysis.findings, tasks),
     }
 
     return json.dumps(data, indent=indent, default=str)

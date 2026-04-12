@@ -1,5 +1,41 @@
 # Risk Register
 
+## 2025-07-22 - ADR-064: Shadow-Verify fuer cross-file-risky edit_kinds
+
+- Risk ID: RISK-OUTPUT-2025-07-22-ADR064-SHADOW-VERIFY
+- Component: `src/drift/fix_intent.py`, `src/drift/models.py`, `src/drift/output/agent_tasks.py`, `src/drift/api_helpers.py`, `src/drift/api/shadow_verify.py`, `src/drift/mcp_server.py`
+- Type: Neue API-Funktion + MCP-Tool + Erweiterung Task-Vertragssystem (additiv, kein breaking change)
+- Description: Tasks mit cross-file-risky edit_kind (remove_import, relocate_import, reduce_dependencies, extract_module, decouple_modules, delete_symbol, rename_symbol) erhalten jetzt `shadow_verify=true` und `completion_evidence.tool="drift_shadow_verify"` statt `drift_nudge`. Neues MCP-Tool `drift_shadow_verify` fuehrt vollen `analyze_repo()`-Lauf durch, filtert auf `scope_files` und vergleicht mit Baseline.
+- Trigger: Jeder `drift_fix_plan`- oder `fix_plan`-API-Aufruf auf einem Repo mit Findings, die auf cross-file-risky Repair-Aktionen hinweisen.
+- Impact: Positiv. Agenten erhalten deterministische Verifikationsbestätigung statt inkrementeller Schätzung fuer riskante cross-file-Edits. Falsch-positive `safe_to_commit`-Rueckmeldungen werden reduziert.
+- Mitigation:
+  - Alle neuen Felder in `AgentTask` haben Defaults (`shadow_verify=False`, `shadow_verify_scope=[]`); bestehende Tasks sind unveraendert.
+  - `completion_evidence`-Aenderung ist conditional: nur Tasks mit `shadow_verify=true` erhalten neues Schema; alle anderen bleiben auf `nudge_safe`.
+  - `shadow_verify()` faengt alle Exceptions und gibt `_error_response` zurueck (kein unkontrollierter Absturz).
+  - Scope-Begrenzung durch Task-Graph-Nachbarn verhindert Full-Repo-Scans im Regelfall.
+  - 30 dedizierte Tests in `tests/test_shadow_verify.py` sichern alle Kernkontrakte ab.
+- Verification:
+  - `\.venv\Scripts\python.exe -m pytest tests/test_shadow_verify.py -v --tb=short`
+  - `\.venv\Scripts\python.exe -m pytest tests/ --ignore=tests/test_smoke_real_repos.py -m "not slow" -q`
+- Residual risk: Niedrig. Finding-Identitaet basiert auf `signal_type:file_path:title` (kein UUID); Datei-Umbenennung kann False-Positives im Shadow-Verify erzeugen. Scope im ADR-064 dokumentiert; UUID-Matching als Follow-up adressiert.
+
+
+
+- Risk ID: RISK-OUTPUT-2026-04-12-ADR063-FIX-INTENT
+- Component: `src/drift/fix_intent.py`, `src/drift/api_helpers.py`, `src/drift/task_graph.py`
+- Type: Output contract extension (additive, no breaking change)
+- Description: New `fix_intent` field in fix_plan task responses provides machine-readable `edit_kind`, `target_span`, `target_symbol`, `canonical_source`, `expected_ast_delta`, `allowed_files`, and `forbidden_changes`. Derived from static signal-lookup tables and existing task fields; no scoring or signal logic affected.
+- Trigger: Any `drift fix_plan` or `drift_fix_plan` MCP call.
+- Impact: Positive. Reduces agent over-fixing by providing precise, closed-enum patch-boundary constraints without breaking existing consumers of `action`, `constraints`, or `allowed_files`.
+- Mitigation:
+  - `fix_intent` is additive; consumers that do not read it are unaffected.
+  - `edit_kind` closed-enum with `"unspecified"` fallback prevents hallucinated values.
+  - Call-site order (`_derive_task_contract` before `derive_fix_intent`) guarantees `allowed_files` consistency.
+  - Full test coverage in `tests/test_fix_intent.py` including signal completeness guard.
+- Verification:
+  - `\.venv\Scripts\python.exe -m pytest tests/test_fix_intent.py tests/test_api_helpers_coverage.py tests/test_task_graph_contracts_types.py tests/test_orchestration_extensions.py -q --tb=short`
+- Residual risk: Low. `edit_kind` inference for dynamic signals (EDS complexity, AVS subtype) degrades to `"add_docstring"` or `"remove_import"` when metadata is absent — still safe defaults.
+
 ## 2026-04-12 - Issue #317-332 follow-up: test-context and co-change precision hardening
 
 - Risk ID: RISK-SIGNAL-2026-04-12-317-332-FOLLOWUP

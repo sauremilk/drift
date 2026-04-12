@@ -1087,6 +1087,34 @@ async def drift_nudge(
         str,
         Field(description="Optional session ID from drift_session_start for stateful workflows."),
     ] = "",
+    task_signal: Annotated[
+        str | None,
+        Field(
+            description=(
+                "Signal type of the repair task being verified (e.g. 'mutant_duplicate'). "
+                "When set with task_edit_kind, the outcome is recorded in the "
+                "repair template registry for template-confidence learning."
+            ),
+        ),
+    ] = None,
+    task_edit_kind: Annotated[
+        str | None,
+        Field(
+            description=(
+                "Edit kind applied in the repair (e.g. 'merge_function_body'). "
+                "Must also set task_signal to trigger outcome recording."
+            ),
+        ),
+    ] = None,
+    task_context_class: Annotated[
+        str | None,
+        Field(
+            description=(
+                "Context class for registry lookup (e.g. 'production' or 'test'). "
+                "Defaults to 'production' when task_signal and task_edit_kind are set."
+            ),
+        ),
+    ] = None,
 ) -> str:
     """Get directional feedback after a file change (experimental).
 
@@ -1134,6 +1162,9 @@ async def drift_nudge(
         changed_files=_parse_csv_ids(changed_files),
         uncommitted=uncommitted,
         response_profile=response_profile,
+        task_signal=task_signal,
+        task_edit_kind=task_edit_kind,
+        task_context_class=task_context_class,
     )
     if session:
         try:
@@ -1163,6 +1194,83 @@ async def drift_nudge(
         "drift_nudge",
         trace_meta=_trace_meta_from_hypothesis_result("drift_nudge", raw),
     )
+
+
+@mcp.tool()
+async def drift_shadow_verify(
+    path: Annotated[str, Field(description="Repository path to analyze.")] = ".",
+    scope_files: Annotated[
+        str | None,
+        Field(
+            description=(
+                "Comma-separated posix-relative file paths to include in the comparison. "
+                "Use the shadow_verify_scope value from the task contract. "
+                "When omitted, all findings are compared (full-repo shadow verify)."
+            ),
+        ),
+    ] = None,
+    uncommitted: Annotated[
+        bool,
+        Field(
+            description=(
+                "Passed through for baseline freshness context. "
+                "The analysis always covers the current working-tree state."
+            ),
+        ),
+    ] = True,
+    response_profile: Annotated[
+        str | None,
+        Field(
+            description=(
+                "Response profile: 'verifier' (deltas/criteria),"
+                " 'merge_readiness' (score/blocking). Omit for full response."
+            ),
+        ),
+    ] = None,
+    session_id: Annotated[
+        str,
+        Field(description="Optional session ID from drift_session_start for stateful workflows."),
+    ] = "",
+) -> str:
+    """Scope-bounded full re-scan for cross-file-risky edits (ADR-064).
+
+    Unlike drift_nudge, this tool runs a *full* non-incremental analysis so
+    that cross-file signals (co_change_coupling, circular_import,
+    fan_out_explosion, architecture_violation, …) are evaluated with exact
+    confidence rather than incremental estimation.
+
+    Required after editing tasks whose completion_evidence.tool is
+    'drift_shadow_verify' (i.e. tasks with shadow_verify=true in the fix_plan
+    response — those have a cross-file-risky edit_kind such as remove_import,
+    decouple_modules, extract_module, rename_symbol, reduce_dependencies,
+    relocate_import, or delete_symbol).
+
+    Args:
+        path: Repository path (default: current directory).
+        scope_files: Comma-separated list of file paths from the task's
+            shadow_verify_scope field.
+        uncommitted: Analysis always covers working-tree; this flag only
+            affects baseline freshness context.
+        session_id: Optional session ID for stateful workflows.
+    """
+    from drift.api.shadow_verify import shadow_verify
+
+    session = _resolve_session(session_id)
+    resolved_path = path
+    if session and (not path or path == "."):
+        resolved_path = session.repo_path
+
+    raw = await _run_api_tool(
+        "drift_shadow_verify",
+        shadow_verify,
+        path=resolved_path,
+        scope_files=_parse_csv_ids(scope_files),
+        uncommitted=uncommitted,
+        response_profile=response_profile,
+    )
+    if session:
+        session.touch()
+    return _enrich_response_with_session(raw, session, "drift_shadow_verify")
 
 
 @mcp.tool()
@@ -2146,16 +2254,34 @@ async def drift_task_complete(
     task_id: Annotated[
         str, Field(description="Task ID to mark as completed.")
     ],
+    verify_evidence: Annotated[
+        Any,
+        Field(
+            description=(
+                "Evidence that all verify_plan steps were completed."
+                " Required when the task has a non-empty verify_plan."
+                " Must be the drift_nudge result (or a dict containing"
+                " safe_to_commit=true). Omit only for tasks without a verify_plan."
+            ),
+        ),
+    ] = None,
 ) -> str:
     """Mark a claimed task as completed and release its lease.
 
     Only the agent holding the active lease can complete the task.
     Completed tasks are excluded from future drift_task_claim calls.
 
+    When the task carries a verify_plan, the caller MUST supply
+    ``verify_evidence`` with ``safe_to_commit == true`` (taken from a
+    preceding ``drift_nudge`` call).  Without this evidence the call is
+    rejected with status ``verify_plan_required``.
+
     Args:
         session_id: Active session ID from drift_session_start.
         agent_id: Agent ID that holds the lease.
         task_id: Task ID to mark as completed.
+        verify_evidence: drift_nudge result (dict with safe_to_commit=true).
+            Required when the task has a verify_plan.
     """
     from drift.session import SessionManager
 
@@ -2167,7 +2293,8 @@ async def drift_task_complete(
             session_id,
         )
 
-    outcome = session.complete_task(agent_id=agent_id, task_id=task_id)
+    result = {"verify_evidence": verify_evidence} if verify_evidence is not None else None
+    outcome = session.complete_task(agent_id=agent_id, task_id=task_id, result=result)
     state = outcome.get("status", "completed")
     if state == "completed":
         remaining = session.tasks_remaining()
@@ -2180,6 +2307,12 @@ async def drift_task_complete(
             )
     elif state == "already_completed":
         agent_instruction = f"Task {task_id} was already completed."
+    elif state == "verify_plan_required":
+        agent_instruction = (
+            "Verification required before completing this task."
+            " Call drift_nudge on the changed files first, then pass the result"
+            " as verify_evidence (must contain safe_to_commit=true)."
+        )
     else:
         agent_instruction = (
             outcome.get("error", "Completion failed.")
@@ -2527,6 +2660,7 @@ _EXPORTED_MCP_TOOLS = (
     drift_fix_plan,
     drift_validate,
     drift_nudge,
+    drift_shadow_verify,
     drift_brief,
     drift_negative_context,
     drift_session_start,

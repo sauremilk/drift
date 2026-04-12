@@ -1,0 +1,209 @@
+{
+  "_metadata": {
+    "description": "Repair template seed — derived from benchmark_results/repair/ evidence (D1-D15) plus benchmark_results/repair/real_world/httpx_*.json.",
+    "generated_at": "2026-04-12",
+    "schema": "repair_template_registry_v1",
+    "MIN_OUTCOMES_FOR_CONFIDENCE": 3,
+    "note": "improving_count/regressing_count from benchmark data where direction was verifiable. Entries with counts < 3 have confidence=null by design."
+  },
+  "entries": [
+    {
+      "signal": "mutant_duplicate",
+      "edit_kind": "merge_function_body",
+      "context_class": "production",
+      "improving_count": 5,
+      "stable_count": 0,
+      "regressing_count": 1,
+      "regression_patterns": [
+        {
+          "edit_kind": "rename_symbol",
+          "context_feature": "no_body_change",
+          "reason_code": "cosmetic_only"
+        }
+      ],
+      "evidence_sources": [
+        "benchmark_results/repair/summary.json:webapp.repairs[0] drift_score_delta=-0.029 PASS",
+        "benchmark_results/repair/summary.json:webapp.repairs[1] side-effect TVS spike documented",
+        "benchmark_results/repair/real_world/httpx_after.json",
+        "benchmark_results/repair/decisions.md:D3 rename-without-consolidation = incorrect repair"
+      ],
+      "last_updated": "2026-04-12T00:00:00+00:00"
+    },
+    {
+      "signal": "mutant_duplicate",
+      "edit_kind": "rename_symbol",
+      "context_class": "production",
+      "improving_count": 0,
+      "stable_count": 0,
+      "regressing_count": 3,
+      "regression_patterns": [
+        {
+          "edit_kind": "rename_symbol",
+          "context_feature": "body_unchanged",
+          "reason_code": "cosmetic_only"
+        }
+      ],
+      "evidence_sources": [
+        "benchmark_results/repair/decisions.md:D3 — verification distinguished rename-only (incorrect) from consolidation (correct)",
+        "benchmark_results/repair/summary.json:webapp.repairs[incorrect_rename] FAIL"
+      ],
+      "last_updated": "2026-04-12T00:00:00+00:00"
+    },
+    {
+      "signal": "pattern_fragmentation",
+      "edit_kind": "normalize_pattern",
+      "context_class": "production",
+      "improving_count": 4,
+      "stable_count": 0,
+      "regressing_count": 0,
+      "regression_patterns": [],
+      "evidence_sources": [
+        "benchmark_results/repair/summary.json:webapp.baseline pattern_fragmentation PASS",
+        "benchmark_results/repair/decisions.md:D15 PFS added to coverage in final expansion",
+        "benchmark_results/repair/real_world/httpx_after.json"
+      ],
+      "last_updated": "2026-04-12T00:00:00+00:00"
+    },
+    {
+      "signal": "doc_impl_drift",
+      "edit_kind": "update_docstring",
+      "context_class": "production",
+      "improving_count": 5,
+      "stable_count": 2,
+      "regressing_count": 0,
+      "regression_patterns": [],
+      "evidence_sources": [
+        "benchmark_results/repair/summary.json:webapp.repairs[1] DIA 3 findings resolved drift_score_delta=0.0 (score unchanged, targeted finding resolved) PASS",
+        "benchmark_results/repair/decisions.md:D14 DIA targeted_finding_resolved=true net_finding_delta may differ from 0",
+        "benchmark_results/repair/real_world/httpx_after.json"
+      ],
+      "last_updated": "2026-04-12T00:00:00+00:00"
+    },
+    {
+      "signal": "explainability_deficit",
+      "edit_kind": "add_docstring",
+      "context_class": "production",
+      "improving_count": 3,
+      "stable_count": 1,
+      "regressing_count": 0,
+      "regression_patterns": [],
+      "evidence_sources": [
+        "benchmark_results/repair/decisions.md:D15 EDS coverage added",
+        "benchmark_results/repair/summary.json:datalib.repairs EDS correct PASS"
+      ],
+      "last_updated": "2026-04-12T00:00:00+00:00"
+    },
+    {
+      "signal": "explainability_deficit",
+      "edit_kind": "add_type_annotation",
+      "context_class": "production",
+      "improving_count": 3,
+      "stable_count": 0,
+      "regressing_count": 0,
+      "regression_patterns": [],
+      "evidence_sources": [
+        "benchmark_results/repair/summary.json:datalib.repairs EDS type annotation PASS"
+      ],
+      "last_updated": "2026-04-12T00:00:00+00:00"
+    },
+    {
+      "signal": "dead_code_accumulation",
+      "edit_kind": "delete_symbol",
+      "context_class": "production",
+      "improving_count": 0,
+      "stable_count": 0,
+      "regressing_count": 0,
+      "regression_patterns": [],
+      "evidence_sources": [],
+      "last_updated": "2026-04-12T00:00:00+00:00"
+    },
+    {
+      "signal": "dead_code_accumulation",
+      "edit_kind": "delete_symbol",
+      "context_class": "test",
+      "improving_count": 0,
+      "stable_count": 0,
+      "regressing_count": 0,
+      "regression_patterns": [],
+      "evidence_sources": [],
+      "last_updated": "2026-04-12T00:00:00+00:00"
+    },
+    {
+      "signal": "temporal_volatility",
+      "edit_kind": "add_test",
+      "context_class": "production",
+      "improving_count": 1,
+      "stable_count": 0,
+      "regressing_count": 3,
+      "regression_patterns": [
+        {
+          "edit_kind": "merge_function_body",
+          "context_feature": "cascading_tvs_spike",
+          "reason_code": "side_effect_volatility"
+        }
+      ],
+      "evidence_sources": [
+        "benchmark_results/repair/decisions.md:D13 — TVS side-effect: fixing MDS in webapp created 2 new TVS findings (commit count spike from consolidation)",
+        "benchmark_results/repair/summary.json:webapp.repairs[0].per_signal_deltas.temporal_volatility score_delta=+0.844"
+      ],
+      "last_updated": "2026-04-12T00:00:00+00:00"
+    },
+    {
+      "signal": "architecture_violation",
+      "edit_kind": "remove_import",
+      "context_class": "production",
+      "improving_count": 2,
+      "stable_count": 0,
+      "regressing_count": 0,
+      "regression_patterns": [],
+      "evidence_sources": [
+        "benchmark_results/repair/summary.json:datalib.repairs AVS PASS"
+      ],
+      "last_updated": "2026-04-12T00:00:00+00:00"
+    },
+    {
+      "signal": "guard_clause_deficit",
+      "edit_kind": "add_guard_clause",
+      "context_class": "production",
+      "improving_count": 0,
+      "stable_count": 0,
+      "regressing_count": 0,
+      "regression_patterns": [],
+      "evidence_sources": [],
+      "last_updated": "2026-04-12T00:00:00+00:00"
+    },
+    {
+      "signal": "broad_exception_monoculture",
+      "edit_kind": "narrow_exception",
+      "context_class": "production",
+      "improving_count": 0,
+      "stable_count": 0,
+      "regressing_count": 0,
+      "regression_patterns": [],
+      "evidence_sources": [],
+      "last_updated": "2026-04-12T00:00:00+00:00"
+    },
+    {
+      "signal": "co_change_coupling",
+      "edit_kind": "decouple_modules",
+      "context_class": "production",
+      "improving_count": 0,
+      "stable_count": 0,
+      "regressing_count": 0,
+      "regression_patterns": [],
+      "evidence_sources": [],
+      "last_updated": "2026-04-12T00:00:00+00:00"
+    },
+    {
+      "signal": "cohesion_deficit",
+      "edit_kind": "extract_module",
+      "context_class": "production",
+      "improving_count": 0,
+      "stable_count": 0,
+      "regressing_count": 0,
+      "regression_patterns": [],
+      "evidence_sources": [],
+      "last_updated": "2026-04-12T00:00:00+00:00"
+    }
+  ]
+}

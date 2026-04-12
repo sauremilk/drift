@@ -114,6 +114,9 @@ def nudge(
     signals: list[str] | None = None,
     exclude_signals: list[str] | None = None,
     response_profile: str | None = None,
+    task_signal: str | None = None,
+    task_edit_kind: str | None = None,
+    task_context_class: str | None = None,
 ) -> dict[str, Any]:
     """Incremental directional feedback after file changes.
 
@@ -139,6 +142,17 @@ def nudge(
         When set, only new/resolved findings matching these signals are returned.
     exclude_signals:
         Optional list of signal abbreviations to exclude from results.
+    task_signal:
+        Signal type of the repair task being verified (e.g. ``"mutant_duplicate"``).
+        When set together with *task_edit_kind*, this outcome is recorded in
+        the repair template registry for template-confidence learning.
+    task_edit_kind:
+        Edit kind applied in the repair (e.g. ``"merge_function_body"``).
+        Must also set *task_signal* to trigger outcome recording.
+    task_context_class:
+        Context class for registry lookup (e.g. ``"production"`` or ``"test"``).
+        Defaults to ``"production"`` when *task_signal* and *task_edit_kind*
+        are set but *task_context_class* is omitted.
 
     Returns
     -------
@@ -542,6 +556,20 @@ def nudge(
             ),
         )
         result.update(_nudge_next_step_contract(safe_to_commit=safe_to_commit))
+
+        # -- Repair template outcome capture (ADR-065) ----------------------
+        if task_signal and task_edit_kind and inc_result.direction in ("improving", "regressing"):
+            try:
+                from drift.repair_template_registry import get_registry as _get_reg
+                _get_reg().record_outcome(
+                    signal=task_signal,
+                    edit_kind=task_edit_kind,
+                    context_class=task_context_class or "production",
+                    direction=inc_result.direction,
+                    score_delta=inc_result.delta,
+                )
+            except Exception:  # pragma: no cover
+                pass  # registry failures must never break nudge
 
         _emit_api_telemetry(
             tool_name="api.nudge",
