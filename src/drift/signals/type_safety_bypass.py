@@ -30,7 +30,7 @@ from drift.signals.base import BaseSignal, register_signal
 
 _TS_DIRECTIVE_RE = re.compile(r"@ts-(ignore|expect-error)")
 _SDK_IMPORT_RE = re.compile(
-    r"from\s+[\"'](?:@?playwright(?:/test)?|discord\.js|@discordjs/[^\"']+)[\"']"
+    r"from\s+[\"'](?:@?playwright(?:/test)?|playwright-core|discord\.js|@discordjs/[^\"']+)[\"']"
 )
 _EVENT_EMITTER_NON_NULL_RE = re.compile(
     r"\.(?:on|off|once|addlistener|removelistener)!\s*$",

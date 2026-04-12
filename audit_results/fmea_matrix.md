@@ -1,5 +1,12 @@
 # FMEA Matrix
 
+## 2026-04-12 - Issue #280: TSB false positives for `.test-support` TypeScript files
+
+| Signal | Failure Mode | Cause | Effect | Detection | Mitigation | S | O | D | RPN | Status |
+|---|---|---|---|---|---|---:|---:|---:|---:|---|
+| TSB | FP: double-cast test-doubles in `*.test-support.ts` are escalated as production type-safety bypasses | Central test-file classifier covered `.test.ts/.spec.ts`, `test-helpers`, and `test-harness`, but not `.test-support` filename convention | Non-actionable TSB findings in test-support utilities, lowered signal credibility in TS/Vitest-heavy repos | New regressions in `tests/test_test_detection.py` and `tests/test_type_safety_bypass.py` (`test_issue_280_test_support_double_casts_are_treated_as_test_context`) | Extend shared test-detection filename patterns to include `.test-support.{ts,tsx,js,jsx}` and `test-support.{ts,tsx,js,jsx}` so TSB applies existing test-context handling | 7 | 8 | 2 | 112 | Mitigated |
+| TSB | FN-risk: over-broad support naming could down-rank production files that include `test-support` in name for non-test use | Added filename-based classification expands test-context matching surface | Potential delayed prioritization for rare production files with misleading naming | Existing production-path behavior remains unchanged outside explicit `test-support` naming | Keep heuristic strictly bounded to explicit filename convention (`.test-support` and `test-support`) and preserve default behavior elsewhere | 4 | 2 | 4 | 32 | Mitigated |
+
 ## 2026-04-12 - CXS/DCA follow-up hardening
 
 | Signal | Failure Mode | Cause | Effect | Detection | Mitigation | S | O | D | RPN | Status |
@@ -13,6 +20,13 @@
 |---|---|---|---|---|---|---:|---:|---:|---:|---|
 | TVS | FP: test files (`*.test.*`, `*.spec.*`, `tests/**`) are escalated as high temporal volatility hotspots | TVS evaluated churn/author/defect z-scores uniformly for all files and did not model expected test-code volatility | Large non-actionable HIGH clusters in active codebases, reduced signal credibility and triage focus | New regression in `tests/test_coverage_pipeline_and_helpers.py` (`test_test_like_files_are_skipped_from_volatility_findings`) | Add bounded test-path classifier and skip TVS finding emission for clear test-code paths; keep production-file scoring unchanged | 7 | 8 | 2 | 112 | Mitigated |
 | TVS | FN-risk: genuinely unstable test infrastructure files are no longer surfaced by TVS | Test-like path suppression intentionally excludes all test code from TVS output | Potential delayed visibility into flaky/chaotic test harness churn | Existing volatility detection for non-test files remains covered by TVS helper tests | Keep scope tightly bounded to explicit test path/name conventions and preserve detection for production/source paths | 4 | 3 | 4 | 48 | Mitigated |
+
+## 2026-04-12 - Issue #278: TSB Playwright-core SDK imports missed by SDK dampening
+
+| Signal | Failure Mode | Cause | Effect | Detection | Mitigation | S | O | D | RPN | Status |
+|---|---|---|---|---|---|---:|---:|---:|---:|---|
+| TSB | FP: Playwright EventEmitter non-null assertions (`page.on!`, `page.off!`) were scored as full bypasses in files importing `playwright-core` | SDK import matcher covered Playwright/Test and Discord contexts but omitted `playwright-core`, so SDK-aware non-null classification was not activated | Severity inflation and reduced TSB credibility in Playwright-core based browser modules | New regression `test_issue_278_playwright_core_event_emitter_patterns_are_sdk_dampened` in `tests/test_type_safety_bypass.py` | Extend `_SDK_IMPORT_RE` to include `playwright-core` so EventEmitter non-null assertions are tagged as `non_null_assertion_sdk` (weight 0.0) | 7 | 7 | 2 | 98 | Mitigated |
+| TSB | FN-risk: broader SDK import coverage can down-rank genuine unsafe `!` usage in Playwright-core files | Added import-context activation increases number of files where SDK non-null dampening applies | Potential delayed prioritization for real non-null misuse in SDK-adjacent code | Existing non-SDK paths and bypass kinds (`as any`, `double_cast`, directives) remain fully weighted | Keep dampening strictly bounded to known SDK import context and EventEmitter/locator-specific pattern classes | 4 | 3 | 4 | 48 | Mitigated |
 
 ## 2026-04-12 - Issue #276: AVS false positives for passive constants/type-definition modules
 

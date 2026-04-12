@@ -1,5 +1,30 @@
 # Fault Tree Analysis
 
+## 2026-04-12 - Issue #280: TSB false positives on `.test-support` TypeScript files
+
+### Top Event (TE-TSB-280)
+TSB reports actionable type-safety bypass findings for TypeScript test-support helper files using standard mock double-casts.
+
+### FT-1: false-positive branch
+
+```
+          TE-FP: `.test-support` helper reported as production bypass hotspot
+                         |
+                      OR-Gate
+               +---------+---------+
+              IE-1      IE-2
+```
+
+- **IE-1 (MCS)**: Shared test-file classifier did not include `.test-support` / `test-support` filename conventions.
+  - Mitigation: extend filename regex patterns to classify these files as test context.
+- **IE-2 (MCS)**: TSB consumed production context from classifier and therefore skipped existing test-context suppression/reduced-severity behavior.
+  - Mitigation: rely on centralized classifier update so all test-aware signals inherit correct context.
+
+### FT-2: false-negative guard
+
+- **IE-3 (Guard)**: broader filename matching may classify edge-case production files as test context.
+  - Mitigation: keep scope narrow to explicit `test-support` filename markers only; no directory-wide relaxation beyond existing rules.
+
 ## 2026-04-12 - CXS/DCA follow-up hardening
 
 ### Top Event (TE-CXS-DCA-FOLLOWUP)
@@ -134,6 +159,31 @@ TSB reports HIGH-severity type-safety bypass clusters in Playwright SDK interact
 
 - **IE-3 (Guard)**: broad SDK non-null dampening could down-rank genuine unsafe non-null usage in SDK-adjacent files.
   - Mitigation: bound behavior to known SDK import context and non-null assertions only; keep `as any`, `double_cast`, and directive bypass scoring unchanged.
+
+## 2026-04-12 - Issue #278: TSB false positives for Playwright-core EventEmitter non-null patterns
+
+### Top Event (TE-TSB-278)
+TSB reports elevated type-safety bypass severity for Playwright EventEmitter calls in modules importing `playwright-core`.
+
+### FT-1: false-positive branch
+
+```
+          TE-FP: Playwright-core EventEmitter non-null usage reported as actionable bypass
+                         |
+                      OR-Gate
+               +---------+---------+
+              IE-1      IE-2
+```
+
+- **IE-1 (MCS)**: SDK import-context matcher omitted `playwright-core`, so SDK-aware non-null classification never activated for those modules.
+  - Mitigation: include `playwright-core` in `_SDK_IMPORT_RE`.
+- **IE-2 (MCS)**: Without SDK classification, `page.on!`/`page.off!` patterns were counted as full `non_null_assertion` bypasses.
+  - Mitigation: route matching EventEmitter non-null patterns to `non_null_assertion_sdk` weight path (0.0).
+
+### FT-2: false-negative guard
+
+- **IE-3 (Guard)**: expanded import-context coverage may down-rank some real non-null misuse in Playwright-core modules.
+  - Mitigation: keep dampening limited to known SDK import context and explicit SDK idiom patterns; direct bypass classes remain unchanged.
 
 ## 2026-04-12 - Issue #273: DCA false positives for published npm package exports
 

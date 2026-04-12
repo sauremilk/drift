@@ -371,3 +371,134 @@ class TestTypeSafetyBypassSignal:
         assert finding.score < 0.7
         assert finding.metadata["kind_distribution"].get("non_null_assertion_sdk", 0) == 5
         assert finding.metadata["kind_distribution"].get("double_cast", 0) == 2
+
+    def test_issue_278_playwright_core_event_emitter_patterns_are_sdk_dampened(
+        self, tmp_path: Path
+    ) -> None:
+        from drift.config import DriftConfig
+        from drift.models import ParseResult, Severity
+        from drift.signals.type_safety_bypass import TypeSafetyBypassSignal
+
+        file_path = (
+            tmp_path
+            / "extensions"
+            / "browser"
+            / "src"
+            / "browser"
+            / "pw-tools-core.interactions.ts"
+        )
+        file_path.parent.mkdir(parents=True, exist_ok=True)
+        file_path.write_text(
+            "import type { Page } from 'playwright-core';\n"
+            "export function wire(page: Page): void {\n"
+            "  page.off!(\"framenavigated\", () => {});\n"
+            "  page.on!(\"framenavigated\", () => {});\n"
+            "  page.off!(\"framenavigated\", () => {});\n"
+            "  page.on!(\"framenavigated\", () => {});\n"
+            "}\n",
+            encoding="utf-8",
+        )
+
+        pr = ParseResult(
+            file_path=file_path,
+            language="typescript",
+            functions=[],
+            classes=[],
+            imports=[],
+            patterns=[],
+            line_count=7,
+        )
+
+        findings = TypeSafetyBypassSignal().analyze([pr], {}, DriftConfig())
+        assert len(findings) == 1
+        finding = findings[0]
+
+        assert finding.severity == Severity.LOW
+        assert finding.score == 0.0
+        assert finding.metadata["kind_distribution"].get("non_null_assertion_sdk", 0) == 4
+
+    def test_issue_278_event_emitter_patterns_without_sdk_import_are_not_dampened(
+        self, tmp_path: Path
+    ) -> None:
+        from drift.config import DriftConfig
+        from drift.models import ParseResult
+        from drift.signals.type_safety_bypass import TypeSafetyBypassSignal
+
+        file_path = tmp_path / "src" / "browser" / "interactions.ts"
+        file_path.parent.mkdir(parents=True, exist_ok=True)
+        file_path.write_text(
+            "export function wire(page: unknown): void {\n"
+            "  (page as any).off!(\"framenavigated\", () => {});\n"
+            "  (page as any).on!(\"framenavigated\", () => {});\n"
+            "}\n",
+            encoding="utf-8",
+        )
+
+        pr = ParseResult(
+            file_path=file_path,
+            language="typescript",
+            functions=[],
+            classes=[],
+            imports=[],
+            patterns=[],
+            line_count=4,
+        )
+
+        findings = TypeSafetyBypassSignal().analyze([pr], {}, DriftConfig())
+        assert len(findings) == 1
+        finding = findings[0]
+        assert finding.metadata["kind_distribution"].get("non_null_assertion_sdk", 0) == 0
+        assert finding.metadata["kind_distribution"].get("non_null_assertion", 0) == 2
+
+    def test_issue_280_test_support_double_casts_are_treated_as_test_context(
+        self, tmp_path: Path
+    ) -> None:
+        from drift.config import DriftConfig
+        from drift.models import ParseResult, Severity
+        from drift.signals.type_safety_bypass import TypeSafetyBypassSignal
+
+        file_path = (
+            tmp_path
+            / "extensions"
+            / "msteams"
+            / "src"
+            / "monitor-handler"
+            / "message-handler.test-support.ts"
+        )
+        file_path.parent.mkdir(parents=True, exist_ok=True)
+        file_path.write_text(
+            "type Runtime = { logging: unknown; system: unknown; channel: unknown };\n"
+            "const runtime = {\n"
+            "  logging: { shouldLogVerbose: () => false },\n"
+            "  system: { enqueueSystemEvent },\n"
+            "  channel: { routing: { resolveAgentRoute } },\n"
+            "} as unknown as Runtime;\n"
+            "const deps = {\n"
+            "  runtime: { error: vi.fn() } as unknown as RuntimeEnv,\n"
+            "  pollStore: { recordVote: vi.fn(async () => null) } as unknown as PollStore,\n"
+            "  log: { info: vi.fn(), debug: vi.fn(), error: vi.fn() } as unknown as Logger,\n"
+            "};\n",
+            encoding="utf-8",
+        )
+
+        pr = ParseResult(
+            file_path=file_path,
+            language="typescript",
+            functions=[],
+            classes=[],
+            imports=[],
+            patterns=[],
+            line_count=10,
+        )
+
+        default_findings = TypeSafetyBypassSignal().analyze([pr], {}, DriftConfig())
+        assert default_findings == []
+
+        reduced_cfg = DriftConfig(test_file_handling="reduce_severity")
+        reduced_findings = TypeSafetyBypassSignal().analyze([pr], {}, reduced_cfg)
+        assert len(reduced_findings) == 1
+
+        finding = reduced_findings[0]
+        assert finding.severity == Severity.LOW
+        assert finding.metadata.get("finding_context") == "test"
+        assert finding.metadata["kind_distribution"].get("double_cast", 0) == 4

@@ -1,5 +1,22 @@
 # Risk Register
 
+## 2026-04-12 - Issue #280: TSB test-support filename precision hardening
+
+- Risk ID: RISK-SIGNAL-2026-04-12-280
+- Component: `src/drift/ingestion/test_detection.py`, `tests/test_test_detection.py`, `tests/test_type_safety_bypass.py`
+- Type: Signal precision hardening (false-positive reduction)
+- Description: Type Safety Bypass false positives occurred for TypeScript test-support helpers because `.test-support.ts` filenames were not classified as test context by shared test detection.
+- Trigger: `drift analyze` on TS/Vitest repos that keep mock builders or harness wiring in files like `message-handler.test-support.ts`.
+- Impact: High-positive. Eliminates non-actionable TSB findings for canonical test-double patterns while preserving existing production-file behavior.
+- Mitigation:
+  - Extended shared test-detection patterns with `.test-support.{ts,tsx,js,jsx}` and `test-support.{ts,tsx,js,jsx}`.
+  - Added regression coverage in `tests/test_test_detection.py`.
+  - Added TSB end-to-end regression `test_issue_280_test_support_double_casts_are_treated_as_test_context` to lock default skip + reduced-severity behavior.
+- Verification:
+  - `\.venv\Scripts\python.exe -m pytest tests/test_test_detection.py tests/test_type_safety_bypass.py -q --tb=short`
+  - `\.venv\Scripts\python.exe -m ruff check src/drift/ingestion/test_detection.py tests/test_test_detection.py tests/test_type_safety_bypass.py`
+- Residual risk: Low. Classification scope is bounded to explicit `test-support` filename markers and does not alter non-test naming behavior.
+
 ## 2026-04-12 - CXS/DCA follow-up hardening: schema-context marker coverage and package-root inspection dedupe
 
 - Risk ID: RISK-SIGNAL-2026-04-12-CXS-DCA-FOLLOWUP
@@ -101,6 +118,23 @@
   - `\.venv\Scripts\python.exe -m pytest tests/test_type_safety_bypass.py -q --tb=short`
   - `\.venv\Scripts\python.exe -m ruff check src/drift/signals/type_safety_bypass.py tests/test_type_safety_bypass.py`
 - Residual risk: Low-Medium. Some genuine unsafe non-null assertions in SDK-importing files may be down-ranked; direct bypass indicators (`as any`, double casts, `@ts-ignore`) remain fully weighted.
+
+  ## 2026-04-12 - Issue #278: TSB Playwright-core import context precision hardening
+
+  - Risk ID: RISK-SIGNAL-2026-04-12-278
+  - Component: `src/drift/signals/type_safety_bypass.py`, `tests/test_type_safety_bypass.py`
+  - Type: Signal precision hardening (false-positive reduction)
+  - Description: Type Safety Bypass (TSB) now recognizes `playwright-core` imports as SDK context for EventEmitter non-null assertion patterns. This ensures idiomatic `page.on!`/`page.off!` usage in Playwright-core modules is classified as `non_null_assertion_sdk` and does not inflate severity.
+  - Trigger: `drift analyze` on Playwright-core TypeScript interaction modules using event listener binding via `page.on!`/`page.off!`.
+  - Impact: High-positive. Removes a reproducible FP path and improves TSB trust in browser automation repositories.
+  - Mitigation:
+    - Extended `_SDK_IMPORT_RE` in TSB to include `playwright-core` import source.
+    - Added targeted regression test `test_issue_278_playwright_core_event_emitter_patterns_are_sdk_dampened`.
+    - Preserved full weighting for direct bypass classes (`as any`, `double_cast`, ts-directives).
+  - Verification:
+    - `\.venv\Scripts\python.exe -m pytest tests/test_type_safety_bypass.py -q --tb=short`
+    - `\.venv\Scripts\python.exe -m ruff check src/drift/signals/type_safety_bypass.py tests/test_type_safety_bypass.py`
+  - Residual risk: Low-Medium. Some true non-null misuse in SDK-adjacent modules may be down-ranked; findings remain visible and high-signal bypass types stay fully weighted.
 
 ## 2026-04-12 - Issue #271: DCA false positives for non-exported TS file-local declarations
 
