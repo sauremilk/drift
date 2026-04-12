@@ -1,5 +1,19 @@
 # FMEA Matrix
 
+## 2026-04-12 - Issue #271: DCA flags non-exported TS file-local types/classes as unused exports
+
+| Signal | Failure Mode | Cause | Effect | Detection | Mitigation | S | O | D | RPN | Status |
+|---|---|---|---|---|---|---:|---:|---:|---:|---|
+| DCA | FP: non-exported TypeScript file-local `type`/`interface`/`class` declarations are counted as dead exports | DCA consumed TS class/interface/type declarations without export-state filtering; parser metadata for class-like declarations lacked explicit export flags | Inflated dead-export counts and severity spikes (up to `score=1.0`) in large TS modules with many local type aliases | New regressions in `tests/test_dead_code_accumulation.py` (`test_typescript_file_local_types_are_not_treated_as_exports`) and `tests/test_typescript_parser.py` (`test_export_flags_for_ts_type_interface_and_class`) | Add `is_exported` metadata for TS class/interface/type-alias extraction and restrict DCA TS/JS export candidates to `is_exported=True` only | 7 | 7 | 2 | 98 | Mitigated |
+| DCA | FN-risk: declarations exported only via separate export lists (`export { Foo }`) may be under-counted | Export detection for class-like declarations currently relies on declaration-level `export_statement` parent and does not yet model late export-list forms | Potential under-reporting of some true dead exports in TS modules using split declaration/export style | Parser regression confirms declaration-level export behavior and DCA regression protects Issue #271 FP path | Keep current bounded precision fix; evaluate explicit export-list mapping in follow-up if field evidence shows recall loss | 4 | 3 | 4 | 48 | Mitigated |
+
+## 2026-04-12 - Issue #272: DCA false positives for TypeScript testkit contract APIs
+
+| Signal | Failure Mode | Cause | Effect | Detection | Mitigation | S | O | D | RPN | Status |
+|---|---|---|---|---|---|---:|---:|---:|---:|---|
+| DCA | FP: `.testkit.ts` exports are escalated as dead code although they define reusable test contract APIs | DCA relied on static intra-repo imports and did not model testkit contract modules that are intentionally consumed by downstream/integration test suites | High-severity noise in TS monorepos using contract-test harness conventions; reduced DCA trust/actionability | New regression in `tests/test_dead_code_accumulation.py` (`test_typescript_testkit_contract_file_is_reduced_to_low`) | Add bounded testkit-contract path heuristic (`*.testkit.ts/js/...`) and cap findings to LOW (`score *= 0.45`) with metadata traceability (`testkit_contract_heuristic_applied`) | 7 | 7 | 2 | 98 | Mitigated |
+| DCA | FN-risk: genuinely dead exports inside testkit modules may be down-ranked | Testkit context dampening lowers urgency for all matching files | Potential delayed cleanup in stale testkit contract modules | Existing DCA visibility retained (no suppression) and severity cap regression enforces bounded behavior | Keep findings visible, limit heuristic to explicit `.testkit.` filename convention, and preserve normal severity for non-testkit files | 4 | 3 | 4 | 48 | Mitigated |
+
 ## 2026-04-12 - Issue #270: MAZ false positives for localhost-only TypeScript media servers
 
 | Signal | Failure Mode | Cause | Effect | Detection | Mitigation | S | O | D | RPN | Status |

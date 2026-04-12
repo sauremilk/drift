@@ -277,6 +277,60 @@ class TestDCATrueNegative:
 
         assert len(findings) == 0
 
+    def test_typescript_file_local_types_are_not_treated_as_exports(self) -> None:
+        pr_translator = ParseResult(
+            file_path=Path("src/acp/translator.ts"),
+            language="typescript",
+            classes=[
+                ClassInfo(
+                    name="DisconnectContext",
+                    file_path=Path("src/acp/translator.ts"),
+                    start_line=65,
+                    end_line=68,
+                    language="typescript",
+                    is_interface=True,
+                    is_exported=False,
+                ),
+                ClassInfo(
+                    name="PendingPrompt",
+                    file_path=Path("src/acp/translator.ts"),
+                    start_line=70,
+                    end_line=78,
+                    language="typescript",
+                    is_interface=True,
+                    is_exported=False,
+                ),
+                ClassInfo(
+                    name="AcpGatewayAgent",
+                    file_path=Path("src/acp/translator.ts"),
+                    start_line=411,
+                    end_line=650,
+                    language="typescript",
+                    is_exported=True,
+                ),
+            ],
+            imports=[],
+        )
+
+        pr_consumer = ParseResult(
+            file_path=Path("src/acp/gateway.ts"),
+            language="typescript",
+            imports=[
+                _imp(
+                    "src/acp/gateway.ts",
+                    "src/acp/translator",
+                    ["AcpGatewayAgent"],
+                )
+            ],
+        )
+
+        findings = DeadCodeAccumulationSignal().analyze(
+            [pr_translator, pr_consumer],
+            {},
+            DriftConfig(),
+        )
+        assert findings == []
+
 
 class TestDCATestFileHandling:
     def test_test_file_is_reduced_not_excluded_by_default(self) -> None:
@@ -294,6 +348,32 @@ class TestDCATestFileHandling:
         assert len(findings) == 1
         assert findings[0].severity == Severity.LOW
         assert findings[0].metadata.get("finding_context") == "test"
+
+    def test_typescript_testkit_contract_file_is_reduced_to_low(self) -> None:
+        pr_testkit = ParseResult(
+            file_path=Path("src/acp/runtime/adapter-contract.testkit.ts"),
+            language="typescript",
+            functions=[
+                _ts_exported_func(
+                    "runAcpRuntimeAdapterContract",
+                    "src/acp/runtime/adapter-contract.testkit.ts",
+                    12,
+                ),
+                _ts_exported_func(
+                    "buildAcpRuntimeAdapterContract",
+                    "src/acp/runtime/adapter-contract.testkit.ts",
+                    30,
+                ),
+            ],
+            imports=[],
+        )
+
+        findings = DeadCodeAccumulationSignal().analyze([pr_testkit], {}, DriftConfig())
+
+        assert len(findings) == 1
+        assert findings[0].severity == Severity.LOW
+        assert findings[0].score <= 0.39
+        assert findings[0].metadata.get("testkit_contract_heuristic_applied") is True
 
 
 class TestDCARuntimePluginConfigHeuristic:

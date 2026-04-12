@@ -1,5 +1,22 @@
 # Risk Register
 
+## 2026-04-12 - Issue #272: DCA false positives for TypeScript testkit contract APIs
+
+- Risk ID: RISK-SIGNAL-2026-04-12-272
+- Component: `src/drift/signals/dead_code_accumulation.py`, `tests/test_dead_code_accumulation.py`
+- Type: Signal precision hardening (false-positive reduction)
+- Description: Dead Code Accumulation (DCA) now applies a bounded dampening for TypeScript/JavaScript testkit contract modules (`*.testkit.ts/js/...`) because these exports are frequently consumed by downstream test suites outside the local static import graph.
+- Trigger: `drift analyze` on TS monorepos that expose contract-test harness APIs in files like `adapter-contract.testkit.ts`.
+- Impact: High-positive. Prevents high-severity false positives for testkit public contract exports and improves DCA credibility/actionability.
+- Mitigation:
+  - Added `_is_testkit_contract_path()` heuristic for explicit `.testkit.` filename convention.
+  - Applied bounded LOW dampening (`score *= 0.45`) and metadata marker (`testkit_contract_heuristic_applied`).
+  - Added targeted regression to enforce LOW severity/score cap behavior for `.testkit.ts` files.
+- Verification:
+  - `.\.venv\Scripts\python.exe -m pytest tests/test_dead_code_accumulation.py -q --tb=short`
+  - `.\.venv\Scripts\python.exe -m ruff check src/drift/signals/dead_code_accumulation.py tests/test_dead_code_accumulation.py`
+- Residual risk: Low-Medium. Genuine dead exports in stale testkit modules may be down-ranked; findings remain visible and heuristic scope is constrained to explicit `.testkit.` naming.
+
 ## 2026-04-12 - Issue #270: MAZ false positive on localhost-only TS media server routes
 
 - Risk ID: RISK-SIGNAL-2026-04-12-270

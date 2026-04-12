@@ -155,6 +155,21 @@ _RUNTIME_PLUGIN_WORKSPACE_SOURCE_SUFFIXES: frozenset[str] = frozenset({
 })
 
 
+def _is_testkit_contract_path(file_path: Path) -> bool:
+    """Return True for testkit contract modules consumed by downstream tests.
+
+    Files like `*.testkit.ts` or `*.testkit.js` commonly expose reusable
+    test contracts/harness APIs that are intentionally consumed outside the
+    local static import graph.
+    """
+    suffix = file_path.suffix.lower()
+    if suffix not in _RUNTIME_PLUGIN_WORKSPACE_SOURCE_SUFFIXES:
+        return False
+
+    file_name = file_path.name.lower()
+    return ".testkit." in file_name
+
+
 def _is_runtime_plugin_workspace_path(file_path: Path) -> bool:
     """Return True for files inside extension/plugin workspaces.
 
@@ -382,6 +397,11 @@ class DeadCodeAccumulationSignal(BaseSignal):
                     and _is_schema_like_class(cls.name, cls.bases)
                 ):
                     continue
+                if (
+                    pr.language in {"typescript", "javascript"}
+                    and not cls.is_exported
+                ):
+                    continue
                 if _is_public(cls.name) and cls.name not in _FRAMEWORK_NAMES:
                     exported[cls.name].append(
                         (pr.file_path, "class", cls.start_line)
@@ -440,7 +460,12 @@ class DeadCodeAccumulationSignal(BaseSignal):
             score = round(min(1.0, dead_ratio * 0.8 + dead_count * 0.02), 3)
             severity = Severity.HIGH if score >= 0.7 else Severity.MEDIUM
             path_context = classify_file_context(file_path)
-            if path_context == "test" and handling == "reduce_severity":
+            testkit_contract_heuristic_applied = False
+            if _is_testkit_contract_path(file_path):
+                score = round(score * 0.45, 3)
+                severity = Severity.LOW
+                testkit_contract_heuristic_applied = True
+            elif path_context == "test" and handling == "reduce_severity":
                 score = round(score * 0.45, 3)
                 severity = Severity.LOW
 
@@ -532,6 +557,9 @@ class DeadCodeAccumulationSignal(BaseSignal):
                         ),
                         "runtime_plugin_workspace_heuristic_applied": (
                             runtime_plugin_workspace_heuristic_applied
+                        ),
+                        "testkit_contract_heuristic_applied": (
+                            testkit_contract_heuristic_applied
                         ),
                         "finding_context": path_context,
                     },

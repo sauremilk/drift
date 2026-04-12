@@ -1,5 +1,30 @@
 # Fault Tree Analysis
 
+## 2026-04-12 - Issue #272: DCA false positives on TypeScript testkit contract files
+
+### Top Event (TE-DCA-272)
+DCA reports exported testkit contract APIs (`*.testkit.ts`) as high-urgency dead code although they are intentionally consumed by downstream test suites.
+
+### FT-1: false-positive branch
+
+```
+          TE-FP: testkit contract export reported as actionable dead code
+                         |
+                      OR-Gate
+               +---------+---------+
+              IE-1      IE-2
+```
+
+- **IE-1 (MCS)**: DCA static import evidence is intra-repo and cannot observe downstream/integration test harness consumers.
+  - Mitigation: recognize explicit testkit contract naming (`*.testkit.*`) as bounded dynamic-consumption context.
+- **IE-2 (MCS)**: Test-context dampening relied on path classification and did not cover source-located testkit modules under `src/**`.
+  - Mitigation: apply dedicated testkit severity dampening (`LOW`, score multiplier `0.45`) with metadata traceability (`testkit_contract_heuristic_applied`).
+
+### FT-2: false-negative guard
+
+- **IE-3 (Guard)**: broad filename dampening may down-rank truly dead exports.
+  - Mitigation: heuristic is constrained to explicit `.testkit.` filename token and keeps findings visible (no suppression), preserving reviewer override path.
+
 ## 2026-04-12 - Issue #270: MAZ false positives on localhost-only TypeScript servers
 
 ### Top Event (TE-MAZ-270)
