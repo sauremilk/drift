@@ -361,6 +361,41 @@ def test_findings_to_sarif_message_text_with_fix_and_recommendation() -> None:
     assert "FIX:" in result_text
 
 
+def test_json_report_extractable_from_noisy_cli_output() -> None:
+    """Resilience: JSON report can be extracted when surrounded by non-JSON progress text.
+
+    CI integrations and agent workflows may receive CLI output that mixes
+    progress updates or status lines with the final JSON report.  This test
+    verifies that the JSON object produced by analysis_to_json can still be
+    recovered from such noisy output and that its key contract fields remain
+    intact after extraction.
+    """
+    analysis = _sample_analysis()
+    clean_json = analysis_to_json(analysis)
+
+    # Simulate the kind of noisy output a real CLI run might produce:
+    # progress banners before the JSON and a status line after it.
+    noisy_output = (
+        "Scanning repository…\n"
+        "Discovering files: 12 found\n"
+        "Running signal checks…\n"
+        + clean_json
+        + "\nAnalysis complete. Exit 0.\n"
+    )
+
+    # Extraction strategy: locate the outermost JSON object by finding the
+    # first '{' and the last '}', then parse the substring.
+    start = noisy_output.index("{")
+    end = noisy_output.rindex("}") + 1
+    extracted = noisy_output[start:end]
+
+    payload = json.loads(extracted)
+
+    assert payload["drift_score"] == 0.73
+    assert payload["analysis_status"]["status"] == "complete"
+    assert payload["summary"]["total_files"] == 12
+
+
 def test_findings_to_sarif_rule_help_for_known_signal() -> None:
     """ADR-052: SARIF rule 'help' field is populated for signals with a recommender."""
     finding = Finding(
