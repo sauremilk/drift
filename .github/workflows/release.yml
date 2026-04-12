@@ -152,7 +152,8 @@ jobs:
           $notesFile = [System.IO.Path]::GetTempFileName()
           Set-Content -Path $notesFile -Value $notes -Encoding utf8
 
-          gh release create $tag --title $tag --notes-file $notesFile --repo $env:GITHUB_REPOSITORY
+          # Ensure the canonical semantic release is always marked as Latest.
+          gh release create $tag --title $tag --notes-file $notesFile --repo $env:GITHUB_REPOSITORY --latest
           Remove-Item $notesFile -ErrorAction SilentlyContinue
           Write-Output "Created GitHub Release: $tag"
 

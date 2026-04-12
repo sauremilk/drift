@@ -80,7 +80,8 @@ jobs:
             exit 0
           }
 
-          gh release create "$env:TAG" --repo "$env:GITHUB_REPOSITORY" --title "$env:TAG" --generate-notes
+          # Validation-created releases can be for historical tags and must not steal Latest.
+          gh release create "$env:TAG" --repo "$env:GITHUB_REPOSITORY" --title "$env:TAG" --generate-notes --latest=false
           if ($LASTEXITCODE -ne 0) {
             Write-Error "Failed to create release for $env:TAG"
             exit 1
