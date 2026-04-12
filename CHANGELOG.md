@@ -18,22 +18,6 @@ Short version: Harden copilot-autopilot risky-edit completion with fix-intent co
 
 - Prevent false-safe completion verdicts by requiring shadow verification for risky cross-file edit kinds before merge decisions.
 
-### Changed
-
-- Increase count-dampening constant from k=10 to k=20 for better score differentiation of mid-range signal counts (ADR-041 P3).
-- Cap breadth multiplier at 4.0 in impact scoring to prevent unbounded inflation from very large related-file clusters (ADR-041 P4).
-- Expand TypeScript analysis coverage with additional fixtures and parser/signal/output updates for TS architecture, naming consistency, React hooks, and type-safety bypass detection.
-
-### Fixed
-
-- Exclude intentional secret-like test fixtures (`tests/golden/corpus_snapshot.sarif`, `tests/fixtures/ground_truth.py`) from `detect-secrets` pre-commit scanning to keep Security Hygiene CI stable.
-- Resolve pre-push lint blocking in TypeScript parser identifier collection by aligning local variable naming with Ruff conventions.
-- Increase self-analysis performance budget from 30s to 45s for CI runners (GitHub Actions 2 vCPU observed 32s).
-- Align coverage fail_under threshold (75→73) with CI quick suite (-m "not slow") which measures ~74%.
-- Raise CI drift self-check score gate threshold (0.47→0.55) to match current baseline (~0.52).
-- Stabilize `tests/test_golden_snapshot.py` under Windows/xdist by using per-run cache directories and treating SARIF trend data as volatile for golden comparisons.
-- Fix malformed fixture payload in `tests/test_low_modules_boost3.py` so cross-package allowlist parsing works deterministically in CI.
-
 ## [2.9.13] - 2026-04-12
 
 Short version: Introduce output format expansion (pr-comment, junit, llm, ci, gate, completions), signal clarity hardening, and actionability improvements across 24 signals.
