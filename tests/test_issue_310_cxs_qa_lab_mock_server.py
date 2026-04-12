@@ -40,3 +40,4 @@ def test_issue_310_qa_lab_mock_server_is_test_context_for_cxs() -> None:
     findings = signal.analyze([parse_result], {}, DriftConfig())
 
     assert findings == []
+
