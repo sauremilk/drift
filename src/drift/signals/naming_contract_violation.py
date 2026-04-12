@@ -479,6 +479,10 @@ def _ts_has_bool_return(root: Any, src: bytes, fn_info: FunctionInfo) -> bool:
     if _is_bool_like_return_type(fn_info.return_type):
         return True
 
+    # Explicit TS return annotations take precedence over body heuristics.
+    if (fn_info.return_type or "").strip():
+        return False
+
     returns = [n for n in ts_walk(root) if n.type == "return_statement"]
     if not returns:
         return False
