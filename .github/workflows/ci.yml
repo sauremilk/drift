@@ -245,7 +245,7 @@ jobs:
           files: ./coverage.xml
           flags: py${{ matrix.python-version }}
           fail_ci_if_error: false
-          use_oidc: true
+          token: ${{ secrets.CODECOV_TOKEN }}
           verbose: true
 
       - name: Self-analysis
