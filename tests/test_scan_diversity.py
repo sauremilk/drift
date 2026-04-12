@@ -1391,8 +1391,8 @@ class TestAgentInstruction:
 
 
 class TestFixPlanFindingIdDiagnostics:
-    def test_fix_plan_task_includes_automation_fitness_alias(self, monkeypatch):
-        """Fix-plan task schema exposes both automation_fit and automation_fitness."""
+    def test_fix_plan_task_automation_fit(self, monkeypatch):
+        """Fix-plan task schema exposes automation_fit."""
         import drift.analyzer as analyzer_module
         import drift.api as api_module
         from drift.api import fix_plan
@@ -1433,7 +1433,7 @@ class TestFixPlanFindingIdDiagnostics:
         assert result["task_count"] == 1
         task = result["tasks"][0]
         assert task["automation_fit"] == "high"
-        assert task["automation_fitness"] == "high"
+        assert "automation_fitness" not in task
 
     def test_fix_plan_finding_id_accepts_rule_id(self, monkeypatch):
         """finding_id may use rule_id/signal style from scan output."""

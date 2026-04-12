@@ -12,6 +12,7 @@
 - SARIF rule `help` field now populated from `generate_recommendation()` for signals with registered recommenders — Code Scanning annotations show structured remediation guidance (ADR-052).
 - `analysis_to_markdown()` gains `include_modules` and `include_signal_coverage` params; `--compact` flag now also applies to `--format markdown` (max 5 findings, no module scores, no signal coverage) (ADR-052).
 - CSV output (`--format csv`) gains `signal_label` column with human-readable signal name for non-Drift consumers (ADR-052).
+- MCP Autopilot Demo assets under `demos/mcp-autopilot-demo/` plus a runnable prompt at `.github/prompts/drift-mcp-autopilot-demo.prompt.md` for a reproducible 30-minute external-repo fix-loop demonstration.
 
 ### Changed
 
@@ -41,6 +42,11 @@
 - Built-in default exclude list now includes `**/benchmarks/**` and `**/benchmark_results/**` so benchmark corpora are excluded out-of-the-box even without a `drift.yaml` (config.py + file_discovery fallback).
 
 ### Fixed
+
+- DCA follow-up hardening: classify additional TypeScript/JavaScript test utility directory/file conventions (including `test-utils/`) as test context to reduce production-context false positives in shared harness modules.
+- Cache compatibility hardening: signal cache entries are now invalidated when the stored drift version does not match the running version, preventing stale cross-version cache reuse.
+- Fix-plan payload consistency: remove duplicate compatibility aliases (`signal_abbrev`, `automation_fitness`) and obsolete task-contract fields in favor of the canonical contract payload.
+- MCP enrichment UX: expose phase-scoped `next_tools` (top 4) instead of the full unbounded tool list for cleaner session guidance.
 
 - EDS Issue #302: classify `extensions/qa-lab/src/mock-openai-server.ts` as test context so this QA mock infrastructure file is no longer treated as production explainability debt by default triage.
 - TSB Issue #297: classify TypeScript/JavaScript `*-test-support.*` filenames as test context so intentional test-fixture double-casts in files like `bot-native-commands.menu-test-support.ts` are no longer flagged as production type-safety bypasses by default.

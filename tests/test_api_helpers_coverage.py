@@ -161,9 +161,7 @@ class TestDeriveTaskContract:
         result = _derive_task_contract(task)
         assert "src/a.py" in result["allowed_files"]
         assert "src/b.py" in result["allowed_files"]
-        assert len(result["forbidden_files"]) > 0
         assert result["completion_evidence"]["type"] == "nudge_safe"
-        assert result["max_files_changed"] >= 3
 
     def test_no_file(self):
         task = {"related_files": ["src/x.py"]}
@@ -174,7 +172,6 @@ class TestDeriveTaskContract:
     def test_empty_task(self):
         result = _derive_task_contract({})
         assert result["allowed_files"] == []
-        assert result["max_files_changed"] == 3
 
     def test_no_duplicate_in_allowed(self):
         task = {"file": "src/a.py", "related_files": ["src/a.py"]}

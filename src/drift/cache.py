@@ -14,6 +14,7 @@ from contextlib import suppress
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
+from drift import __version__ as _drift_version
 from drift.models import (
     ClassInfo,
     FunctionInfo,
@@ -373,6 +374,9 @@ class SignalCache:
             if data.get("_v") != _SIGNAL_CACHE_VERSION:
                 path.unlink(missing_ok=True)
                 return None
+            if data.get("_drift_v") != _drift_version:
+                path.unlink(missing_ok=True)
+                return None
             raw_findings = data.get("findings")
             if not isinstance(raw_findings, list):
                 path.unlink(missing_ok=True)
@@ -393,7 +397,11 @@ class SignalCache:
         path = self._cache_path(signal_type, config_fp, content_hash)
         try:
             payload = json.dumps(
-                {"_v": _SIGNAL_CACHE_VERSION, "findings": [_ser_finding(f) for f in findings]},
+                {
+                    "_v": _SIGNAL_CACHE_VERSION,
+                    "_drift_v": _drift_version,
+                    "findings": [_ser_finding(f) for f in findings],
+                },
                 default=str,
             )
             path.write_text(payload, encoding="utf-8")

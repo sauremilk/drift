@@ -155,13 +155,14 @@ def test_task_to_api_dict_emits_contract_and_refs() -> None:
 
     payload = _task_to_api_dict(task)
 
-    assert payload["signal_abbrev"] == "PFS"
+    assert payload["signal"] == "PFS"
+    assert "signal_abbrev" not in payload
     assert payload["canonical_refs"]
     assert payload["completion_evidence"]["tool"] == "drift_nudge"
     assert "src/pkg/a.py" in payload["allowed_files"]
 
 
-def test_derive_task_contract_builds_allowed_and_forbidden_files() -> None:
+def test_derive_task_contract_builds_allowed_files() -> None:
     contract = _derive_task_contract(
         {
             "file": "src/mod/core.py",
@@ -171,8 +172,8 @@ def test_derive_task_contract_builds_allowed_and_forbidden_files() -> None:
     )
 
     assert contract["allowed_files"] == ["src/mod/core.py", "src/mod/helpers.py"]
-    assert "POLICY.md" in contract["forbidden_files"]
-    assert contract["max_files_changed"] >= 3
+    assert "forbidden_files" not in contract
+    assert "max_files_changed" not in contract
 
 
 def test_types_module_is_importable_and_exposes_aliases() -> None:

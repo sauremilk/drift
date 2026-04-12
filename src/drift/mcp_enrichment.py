@@ -77,10 +77,10 @@ def _enrich_response_with_session(
             "advisory": qd.advisory,
         }
 
-    # Progressive tool disclosure — recommend tools for current phase
+    # Progressive tool disclosure — top tools for current phase (max 4)
     from drift.tool_metadata import tools_for_phase
 
-    session_block["available_tools"] = tools_for_phase(session.phase)
+    session_block["next_tools"] = tools_for_phase(session.phase)[:4]
 
     # Pre-call advisory (soft guidance)
     if advisory:

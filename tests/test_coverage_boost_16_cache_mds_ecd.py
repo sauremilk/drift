@@ -98,6 +98,23 @@ def test_signal_cache_get_wrong_version_returns_none(tmp_path: Path) -> None:
     assert not cache_file.exists()  # stale file removed
 
 
+def test_signal_cache_get_stale_drift_version_returns_none(tmp_path: Path) -> None:
+    """Cache entries from a different drift version are invalidated."""
+    from drift.cache import _SIGNAL_CACHE_VERSION
+
+    sc = SignalCache(tmp_path)
+    cache_dir = tmp_path / "signals"
+    cache_file = cache_dir / "PFS_fp1_hash_ver.json"
+    cache_file.write_text(
+        json.dumps({"_v": _SIGNAL_CACHE_VERSION, "_drift_v": "0.0.0-stale", "findings": []}),
+        encoding="utf-8",
+    )
+
+    result = sc.get("PFS", "fp1", "hash_ver")
+    assert result is None
+    assert not cache_file.exists()
+
+
 def test_signal_cache_get_bad_findings_format_returns_none(tmp_path: Path) -> None:
     """Lines 265-266: cache entry where findings is not a list is rejected."""
     sc = SignalCache(tmp_path)

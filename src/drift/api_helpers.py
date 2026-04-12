@@ -454,7 +454,6 @@ def _task_to_api_dict(t: Any) -> dict[str, Any]:
         "id": t.id,
         "priority": t.priority,
         "signal": sig_abbrev,
-        "signal_abbrev": sig_abbrev,
         "severity": t.severity.value,
         "title": t.title,
         "action": t.action,
@@ -466,7 +465,6 @@ def _task_to_api_dict(t: Any) -> dict[str, Any]:
         "related_files": t.related_files,
         "complexity": t.complexity,
         "automation_fit": automation_fit,
-        "automation_fitness": automation_fit,
         "review_risk": t.review_risk,
         "change_scope": t.change_scope,
         "constraints": t.constraints,
@@ -1008,18 +1006,6 @@ def validate_plan(
 # Task contracts (ADR-025 Phase F)
 # ---------------------------------------------------------------------------
 
-# Files that agents must never modify directly
-_FORBIDDEN_FILES_DEFAULT: frozenset[str] = frozenset({
-    "POLICY.md",
-    "pyproject.toml",
-    "uv.lock",
-})
-
-_FORBIDDEN_PREFIXES: tuple[str, ...] = (
-    "audit_results/",
-    ".github/",
-)
-
 
 def _derive_task_contract(task_dict: dict[str, Any]) -> dict[str, Any]:
     """Derive machine-checkable contract fields from a task dict.
@@ -1034,29 +1020,11 @@ def _derive_task_contract(task_dict: dict[str, Any]) -> dict[str, Any]:
     related = task_dict.get("related_files", [])
     allowed.extend(r for r in related if r not in allowed)
 
-    # forbidden_files: policy-protected paths
-    forbidden: list[str] = sorted(_FORBIDDEN_FILES_DEFAULT)
-
-    # completion_evidence: derive from signal type
-    evidence_type = "nudge_safe"
-    evidence_tool = "drift_nudge"
-    evidence_predicate = "safe_to_commit == true"
-
-    # required_audit_artifacts: only if signal is under signals/
-    signal = task_dict.get("signal", "")
-    required_audit: list[str] = []
-    if signal:
-        # Signals that modify src/drift/signals/ require audit artifacts
-        required_audit = []  # filled by caller if needed
-
     return {
         "allowed_files": allowed,
-        "forbidden_files": forbidden,
         "completion_evidence": {
-            "type": evidence_type,
-            "tool": evidence_tool,
-            "predicate": evidence_predicate,
+            "type": "nudge_safe",
+            "tool": "drift_nudge",
+            "predicate": "safe_to_commit == true",
         },
-        "required_audit_artifacts": required_audit,
-        "max_files_changed": max(len(allowed) + 2, 3),
     }
