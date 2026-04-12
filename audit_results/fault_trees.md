@@ -1,5 +1,55 @@
 # Fault Tree Analysis
 
+## 2026-04-12 - Issue #252: NBV false positive on TS ensure_ delegated class methods
+
+### Top Event (TE-NBV-252)
+NBV reports `ensure_*` TypeScript class methods as contract violations although the method fulfills the contract via delegated return path.
+
+### FT-1: false-positive branch
+
+```
+          TE-FP: delegated TS ensure_* method reported as missing raise contract
+                         |
+                      OR-Gate
+               +---------+---------+
+              IE-1      IE-2
+```
+
+- **IE-1 (MCS)**: Method source is extracted without class wrapper, and tree-sitter parse misses return/throw structure needed by ensure-contract checks.
+  - Mitigation: Re-parse dotted method sources (`Class.method`) in a synthetic class wrapper before checker execution.
+- **IE-2 (MCS)**: Ensure-contract check relies on AST evidence (`throw`, return-value path, side effects); missing method context causes false negatives in evidence extraction.
+  - Mitigation: Preserve existing ensure-contract logic, but feed it method-context-complete AST.
+
+### FT-2: false-negative guard
+
+- **IE-3 (Guard)**: Wrapped method parsing could make malformed snippets appear valid.
+  - Mitigation: Scope wrapper fallback strictly to dotted method names and keep negative ensure regression (`ensure_*` without throw/return/side-effect is still flagged).
+
+## 2026-04-12 - Issue #253: TVS false positives in active extension/plugin workspaces
+
+### Top Event (TE-TVS-253)
+TVS reports coordinated active development in plugin workspaces as high-risk temporal instability.
+
+### FT-1: false-positive branch
+
+```
+          TE-FP: active plugin workspace reported as architectural volatility hotspot
+                         |
+                      OR-Gate
+               +---------+---------+
+              IE-1      IE-2
+```
+
+- **IE-1 (MCS)**: TVS compares file churn against repo-wide baseline and does not consider plugin workspace lifecycle (new workspace bootstrap vs established maintenance churn).
+  - Mitigation: Detect runtime plugin workspace scope (`extensions/<name>`, `plugins/<name>`) and classify workspace recency.
+- **IE-2 (MCS)**: Coordinated feature bursts (many files in one workspace changing together) are interpreted as per-file instability outliers.
+  - Mitigation: Detect coordinated workspace bursts and cap TVS score/severity impact (`score <= 0.45`) while preserving finding visibility.
+
+### FT-2: false-negative guard
+
+- **IE-3 (Guard)**: Dampening may lower urgency for genuine instability inside active plugin workspaces.
+  - Mitigation: Apply bounded scope/burst criteria only, retain findings (no suppression), and keep non-plugin outlier behavior unchanged via regression guard.
+
 ## 2026-04-12 - Issue #249: COD false positives on plugin registration and typed utility modules
 
 ### Top Event (TE-COD-249)

@@ -610,6 +610,17 @@ def _ts_check_rule(
 ) -> bool:
     """Run a naming-contract checker against TS/JS source via tree-sitter."""
     result = ts_parse_source(source, language)
+
+    # Method bodies extracted without class context can parse into partial trees
+    # that miss return/throw nodes. Re-parse methods in a synthetic class wrapper.
+    if "." in fn.name:
+        wrapped_source = "class __DriftMethodWrapper__ {\n"
+        wrapped_source += textwrap.indent(source, "  ")
+        wrapped_source += "\n}\n"
+        wrapped_result = ts_parse_source(wrapped_source, language)
+        if wrapped_result is not None:
+            result = wrapped_result
+
     if result is None:
         return True  # benefit of doubt
     root, src = result

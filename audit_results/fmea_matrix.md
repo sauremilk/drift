@@ -1,5 +1,19 @@
 # FMEA Matrix
 
+## 2026-04-12 - Issue #252: NBV TS method-context parsing for ensure_ delegation
+
+| Signal | Failure Mode | Cause | Effect | Detection | Mitigation | S | O | D | RPN | Status |
+|---|---|---|---|---|---|---:|---:|---:|---:|---|
+| NBV | FP: TypeScript class methods with `ensure_` delegation are flagged although contract is fulfilled via returned delegated call | Method source slices (for example `Class.method`) can be parsed without class context, so TS rule-check AST misses `return`/`throw` nodes | Medium-noise cluster in TS runtime/provider classes, reduced NBV credibility | New regression `test_ensure_ts_delegated_raise_contract_no_finding` in `tests/test_naming_contract_violation.py` and targeted repro from Issue #252 | Re-parse TS method snippets in synthetic class wrapper before running `_has_raise`/ensure checks so return/throw nodes are preserved | 7 | 7 | 2 | 98 | Mitigated |
+| NBV | FN-risk: synthetic method wrapping could over-accept malformed method snippets | Fallback parser path prefers wrapped parse for dotted method names | Potential under-reporting for edge-case malformed snippets | Existing negative guard `test_ensure_without_throw_or_return_value_is_flagged` remains active | Fallback is bounded to dotted method names (`Class.method`) and keeps existing no-op ensure rejection behavior | 4 | 3 | 4 | 48 | Mitigated |
+
+## 2026-04-12 - Issue #253: TVS FP bei aktiver Extension-Workspace-Entwicklung
+
+| Signal | Failure Mode | Cause | Effect | Detection | Mitigation | S | O | D | RPN | Status |
+|---|---|---|---|---|---|---:|---:|---:|---:|---|
+| TVS | FP: aktive `extensions/*`/`plugins/*` Workspaces werden als HIGH-Volatilitaet priorisiert, obwohl koordinierte Feature-Entwicklung vorliegt | TVS bewertet Datei-Volatilitaet repo-global als Outlier, ohne Workspace-Lebenszyklus (neu/koordiniert-burstig) zu beruecksichtigen | Hohe Finding-Menge in Plugin-Monorepos, sinkende Signal-Glaubwuerdigkeit und unnoetige Triage-Last | Neue Regressionen in `tests/test_coverage_pipeline_and_helpers.py` (`test_extension_workspace_burst_is_dampened`, `test_non_plugin_outlier_keeps_high_severity`) | Workspace-Heuristik in TVS: neue oder koordinierte aktive Plugin-Workspaces (`extensions/*`, `plugins/*`) werden score-seitig auf max 0.45 gecappt, mit `workspace_burst_dampened`-Metadata und begrenztem Scope | 7 | 8 | 2 | 112 | Mitigated |
+| TVS | FN-Risiko: echte Instabilitaet innerhalb aktiver Plugin-Workspaces wird niedriger priorisiert | Neue TVS-Daempfung reduziert Severity in als burstig klassifizierten Workspaces | Potenziell spaetere Priorisierung realer Refactoring-Bedarfe in einzelnen aktiven Extensions | Gegenregression sichert unveraenderte HIGH-Erkennung ausserhalb Plugin-Workspaces | Daempfung ist auf klaren Workspace-Scope + Burst-Kriterien begrenzt; Findings bleiben sichtbar (keine Vollsuppression) | 4 | 3 | 4 | 48 | Mitigated |
+
 ## 2026-04-12 - Issue #249: COD FP bei Plugin-Registrierung und typed utility modules
 
 | Signal | Failure Mode | Cause | Effect | Detection | Mitigation | S | O | D | RPN | Status |

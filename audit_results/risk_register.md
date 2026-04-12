@@ -1,5 +1,40 @@
 # Risk Register
 
+## 2026-04-12 - Issue #252: NBV TS ensure_ delegated-method false-positive reduction
+
+- Risk ID: RISK-SIGNAL-2026-04-12-252
+- Component: `src/drift/signals/naming_contract_violation.py`, `tests/test_naming_contract_violation.py`
+- Type: Signal precision hardening (false-positive reduction)
+- Description: Naming Contract Violation (NBV) now reparses TypeScript dotted method snippets (`Class.method`) inside a synthetic class wrapper before TS contract checks. This preserves return/throw AST nodes for `ensure_*` delegation patterns and prevents false positives.
+- Trigger: `drift analyze` on TypeScript class-based runtime/provider code where `ensure_*` methods delegate to helper objects and return delegated promises/results.
+- Impact: Medium-positive. Reduces recurring NBV false positives for delegated ensure contracts and improves signal credibility.
+- Mitigation:
+  - Added method-context parse fallback in `_ts_check_rule()` for dotted method names.
+  - Added Issue-252 regressions for delegated ensure method, Promise<boolean> bool-contract, and explicit throw-based validate contract.
+  - Kept existing strict negative ensure guard for no-op ensure functions.
+- Verification:
+  - `python -m pytest tests/test_naming_contract_violation.py -q --tb=short`
+  - `python -m pytest tests/test_nbv_helpers_coverage.py -q --tb=short`
+- Residual risk: Low-Medium. Synthetic wrapping is a heuristic and may mask malformed method snippets in edge cases; scope is limited to dotted method names and guarded by negative regression tests.
+
+## 2026-04-12 - Issue #253: TVS dampening for active extension/plugin development bursts
+
+- Risk ID: RISK-SIGNAL-2026-04-12-253
+- Component: `src/drift/signals/temporal_volatility.py`, `tests/test_coverage_pipeline_and_helpers.py`
+- Type: Signal precision hardening (false-positive reduction)
+- Description: Temporal Volatility (TVS) now identifies runtime plugin workspaces (`extensions/*`, `plugins/*`) and dampens score impact for new or coordinated active-development bursts, preventing high-severity inflation for expected plugin feature iteration.
+- Trigger: `drift analyze` on plugin/provider monorepos with concentrated recent churn inside one extension workspace during active delivery windows.
+- Impact: High-positive. Reduces dominant TVS false positives and improves trust/actionability in active extension ecosystems.
+- Mitigation:
+  - Added workspace classification helper for plugin scopes in TVS.
+  - Added workspace burst profiling (new workspace and coordinated active-ratio detection).
+  - Added bounded score cap (`<= 0.45`) plus metadata traceability (`workspace_burst_dampened`).
+  - Added targeted regressions for dampened plugin workspace and unchanged non-plugin outlier severity.
+- Verification:
+  - `python -m pytest tests/test_coverage_pipeline_and_helpers.py -q`
+  - `python -m ruff check src/drift/signals/temporal_volatility.py tests/test_coverage_pipeline_and_helpers.py`
+- Residual risk: Low-Medium. Genuine volatility inside an actively developed plugin workspace may be down-ranked; scope is intentionally bounded and findings remain visible.
+
 ## 2026-04-12 - Issue #251: TSB/BAT precision hardening for src test-helper naming and SDK event-emitter non-null assertions
 
 - Risk ID: RISK-SIGNAL-2026-04-12-251

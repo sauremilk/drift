@@ -42,6 +42,8 @@
 
 ### Fixed
 
+- TVS Issue #253: dampen temporal-volatility severity for coordinated active-development bursts in runtime plugin workspaces (`extensions/*`, `plugins/*`) by applying bounded workspace-aware score capping with explicit metadata traceability.
+- NBV Issue #252: re-parse TypeScript dotted class-method snippets in a synthetic class wrapper before contract checks so delegated `ensure_*` methods preserve return/throw AST evidence; add OpenClaw-derived regressions for `isPortFree` Promise<boolean>, delegated `ensureSession`, and throw-based `validate*` contracts.
 - MAZ Issue #250: reduce false positives for outbound TypeScript API client helpers in unknown-framework contexts by requiring inbound handler-like parameters (`req/request/res/response/reply/ctx/context/next`) in addition to route-like path evidence.
 - TSB/BAT Issue #251: classify `src`-co-located TS/JS test helper filenames (`test-helpers.*`, `test-*.ts/js/tsx/jsx`) as test context and dampen SDK-idiomatic EventEmitter non-null assertions (`on!/off!/once!`) for known Playwright/Discord import contexts, reducing false-positive severity in plugin/SDK-heavy repositories.
 - GCD Issue #247: reduce false positives for TypeScript declarative wrappers by treating one-statement delegation call-through functions and strongly typed non-imperative functions as guarded; add targeted regressions for delegation and typed patterns.

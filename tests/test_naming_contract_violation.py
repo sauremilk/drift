@@ -396,6 +396,40 @@ export class AcpxRuntime {
         ]
         assert nbv_findings == []
 
+    @needs_tree_sitter
+    def test_ensure_ts_delegated_raise_contract_no_finding(self, tmp_path: Path):
+        pr = _write_and_parse_ts(
+                tmp_path,
+                "extensions/acpx/src/runtime.ts",
+                """\
+export type SessionOptions = { id: string };
+export type AcpRuntimeHandle = { id: string };
+
+class RuntimeDelegate {
+    async ensureSession(options: SessionOptions): Promise<AcpRuntimeHandle> {
+        if (!options.id) {
+            throw new Error("bad options");
+        }
+        return { id: options.id };
+    }
+}
+
+export class Runtime {
+    private delegate = new RuntimeDelegate();
+
+    async ensureSession(options: SessionOptions): Promise<AcpRuntimeHandle> {
+        return this.delegate.ensureSession(options);
+    }
+}
+""",
+        )
+
+        findings = _run([pr], repo_path=tmp_path)
+        nbv_findings = [
+            f for f in findings if f.signal_type == SignalType.NAMING_CONTRACT_VIOLATION
+        ]
+        assert nbv_findings == []
+
 
 # ===================================================================
 # is_* / has_* — expects bool return
@@ -812,6 +846,57 @@ type TreeNode = { type: string };
 
 export function isBrowserNode(node: TreeNode): boolean {
     return node.type === "browser" || node.type === "chromium";
+}
+""",
+                )
+
+                findings = _run([pr], repo_path=tmp_path)
+                nbv_findings = [
+                    f
+                    for f in findings
+                    if f.signal_type == SignalType.NAMING_CONTRACT_VIOLATION
+                ]
+                assert nbv_findings == []
+
+        def test_issue_252_is_port_free_promise_boolean_no_finding(self, tmp_path: Path):
+                pr = _write_and_parse_ts(
+                        tmp_path,
+                        "extensions/qa-lab/src/docker-runtime.ts",
+                        """\
+import { createServer } from "node:net";
+
+export async function isPortFree(port: number): Promise<boolean> {
+    return new Promise<boolean>((resolve) => {
+        const server = createServer();
+        server.once("error", () => resolve(false));
+        server.once("listening", () => {
+            server.close();
+            resolve(true);
+        });
+        server.listen(port);
+    });
+}
+""",
+                )
+
+                findings = _run([pr], repo_path=tmp_path)
+                nbv_findings = [
+                    f
+                    for f in findings
+                    if f.signal_type == SignalType.NAMING_CONTRACT_VIOLATION
+                ]
+                assert nbv_findings == []
+
+        def test_issue_252_validate_throw_no_finding(self, tmp_path: Path):
+                pr = _write_and_parse_ts(
+                        tmp_path,
+                        "src/acp/control-plane/runtime-options.ts",
+                        """\
+export function validateNoControlChars(value: string, field: string): string {
+    if (/[\\x00-\\x1f]/.test(value)) {
+        throw new Error(`${field} contains control characters`);
+    }
+    return value;
 }
 """,
                 )
