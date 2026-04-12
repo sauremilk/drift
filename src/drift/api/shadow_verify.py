@@ -131,7 +131,8 @@ def shadow_verify(
         current_findings = [f for f in analysis.findings if _in_scope(f)]
 
         if stored is not None:
-            baseline_findings = [f for f in stored.snapshot.findings if _in_scope(f)]
+            _baseline_snapshot, baseline_stored_findings, _baseline_parse_map = stored
+            baseline_findings = [f for f in baseline_stored_findings if _in_scope(f)]
         else:
             # No baseline → treat every current finding as new.
             baseline_findings = []
@@ -148,7 +149,7 @@ def shadow_verify(
         resolved_findings = [f for f in baseline_findings if _finding_key(f) not in current_keys]
 
         # Score delta (positive = regression)
-        baseline_score = stored.snapshot.drift_score if stored is not None else 0.0
+        baseline_score = stored[0].score if stored is not None else 0.0
         current_score = analysis.drift_score
         delta = round(current_score - baseline_score, 4)
 
@@ -195,11 +196,28 @@ def shadow_verify(
             "agent_instruction": agent_instruction,
         } | next_contract
 
-        _emit_api_telemetry("shadow_verify", params=params, elapsed_ms=elapsed_ms())
+        _emit_api_telemetry(
+            tool_name="api.shadow_verify",
+            params=params,
+            status="ok",
+            elapsed_ms=elapsed_ms(),
+            result=resp,
+            error=None,
+            repo_root=repo_path,
+        )
         return shape_for_profile(resp, response_profile)
 
     except Exception as exc:  # noqa: BLE001
         _log.exception("shadow_verify failed: %s", exc)
+        _emit_api_telemetry(
+            tool_name="api.shadow_verify",
+            params=params,
+            status="error",
+            elapsed_ms=elapsed_ms(),
+            result=None,
+            error=exc,
+            repo_root=repo_path,
+        )
         return _error_response(
             "shadow_verify_failed",
             f"shadow_verify encountered an unexpected error: {exc}",

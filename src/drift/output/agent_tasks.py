@@ -1480,10 +1480,10 @@ def analysis_to_agent_tasks(analysis: RepoAnalysis) -> list[AgentTask]:
             _task_id_to_finding[tid] = finding
 
     for t in tasks:
-        f = _task_id_to_finding.get(t.id)
-        if f is not None:
+        task_finding = _task_id_to_finding.get(t.id)
+        if task_finding is not None:
             scope = t.shadow_verify_scope if t.shadow_verify else None
-            t.verify_plan = _verify_plan_for(f, shadow_verify_scope=scope)
+            t.verify_plan = _verify_plan_for(task_finding, shadow_verify_scope=scope)
 
     # Compute batch metadata (fix-template equivalence classes)
     _inject_batch_metadata(tasks)
