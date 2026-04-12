@@ -415,6 +415,46 @@ class TestTemporalVolatilitySignal:
             for f in findings
         )
 
+    def test_issue_290_schema_base_generated_ts_is_skipped_from_volatility_findings(self):
+        from drift.signals.temporal_volatility import TemporalVolatilitySignal
+
+        signal = TemporalVolatilitySignal()
+        histories = {}
+
+        for i in range(9):
+            histories[f"src/stable_{i}.py"] = FileHistory(
+                path=Path(f"src/stable_{i}.py"),
+                total_commits=3,
+                unique_authors=1,
+                change_frequency_30d=1.0,
+                defect_correlated_commits=0,
+            )
+
+        histories["src/config/schema.base.generated.ts"] = FileHistory(
+            path=Path("src/config/schema.base.generated.ts"),
+            total_commits=90,
+            unique_authors=24,
+            change_frequency_30d=31.0,
+            defect_correlated_commits=51,
+            ai_attributed_commits=67,
+        )
+        histories["src/hot_module.py"] = FileHistory(
+            path=Path("src/hot_module.py"),
+            total_commits=55,
+            unique_authors=12,
+            change_frequency_30d=22.0,
+            defect_correlated_commits=8,
+            ai_attributed_commits=25,
+        )
+
+        findings = signal.analyze([], histories, DriftConfig())
+
+        assert any(f.file_path.as_posix() == "src/hot_module.py" for f in findings)
+        assert all(
+            f.file_path.as_posix() != "src/config/schema.base.generated.ts"
+            for f in findings
+        )
+
     def test_generated_header_files_are_skipped_from_volatility_findings(self, tmp_path: Path):
         from drift.signals.temporal_volatility import TemporalVolatilitySignal
 
