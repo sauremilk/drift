@@ -188,6 +188,29 @@ def _candidate_targets_from_relative_module(module_path: Path, source_ext: str) 
     return targets
 
 
+def _candidate_targets_from_stem_shadow_dir(
+    source_file: Path,
+    module_path: Path,
+    source_ext: str,
+) -> set[str]:
+    """Add candidates for stem-shadowed TS layouts (``run.ts`` + ``run/types.ts``).
+
+    Some repositories colocate helper modules under a folder named like the
+    importing file stem. For ``run.ts`` importing ``./types.js``, include
+    ``run/types.ts`` as an explicit-dependency candidate in addition to the
+    sibling ``types.ts`` path.
+    """
+    if module_path.parent != source_file.parent:
+        return set()
+
+    stem_dir = source_file.with_suffix("")
+    if not stem_dir.name:
+        return set()
+
+    shadowed_module = stem_dir / module_path.name
+    return _candidate_targets_from_relative_module(shadowed_module, source_ext)
+
+
 def _resolve_relative_targets(
     source_file: Path,
     imp: ImportInfo,
@@ -201,6 +224,10 @@ def _resolve_relative_targets(
     resolved_module = _expand_relative_module_path(source, imp.imported_module)
     if resolved_module is not None:
         targets.update(_candidate_targets_from_relative_module(resolved_module, source_ext))
+        if source_ext in _JS_TS_EXTENSIONS:
+            targets.update(
+                _candidate_targets_from_stem_shadow_dir(source, resolved_module, source_ext)
+            )
 
     imported_name_base = resolved_module if resolved_module is not None else source.parent
     for imported_name in imp.imported_names:

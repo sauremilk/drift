@@ -404,6 +404,68 @@ class TestCoChangeCouplingSignal:
         findings = _run_signal(parse_results, commits)
         assert findings == []
 
+    def test_issue_326_run_shadow_dir_type_import_is_explicit_dependency(self) -> None:
+        parse_results = [
+            _pr(
+                "src/agents/pi-embedded-runner/run.ts",
+                imports=[
+                    ImportInfo(
+                        source_file=Path("src/agents/pi-embedded-runner/run.ts"),
+                        imported_module="./types.js",
+                        imported_names=["EmbeddedPiAgentMeta", "EmbeddedPiRunResult"],
+                        line_number=115,
+                        is_relative=True,
+                    )
+                ],
+            ),
+            _pr("src/agents/pi-embedded-runner/run/types.ts"),
+            _pr("src/agents/pi-embedded-runner/helpers.ts"),
+        ]
+
+        commits = [
+            _commit(
+                1,
+                [
+                    "src/agents/pi-embedded-runner/run.ts",
+                    "src/agents/pi-embedded-runner/run/types.ts",
+                ],
+            ),
+            _commit(
+                2,
+                [
+                    "src/agents/pi-embedded-runner/run.ts",
+                    "src/agents/pi-embedded-runner/run/types.ts",
+                ],
+            ),
+            _commit(
+                3,
+                [
+                    "src/agents/pi-embedded-runner/run.ts",
+                    "src/agents/pi-embedded-runner/run/types.ts",
+                ],
+            ),
+            _commit(
+                4,
+                [
+                    "src/agents/pi-embedded-runner/run.ts",
+                    "src/agents/pi-embedded-runner/run/types.ts",
+                ],
+            ),
+            _commit(
+                5,
+                [
+                    "src/agents/pi-embedded-runner/run.ts",
+                    "src/agents/pi-embedded-runner/run/types.ts",
+                ],
+            ),
+            _commit(6, ["src/agents/pi-embedded-runner/helpers.ts"]),
+            _commit(7, ["src/agents/pi-embedded-runner/helpers.ts"]),
+            _commit(8, ["src/agents/pi-embedded-runner/helpers.ts"]),
+        ]
+
+        findings = _run_signal(parse_results, commits)
+        assert findings == []
+
 
 # ---------------------------------------------------------------------------
 # Parametrized ground-truth fixture tests
