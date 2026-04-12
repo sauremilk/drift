@@ -300,6 +300,125 @@ class TestTemporalVolatilitySignal:
         ai_findings = [f for f in findings if f.ai_attributed]
         assert len(ai_findings) >= 1
 
+    def test_extension_workspace_burst_is_dampened(self):
+        from drift.signals.temporal_volatility import TemporalVolatilitySignal
+
+        signal = TemporalVolatilitySignal()
+        histories = {}
+
+        for i in range(40):
+            histories[f"src/core_{i}.py"] = FileHistory(
+                path=Path(f"src/core_{i}.py"),
+                total_commits=3,
+                unique_authors=1,
+                change_frequency_30d=1.0,
+                defect_correlated_commits=0,
+                first_seen=_days_ago(120),
+                last_modified=_days_ago(90),
+            )
+
+        for i in range(8):
+            histories[f"extensions/discord/src/file_{i}.ts"] = FileHistory(
+                path=Path(f"extensions/discord/src/file_{i}.ts"),
+                total_commits=45,
+                unique_authors=10,
+                change_frequency_30d=24.0,
+                defect_correlated_commits=4,
+                first_seen=_days_ago(3),
+                last_modified=_days_ago(1),
+            )
+
+        findings = signal.analyze([], histories, DriftConfig())
+
+        extension_findings = [
+            f for f in findings if f.file_path.as_posix().startswith("extensions/discord/")
+        ]
+        assert extension_findings
+        assert all(f.severity in ("info", "low") for f in extension_findings)
+        assert all(f.score <= 0.45 for f in extension_findings)
+        assert all(f.metadata.get("workspace_burst_dampened") is True for f in extension_findings)
+
+    def test_non_plugin_outlier_keeps_high_severity(self):
+        from drift.signals.temporal_volatility import TemporalVolatilitySignal
+
+        signal = TemporalVolatilitySignal()
+        histories = {}
+
+        for i in range(12):
+            histories[f"src/stable_{i}.py"] = FileHistory(
+                path=Path(f"src/stable_{i}.py"),
+                total_commits=2,
+                unique_authors=1,
+                change_frequency_30d=1.0,
+                defect_correlated_commits=0,
+                first_seen=_days_ago(200),
+                last_modified=_days_ago(120),
+            )
+
+        histories["src/hotspot.py"] = FileHistory(
+            path=Path("src/hotspot.py"),
+            total_commits=40,
+            unique_authors=8,
+            change_frequency_30d=18.0,
+            defect_correlated_commits=5,
+            first_seen=_days_ago(200),
+            last_modified=_days_ago(1),
+        )
+
+        findings = signal.analyze([], histories, DriftConfig())
+        target = next((f for f in findings if f.file_path.as_posix() == "src/hotspot.py"), None)
+        assert target is not None
+        assert target.severity == "high"
+        assert target.metadata.get("workspace_burst_dampened") is False
+
+    def test_new_workspace_dampening_not_blocked_by_stale_last_modified(self):
+        from drift.signals.temporal_volatility import TemporalVolatilitySignal
+
+        signal = TemporalVolatilitySignal()
+        histories = {}
+
+        for i in range(30):
+            histories[f"src/base_{i}.py"] = FileHistory(
+                path=Path(f"src/base_{i}.py"),
+                total_commits=3,
+                unique_authors=1,
+                change_frequency_30d=1.0,
+                defect_correlated_commits=0,
+                first_seen=_days_ago(140),
+                last_modified=_days_ago(100),
+            )
+
+        for i in range(6):
+            histories[f"extensions/telegram/src/file_{i}.ts"] = FileHistory(
+                path=Path(f"extensions/telegram/src/file_{i}.ts"),
+                total_commits=30,
+                unique_authors=7,
+                change_frequency_30d=18.0,
+                defect_correlated_commits=3,
+                first_seen=_days_ago(2),
+                last_modified=_days_ago(1),
+            )
+
+        # Simulate a quiet file in a still-new workspace: stale last_modified must
+        # not mark the workspace as established.
+        histories["extensions/telegram/src/legacy.ts"] = FileHistory(
+            path=Path("extensions/telegram/src/legacy.ts"),
+            total_commits=18,
+            unique_authors=4,
+            change_frequency_30d=2.0,
+            defect_correlated_commits=0,
+            first_seen=_days_ago(2),
+            last_modified=_days_ago(40),
+        )
+
+        findings = signal.analyze([], histories, DriftConfig())
+        telegram_findings = [
+            f for f in findings if f.file_path.as_posix().startswith("extensions/telegram/")
+        ]
+
+        assert telegram_findings
+        assert all(f.metadata.get("workspace_burst_dampened") is True for f in telegram_findings)
+
 
 # ===========================================================================
 # Rich output helpers

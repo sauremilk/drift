@@ -7,7 +7,9 @@ combined with AI attribution.
 
 from __future__ import annotations
 
+import datetime
 import math
+from collections import defaultdict
 
 from drift.config import DriftConfig
 from drift.models import (
@@ -18,6 +20,18 @@ from drift.models import (
     SignalType,
 )
 from drift.signals.base import BaseSignal, register_signal
+
+_RUNTIME_PLUGIN_ROOTS: frozenset[str] = frozenset({"extensions", "plugins"})
+
+
+def _runtime_plugin_workspace_key(path: str) -> str | None:
+    """Return workspace key for runtime plugin monorepos."""
+    parts = [part for part in path.replace("\\", "/").split("/") if part]
+    if len(parts) < 2:
+        return None
+    if parts[0] not in _RUNTIME_PLUGIN_ROOTS:
+        return None
+    return f"{parts[0]}/{parts[1]}"
 
 
 def _z_score(value: float, mean: float, std: float) -> float:
@@ -34,6 +48,59 @@ def _shannon_entropy(counts: list[int]) -> float:
         return 0.0
     probs = [c / total for c in counts if c > 0]
     return -sum(p * math.log2(p) for p in probs)
+
+
+def _workspace_burst_profiles(
+    histories: list[FileHistory],
+    *,
+    freq_mean: float,
+    freq_std: float,
+    cutoff: datetime.datetime,
+) -> dict[str, dict[str, bool]]:
+    """Classify plugin workspaces to dampen expected development bursts.
+
+    A workspace is considered bursty when many files change above baseline in
+    a coordinated window. Brand-new workspaces are considered bursty by default.
+    """
+    by_workspace: dict[str, list[FileHistory]] = defaultdict(list)
+    for history in histories:
+        workspace = _runtime_plugin_workspace_key(history.path.as_posix())
+        if workspace is None:
+            continue
+        by_workspace[workspace].append(history)
+
+    profiles: dict[str, dict[str, bool]] = {}
+    active_threshold = freq_mean + max(0.25, freq_std * 0.4)
+
+    for workspace, ws_histories in by_workspace.items():
+        if not ws_histories:
+            continue
+
+        established_count = 0
+        active_count = 0
+        for history in ws_histories:
+            first_seen = history.first_seen
+            if hasattr(first_seen, "astimezone"):
+                first_seen = first_seen.astimezone(datetime.UTC)
+
+            # Workspace age is determined by introduction time, not by whether
+            # individual files have quiet periods after creation.
+            if first_seen and first_seen < cutoff:
+                established_count += 1
+            if history.change_frequency_30d >= active_threshold:
+                active_count += 1
+
+        size = len(ws_histories)
+        active_ratio = active_count / size
+        workspace_is_new = established_count == 0
+        coordinated_burst = size >= 6 and active_ratio >= 0.60
+
+        profiles[workspace] = {
+            "workspace_is_new": workspace_is_new,
+            "coordinated_burst": coordinated_burst,
+        }
+
+    return profiles
 
 
 @register_signal
@@ -91,6 +158,17 @@ class TemporalVolatilitySignal(BaseSignal):
         author_mean, author_std = _mean(author_values), _std(author_values)
         defect_mean, defect_std = _mean(defect_values), _std(defect_values)
 
+        recency_days = 14
+        if hasattr(config, "thresholds"):
+            recency_days = config.thresholds.recency_days
+        cutoff = datetime.datetime.now(tz=datetime.UTC) - datetime.timedelta(days=recency_days)
+        workspace_profiles = _workspace_burst_profiles(
+            histories,
+            freq_mean=freq_mean,
+            freq_std=freq_std,
+            cutoff=cutoff,
+        )
+
         findings: list[Finding] = []
 
         # Resolve z-threshold from config
@@ -116,6 +194,17 @@ class TemporalVolatilitySignal(BaseSignal):
             ai_ratio = history.ai_attributed_commits / max(1, history.total_commits)
             if ai_ratio > 0.3:
                 score = min(1.0, score * 1.3)
+
+            workspace = _runtime_plugin_workspace_key(history.path.as_posix())
+            workspace_profile = workspace_profiles.get(workspace or "")
+            dampened_for_workspace_burst = False
+            if workspace_profile and (
+                workspace_profile["workspace_is_new"] or workspace_profile["coordinated_burst"]
+            ):
+                # Coordinated plugin workspace development is often intentional,
+                # so cap severity impact to avoid high-confidence false positives.
+                score = min(score, 0.45)
+                dampened_for_workspace_burst = True
 
             if score < 0.2:
                 continue
@@ -145,6 +234,8 @@ class TemporalVolatilitySignal(BaseSignal):
                 )
             if ai_ratio > 0.0:
                 desc_parts.append(f"AI-attributed: {ai_ratio:.0%}")
+            if dampened_for_workspace_burst:
+                desc_parts.append("Extension/plugin workspace is in coordinated active development")
 
             fix_parts = []
             if freq_z > z_threshold:
@@ -179,6 +270,7 @@ class TemporalVolatilitySignal(BaseSignal):
                         "freq_z": round(freq_z, 2),
                         "author_z": round(author_z, 2),
                         "defect_z": round(defect_z, 2),
+                        "workspace_burst_dampened": dampened_for_workspace_burst,
                     },
                 )
             )
