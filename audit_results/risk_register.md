@@ -1,5 +1,22 @@
 # Risk Register
 
+## 2026-04-12 - Issue #254: FOE groups plugin SDK sub-path imports by dependency identity
+
+- Risk ID: RISK-SIGNAL-2026-04-12-254
+- Component: `src/drift/signals/fan_out_explosion.py`, `tests/test_fan_out_explosion.py`
+- Type: Signal precision hardening (false-positive reduction)
+- Description: Fan Out Explosion (FOE) now counts JS/TS sub-path imports by dependency identity (`vendor/pkg` or `@scope/pkg`) instead of raw import specifiers, so plugin SDK exports no longer inflate fan-out counts.
+- Trigger: `drift analyze` on plugin/provider repositories that consume one SDK package through many sub-path imports (for example `openclaw/plugin-sdk/*`).
+- Impact: High-positive. Removes a concentrated false-positive class and improves FOE signal credibility/actionability for extension ecosystems.
+- Mitigation:
+  - Added `_dependency_key()` normalization in FOE for package-based counting.
+  - Preserved relative import granularity to avoid masking local file-level coupling.
+  - Added Issue-254 regressions for unscoped and scoped SDK sub-path patterns.
+- Verification:
+  - `python -m pytest tests/test_fan_out_explosion.py -q --tb=short`
+  - `python -m ruff check src/drift/signals/fan_out_explosion.py tests/test_fan_out_explosion.py`
+- Residual risk: Low-Medium. Some edge cases with intentionally broad sub-path usage may be down-ranked; thresholding and non-subpath dependency counts remain unchanged.
+
 ## 2026-04-12 - Issue #252: NBV TS ensure_ delegated-method false-positive reduction
 
 - Risk ID: RISK-SIGNAL-2026-04-12-252

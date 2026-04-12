@@ -97,3 +97,36 @@ class TestFOETrueNegative:
         findings = signal.analyze([pr], {}, DriftConfig())
 
         assert len(findings) == 0
+
+    def test_plugin_sdk_subpaths_grouped_to_single_dependency(self) -> None:
+        path = "extensions/discord/src/monitor/native_command.ts"
+        imports = [
+            _imp(path, f"openclaw/plugin-sdk/feature_{i}")
+            for i in range(22)
+        ]
+        imports.extend(
+            [
+                _imp(path, "@buape/carbon"),
+                _imp(path, "zod"),
+            ]
+        )
+
+        signal = FanOutExplosionSignal()
+        findings = signal.analyze([_pr(path, imports, language="typescript")], {}, DriftConfig())
+
+        assert len(findings) == 0
+
+    def test_scoped_package_subpaths_grouped_to_scope_package(self) -> None:
+        path = "extensions/signal/src/provider.ts"
+        imports = [
+            _imp(path, "@org/plugin-sdk/runtime"),
+            _imp(path, "@org/plugin-sdk/contracts"),
+            _imp(path, "@org/plugin-sdk/channels"),
+        ]
+        imports.extend([_imp(path, f"lib_{i}") for i in range(16)])
+
+        signal = FanOutExplosionSignal()
+        findings = signal.analyze([_pr(path, imports, language="typescript")], {}, DriftConfig())
+
+        assert len(findings) == 1
+        assert findings[0].metadata["unique_import_count"] == 17

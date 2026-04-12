@@ -31,6 +31,32 @@ _INDEX_NAMES: frozenset[str] = frozenset(
 )
 
 
+def _dependency_key(imported_module: str) -> str:
+    """Collapse import paths to a stable dependency identity for fan-out counting."""
+    module = (imported_module or "").strip()
+    if not module:
+        return ""
+
+    # Keep relative imports file-granular; they model local coupling directly.
+    if module.startswith("."):
+        return module
+
+    # JS/TS package sub-path imports (for example vendor/pkg/subpath)
+    # should count as one SDK/package dependency.
+    if "/" in module:
+        parts = [part for part in module.split("/") if part]
+        if not parts:
+            return ""
+        if module.startswith("@") and len(parts) >= 2:
+            return "/".join(parts[:2])
+        if len(parts) >= 2:
+            return "/".join(parts[:2])
+        return parts[0]
+
+    # Python imports: count by top-level package/module.
+    return module.split(".")[0]
+
+
 @register_signal
 class FanOutExplosionSignal(BaseSignal):
     """Detect files with an excessive number of unique imports."""
@@ -62,13 +88,12 @@ class FanOutExplosionSignal(BaseSignal):
             if pr.file_path.name in _INDEX_NAMES:
                 continue
 
-            # Count unique imported modules
+            # Count unique imported dependencies
             unique_modules: set[str] = set()
             for imp in pr.imports:
-                # Normalise to top-level package for relative imports
-                module = imp.imported_module.split(".")[0] if imp.imported_module else ""
-                if module:
-                    unique_modules.add(imp.imported_module)
+                dep = _dependency_key(imp.imported_module)
+                if dep:
+                    unique_modules.add(dep)
 
             count = len(unique_modules)
             if count <= threshold:

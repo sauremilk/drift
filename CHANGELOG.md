@@ -42,6 +42,7 @@
 
 ### Fixed
 
+- FOE Issue #254: count JS/TS SDK sub-path imports by dependency identity (`vendor/pkg`, `@scope/pkg`) instead of raw import specifiers so `openclaw/plugin-sdk/*` no longer inflates fan-out findings; add targeted regressions for unscoped/scoped package sub-path patterns.
 - TVS Issue #253: dampen temporal-volatility severity for coordinated active-development bursts in runtime plugin workspaces (`extensions/*`, `plugins/*`) by applying bounded workspace-aware score capping with explicit metadata traceability.
 - NBV Issue #252: re-parse TypeScript dotted class-method snippets in a synthetic class wrapper before contract checks so delegated `ensure_*` methods preserve return/throw AST evidence; add OpenClaw-derived regressions for `isPortFree` Promise<boolean>, delegated `ensureSession`, and throw-based `validate*` contracts.
 - MAZ Issue #250: reduce false positives for outbound TypeScript API client helpers in unknown-framework contexts by requiring inbound handler-like parameters (`req/request/res/response/reply/ctx/context/next`) in addition to route-like path evidence.

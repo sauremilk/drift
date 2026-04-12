@@ -1,5 +1,12 @@
 # FMEA Matrix
 
+## 2026-04-12 - Issue #254: FOE plugin SDK sub-path import grouping
+
+| Signal | Failure Mode | Cause | Effect | Detection | Mitigation | S | O | D | RPN | Status |
+|---|---|---|---|---|---|---:|---:|---:|---:|---|
+| FOE | FP: plugin SDK sub-path imports (`openclaw/plugin-sdk/*`) are counted as many independent dependencies | FOE counted raw import specifiers instead of package-level dependency identity for JS/TS sub-path imports | Files with one coherent SDK appeared as fan-out hubs, generating medium-severity noise | New regressions in `tests/test_fan_out_explosion.py` (`test_plugin_sdk_subpaths_grouped_to_single_dependency`, `test_scoped_package_subpaths_grouped_to_scope_package`) | Normalize imports to dependency keys before counting: scoped packages use `@scope/pkg`, non-relative slash imports use `vendor/pkg`, Python keeps top-level package counting | 7 | 8 | 2 | 112 | Mitigated |
+| FOE | FN-risk: real high fan-out may be under-counted when many independent `vendor/pkg/*` families share vendor prefix semantics | Grouping reduces granularity for sub-path-heavy code patterns | Potential under-prioritization of some true fan-out hotspots | Existing FOE TP score-growth tests remain active; new scoped-package regression ensures threshold behavior still triggers when enough distinct dependencies remain | Grouping is bounded to dependency identity only; relative imports remain file-granular and findings still trigger beyond threshold | 4 | 3 | 4 | 48 | Mitigated |
+
 ## 2026-04-12 - Issue #252: NBV TS method-context parsing for ensure_ delegation
 
 | Signal | Failure Mode | Cause | Effect | Detection | Mitigation | S | O | D | RPN | Status |

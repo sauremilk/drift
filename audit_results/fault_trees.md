@@ -1,5 +1,30 @@
 # Fault Tree Analysis
 
+## 2026-04-12 - Issue #254: FOE false positives for plugin SDK sub-path imports
+
+### Top Event (TE-FOE-254)
+FOE reports plugin/provider files as fan-out explosions because SDK sub-path imports are counted as separate dependencies.
+
+### FT-1: false-positive branch
+
+```
+          TE-FP: coherent SDK usage reported as dependency explosion
+                         |
+                      OR-Gate
+               +---------+---------+
+              IE-1      IE-2
+```
+
+- **IE-1 (MCS)**: FOE counts raw JS/TS import specifiers, so `openclaw/plugin-sdk/a` and `openclaw/plugin-sdk/b` inflate unique dependency count.
+  - Mitigation: Collapse JS/TS sub-path imports to stable dependency keys (`vendor/pkg`, `@scope/pkg`) before counting.
+- **IE-2 (MCS)**: Package-export design (fine-grained sub-paths for tree-shaking) is interpreted as architecture fan-out rather than one SDK dependency.
+  - Mitigation: Count package identity, not export-entry-point identity.
+
+### FT-2: false-negative guard
+
+- **IE-3 (Guard)**: Grouping may reduce sensitivity for edge cases with many sub-path imports.
+  - Mitigation: Keep threshold logic unchanged, preserve file-granular handling for relative imports, and retain TP/score regression checks.
+
 ## 2026-04-12 - Issue #252: NBV false positive on TS ensure_ delegated class methods
 
 ### Top Event (TE-NBV-252)
