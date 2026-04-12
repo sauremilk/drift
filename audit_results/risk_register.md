@@ -1,5 +1,22 @@
 # Risk Register
 
+## 2026-04-12 - Issue #271: DCA false positives for non-exported TS file-local declarations
+
+- Risk ID: RISK-SIGNAL-2026-04-12-271
+- Component: `src/drift/signals/dead_code_accumulation.py`, `src/drift/ingestion/ts_parser.py`, `src/drift/models.py`, `tests/test_dead_code_accumulation.py`, `tests/test_typescript_parser.py`
+- Type: Signal precision hardening (false-positive reduction)
+- Description: Dead Code Accumulation (DCA) now excludes non-exported TypeScript/JavaScript class-like declarations from export-candidate counting. TypeScript parser extraction now annotates class/interface/type-alias declarations with `is_exported`, and DCA uses this metadata to avoid misclassifying file-local declarations as dead exports.
+- Trigger: `drift analyze` on large TS modules with many file-local type aliases/interfaces plus a small set of real exports (for example translator-style gateway files).
+- Impact: High-positive. Prevents inflated dead-export counts and high-severity false positives, improving DCA credibility and triage quality.
+- Mitigation:
+  - Added `ClassInfo.is_exported` model field.
+  - Added TS export-state propagation for class/interface/type-alias declarations.
+  - Restricted DCA TS/JS class-like export candidates to `is_exported=True`.
+  - Added targeted regressions for parser export flags and DCA false-positive scenario.
+- Verification:
+  - `.\\.venv\\Scripts\\python.exe -m pytest tests/test_dead_code_accumulation.py tests/test_typescript_parser.py -q --tb=short`
+- Residual risk: Low-Medium. Declarations exported via separate export-list statements may remain under-modeled and should be evaluated separately if recall evidence appears.
+
 ## 2026-04-12 - Issue #272: DCA false positives for TypeScript testkit contract APIs
 
 - Risk ID: RISK-SIGNAL-2026-04-12-272

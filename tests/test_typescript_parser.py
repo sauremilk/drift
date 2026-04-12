@@ -121,6 +121,35 @@ class TestTypeScriptParser:
         cls_names = {c.name for c in result.classes}
         assert "UserController" in cls_names
 
+    def test_export_flags_for_ts_type_interface_and_class(self, tmp_path: Path) -> None:
+        from drift.ingestion.ts_parser import parse_typescript_file
+
+        ts_code = textwrap.dedent("""\
+            type LocalAlias = { id: string };
+            export type PublicAlias = { id: string };
+
+            interface LocalInterface {
+                id: string;
+            }
+            export interface PublicInterface {
+                id: string;
+            }
+
+            class LocalClass {}
+            export class PublicClass {}
+        """)
+        (tmp_path / "exports.ts").write_text(ts_code, encoding="utf-8")
+
+        result = parse_typescript_file(Path("exports.ts"), tmp_path, "typescript")
+        class_map = {c.name: c for c in result.classes}
+
+        assert class_map["LocalAlias"].is_exported is False
+        assert class_map["PublicAlias"].is_exported is True
+        assert class_map["LocalInterface"].is_exported is False
+        assert class_map["PublicInterface"].is_exported is True
+        assert class_map["LocalClass"].is_exported is False
+        assert class_map["PublicClass"].is_exported is True
+
     def test_parse_imports(self, tmp_path: Path, ts_source: str) -> None:
         from drift.ingestion.ts_parser import parse_typescript_file
 

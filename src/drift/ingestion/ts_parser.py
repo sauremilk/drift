@@ -323,6 +323,7 @@ def _extract_interfaces(
 
     for node in _walk(root):
         if node.type == "interface_declaration":
+            is_exported = bool(node.parent and node.parent.type == "export_statement")
             name_node = _child_by_field(node, "name")
             name = _node_text(name_node, source) if name_node else "anonymous"
 
@@ -418,10 +419,12 @@ def _extract_interfaces(
                     methods=methods,
                     has_docstring=has_docstring,
                     is_interface=True,
+                    is_exported=is_exported,
                 )
             )
 
         elif node.type == "type_alias_declaration":
+            is_exported = bool(node.parent and node.parent.type == "export_statement")
             name_node = _child_by_field(node, "name")
             name = _node_text(name_node, source) if name_node else "anonymous"
 
@@ -441,6 +444,7 @@ def _extract_interfaces(
                     methods=[],
                     has_docstring=has_docstring,
                     is_interface=True,
+                    is_exported=is_exported,
                 )
             )
 
@@ -460,6 +464,8 @@ def _extract_classes(
     for node in _walk(root):
         if node.type != "class_declaration":
             continue
+
+        is_exported = bool(node.parent and node.parent.type == "export_statement")
 
         name_node = _child_by_field(node, "name")
         name = _node_text(name_node, source) if name_node else "anonymous"
@@ -496,6 +502,7 @@ def _extract_classes(
                 bases=bases,
                 methods=methods,
                 has_docstring=has_docstring,
+                is_exported=is_exported,
             )
         )
 

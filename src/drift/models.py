@@ -142,6 +142,7 @@ class ClassInfo:
     methods: list[FunctionInfo] = field(default_factory=list)
     has_docstring: bool = False
     is_interface: bool = False
+    is_exported: bool = False
 
 
 @dataclass

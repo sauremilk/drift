@@ -1,5 +1,30 @@
 # Fault Tree Analysis
 
+## 2026-04-12 - Issue #271: DCA false positives for non-exported TS file-local declarations
+
+### Top Event (TE-DCA-271)
+DCA reports non-exported TypeScript file-local declarations (`type`/`interface`/`class`) as dead exports with inflated severity.
+
+### FT-1: false-positive branch
+
+```
+          TE-FP: non-exported TS declaration reported as dead export
+                         |
+                      OR-Gate
+               +---------+---------+
+              IE-1      IE-2
+```
+
+- **IE-1 (MCS)**: TS parser emitted class-like declarations without explicit export metadata, so downstream signals could not distinguish file-local vs public declarations.
+  - Mitigation: emit `is_exported` metadata for TS `class`, `interface`, and `type` declarations.
+- **IE-2 (MCS)**: DCA class-path export candidate collection for TS/JS did not enforce export-state filtering.
+  - Mitigation: only include TS/JS class-like declarations when `is_exported=True`.
+
+### FT-2: false-negative guard
+
+- **IE-3 (Guard)**: declaration-level export detection can miss split export-list patterns (`type X ...; export { X }`).
+  - Mitigation: keep FP fix bounded now and track follow-up for export-list mapping if recall evidence appears.
+
 ## 2026-04-12 - Issue #272: DCA false positives on TypeScript testkit contract files
 
 ### Top Event (TE-DCA-272)
