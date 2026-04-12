@@ -43,6 +43,34 @@ def _has_self_documenting_ts_signature(func: FunctionInfo) -> bool:
     return True
 
 
+def _is_ts_ui_implementation_context(func: FunctionInfo) -> bool:
+    """Return True for TS/TSX paths or names that suggest internal UI wiring."""
+    if func.language not in ("typescript", "tsx"):
+        return False
+
+    file_posix = func.file_path.as_posix().lower()
+    path_markers = (
+        "/web/",
+        "/ui/",
+        "/views/",
+        "/view/",
+        "/dom/",
+        "/components/",
+        "/component/",
+        "app.ts",
+        "app.tsx",
+        "ui-render",
+        "render",
+        "binding",
+        "wizard",
+    )
+    if any(marker in file_posix for marker in path_markers):
+        return True
+
+    function_name = func.name.lower()
+    return function_name.startswith(("render", "bind", "refresh", "mount", "hydrate"))
+
+
 def _is_ts_js_family(language: str) -> bool:
     return language in ("typescript", "tsx", "javascript", "jsx")
 
@@ -321,6 +349,22 @@ class ExplainabilityDeficitSignal(BaseSignal):
             if path_context == "test" and handling == "reduce_severity":
                 severity = Severity.LOW
 
+            ts_ui_high_cap_applied = False
+            is_ts_internal_impl = (
+                func.language in ("typescript", "tsx")
+                and not func.is_exported
+                and not func.has_docstring
+                and not self_documenting_signature
+            )
+            if severity == Severity.HIGH and (
+                is_ts_internal_impl or _is_ts_ui_implementation_context(func)
+            ):
+                # Issue #258: avoid escalating internal TS UI wiring code to HIGH
+                # solely due to missing JSDoc when complexity is large.
+                severity = Severity.MEDIUM
+                weighted_score = min(weighted_score, 0.69)
+                ts_ui_high_cap_applied = True
+
             desc_parts = [
                 f"Complexity: {func.complexity}, LOC: {func.loc}.",
             ]
@@ -373,6 +417,7 @@ class ExplainabilityDeficitSignal(BaseSignal):
                         "has_return_type": func.return_type is not None,
                         "self_documenting_signature": self_documenting_signature,
                         "explanation_score": round(explanation, 3),
+                        "ts_ui_high_cap_applied": ts_ui_high_cap_applied,
                         "finding_context": path_context,
                     },
                     finding_context=path_context,

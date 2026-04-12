@@ -1,5 +1,30 @@
 # Fault Tree Analysis
 
+## 2026-04-12 - Issue #258: EDS high-severity inflation for TS internal/UI implementation functions
+
+### Top Event (TE-EDS-258)
+EDS escalates TypeScript/TSX internal UI implementation functions to `HIGH` despite bounded explainability expectations in this context.
+
+### FT-1: false-positive branch
+
+```
+          TE-FP: internal TS/TSX UI wiring function reported as HIGH explainability deficit
+                         |
+                      OR-Gate
+               +---------+---------+
+              IE-1      IE-2
+```
+
+- **IE-1 (MCS)**: Severity escalation used global thresholds only; TS internal/UI context was not considered after score computation.
+  - Mitigation: add TS/TSX high-cap when function is non-exported or path/name indicates UI implementation context.
+- **IE-2 (MCS)**: Missing JSDoc in large UI event/render functions was interpreted as universally critical documentation debt.
+  - Mitigation: cap capped findings to `MEDIUM` (`score <= 0.69`) and mark with `ts_ui_high_cap_applied` for transparent triage.
+
+### FT-2: false-negative guard
+
+- **IE-3 (Guard)**: Cap may down-rank truly critical TS complexity debt in internal modules.
+  - Mitigation: keep exported TS APIs eligible for `HIGH` and restrict cap to weak-evidence TS context (`no docstring` + `no self_documenting_signature`).
+
 ## 2026-04-12 - Issue #256: EDS TypeScript test-evidence false positives
 
 ### Top Event (TE-EDS-256)

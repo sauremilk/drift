@@ -1,5 +1,22 @@
 # Risk Register
 
+## 2026-04-12 - Issue #258: EDS TS/TSX internal UI high-severity cap
+
+- Risk ID: RISK-SIGNAL-2026-04-12-258
+- Component: `src/drift/signals/explainability_deficit.py`, `tests/test_coverage_boost_15_signals_misc.py`
+- Type: Signal precision hardening (false-positive reduction)
+- Description: Explainability Deficit (EDS) caps TypeScript/TSX `HIGH` severity to `MEDIUM` for weak-evidence internal implementation contexts (`is_exported=False`) and UI/DOM wiring contexts, to prevent score-driven severity inflation in large internal UI functions.
+- Trigger: `drift analyze` on large TS monorepos with event-binding/render-heavy modules (for example `web/src/app.ts`, `ui-render.ts`) that intentionally omit JSDoc on internal functions.
+- Impact: High-positive. Reduces concentrated high-severity false positives and improves signal credibility/actionability without suppressing findings.
+- Mitigation:
+  - Added TS/TSX context cap in EDS severity mapping (`HIGH -> MEDIUM`, `score <= 0.69`) for internal/UI implementation contexts.
+  - Added metadata traceability (`ts_ui_high_cap_applied`) on each affected finding.
+  - Added regression tests for both directions: capped internal UI case and unchanged exported API escalation.
+- Verification:
+  - `python -m pytest tests/test_coverage_boost_15_signals_misc.py -k "issue_258 or internal_ui_function_caps_high_to_medium or exported_function_can_still_be_high" -q --tb=short`
+  - `python -m ruff check src/drift/signals/explainability_deficit.py tests/test_coverage_boost_15_signals_misc.py`
+- Residual risk: Low-Medium. Some real high-risk internal TS functions may be down-ranked; exported APIs still escalate to `HIGH`, and findings remain visible.
+
 ## 2026-04-12 - Issue #256: EDS TS/JS test evidence mapping and unknown-status neutral scoring
 
 - Risk ID: RISK-SIGNAL-2026-04-12-256

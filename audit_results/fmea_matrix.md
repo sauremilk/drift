@@ -1,5 +1,12 @@
 # FMEA Matrix
 
+## 2026-04-12 - Issue #258: EDS TypeScript internal/UI high-severity cap
+
+| Signal | Failure Mode | Cause | Effect | Detection | Mitigation | S | O | D | RPN | Status |
+|---|---|---|---|---|---|---:|---:|---:|---:|---|
+| EDS | FP: grosse interne TS/TSX UI-Wiring-Funktionen ohne JSDoc werden als `HIGH` priorisiert | High-Eskalation in EDS basierte nur auf Defizitscore und Komplexitaet; TS-Kontext (internal + UI wiring) wurde in der finalen Severity-Stufe nicht gecappt | Severity-Inflation in UI-/DOM-lastigen TS-Repos, sinkende Glaubwuerdigkeit, erhoehte Triage-Last | Neue Regressionen in `tests/test_coverage_boost_15_signals_misc.py` (`test_exd_typescript_internal_ui_function_caps_high_to_medium`, `test_exd_typescript_exported_function_can_still_be_high`) | TS/TSX-High-Cap in EDS: bei internen (`is_exported=False`) oder UI-Implementierungs-Kontexten wird `HIGH` auf `MEDIUM` begrenzt (`score <= 0.69`) und ueber Metadata (`ts_ui_high_cap_applied`) nachvollziehbar markiert | 7 | 8 | 2 | 112 | Mitigated |
+| EDS | FN-Risiko: echte kritische TS-Komplexitaetsdefizite werden durch den Cap unterpriorisiert | Neuer Cap greift auf nicht-exportierte/internal-UI-Heuristik und kann einzelne reale Hochrisiko-Faelle daempfen | Potenziell spaetere Priorisierung einzelner echter Refactoring-Bedarfe | Exported-Guard-Regression bleibt aktiv (`test_exd_typescript_exported_function_can_still_be_high`) | Cap ist auf TS/TSX begrenzt und verlangt Weak-Evidence-Kontext (kein Docstring, keine self-documenting signature); exported APIs bleiben voll eskalierbar | 4 | 3 | 4 | 48 | Mitigated |
+
 ## 2026-04-12 - Issue #256: EDS TypeScript test coverage mapping hardening
 
 | Signal | Failure Mode | Cause | Effect | Detection | Mitigation | S | O | D | RPN | Status |

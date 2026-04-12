@@ -33,6 +33,7 @@ def _make_fn(
     parameters: list[str] | None = None,
     language: str = "python",
     return_type: str | None = None,
+    is_exported: bool = False,
 ) -> FunctionInfo:
     return FunctionInfo(
         name=name,
@@ -46,6 +47,7 @@ def _make_fn(
         has_docstring=has_docstring,
         decorators=decorators or [],
         return_type=return_type,
+        is_exported=is_exported,
     )
 
 
@@ -298,6 +300,62 @@ def test_exd_typescript_unknown_test_status_is_neutral_without_repo_path() -> No
     signal = ExplainabilityDeficitSignal(repo_path=None)
     findings = signal.analyze([pr], {}, DriftConfig())
     assert findings == []
+
+
+def test_exd_typescript_internal_ui_function_caps_high_to_medium(tmp_path: Path) -> None:
+    """Issue #258: internal TS UI wiring code should not escalate to HIGH."""
+    fn = _make_fn(
+        "bindEvents",
+        file_path="extensions/qa-lab/web/src/app.ts",
+        language="typescript",
+        complexity=144,
+        loc=849,
+        has_docstring=False,
+        parameters=["root"],
+        return_type=None,
+        is_exported=False,
+    )
+    pr = ParseResult(
+        file_path=Path("extensions/qa-lab/web/src/app.ts"),
+        language="typescript",
+        functions=[fn],
+    )
+
+    signal = ExplainabilityDeficitSignal(repo_path=tmp_path)
+    findings = signal.analyze([pr], {}, DriftConfig())
+
+    assert len(findings) == 1
+    assert findings[0].severity == Severity.MEDIUM
+    assert findings[0].score < 0.7
+    assert findings[0].metadata.get("ts_ui_high_cap_applied") is True
+
+
+def test_exd_typescript_exported_function_can_still_be_high(tmp_path: Path) -> None:
+    """Issue #258 guard: exported TS APIs still escalate when evidence is weak."""
+    fn = _make_fn(
+        "buildClient",
+        file_path="src/api/client.ts",
+        language="typescript",
+        complexity=140,
+        loc=600,
+        has_docstring=False,
+        parameters=["config"],
+        return_type=None,
+        is_exported=True,
+    )
+    pr = ParseResult(
+        file_path=Path("src/api/client.ts"),
+        language="typescript",
+        functions=[fn],
+    )
+
+    signal = ExplainabilityDeficitSignal(repo_path=tmp_path)
+    findings = signal.analyze([pr], {}, DriftConfig())
+
+    assert len(findings) == 1
+    assert findings[0].severity == Severity.HIGH
+    assert findings[0].score >= 0.7
+    assert findings[0].metadata.get("ts_ui_high_cap_applied") is False
 
 
 def test_exd_javascript_still_requires_explainability_evidence(tmp_path: Path) -> None:
