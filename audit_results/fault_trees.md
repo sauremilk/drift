@@ -1,5 +1,30 @@
 # Fault Tree Analysis
 
+## 2026-04-12 - Issue #279: TSB false positives for Playwright runtime-guarded duck-typing double casts
+
+### Top Event (TE-TSB-279)
+TSB reports actionable type-safety bypass findings for Playwright duck-typing double casts that are immediately guarded at runtime.
+
+### FT-1: false-positive branch
+
+```
+          TE-FP: guarded Playwright duck-typing cast reported as actionable bypass
+                         |
+                      OR-Gate
+               +---------+---------+
+              IE-1      IE-2
+```
+
+- **IE-1 (MCS)**: Double-cast detection treated all `as unknown as T` patterns uniformly and ignored immediate runtime guard shape (`if (!var._member) { throw ... }`).
+  - Mitigation: add bounded runtime-guarded SDK duck-typing classifier (`double_cast_sdk_guarded`).
+- **IE-2 (MCS)**: Severity scoring counted guarded SDK double-casts with full weight, inflating urgency in snapshot adapters.
+  - Mitigation: set effective score contribution for `double_cast_sdk_guarded` to zero while retaining finding traceability.
+
+### FT-2: false-negative guard
+
+- **IE-3 (Guard)**: broad guarded-cast detection could down-rank truly unsafe casts in non-SDK contexts.
+  - Mitigation: require SDK import context plus explicit guard+throw on underscore-prefixed member; keep unguarded double-casts fully weighted.
+
 ## 2026-04-12 - Issue #280: TSB false positives on `.test-support` TypeScript files
 
 ### Top Event (TE-TSB-280)

@@ -1,5 +1,12 @@
 # FMEA Matrix
 
+## 2026-04-12 - Issue #279: TSB false positives for Playwright runtime-guarded duck-typing double casts
+
+| Signal | Failure Mode | Cause | Effect | Detection | Mitigation | S | O | D | RPN | Status |
+|---|---|---|---|---|---|---:|---:|---:|---:|---|
+| TSB | FP: Playwright duck-typing casts (`as unknown as WithSnapshotForAI`) with immediate runtime guard (`if (!maybe._snapshotForAI) { throw ... }`) are flagged as full type-safety bypasses | Double-cast classification did not model SDK interop duck-typing with explicit member-existence guard and fail-fast throw | Non-actionable TSB findings in Playwright snapshot modules, severity inflation, and reduced signal credibility | New regressions in `tests/test_type_safety_bypass.py` (`test_issue_279_playwright_runtime_guarded_double_cast_is_sdk_dampened`, `test_issue_279_playwright_double_cast_without_runtime_guard_stays_weighted`) | Add bounded guarded-duck-cast heuristic for SDK imports: classify guarded Playwright double-casts as `double_cast_sdk_guarded` with zero effective score weight; keep unguarded double-casts fully weighted | 7 | 7 | 2 | 98 | Mitigated |
+| TSB | FN-risk: guarded-duck-cast dampening could down-rank genuinely unsafe casts when guard signal is weak or superficial | New heuristic uses local line-window guard detection and import context | Potential delayed prioritization for edge-case casts that match guard shape but still hide unsafe assumptions | Negative regression keeps unguarded casts weighted and actionable | Keep scope narrow to SDK import context and explicit guard+throw pattern on underscore-prefixed member; preserve full scoring for other bypass kinds | 4 | 3 | 4 | 48 | Mitigated |
+
 ## 2026-04-12 - Issue #280: TSB false positives for `.test-support` TypeScript files
 
 | Signal | Failure Mode | Cause | Effect | Detection | Mitigation | S | O | D | RPN | Status |

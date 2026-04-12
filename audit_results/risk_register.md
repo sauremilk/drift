@@ -1,5 +1,22 @@
 # Risk Register
 
+## 2026-04-12 - Issue #279: TSB Playwright runtime-guarded duck-typing double-cast precision hardening
+
+- Risk ID: RISK-SIGNAL-2026-04-12-279
+- Component: `src/drift/signals/type_safety_bypass.py`, `tests/test_type_safety_bypass.py`
+- Type: Signal precision hardening (false-positive reduction)
+- Description: Type Safety Bypass (TSB) now treats Playwright SDK duck-typing double-casts (`as unknown as T`) as guarded interop when they are immediately followed by a runtime member-existence guard with fail-fast throw. Guarded casts are still visible in metadata (`double_cast_sdk_guarded`) but no longer inflate severity.
+- Trigger: `drift analyze` on Playwright snapshot/automation modules using internal API bridge patterns like `const maybe = page as unknown as WithSnapshotForAI; if (!maybe._snapshotForAI) { throw ... }`.
+- Impact: High-positive. Reduces non-actionable TSB findings and urgency inflation for known SDK interop patterns while preserving visibility and keeping unguarded double-casts actionable.
+- Mitigation:
+  - Added bounded helper `_is_runtime_guarded_playwright_double_cast(...)` in TSB.
+  - Added new bypass kind `double_cast_sdk_guarded` with effective score weight `0.0`.
+  - Added targeted regressions for guarded and unguarded Playwright double-cast behavior (Issue 279).
+- Verification:
+  - `\.venv\Scripts\python.exe -m pytest tests/test_type_safety_bypass.py -q --tb=short`
+  - `\.venv\Scripts\python.exe -m ruff check src/drift/signals/type_safety_bypass.py tests/test_type_safety_bypass.py`
+- Residual risk: Low-Medium. A narrow guard-shape heuristic may miss some valid guarded variants; this is acceptable to avoid broad over-suppression and preserve scoring for unguarded casts.
+
 ## 2026-04-12 - Issue #280: TSB test-support filename precision hardening
 
 - Risk ID: RISK-SIGNAL-2026-04-12-280

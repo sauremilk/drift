@@ -40,8 +40,41 @@ _PLAYWRIGHT_LOCATOR_NON_NULL_RE = re.compile(
     r"\.locator\s*\(.*!\s*\)",
     re.IGNORECASE,
 )
+_DOUBLE_CAST_ASSIGN_RE = re.compile(
+    r"\b(?:const|let|var)\s+(?P<var>[A-Za-z_$][\w$]*)\s*=\s*.+\bas\s+unknown\s+as\b",
+    re.IGNORECASE,
+)
 
 _DEFAULT_THRESHOLD = 5
+
+
+def _is_runtime_guarded_playwright_double_cast(
+    source_lines: list[str],
+    cast_line_no: int,
+    has_sdk_import: bool,
+) -> bool:
+    """Return True if a double-cast assignment is guarded by an immediate runtime check.
+
+    Bounded heuristic for Playwright duck-typing patterns where a value cast via
+    ``as unknown as T`` is followed by ``if (!var._member) { throw ... }``.
+    """
+    if not has_sdk_import:
+        return False
+    if cast_line_no < 1 or cast_line_no > len(source_lines):
+        return False
+
+    assign_line = source_lines[cast_line_no - 1]
+    assign_match = _DOUBLE_CAST_ASSIGN_RE.search(assign_line)
+    if not assign_match:
+        return False
+
+    var_name = assign_match.group("var")
+    guard_window = "\n".join(source_lines[cast_line_no : cast_line_no + 10])
+    guard_re = re.compile(
+        rf"if\s*\(\s*!\s*{re.escape(var_name)}\.(?:_[A-Za-z_$][\w$]*)\s*\)\s*\{{[\s\S]*?\bthrow\b",
+        re.IGNORECASE,
+    )
+    return bool(guard_re.search(guard_window))
 
 
 def _count_bypasses(source: str, language: str) -> list[dict[str, str | int]]:
@@ -81,11 +114,22 @@ def _count_bypasses(source: str, language: str) -> list[dict[str, str | int]]:
                         }
                     )
                 elif type_text == "unknown" and node.parent and node.parent.type == "as_expression":
+                    cast_line_no = node.parent.start_point[0] + 1
+                    is_guarded_playwright_duck_cast = _is_runtime_guarded_playwright_double_cast(
+                        source_lines,
+                        cast_line_no,
+                        has_sdk_import,
+                    )
+                    kind = "double_cast"
+                    detail = "double cast (as unknown as T)"
+                    if is_guarded_playwright_duck_cast:
+                        kind = "double_cast_sdk_guarded"
+                        detail = "double cast (as unknown as T), SDK duck-typing with runtime guard"
                     bypasses.append(
                         {
-                            "kind": "double_cast",
-                            "line": node.parent.start_point[0] + 1,
-                            "detail": "double cast (as unknown as T)",
+                            "kind": kind,
+                            "line": cast_line_no,
+                            "detail": detail,
                         }
                     )
 
@@ -142,6 +186,7 @@ def _effective_bypass_count(bypasses: list[dict[str, str | int]]) -> float:
     """
 
     weight_by_kind: dict[str, float] = {
+        "double_cast_sdk_guarded": 0.0,
         "non_null_assertion_sdk": 0.0,
     }
 

@@ -450,6 +450,98 @@ class TestTypeSafetyBypassSignal:
         assert finding.metadata["kind_distribution"].get("non_null_assertion_sdk", 0) == 0
         assert finding.metadata["kind_distribution"].get("non_null_assertion", 0) == 2
 
+    def test_issue_279_playwright_runtime_guarded_double_cast_is_sdk_dampened(
+        self, tmp_path: Path
+    ) -> None:
+        from drift.config import DriftConfig
+        from drift.models import ParseResult, Severity
+        from drift.signals.type_safety_bypass import TypeSafetyBypassSignal
+
+        file_path = (
+            tmp_path
+            / "extensions"
+            / "browser"
+            / "src"
+            / "browser"
+            / "pw-tools-core.snapshot.ts"
+        )
+        file_path.parent.mkdir(parents=True, exist_ok=True)
+        file_path.write_text(
+            "import type { Page } from 'playwright-core';\n"
+            "type WithSnapshotForAI = { _snapshotForAI?: (arg: object) => Promise<object> };\n"
+            "export async function snap(page: Page): Promise<void> {\n"
+            "  const maybe = page as unknown as WithSnapshotForAI;\n"
+            "  if (!maybe._snapshotForAI) {\n"
+            "    throw new Error('missing _snapshotForAI');\n"
+            "  }\n"
+            "  await maybe._snapshotForAI({ timeout: 5000 });\n"
+            "  const maybe2 = page as unknown as WithSnapshotForAI;\n"
+            "  if (!maybe2._snapshotForAI) {\n"
+            "    throw new Error('missing _snapshotForAI second');\n"
+            "  }\n"
+            "  await maybe2._snapshotForAI({ timeout: 2500 });\n"
+            "}\n",
+            encoding="utf-8",
+        )
+
+        pr = ParseResult(
+            file_path=file_path,
+            language="typescript",
+            functions=[],
+            classes=[],
+            imports=[],
+            patterns=[],
+            line_count=14,
+        )
+
+        findings = TypeSafetyBypassSignal().analyze([pr], {}, DriftConfig())
+        assert len(findings) == 1
+        finding = findings[0]
+
+        assert finding.severity == Severity.LOW
+        assert finding.score == 0.0
+        assert finding.metadata["kind_distribution"].get("double_cast_sdk_guarded", 0) == 2
+        assert finding.metadata["kind_distribution"].get("double_cast", 0) == 0
+
+    def test_issue_279_playwright_double_cast_without_runtime_guard_stays_weighted(
+        self, tmp_path: Path
+    ) -> None:
+        from drift.config import DriftConfig
+        from drift.models import ParseResult
+        from drift.signals.type_safety_bypass import TypeSafetyBypassSignal
+
+        file_path = tmp_path / "src" / "browser" / "pw-tools-core.snapshot.ts"
+        file_path.parent.mkdir(parents=True, exist_ok=True)
+        file_path.write_text(
+            "import type { Page } from 'playwright-core';\n"
+            "type WithSnapshotForAI = { _snapshotForAI?: (arg: object) => Promise<object> };\n"
+            "export function snap(page: Page): void {\n"
+            "  const maybe = page as unknown as WithSnapshotForAI;\n"
+            "  void maybe;\n"
+            "  const maybe2 = page as unknown as WithSnapshotForAI;\n"
+            "  void maybe2;\n"
+            "}\n",
+            encoding="utf-8",
+        )
+
+        pr = ParseResult(
+            file_path=file_path,
+            language="typescript",
+            functions=[],
+            classes=[],
+            imports=[],
+            patterns=[],
+            line_count=8,
+        )
+
+        findings = TypeSafetyBypassSignal().analyze([pr], {}, DriftConfig())
+        assert len(findings) == 1
+        finding = findings[0]
+
+        assert finding.metadata["kind_distribution"].get("double_cast", 0) == 2
+        assert finding.metadata["kind_distribution"].get("double_cast_sdk_guarded", 0) == 0
+        assert finding.score > 0.0
+
     def test_issue_280_test_support_double_casts_are_treated_as_test_context(
         self, tmp_path: Path
     ) -> None:
