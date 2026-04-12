@@ -1,5 +1,41 @@
 # Risk Register
 
+## 2026-04-12 - Issue #261: TVS mature extension workspace burst precision hardening
+
+- Risk ID: RISK-SIGNAL-2026-04-12-261
+- Component: `src/drift/signals/temporal_volatility.py`, `tests/test_coverage_pipeline_and_helpers.py`
+- Type: Signal precision hardening (false-positive reduction)
+- Description: Temporal Volatility (TVS) now classifies coordinated bursts in established runtime plugin workspaces more robustly by combining active-file density with recent-modification density, instead of relying on a strict active-ratio trigger only.
+- Trigger: `drift analyze` on large extension/plugin monorepos where workspaces contain mixed-age files but concentrated recent iteration windows.
+- Impact: High-positive. Reduces persistent TVS high-severity false positives in active extension workspaces and improves fix-first prioritization credibility.
+- Mitigation:
+  - Extended `_workspace_burst_profiles()` with `recent_modified_count`/`recent_modified_ratio`.
+  - Added bounded mature-workspace burst criteria (`size`, `active_count`, `active_ratio`, `recent_modified_ratio`, `established_count`).
+  - Preserved existing score cap (`<= 0.45`) and metadata traceability (`workspace_burst_dampened`).
+  - Added regression test for mixed-age mature workspace behavior.
+- Verification:
+  - `python -m pytest tests/test_coverage_pipeline_and_helpers.py -k "temporal_volatility or workspace" --tb=short -q`
+  - `python -m ruff check src/drift/signals/temporal_volatility.py tests/test_coverage_pipeline_and_helpers.py`
+- Residual risk: Low-Medium. Some genuine plugin-workspace instability may be down-ranked during broad coordinated activity windows; guardrails remain bounded and findings are still emitted.
+
+## 2026-04-12 - Issue #260: DCA plugin/extension workspace false-positive reduction
+
+- Risk ID: RISK-SIGNAL-2026-04-12-260
+- Component: `src/drift/signals/dead_code_accumulation.py`, `tests/test_dead_code_accumulation.py`
+- Type: Signal precision hardening (false-positive reduction)
+- Description: Dead Code Accumulation (DCA) now applies bounded dampening for JS/TS exports in plugin/extension workspaces (`extensions/*`, `plugins/*`, including nested paths such as `.pi/extensions/*`) where runtime host/plugin loaders frequently consume exports outside static import graphs.
+- Trigger: `drift analyze` on monorepos with extension/plugin packages loaded via runtime registration or dynamic import across workspace boundaries.
+- Impact: High-positive. Reduces medium/high false-positive clusters in plugin ecosystems and improves DCA actionability.
+- Mitigation:
+  - Added workspace-path heuristic in DCA for runtime plugin/extension export surfaces.
+  - Applied bounded LOW cap (`score <= 0.39`) with explicit metadata (`runtime_plugin_workspace_heuristic_applied`).
+  - Marked affected findings as `library_context_candidate` for downstream context-aware triage.
+  - Added regressions for `extensions/*`, nested `.pi/extensions/*`, and a non-plugin guard case.
+- Verification:
+  - `python -m pytest tests/test_dead_code_accumulation.py -q --tb=short`
+  - `python -m ruff check src/drift/signals/dead_code_accumulation.py tests/test_dead_code_accumulation.py`
+- Residual risk: Low-Medium. Some genuine dead exports in plugin workspaces may be down-ranked; findings remain visible and non-plugin paths are unaffected.
+
 ## 2026-04-12 - Issue #259: CXS context cap for TS/JS config-default files
 
 - Risk ID: RISK-SIGNAL-2026-04-12-259

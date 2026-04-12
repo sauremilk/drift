@@ -42,6 +42,7 @@
 
 ### Fixed
 
+- TVS Issue #261: improve `workspace_burst_dampened` activation for mature extension/plugin workspaces by combining active-file and recent-modification density in burst detection, reducing high-severity false positives in large mixed-age monorepos.
 - CXS Issue #259: extend inherent TS/JS complexity-context detection to config-default patterns (`config-defaults.*`, `config.defaults.*`, `default-config.*`) and cap those findings to `INFO` (`score <= 0.19`) with `context_dampened` metadata to reduce false-positive urgency in configuration-default resolver modules.
 - EDS Issue #256: add TypeScript/JavaScript file-based test evidence mapping (`*.test.*`, `*.spec.*`, `__tests__/*`, plus `src/... -> tests/...`) and treat unknown test status neutrally (`has_test=None`) to prevent explainability score inflation when test discovery is incomplete.
 - CXS Issue #255: cap TypeScript/JavaScript schema and migration file findings (`*.schema.ts/js`, `*migration*`, `*/migrations/*`) to `INFO` severity with bounded score (`<= 0.19`) and explicit `context_dampened` metadata, reducing false-positive urgency inflation for inherently branch-heavy validation/migration code.

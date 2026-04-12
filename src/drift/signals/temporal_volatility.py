@@ -78,10 +78,15 @@ def _workspace_burst_profiles(
 
         established_count = 0
         active_count = 0
+        recent_modified_count = 0
         for history in ws_histories:
             first_seen = history.first_seen
             if isinstance(first_seen, datetime.datetime):
                 first_seen = first_seen.astimezone(datetime.UTC)
+
+            last_modified = history.last_modified
+            if isinstance(last_modified, datetime.datetime):
+                last_modified = last_modified.astimezone(datetime.UTC)
 
             # Workspace age is determined by introduction time, not by whether
             # individual files have quiet periods after creation.
@@ -89,11 +94,23 @@ def _workspace_burst_profiles(
                 established_count += 1
             if history.change_frequency_30d >= active_threshold:
                 active_count += 1
+            if last_modified and last_modified >= cutoff:
+                recent_modified_count += 1
 
         size = len(ws_histories)
         active_ratio = active_count / size
+        recent_modified_ratio = recent_modified_count / size
         workspace_is_new = established_count == 0
-        coordinated_burst = size >= 6 and active_ratio >= 0.60
+        coordinated_burst = (size >= 6 and active_ratio >= 0.60) or (
+            # Mature extension workspaces often mix old and new files. When a
+            # substantial share is both recently modified and above baseline,
+            # treat it as coordinated work instead of pure instability.
+            size >= 10
+            and active_count >= 4
+            and active_ratio >= 0.40
+            and recent_modified_ratio >= 0.45
+            and established_count >= 3
+        )
 
         profiles[workspace] = {
             "workspace_is_new": workspace_is_new,

@@ -419,6 +419,55 @@ class TestTemporalVolatilitySignal:
         assert telegram_findings
         assert all(f.metadata.get("workspace_burst_dampened") is True for f in telegram_findings)
 
+    def test_mature_workspace_coordinated_burst_is_dampened(self):
+        from drift.signals.temporal_volatility import TemporalVolatilitySignal
+
+        signal = TemporalVolatilitySignal()
+        histories = {}
+
+        for i in range(40):
+            histories[f"src/base_{i}.py"] = FileHistory(
+                path=Path(f"src/base_{i}.py"),
+                total_commits=3,
+                unique_authors=1,
+                change_frequency_30d=1.0,
+                defect_correlated_commits=0,
+                first_seen=_days_ago(180),
+                last_modified=_days_ago(90),
+            )
+
+        # Mixed-age extension workspace: not "new", but under coordinated activity.
+        for i in range(7):
+            histories[f"extensions/acpx/src/active_{i}.ts"] = FileHistory(
+                path=Path(f"extensions/acpx/src/active_{i}.ts"),
+                total_commits=38,
+                unique_authors=8,
+                change_frequency_30d=17.0,
+                defect_correlated_commits=3,
+                first_seen=_days_ago(150),
+                last_modified=_days_ago(2),
+            )
+
+        for i in range(5):
+            histories[f"extensions/acpx/src/stable_{i}.ts"] = FileHistory(
+                path=Path(f"extensions/acpx/src/stable_{i}.ts"),
+                total_commits=9,
+                unique_authors=2,
+                change_frequency_30d=1.5,
+                defect_correlated_commits=0,
+                first_seen=_days_ago(220),
+                last_modified=_days_ago(120),
+            )
+
+        findings = signal.analyze([], histories, DriftConfig())
+        acpx_findings = [
+            f for f in findings if f.file_path.as_posix().startswith("extensions/acpx/")
+        ]
+
+        assert acpx_findings
+        assert all(f.metadata.get("workspace_burst_dampened") is True for f in acpx_findings)
+        assert all(f.score <= 0.45 for f in acpx_findings)
+
 
 # ===========================================================================
 # Rich output helpers

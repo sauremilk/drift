@@ -1,5 +1,19 @@
 # FMEA Matrix
 
+## 2026-04-12 - Issue #261: TVS burst dampening for mature extension workspaces
+
+| Signal | Failure Mode | Cause | Effect | Detection | Mitigation | S | O | D | RPN | Status |
+|---|---|---|---|---|---|---:|---:|---:|---:|---|
+| TVS | FP: coordinated churn in established `extensions/*`/`plugins/*` workspaces is still escalated as HIGH, while `workspace_burst_dampened` rarely activates | Coordinated-burst detection required a strict active-ratio condition and ignored workspace-level recency/mixed-age patterns common in mature monorepos | High-priority noise in extension-heavy repos, reduced trust in TVS fix-first ordering | New regression in `tests/test_coverage_pipeline_and_helpers.py` (`test_mature_workspace_coordinated_burst_is_dampened`) | Extend TVS workspace burst profile with bounded mature-workspace branch: require minimum active files plus recent-modified ratio and established-history guard; keep score cap (`<= 0.45`) and metadata (`workspace_burst_dampened`) | 7 | 8 | 2 | 112 | Mitigated |
+| TVS | FN-risk: real instability inside mature plugin workspaces may be down-ranked | Expanded burst classification dampens more established extension workspaces during coordinated activity | Potential delayed prioritization of genuine hotspot files within active plugin packages | Existing non-plugin guard remains active (`test_non_plugin_outlier_keeps_high_severity`) | Keep dampening scope bounded to runtime plugin workspaces and require multiple simultaneous signals (size, active-count, active-ratio, recent-ratio, established-count); findings remain visible | 4 | 3 | 4 | 48 | Mitigated |
+
+## 2026-04-12 - Issue #260: DCA false positives for plugin/extension workspace exports
+
+| Signal | Failure Mode | Cause | Effect | Detection | Mitigation | S | O | D | RPN | Status |
+|---|---|---|---|---|---|---:|---:|---:|---:|---|
+| DCA | FP: JS/TS exports in plugin/extension workspaces are reported as dead code with medium/high urgency although consumed by host runtime loading | DCA relied on static import references and only dampened narrow config/entrypoint filename subsets, missing broader workspace export surfaces (`extensions/*`, `plugins/*`, nested `.pi/extensions/*`) | Large false-positive clusters in plugin monorepos, inflated drift severity, reduced DCA trust/actionability | New regressions in `tests/test_dead_code_accumulation.py` (`test_extensions_non_config_file_is_dampened_to_low`, `test_nested_dotpi_extensions_file_is_dampened_to_low`) | Add bounded runtime plugin workspace heuristic for JS/TS source files under extension/plugin scopes; cap to LOW (`score <= 0.39`) and expose metadata (`runtime_plugin_workspace_heuristic_applied`) | 7 | 8 | 2 | 112 | Mitigated |
+| DCA | FN-risk: genuine dead exports inside plugin workspaces are down-ranked too aggressively | New workspace heuristic applies context dampening to broader plugin-source paths | Potential delayed cleanup of real dead exports in plugin packages | Guard regression `test_non_plugin_file_keeps_high_without_workspace_heuristic` keeps non-plugin severity behavior unchanged | Keep findings visible (no suppression), bound heuristic to JS/TS files in extension/plugin workspace paths only, and retain stronger scoring outside that scope | 4 | 3 | 4 | 48 | Mitigated |
+
 ## 2026-04-12 - Issue #259: CXS false positives for config-default files
 
 | Signal | Failure Mode | Cause | Effect | Detection | Mitigation | S | O | D | RPN | Status |

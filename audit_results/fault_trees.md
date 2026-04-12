@@ -1,5 +1,55 @@
 # Fault Tree Analysis
 
+## 2026-04-12 - Issue #261: TVS mature extension workspace burst false positives
+
+### Top Event (TE-TVS-261)
+TVS reports coordinated active development in established plugin workspaces as high temporal instability because burst dampening does not activate reliably.
+
+### FT-1: false-positive branch
+
+```
+          TE-FP: mature extension workspace churn reported as high instability
+                         |
+                      OR-Gate
+               +---------+---------+
+              IE-1      IE-2
+```
+
+- **IE-1 (MCS)**: Coordinated-burst detection relied on one strict active-ratio threshold, which under-fits mixed-age extension workspaces in large monorepos.
+  - Mitigation: Add bounded mature-workspace burst branch that combines active-count, active-ratio, and recent-modified ratio.
+- **IE-2 (MCS)**: Burst classifier did not use workspace-level recency density, so coordinated iteration windows with older files were interpreted as pure instability.
+  - Mitigation: Include `last_modified` recency share and established-history guard in workspace profile before applying the existing TVS dampening cap.
+
+### FT-2: false-negative guard
+
+- **IE-3 (Guard)**: Broader burst detection could down-rank genuine instability in plugin workspaces.
+  - Mitigation: Keep heuristic bounded to runtime plugin scopes and require multiple simultaneous criteria; keep findings visible (no suppression) and preserve non-plugin high-severity behavior.
+
+## 2026-04-12 - Issue #260: DCA false positives for plugin/extension workspace exports
+
+### Top Event (TE-DCA-260)
+DCA reports plugin/extension workspace exports as dead code with inflated urgency despite runtime host/plugin consumption outside static import graphs.
+
+### FT-1: false-positive branch
+
+```
+          TE-FP: plugin workspace export reported as actionable dead code
+                         |
+                      OR-Gate
+               +---------+---------+
+              IE-1      IE-2
+```
+
+- **IE-1 (MCS)**: Static import-only evidence cannot see runtime plugin loader boundaries, so extension exports appear unreferenced.
+  - Mitigation: Add bounded runtime plugin workspace heuristic for JS/TS files under `extensions/*` and `plugins/*` (including nested path variants).
+- **IE-2 (MCS)**: Existing DCA dampening only covered narrow filename subsets (`config*`, `components/plugin-sdk`) and missed broader plugin export surfaces.
+  - Mitigation: Apply workspace-level LOW cap (`score <= 0.39`) with metadata traceability (`runtime_plugin_workspace_heuristic_applied`).
+
+### FT-2: false-negative guard
+
+- **IE-3 (Guard)**: Workspace dampening may down-rank genuinely dead exports in plugin packages.
+  - Mitigation: Keep findings visible (no suppression), constrain heuristic to JS/TS plugin workspace paths, and keep non-plugin severity behavior unchanged via regression guard.
+
 ## 2026-04-12 - Issue #259: CXS false positives in config-default resolver files
 
 ### Top Event (TE-CXS-259)
