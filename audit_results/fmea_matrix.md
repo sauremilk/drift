@@ -1,5 +1,12 @@
 # FMEA Matrix
 
+## 2026-04-12 - Issue #255: CXS false positives for schema and migration files
+
+| Signal | Failure Mode | Cause | Effect | Detection | Mitigation | S | O | D | RPN | Status |
+|---|---|---|---|---|---|---:|---:|---:|---:|---|
+| CXS | FP: TypeScript/JavaScript schema validation and migration files are reported with medium/high urgency although high branching is expected in these contexts | CXS scored control-flow depth uniformly and did not model file-context intent for `.schema.*` and migration patterns | Triage noise (16+ findings in reported case), inflated score contribution, reduced trust in CXS for data-shape infrastructure code | New regressions in `tests/test_cognitive_complexity.py` (`test_inherent_ts_complexity_context_matches_schema_and_migration_paths`, `test_cxs_dampens_schema_and_migration_context_to_info`) | Add bounded TS/JS file-context heuristic (`_is_inherent_ts_complexity_context`) and cap context findings to `INFO` (`score <= 0.19`) with explicit metadata (`context_dampened`) | 7 | 8 | 2 | 112 | Mitigated |
+| CXS | FN-risk: real complexity debt in migration/schema files may be under-prioritized after context cap | Severity cap for contextual files can down-rank genuine maintainability hotspots in those files | Potential delayed refactoring for truly problematic migration/schema control flow | Existing CXS behavior outside the bounded file patterns remains unchanged; context helper has explicit negative-path regression (`test_inherent_ts_complexity_context_ignores_regular_files`) | Scope remains narrow to TS/JS schema or migration path patterns; findings are retained (not suppressed), preserving visibility for manual review | 4 | 3 | 4 | 48 | Mitigated |
+
 ## 2026-04-12 - Issue #254: FOE plugin SDK sub-path import grouping
 
 | Signal | Failure Mode | Cause | Effect | Detection | Mitigation | S | O | D | RPN | Status |

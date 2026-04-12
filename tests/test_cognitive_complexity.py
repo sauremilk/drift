@@ -8,7 +8,7 @@ from pathlib import Path
 import pytest
 
 from drift.config import DriftConfig
-from drift.models import FunctionInfo, ParseResult, SignalType
+from drift.models import FunctionInfo, ParseResult, Severity, SignalType
 from drift.precision import (
     ensure_signals_registered,
     has_matching_finding,
@@ -17,6 +17,7 @@ from drift.precision import (
 from drift.signals.cognitive_complexity import (
     CognitiveComplexitySignal,
     _cognitive_complexity_of_body,
+    _is_inherent_ts_complexity_context,
 )
 from tests.fixtures.ground_truth import FIXTURES_BY_SIGNAL, GroundTruthFixture
 
@@ -119,6 +120,19 @@ def test_loop_with_nested_condition() -> None:
     cc = _cognitive_complexity_of_body(func.body)
     # for: +1, if: +1+1, if: +1+2 = 6
     assert cc >= 5
+
+
+def test_inherent_ts_complexity_context_matches_schema_and_migration_paths() -> None:
+    assert _is_inherent_ts_complexity_context(Path("src/gateway/mcp-http.schema.ts"))
+    assert _is_inherent_ts_complexity_context(Path("src/infra/state-migrations.ts"))
+    assert _is_inherent_ts_complexity_context(
+        Path("src/commands/doctor/shared/legacy-config-migrations.channels.ts")
+    )
+
+
+def test_inherent_ts_complexity_context_ignores_regular_files() -> None:
+    assert not _is_inherent_ts_complexity_context(Path("src/services/payment.ts"))
+    assert not _is_inherent_ts_complexity_context(Path("src/services/payment.py"))
 
 
 # ---------------------------------------------------------------------------
@@ -237,6 +251,30 @@ class TestCXSTrueNegative:
         findings = signal.analyze([pr], {}, DriftConfig())
 
         assert len(findings) == 0
+
+
+def test_cxs_dampens_schema_and_migration_context_to_info() -> None:
+    signal = CognitiveComplexitySignal()
+    pr = ParseResult(
+        file_path=Path("src/gateway/mcp-http.schema.ts"),
+        language="typescript",
+        functions=[],
+    )
+
+    finding = signal._make_finding(
+        pr,
+        "validateSchema",
+        cc=40,
+        threshold=15,
+        start_line=1,
+        end_line=50,
+        body_lines=50,
+        context_dampened=True,
+    )
+
+    assert finding.severity == Severity.INFO
+    assert finding.score <= 0.19
+    assert finding.metadata["context_dampened"] is True
 
 
 # ---------------------------------------------------------------------------

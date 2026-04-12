@@ -1,5 +1,22 @@
 # Risk Register
 
+## 2026-04-12 - Issue #255: CXS context cap for schema and migration files
+
+- Risk ID: RISK-SIGNAL-2026-04-12-255
+- Component: `src/drift/signals/cognitive_complexity.py`, `tests/test_cognitive_complexity.py`
+- Type: Signal precision hardening (false-positive reduction)
+- Description: Cognitive Complexity (CXS) now detects TypeScript/JavaScript schema and migration file contexts and caps those findings to informational severity (`INFO`, `score <= 0.19`) because branching in these files is often structural and expected.
+- Trigger: `drift analyze` on TS/JS repositories with schema validation modules (`*.schema.ts/js`) and migration-heavy files (`*migration*`, `*/migrations/*`).
+- Impact: High-positive. Reduces CXS false-positive severity inflation in data-shape and migration infrastructure code, improving signal credibility and triage focus.
+- Mitigation:
+  - Added `_is_inherent_ts_complexity_context()` in CXS to detect bounded schema/migration file patterns.
+  - Added context-aware severity cap in `_make_finding()` with trace metadata (`context_dampened`).
+  - Added targeted regressions for positive and negative path context matching plus severity-cap behavior.
+- Verification:
+  - `python -m pytest tests/test_cognitive_complexity.py -q --tb=short`
+  - `python -m ruff check src/drift/signals/cognitive_complexity.py tests/test_cognitive_complexity.py`
+- Residual risk: Low-Medium. Genuine complexity debt in migration/schema files can be down-ranked; scope is tightly bounded and findings remain visible for manual follow-up.
+
 ## 2026-04-12 - Issue #254: FOE groups plugin SDK sub-path imports by dependency identity
 
 - Risk ID: RISK-SIGNAL-2026-04-12-254

@@ -1,5 +1,30 @@
 # Fault Tree Analysis
 
+## 2026-04-12 - Issue #255: CXS false positives in schema and migration code
+
+### Top Event (TE-CXS-255)
+CXS reports expected branching in schema validation and migration modules as actionable complexity debt.
+
+### FT-1: false-positive branch
+
+```
+          TE-FP: inherent schema/migration branching reported as urgent complexity debt
+                         |
+                      OR-Gate
+               +---------+---------+
+              IE-1      IE-2
+```
+
+- **IE-1 (MCS)**: CXS applies one global severity mapping and treats schema validation branching as general business-logic complexity.
+  - Mitigation: Add bounded context classification for TS/JS schema filenames (`*.schema.ts/js/...`) and cap severity to `INFO` for that context.
+- **IE-2 (MCS)**: Migration files (`*migration*`, `*/migrations/*`) are write-once transformation code with intentionally exhaustive legacy branching, but were scored without context dampening.
+  - Mitigation: Apply the same bounded context cap for migration path patterns and annotate findings with `context_dampened` metadata.
+
+### FT-2: false-negative guard
+
+- **IE-3 (Guard)**: Context cap may down-rank real complexity debt in exceptional migration/schema files.
+  - Mitigation: Keep findings visible (no suppression), scope the cap to explicit TS/JS file patterns only, and preserve standard scoring for all other files.
+
 ## 2026-04-12 - Issue #254: FOE false positives for plugin SDK sub-path imports
 
 ### Top Event (TE-FOE-254)
