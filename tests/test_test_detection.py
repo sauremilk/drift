@@ -20,6 +20,7 @@ def test_is_test_file_patterns() -> None:
         Path("src/agents/pi-embedded-runner/run/attempt.spawn-workspace.test-support.ts")
     )
     assert is_test_file(Path("src/commands/status.test-support.ts"))
+    assert is_test_file(Path("src/infra/provider-usage.test-support.ts"))
     assert is_test_file(Path("extensions/telegram/src/bot.media.test-utils.ts"))
     assert is_test_file(Path("extensions/telegram/src/bot-native-commands.fixture-test-support.ts"))
     assert is_test_file(Path("extensions/telegram/src/bot-native-commands.menu-test-support.ts"))
