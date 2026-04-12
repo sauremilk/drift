@@ -16,6 +16,7 @@ Deterministic, AST-only, LLM-free.
 
 from __future__ import annotations
 
+import json
 from collections import defaultdict
 from pathlib import Path
 
@@ -153,6 +154,79 @@ _RUNTIME_PLUGIN_WORKSPACE_SOURCE_SUFFIXES: frozenset[str] = frozenset({
     ".mjs",
     ".cjs",
 })
+
+_PUBLISHED_PACKAGE_SOURCE_ROOTS: frozenset[str] = frozenset({"src", "lib"})
+
+
+def _relative_to_or_none(path: Path, base: Path) -> Path | None:
+    """Return *path* relative to *base* or None when not contained."""
+    try:
+        return path.relative_to(base)
+    except ValueError:
+        return None
+
+
+def _extract_package_root_candidates(file_path: Path) -> list[Path]:
+    """Extract packages/<name> root candidates from a file path."""
+    parts = file_path.parts
+    if len(parts) < 3:
+        return []
+
+    candidates: list[Path] = []
+    lowered_parts = [part.lower() for part in parts]
+    for idx, token in enumerate(lowered_parts[:-1]):
+        if token != "packages" or idx + 1 >= len(parts):
+            continue
+        candidates.append(Path(*parts[: idx + 2]))
+
+    return candidates
+
+
+def _discover_published_package_roots(parse_results: list[ParseResult]) -> dict[Path, str]:
+    """Return package roots with non-private npm package.json name metadata."""
+    package_roots: dict[Path, str] = {}
+
+    for pr in parse_results:
+        if pr.language not in _SUPPORTED_LANGUAGES:
+            continue
+
+        for package_root in _extract_package_root_candidates(pr.file_path):
+            package_json = package_root / "package.json"
+            if not package_json.is_file():
+                continue
+
+            try:
+                package_data = json.loads(package_json.read_text(encoding="utf-8"))
+            except (OSError, json.JSONDecodeError):
+                continue
+
+            package_name = package_data.get("name")
+            is_private = package_data.get("private") is True
+            if not isinstance(package_name, str) or not package_name.strip() or is_private:
+                continue
+
+            package_roots[package_root] = package_name
+
+    return package_roots
+
+
+def _published_package_name_for_source(
+    file_path: Path,
+    published_package_roots: dict[Path, str],
+) -> str | None:
+    """Return npm package name when *file_path* belongs to a published package."""
+    suffix = file_path.suffix.lower()
+    if suffix not in _RUNTIME_PLUGIN_WORKSPACE_SOURCE_SUFFIXES:
+        return None
+
+    for package_root, package_name in published_package_roots.items():
+        rel_path = _relative_to_or_none(file_path, package_root)
+        if rel_path is None or not rel_path.parts:
+            continue
+        if rel_path.parts[0].lower() in _PUBLISHED_PACKAGE_SOURCE_ROOTS:
+            return package_name
+
+    return None
 
 
 def _is_testkit_contract_path(file_path: Path) -> bool:
@@ -351,6 +425,7 @@ class DeadCodeAccumulationSignal(BaseSignal):
             set() if has_application_layout else _discover_package_roots(parse_results)
         )
         library_repo = is_likely_library_repo(parse_results) or bool(package_roots)
+        published_package_roots = _discover_published_package_roots(parse_results)
 
         # Phase 1: collect all exported (public) symbols per file
         # symbol_name → list of (file_path, kind, start_line)
@@ -472,6 +547,8 @@ class DeadCodeAccumulationSignal(BaseSignal):
             runtime_plugin_config_heuristic_applied = False
             runtime_plugin_entrypoint_heuristic_applied = False
             runtime_plugin_workspace_heuristic_applied = False
+            published_package_heuristic_applied = False
+            published_package_name: str | None = None
             if (
                 path_context != "test"
                 and _is_runtime_plugin_config_path(file_path)
@@ -499,6 +576,18 @@ class DeadCodeAccumulationSignal(BaseSignal):
                 score = round(min(0.39, score * 0.45), 3)
                 severity = Severity.LOW
                 runtime_plugin_workspace_heuristic_applied = True
+            elif path_context != "test":
+                published_package_name = _published_package_name_for_source(
+                    file_path,
+                    published_package_roots,
+                )
+                if published_package_name:
+                    # Published npm package exports are often consumed by
+                    # downstream users and can appear dead in monorepo-only
+                    # static import graphs.
+                    score = round(min(0.39, score * 0.45), 3)
+                    severity = Severity.LOW
+                    published_package_heuristic_applied = True
 
             dead_names = [s[0] for s in dead_symbols[:10]]
 
@@ -558,6 +647,10 @@ class DeadCodeAccumulationSignal(BaseSignal):
                         "runtime_plugin_workspace_heuristic_applied": (
                             runtime_plugin_workspace_heuristic_applied
                         ),
+                        "published_package_heuristic_applied": (
+                            published_package_heuristic_applied
+                        ),
+                        "published_package_name": published_package_name,
                         "testkit_contract_heuristic_applied": (
                             testkit_contract_heuristic_applied
                         ),

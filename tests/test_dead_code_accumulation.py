@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
 from drift.config import DriftConfig
@@ -535,3 +536,71 @@ class TestDCARuntimePluginWorkspaceHeuristic:
             findings[0].metadata.get("runtime_plugin_entrypoint_heuristic_applied")
             is True
         )
+
+
+class TestDCAPublishedNpmPackageHeuristic:
+    def test_published_package_exports_are_dampened_to_low(self, tmp_path: Path) -> None:
+        package_dir = tmp_path / "packages" / "memory-host-sdk"
+        (package_dir / "src" / "host").mkdir(parents=True, exist_ok=True)
+        (package_dir / "package.json").write_text(
+            json.dumps({"name": "@openclaw/memory-host-sdk"}),
+            encoding="utf-8",
+        )
+
+        source_file = package_dir / "src" / "host" / "embeddings-bedrock.ts"
+        pr_sdk = ParseResult(
+            file_path=source_file,
+            language="typescript",
+            functions=[
+                _ts_exported_func("normalizeA", str(source_file), 10),
+                _ts_exported_func("normalizeB", str(source_file), 20),
+                _ts_exported_func("normalizeC", str(source_file), 30),
+                _ts_exported_func("normalizeD", str(source_file), 40),
+            ],
+            imports=[],
+        )
+
+        findings = DeadCodeAccumulationSignal().analyze([pr_sdk], {}, DriftConfig())
+        assert len(findings) == 1
+        assert findings[0].severity == Severity.LOW
+        assert findings[0].score <= 0.39
+        assert findings[0].metadata.get("published_package_heuristic_applied") is True
+        assert (
+            findings[0].metadata.get("published_package_name")
+            == "@openclaw/memory-host-sdk"
+        )
+
+    def test_private_package_keeps_high_without_published_heuristic(
+        self,
+        tmp_path: Path,
+    ) -> None:
+        package_dir = tmp_path / "packages" / "memory-host-sdk"
+        (package_dir / "src" / "host").mkdir(parents=True, exist_ok=True)
+        (package_dir / "package.json").write_text(
+            json.dumps(
+                {
+                    "name": "@openclaw/memory-host-sdk",
+                    "private": True,
+                }
+            ),
+            encoding="utf-8",
+        )
+
+        source_file = package_dir / "src" / "host" / "embeddings-bedrock.ts"
+        pr_sdk = ParseResult(
+            file_path=source_file,
+            language="typescript",
+            functions=[
+                _ts_exported_func("normalizeA", str(source_file), 10),
+                _ts_exported_func("normalizeB", str(source_file), 20),
+                _ts_exported_func("normalizeC", str(source_file), 30),
+                _ts_exported_func("normalizeD", str(source_file), 40),
+            ],
+            imports=[],
+        )
+
+        findings = DeadCodeAccumulationSignal().analyze([pr_sdk], {}, DriftConfig())
+        assert len(findings) == 1
+        assert findings[0].severity == Severity.HIGH
+        assert findings[0].metadata.get("published_package_heuristic_applied") is False
+        assert findings[0].metadata.get("published_package_name") is None
