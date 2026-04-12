@@ -2,6 +2,8 @@
 
 ## [2.9.14] - 2026-04-12
 
+Short version: Harden copilot-autopilot risky-edit completion with fix-intent contracts, shadow-verify, and repair-template registry evidence.
+
 ### Added
 
 - **Shadow-Verify fuer cross-file-risky edit_kinds (ADR-064):** Tasks mit `fix_intent.edit_kind` in `{remove_import, relocate_import, reduce_dependencies, extract_module, decouple_modules, delete_symbol, rename_symbol}` erhalten jetzt `shadow_verify=true` und `completion_evidence.tool="drift_shadow_verify"`. Der neue MCP-Tool `drift_shadow_verify` fuehrt einen vollen, nicht-inkrementellen `analyze_repo()`-Lauf durch, filtert auf `scope_files` (Union aus `allowed_files`, `related_files` und Task-Graph-Nachbarn) und vergleicht mit der aktuellen Baseline. Gibt `shadow_clean`, `safe_to_merge`, `new_findings_in_scope` und `agent_instruction` zurueck. Verhindert falsch-positive `safe_to_commit`-Ergebnisse von `drift_nudge` nach Import-Graph- und Symbol-Sichtbarkeits-Edits.
