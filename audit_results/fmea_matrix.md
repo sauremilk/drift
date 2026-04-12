@@ -1,5 +1,12 @@
 # FMEA Matrix
 
+## 2026-04-12 - Issue #287: AVS false positives on generated source files
+
+| Signal | Failure Mode | Cause | Effect | Detection | Mitigation | S | O | D | RPN | Status |
+|---|---|---|---|---|---|---:|---:|---:|---:|---|
+| AVS | FP: generated source files (`*.generated.ts/js/tsx/jsx`) are flagged with architecture-violation findings although the import structure is codegen artifact noise | AVS filtered test files but did not exclude generated-file conventions at signal input level | Non-actionable AVS findings in codegen-heavy repositories and reduced trust/actionability for architecture findings | New regression in `tests/test_architecture_violation.py` (`test_generated_typescript_file_is_ignored_for_avs_findings`) | Exclude generated files from AVS parse-result input using shared generated-file classifier (`is_generated_file`) before graph construction and downstream checks | 7 | 8 | 2 | 112 | Mitigated |
+| AVS | FN-risk: generated-file suppression can hide true architecture issues in hand-written files that mimic generated naming | Filename-based generated classification introduces bounded suppression surface | Potential delayed prioritization for rare manually-maintained files with misleading `.generated.*` naming | Existing AVS behavior for non-generated paths remains unchanged and regression coverage keeps scope explicit | Keep suppression tightly bounded to explicit generated path conventions via centralized classifier; preserve normal AVS scoring outside generated context | 4 | 2 | 4 | 32 | Mitigated |
+
 ## 2026-04-12 - Issue #285: TVS false positives on auto-generated files
 
 | Signal | Failure Mode | Cause | Effect | Detection | Mitigation | S | O | D | RPN | Status |

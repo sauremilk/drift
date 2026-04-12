@@ -1,5 +1,30 @@
 # Fault Tree Analysis
 
+## 2026-04-12 - Issue #287: AVS false positives on generated source files
+
+### Top Event (TE-AVS-287)
+AVS reports generated source files as actionable architecture violations.
+
+### FT-1: false-positive branch
+
+```
+          TE-FP: generated file reported as actionable AVS architecture violation
+                         |
+                      OR-Gate
+               +---------+---------+
+              IE-1      IE-2
+```
+
+- **IE-1 (MCS)**: AVS filtered only test files and allowed generated-file paths into graph construction and downstream checks.
+  - Mitigation: exclude generated files using shared `is_generated_file(...)` classifier before AVS analysis.
+- **IE-2 (MCS)**: Generated import graphs can contain synthetic coupling edges not representing architecture intent.
+  - Mitigation: skip AVS finding emission for generated context by removing generated files from AVS input set.
+
+### FT-2: false-negative guard
+
+- **IE-3 (Guard)**: filename-based generated suppression could hide real issues in manually maintained files with misleading generated naming.
+  - Mitigation: keep scope bounded to explicit generated filename/path conventions in centralized classifier; preserve full AVS behavior for non-generated files.
+
 ## 2026-04-12 - Issue #285: TVS false positives on auto-generated files
 
 ### Top Event (TE-TVS-285)

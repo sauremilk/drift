@@ -318,6 +318,33 @@ def test_score_zero_when_clean():
     assert findings == []
 
 
+def test_generated_typescript_file_is_ignored_for_avs_findings():
+    results = [
+        ParseResult(
+            file_path=Path("src/config/bundled-channel-config-metadata.generated.ts"),
+            language="typescript",
+            imports=[
+                ImportInfo(
+                    source_file=Path("src/config/bundled-channel-config-metadata.generated.ts"),
+                    imported_module="api.routes",
+                    imported_names=[],
+                    line_number=1,
+                )
+            ],
+        ),
+        ParseResult(
+            file_path=Path("api/routes.ts"),
+            language="typescript",
+            imports=[],
+        ),
+    ]
+
+    signal = ArchitectureViolationSignal()
+    findings = signal.analyze(results, {}, None)
+
+    assert findings == []
+
+
 # ── Blast radius ──────────────────────────────────────────────────────────
 
 

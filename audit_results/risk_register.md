@@ -1,5 +1,22 @@
 # Risk Register
 
+## 2026-04-12 - Issue #287: AVS generated-file precision hardening
+
+- Risk ID: RISK-SIGNAL-2026-04-12-287
+- Component: `src/drift/signals/architecture_violation.py`, `tests/test_architecture_violation.py`
+- Type: Signal precision hardening (false-positive reduction)
+- Description: Architecture Violation (AVS) now excludes generated source files from analysis input by using shared generated-file classification before import-graph construction. This suppresses non-actionable AVS findings for code-generated modules (for example `src/config/bundled-channel-config-metadata.generated.ts`).
+- Trigger: `drift analyze` on repositories that include generated TS/JS modules with synthetic import/coupling structure.
+- Impact: High-positive. Reduces AVS false positives and improves credibility/actionability of architecture findings in codegen-heavy repositories.
+- Mitigation:
+  - Added generated-file exclusion in AVS analyze pre-filter (`is_generated_file`).
+  - Added targeted regression `test_generated_typescript_file_is_ignored_for_avs_findings`.
+  - Preserved AVS behavior for non-generated production/test classification paths.
+- Verification:
+  - `\.venv\Scripts\python.exe -m pytest tests/test_architecture_violation.py -q --tb=short`
+  - `\.venv\Scripts\python.exe -m ruff check src/drift/signals/architecture_violation.py tests/test_architecture_violation.py`
+- Residual risk: Low-Medium. Rare hand-written files with generated-style naming may be suppressed; classifier scope remains bounded and non-generated files retain full AVS analysis.
+
 ## 2026-04-12 - Issue #285: TVS generated-file volatility precision hardening
 
 - Risk ID: RISK-SIGNAL-2026-04-12-285

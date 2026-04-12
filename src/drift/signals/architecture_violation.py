@@ -26,6 +26,7 @@ import networkx as nx
 
 from drift.config import DriftConfig
 from drift.ingestion.git_history import build_co_change_pairs
+from drift.ingestion.test_detection import is_generated_file
 from drift.models import (
     FileHistory,
     Finding,
@@ -437,7 +438,11 @@ class ArchitectureViolationSignal(BaseSignal):
         file_histories: dict[str, FileHistory],
         config: DriftConfig,
     ) -> list[Finding]:
-        filtered_prs = [pr for pr in parse_results if not is_test_file(pr.file_path)]
+        filtered_prs = [
+            pr
+            for pr in parse_results
+            if not is_test_file(pr.file_path) and not is_generated_file(pr.file_path)
+        ]
         graph, all_imports = build_import_graph(filtered_prs)
         findings: list[Finding] = []
 
