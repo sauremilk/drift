@@ -501,11 +501,14 @@ class TestRepairExemplar:
         assert exemplar is not None
         assert "def login" in exemplar["exemplar_snippet"]
         assert exemplar["patch_shape"]["canonical_structure"] == "jwt_factory_pattern"
-        assert exemplar["patch_shape"]["local_deviation"] == "auth_handler has 3 variants; align to canonical"
+        assert (
+            exemplar["patch_shape"]["local_deviation"]
+            == "auth_handler has 3 variants; align to canonical"
+        )
         assert "function signature" in exemplar["patch_shape"]["immutable_parts"]
 
     def test_nc_repair_exemplar_uses_canonical_alternative_multiline(self):
-        """Without canonical_snippet, NegativeContext.canonical_alternative is used as-is (multiline)."""
+        """Use multiline canonical_alternative when canonical_snippet is absent."""
         from drift.api_helpers import _task_to_api_dict
         from drift.models import (
             NegativeContext,
@@ -546,7 +549,7 @@ class TestRepairExemplar:
         assert "exception message text" in exemplar["patch_shape"]["immutable_parts"]
 
     def test_repair_exemplar_none_when_no_data(self):
-        """Task with neither canonical_snippet in metadata nor NC returns None for repair_exemplar."""
+        """Return None when neither metadata nor NC provides exemplar input."""
         from drift.api_helpers import _task_to_api_dict
 
         task = _make_task(metadata={})
@@ -642,4 +645,3 @@ class TestRepairExemplar:
         assert exemplar is not None
         assert exemplar["patch_shape"]["canonical_structure"] == "reuse-process_payment"
         assert "call sites" in exemplar["patch_shape"]["immutable_parts"]
-

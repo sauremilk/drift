@@ -7,10 +7,7 @@ be marked completed.
 
 from __future__ import annotations
 
-import pytest
-
 from drift.session import DriftSession
-
 
 # ---------------------------------------------------------------------------
 # Helpers

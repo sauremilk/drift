@@ -20,6 +20,7 @@ import time as _time
 from pathlib import Path
 from typing import Any
 
+from drift.analyzer import analyze_repo
 from drift.api._config import (
     _emit_api_telemetry,
     _load_config_cached,
@@ -33,9 +34,7 @@ from drift.api_helpers import (
     _finding_concise,
     _next_step_contract,
     shape_for_profile,
-    signal_abbrev,
 )
-from drift.analyzer import analyze_repo
 from drift.incremental import BaselineManager
 
 

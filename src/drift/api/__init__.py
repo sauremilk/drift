@@ -25,7 +25,6 @@ from drift.api.explain import _repo_examples_for_signal, explain
 from drift.api.fix_plan import _fix_plan_agent_instruction, fix_plan
 from drift.api.neg_context import negative_context
 from drift.api.nudge import _baseline_store, invalidate_nudge_baseline, nudge
-from drift.api.shadow_verify import shadow_verify
 from drift.api.scan import (
     _BATCH_SCAN_THRESHOLD,
     _DIVERSE_MIN_TOP_IMPACT_SHARE,
@@ -35,6 +34,7 @@ from drift.api.scan import (
     _scan_next_actions,
     scan,
 )
+from drift.api.shadow_verify import shadow_verify
 from drift.api.validate import validate
 
 # Backward-compat: all symbols formerly available as ``drift.api.X``
@@ -79,6 +79,7 @@ __all__ = [
     "nudge",
     "invalidate_nudge_baseline",
     "scan",
+    "shadow_verify",
     "validate",
     "to_json",
     # Internal (kept for backward compatibility)

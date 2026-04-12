@@ -22,7 +22,7 @@ from __future__ import annotations
 import datetime
 import json
 import logging
-from dataclasses import asdict, dataclass, field
+from dataclasses import dataclass, field
 from pathlib import Path
 from threading import Lock
 from typing import Any
@@ -41,8 +41,12 @@ MIN_OUTCOMES_FOR_CONFIDENCE: int = 3
 
 #: Default seed path inside the drift package data directory.
 #: Relative to the package root; resolved at load time.
-_DEFAULT_SEED_PATH = Path(__file__).parent.parent.parent / "data" / "repair_templates" / "templates.json"
-_DEFAULT_OUTCOMES_PATH = Path(__file__).parent.parent.parent / "data" / "repair_templates" / "outcomes.jsonl"
+_DEFAULT_SEED_PATH = (
+    Path(__file__).parent.parent.parent / "data" / "repair_templates" / "templates.json"
+)
+_DEFAULT_OUTCOMES_PATH = (
+    Path(__file__).parent.parent.parent / "data" / "repair_templates" / "outcomes.jsonl"
+)
 
 
 # ---------------------------------------------------------------------------
@@ -117,8 +121,7 @@ def _entry_from_dict(d: dict[str, Any]) -> RepairTemplateEntry:
         stable_count=int(d.get("stable_count", 0)),
         regressing_count=int(d.get("regressing_count", 0)),
         regression_patterns=[
-            _regression_pattern_from_dict(rp)
-            for rp in d.get("regression_patterns", [])
+            _regression_pattern_from_dict(rp) for rp in d.get("regression_patterns", [])
         ],
         evidence_sources=list(d.get("evidence_sources", [])),
         last_updated=d.get("last_updated", ""),
@@ -230,7 +233,7 @@ class RepairTemplateRegistry:
         elif direction == "regressing":
             entry.regressing_count += 1
 
-        entry.last_updated = rec.get("timestamp", datetime.datetime.now(datetime.timezone.utc).isoformat())
+        entry.last_updated = rec.get("timestamp", datetime.datetime.now(datetime.UTC).isoformat())
 
     # ------------------------------------------------------------------
     # Lookup
@@ -308,7 +311,7 @@ class RepairTemplateRegistry:
             "direction": direction,
             "score_delta": round(score_delta, 6),
             "session_id": session_id,
-            "timestamp": datetime.datetime.now(datetime.timezone.utc).isoformat(),
+            "timestamp": datetime.datetime.now(datetime.UTC).isoformat(),
         }
 
         with self._lock:
@@ -322,7 +325,9 @@ class RepairTemplateRegistry:
                     fh.write(json.dumps(record, ensure_ascii=False) + "\n")
             except Exception:
                 logger.debug(
-                    "repair_template_registry: could not write outcome to %s", outcomes, exc_info=True
+                    "repair_template_registry: could not write outcome to %s",
+                    outcomes,
+                    exc_info=True,
                 )
 
     # ------------------------------------------------------------------
@@ -349,12 +354,18 @@ class RepairTemplateRegistry:
         self.load(seed_path=seed, outcomes_path=outcomes)
 
         with self._lock:
-            data = {"entries": [_entry_to_dict(e) for e in sorted(self._entries.values(), key=lambda e: e.key)]}
+            data = {
+                "entries": [
+                    _entry_to_dict(e) for e in sorted(self._entries.values(), key=lambda e: e.key)
+                ]
+            }
             try:
                 seed.parent.mkdir(parents=True, exist_ok=True)
                 seed.write_text(json.dumps(data, indent=2, ensure_ascii=False), encoding="utf-8")
             except Exception:
-                logger.warning("repair_template_registry: failed to write seed %s", seed, exc_info=True)
+                logger.warning(
+                    "repair_template_registry: failed to write seed %s", seed, exc_info=True
+                )
 
 
 # ---------------------------------------------------------------------------

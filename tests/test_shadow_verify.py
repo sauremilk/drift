@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 from unittest.mock import MagicMock, patch
@@ -23,7 +22,7 @@ from drift.fix_intent import (
     EDIT_KIND_UNSPECIFIED,
     is_cross_file_risky,
 )
-from drift.models import AgentTask, Finding, Severity, SignalType
+from drift.models import AgentTask, Severity, SignalType
 
 # ---------------------------------------------------------------------------
 # is_cross_file_risky

@@ -7,9 +7,9 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
-import pytest
-
 from drift.fix_intent import (
+    _EDIT_KIND_FOR_SIGNAL,
+    _EXPECTED_AST_DELTA_FOR_EDIT_KIND,
     EDIT_KIND_ADD_AUTHORIZATION_CHECK,
     EDIT_KIND_ADD_DOCSTRING,
     EDIT_KIND_ADD_GUARD_CLAUSE,
@@ -32,15 +32,11 @@ from drift.fix_intent import (
     EDIT_KIND_UNSPECIFIED,
     EDIT_KIND_UPDATE_DOCSTRING,
     EDIT_KIND_UPDATE_EXCEPTION_CONTRACT,
-    FORBIDDEN_IMPLEMENTATION_CHANGE,
     FORBIDDEN_NEW_ABSTRACTION,
     FORBIDDEN_PRODUCTION_CODE_CHANGE,
     FORBIDDEN_SIGNATURE_CHANGE,
     FORBIDDEN_STYLE_CHANGE,
     FORBIDDEN_UNRELATED_REFACTOR,
-    _EDIT_KIND_FOR_SIGNAL,
-    _EXPECTED_AST_DELTA_FOR_EDIT_KIND,
-    _UNIVERSAL_FORBIDDEN_CHANGES,
     _refine_edit_kind,
     derive_fix_intent,
 )
@@ -93,11 +89,11 @@ def _make_task_dict(
     allowed_files: list[str] | None = None,
     title: str = "Test Task",
 ) -> dict[str, Any]:
-    """Minimales serialisiertes Task-Dict (simuliert Ergebnis von _task_to_api_dict vor fix_intent)."""
+    """Minimales Task-Dict wie aus _task_to_api_dict vor fix_intent."""
     _allowed: list[str] = []
     if file:
         _allowed.append(file)
-    for rf in (related_files or []):
+    for rf in related_files or []:
         if rf not in _allowed:
             _allowed.append(rf)
     return {
@@ -119,7 +115,9 @@ class TestEditKindMapping:
         assert _EDIT_KIND_FOR_SIGNAL[SignalType.MUTANT_DUPLICATE] == EDIT_KIND_MERGE_FUNCTION_BODY
 
     def test_pfs_edit_kind(self) -> None:
-        assert _EDIT_KIND_FOR_SIGNAL[SignalType.PATTERN_FRAGMENTATION] == EDIT_KIND_NORMALIZE_PATTERN
+        assert (
+            _EDIT_KIND_FOR_SIGNAL[SignalType.PATTERN_FRAGMENTATION] == EDIT_KIND_NORMALIZE_PATTERN
+        )
 
     def test_dca_edit_kind(self) -> None:
         assert _EDIT_KIND_FOR_SIGNAL[SignalType.DEAD_CODE_ACCUMULATION] == EDIT_KIND_DELETE_SYMBOL
@@ -134,13 +132,18 @@ class TestEditKindMapping:
         assert _EDIT_KIND_FOR_SIGNAL[SignalType.ARCHITECTURE_VIOLATION] == EDIT_KIND_REMOVE_IMPORT
 
     def test_ncv_edit_kind(self) -> None:
-        assert _EDIT_KIND_FOR_SIGNAL[SignalType.NAMING_CONTRACT_VIOLATION] == EDIT_KIND_RENAME_SYMBOL
+        assert (
+            _EDIT_KIND_FOR_SIGNAL[SignalType.NAMING_CONTRACT_VIOLATION] == EDIT_KIND_RENAME_SYMBOL
+        )
 
     def test_gcd_edit_kind(self) -> None:
         assert _EDIT_KIND_FOR_SIGNAL[SignalType.GUARD_CLAUSE_DEFICIT] == EDIT_KIND_ADD_GUARD_CLAUSE
 
     def test_bem_edit_kind(self) -> None:
-        assert _EDIT_KIND_FOR_SIGNAL[SignalType.BROAD_EXCEPTION_MONOCULTURE] == EDIT_KIND_NARROW_EXCEPTION
+        assert (
+            _EDIT_KIND_FOR_SIGNAL[SignalType.BROAD_EXCEPTION_MONOCULTURE]
+            == EDIT_KIND_NARROW_EXCEPTION
+        )
 
     def test_tvs_edit_kind(self) -> None:
         assert _EDIT_KIND_FOR_SIGNAL[SignalType.TEMPORAL_VOLATILITY] == EDIT_KIND_ADD_TEST
@@ -351,8 +354,13 @@ class TestDeriveFixIntent:
         t = _FakeTask()
         result = derive_fix_intent(t, _make_task_dict())
         required = {
-            "edit_kind", "target_span", "target_symbol", "canonical_source",
-            "expected_ast_delta", "allowed_files", "forbidden_changes",
+            "edit_kind",
+            "target_span",
+            "target_symbol",
+            "canonical_source",
+            "expected_ast_delta",
+            "allowed_files",
+            "forbidden_changes",
         }
         assert required.issubset(result.keys())
 
@@ -376,13 +384,27 @@ class TestAstDeltaCompleteness:
     def test_all_edit_kinds_have_ast_delta(self) -> None:
         """Jeder edit_kind in der Wertemenge muss in _EXPECTED_AST_DELTA_FOR_EDIT_KIND stehen."""
         all_edit_kinds = [
-            EDIT_KIND_MERGE_FUNCTION_BODY, EDIT_KIND_UPDATE_DOCSTRING, EDIT_KIND_NORMALIZE_PATTERN,
-            EDIT_KIND_ADD_DOCSTRING, EDIT_KIND_ADD_TYPE_ANNOTATION, EDIT_KIND_EXTRACT_FUNCTION,
-            EDIT_KIND_REMOVE_IMPORT, EDIT_KIND_DELETE_SYMBOL, EDIT_KIND_RENAME_SYMBOL,
-            EDIT_KIND_ADD_GUARD_CLAUSE, EDIT_KIND_NARROW_EXCEPTION, EDIT_KIND_REMOVE_BYPASS,
-            EDIT_KIND_ADD_TEST, EDIT_KIND_RELOCATE_IMPORT, EDIT_KIND_REPLACE_LITERAL,
-            EDIT_KIND_CHANGE_DEFAULT, EDIT_KIND_ADD_AUTHORIZATION_CHECK, EDIT_KIND_REDUCE_DEPENDENCIES,
-            EDIT_KIND_EXTRACT_MODULE, EDIT_KIND_DECOUPLE_MODULES, EDIT_KIND_UPDATE_EXCEPTION_CONTRACT,
+            EDIT_KIND_MERGE_FUNCTION_BODY,
+            EDIT_KIND_UPDATE_DOCSTRING,
+            EDIT_KIND_NORMALIZE_PATTERN,
+            EDIT_KIND_ADD_DOCSTRING,
+            EDIT_KIND_ADD_TYPE_ANNOTATION,
+            EDIT_KIND_EXTRACT_FUNCTION,
+            EDIT_KIND_REMOVE_IMPORT,
+            EDIT_KIND_DELETE_SYMBOL,
+            EDIT_KIND_RENAME_SYMBOL,
+            EDIT_KIND_ADD_GUARD_CLAUSE,
+            EDIT_KIND_NARROW_EXCEPTION,
+            EDIT_KIND_REMOVE_BYPASS,
+            EDIT_KIND_ADD_TEST,
+            EDIT_KIND_RELOCATE_IMPORT,
+            EDIT_KIND_REPLACE_LITERAL,
+            EDIT_KIND_CHANGE_DEFAULT,
+            EDIT_KIND_ADD_AUTHORIZATION_CHECK,
+            EDIT_KIND_REDUCE_DEPENDENCIES,
+            EDIT_KIND_EXTRACT_MODULE,
+            EDIT_KIND_DECOUPLE_MODULES,
+            EDIT_KIND_UPDATE_EXCEPTION_CONTRACT,
             EDIT_KIND_UNSPECIFIED,
         ]
         for ek in all_edit_kinds:
@@ -397,7 +419,6 @@ class TestAstDeltaCompleteness:
 class TestIntegration:
     def _make_full_task(self, signal_type: str = SignalType.MUTANT_DUPLICATE) -> Any:
         """Erzeugt einen echten AgentTask über die öffentliche Pipeline."""
-        import datetime
 
         from drift.models import (
             Finding,

@@ -806,48 +806,10 @@ class TestRepairMaturity:
         tasks = analysis_to_agent_tasks(analysis)
         assert "repair_level" in tasks[0].metadata
         assert tasks[0].metadata["repair_level"] in (
-            "diagnosis", "plannable", "example_based", "verifiable",
-        )
-
-    def test_coverage_gaps_in_json(self) -> None:
-        """Agent-tasks JSON must include a coverage_gaps section."""
-        f = _make_finding()
-        analysis = _make_analysis(findings=[f])
-        raw = analysis_to_agent_tasks_json(analysis)
-        data = json.loads(raw)
-        assert "coverage_gaps" in data
-        gaps = data["coverage_gaps"]
-        assert "total_findings" in gaps
-        assert "total_actionable" in gaps
-        assert "actionable_ratio" in gaps
-        assert "repair_level_distribution" in gaps
-        assert isinstance(gaps["gaps"], list)
-
-    def test_repair_maturity_covers_all_registry_signals(self) -> None:
-        """Every signal in the registry must have a REPAIR_MATURITY entry."""
-        from drift.signal_registry import get_all_meta
-
-        for meta in get_all_meta():
-            assert meta.signal_id in REPAIR_MATURITY, (
-                f"Signal {meta.signal_id!r} ({meta.abbrev}) missing from REPAIR_MATURITY"
-            )
-
-    def test_repair_maturity_values_consistent(self) -> None:
-        """Maturity values must be one of the allowed legacy strings."""
-        allowed = {"verified", "experimental", "indirect-only"}
-        for sid, entry in REPAIR_MATURITY.items():
-            assert entry["maturity"] in allowed, (
-                f"Signal {sid}: maturity={entry['maturity']!r} not in {allowed}"
-            )
-
-    def test_repair_level_in_task_metadata(self) -> None:
-        """Tasks must carry the granular repair_level in metadata."""
-        f = _make_finding()
-        analysis = _make_analysis(findings=[f])
-        tasks = analysis_to_agent_tasks(analysis)
-        assert "repair_level" in tasks[0].metadata
-        assert tasks[0].metadata["repair_level"] in (
-            "diagnosis", "plannable", "example_based", "verifiable",
+            "diagnosis",
+            "plannable",
+            "example_based",
+            "verifiable",
         )
 
     def test_coverage_gaps_in_json(self) -> None:
@@ -891,7 +853,9 @@ class TestVerifyPlan:
         f = _make_finding(
             signal_type=SignalType.DEAD_CODE_ACCUMULATION,
             title="Dead symbol: orphaned_helper",
-            metadata={"dead_symbols": [{"name": "orphaned_helper", "kind": "function", "line": 42}]},
+            metadata={
+                "dead_symbols": [{"name": "orphaned_helper", "kind": "function", "line": 42}]
+            },
             file_path="utils/helpers.py",
         )
         f.symbol = "orphaned_helper"

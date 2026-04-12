@@ -14,15 +14,12 @@ from __future__ import annotations
 import argparse
 import json
 import sys
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 # Ensure the repo src/ is importable when run from repo root.
 _REPO_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(_REPO_ROOT / "src"))
-
-from drift import __version__
-from drift.signal_registry import get_all_meta, get_repair_coverage_summary
 
 _DEFAULT_OUTPUT = _REPO_ROOT / "benchmark_results" / "repair_coverage_matrix.json"
 
@@ -32,6 +29,9 @@ _LEVEL_ORDER = ["diagnosis", "plannable", "example_based", "verifiable"]
 
 def _build_matrix() -> dict:
     """Build the full repair-coverage matrix payload."""
+    from drift import __version__
+    from drift.signal_registry import get_all_meta, get_repair_coverage_summary
+
     summary = get_repair_coverage_summary()
     all_meta = {m.signal_id: m for m in get_all_meta()}
 
@@ -43,7 +43,7 @@ def _build_matrix() -> dict:
 
     total = len(summary)
     return {
-        "generated_at": datetime.now(tz=timezone.utc).isoformat(),
+        "generated_at": datetime.now(tz=UTC).isoformat(),
         "drift_version": __version__,
         "total_signals": total,
         "repair_level_distribution": level_counts,

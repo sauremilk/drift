@@ -8,8 +8,12 @@ from typing import Any
 
 from drift import __version__
 from drift.api_helpers import build_drift_score_scope
-from drift.fix_intent import CROSS_FILE_RISKY_EDIT_KINDS, _EDIT_KIND_FOR_SIGNAL, _refine_edit_kind, is_cross_file_risky
-from drift.models import AgentTask, Finding, RepoAnalysis, RegressionPattern, Severity, SignalType
+from drift.fix_intent import (
+    _EDIT_KIND_FOR_SIGNAL,
+    _refine_edit_kind,
+    is_cross_file_risky,
+)
+from drift.models import AgentTask, Finding, RegressionPattern, RepoAnalysis, Severity, SignalType
 from drift.negative_context import findings_to_negative_context, negative_context_to_dict
 from drift.recommendations import Recommendation, generate_recommendations
 from drift.repair_template_registry import get_registry
@@ -465,7 +469,10 @@ def _verify_plan_for(
             {
                 "step": 1,
                 "tool": "grep",
-                "action": f"Assert that '{symbol}' is referenced at least once or no longer exported",
+                "action": (
+                    f"Assert that '{symbol}' is referenced at least once "
+                    "or no longer exported"
+                ),
                 "predicate": "reference_count >= 1 OR symbol_absent_from_exports",
                 "target": {"symbol": symbol, "file_path": path_str, "scope": "repo"},
             },
@@ -635,7 +642,11 @@ def _verify_plan_for(
                     "contract or has been renamed to match its behaviour"
                 ),
                 "predicate": "contract_satisfied == true OR function_renamed == true",
-                "target": {"function_name": func_name, "prefix_rule": prefix, "file_path": path_str},
+                "target": {
+                    "function_name": func_name,
+                    "prefix_rule": prefix,
+                    "file_path": path_str,
+                },
             },
             scan_zero(2),
         ]
@@ -675,7 +686,11 @@ def _verify_plan_for(
                         f"is at or below threshold (was {depth})"
                     ),
                     "predicate": "nesting_depth <= threshold",
-                    "target": {"function_name": func_name, "file_path": path_str, "previous_depth": depth},
+                    "target": {
+                        "function_name": func_name,
+                        "file_path": path_str,
+                        "previous_depth": depth,
+                    },
                 },
                 scan_zero(2),
                 nudge(3),
@@ -1583,7 +1598,9 @@ def _task_to_dict(t: AgentTask) -> dict[str, Any]:
         "repair_maturity": t.repair_maturity,
         "negative_context": [negative_context_to_dict(nc) for nc in t.negative_context],
         "template_confidence": t.template_confidence,
-        "regression_guidance": [_regression_pattern_to_api_dict(rp) for rp in t.regression_guidance],
+        "regression_guidance": [
+            _regression_pattern_to_api_dict(rp) for rp in t.regression_guidance
+        ],
     }
     return d
 
@@ -1601,29 +1618,6 @@ def _build_coverage_gaps(
 
     Returns a dict suitable for inclusion in the agent-tasks JSON output.
     """
-    task_signals = {t.signal_type for t in tasks}
-
-    # Count findings per signal that were skipped (no task generated)
-    task_fingerprints = {
-        f"{t.signal_type}:{t.file_path or ''}:{t.start_line or ''}:{t.title}"
-        for t in tasks
-    }
-
-    skipped_by_signal: dict[str, int] = {}
-    for f in findings:
-        fp = _finding_fingerprint(f)
-        # Check if this finding produced a task (approximate match)
-        if f.signal_type not in task_signals or fp not in {
-            _finding_fingerprint(ff) for ff in findings
-            if any(
-                t.signal_type == ff.signal_type
-                and t.title == ff.title
-                for t in tasks
-            )
-        }:
-            # Simpler: count findings whose signal has no tasks at all
-            pass
-
     # Simpler approach: per-signal counts
     finding_count_by_signal: dict[str, int] = {}
     task_count_by_signal: dict[str, int] = {}

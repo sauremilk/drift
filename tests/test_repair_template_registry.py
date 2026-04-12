@@ -3,8 +3,9 @@
 from __future__ import annotations
 
 import json
-import pytest
 from pathlib import Path
+
+import pytest
 
 from drift.models import RegressionPattern, RegressionReasonCode
 from drift.repair_template_registry import (
@@ -18,7 +19,6 @@ from drift.repair_template_registry import (
     get_registry,
     reset_registry,
 )
-
 
 # ---------------------------------------------------------------------------
 # Fixtures
@@ -147,7 +147,10 @@ def test_load_seed(seed_file: Path):
 
 def test_load_missing_seed_does_not_raise():
     r = RepairTemplateRegistry()
-    r.load(seed_path=Path("/nonexistent/path.json"), outcomes_path=Path("/nonexistent/outcomes.jsonl"))
+    r.load(
+        seed_path=Path("/nonexistent/path.json"),
+        outcomes_path=Path("/nonexistent/outcomes.jsonl"),
+    )
     # No exception, empty registry
     assert r.lookup("any_signal", "any_edit_kind") is None
 
@@ -400,7 +403,7 @@ def test_record_outcome_multiple_appends(tmp_path: Path, seed_file: Path):
             outcomes_path=outcomes,
         )
 
-    lines = [l for l in outcomes.read_text(encoding="utf-8").splitlines() if l.strip()]
+    lines = [line for line in outcomes.read_text(encoding="utf-8").splitlines() if line.strip()]
     assert len(lines) == 3
 
 
