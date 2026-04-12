@@ -24,6 +24,24 @@ from drift.signals.base import BaseSignal, register_signal
 _RUNTIME_PLUGIN_ROOTS: frozenset[str] = frozenset({"extensions", "plugins"})
 
 
+def _is_test_file_path(path: str) -> bool:
+    """Return True when the path clearly targets test code.
+
+    TVS focuses on production instability. Test files often churn intentionally
+    with feature and bug-fix work and should not be escalated as hotspots.
+    """
+    normalized = path.replace("\\", "/").lower()
+    filename = normalized.rsplit("/", 1)[-1]
+
+    if "/tests/" in normalized or "/__tests__/" in normalized:
+        return True
+    if filename.startswith("test_"):
+        return True
+    if filename.endswith("_test.py"):
+        return True
+    return bool(".test." in filename or ".spec." in filename)
+
+
 def _runtime_plugin_workspace_key(path: str) -> str | None:
     """Return workspace key for runtime plugin monorepos."""
     parts = [part for part in path.replace("\\", "/").split("/") if part]
@@ -194,6 +212,9 @@ class TemporalVolatilitySignal(BaseSignal):
             z_threshold = config.thresholds.volatility_z_threshold
 
         for history in histories:
+            if _is_test_file_path(history.path.as_posix()):
+                continue
+
             freq_z = _z_score(history.change_frequency_30d, freq_mean, freq_std)
             author_z = _z_score(float(history.unique_authors), author_mean, author_std)
             defect_z = _z_score(float(history.defect_correlated_commits), defect_mean, defect_std)

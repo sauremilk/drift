@@ -338,6 +338,43 @@ class TestTemporalVolatilitySignal:
         assert all(f.score <= 0.45 for f in extension_findings)
         assert all(f.metadata.get("workspace_burst_dampened") is True for f in extension_findings)
 
+    def test_test_like_files_are_skipped_from_volatility_findings(self):
+        from drift.signals.temporal_volatility import TemporalVolatilitySignal
+
+        signal = TemporalVolatilitySignal()
+        histories = {}
+
+        for i in range(9):
+            histories[f"src/core_{i}.py"] = FileHistory(
+                path=Path(f"src/core_{i}.py"),
+                total_commits=3,
+                unique_authors=1,
+                change_frequency_30d=1.0,
+                defect_correlated_commits=0,
+            )
+
+        histories["extensions/discord/src/monitor.test.ts"] = FileHistory(
+            path=Path("extensions/discord/src/monitor.test.ts"),
+            total_commits=80,
+            unique_authors=19,
+            change_frequency_30d=25.0,
+            defect_correlated_commits=35,
+            ai_attributed_commits=60,
+        )
+        histories["src/hot_module.py"] = FileHistory(
+            path=Path("src/hot_module.py"),
+            total_commits=55,
+            unique_authors=12,
+            change_frequency_30d=22.0,
+            defect_correlated_commits=8,
+            ai_attributed_commits=25,
+        )
+
+        findings = signal.analyze([], histories, DriftConfig())
+
+        assert any(f.file_path.as_posix() == "src/hot_module.py" for f in findings)
+        assert all(".test." not in f.file_path.as_posix() for f in findings)
+
     def test_non_plugin_outlier_keeps_high_severity(self):
         from drift.signals.temporal_volatility import TemporalVolatilitySignal
 

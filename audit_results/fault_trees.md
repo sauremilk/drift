@@ -1,5 +1,30 @@
 # Fault Tree Analysis
 
+## 2026-04-12 - Issue #277: TVS false positives on test files
+
+### Top Event (TE-TVS-277)
+TVS reports test files (`*.test.*`, `*.spec.*`, `tests/**`) as high-priority volatility hotspots.
+
+### FT-1: false-positive branch
+
+```
+          TE-FP: test file reported as actionable temporal instability
+                         |
+                      OR-Gate
+               +---------+---------+
+              IE-1      IE-2
+```
+
+- **IE-1 (MCS)**: TVS volatility scoring treated test code like production code and did not classify explicit test paths/file conventions.
+  - Mitigation: add bounded test-path classifier for `tests/**`, `__tests__`, `test_*`, `*_test.py`, `*.test.*`, `*.spec.*`.
+- **IE-2 (MCS)**: defect-correlated and multi-author metrics in healthy test maintenance inflated urgency for non-actionable paths.
+  - Mitigation: skip TVS finding emission for test-classified files while preserving production volatility scoring.
+
+### FT-2: false-negative guard
+
+- **IE-3 (Guard)**: suppressing test files can hide unstable test infrastructure churn.
+  - Mitigation: scope suppression to explicit test conventions only; keep non-test paths unchanged and protected by existing volatility regressions.
+
 ## 2026-04-12 - Issue #276: AVS Zone-of-Pain false positives on passive TS definition modules
 
 ### Top Event (TE-AVS-276)

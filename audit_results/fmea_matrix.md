@@ -1,5 +1,12 @@
 # FMEA Matrix
 
+## 2026-04-12 - Issue #277: TVS test-file volatility false positives
+
+| Signal | Failure Mode | Cause | Effect | Detection | Mitigation | S | O | D | RPN | Status |
+|---|---|---|---|---|---|---:|---:|---:|---:|---|
+| TVS | FP: test files (`*.test.*`, `*.spec.*`, `tests/**`) are escalated as high temporal volatility hotspots | TVS evaluated churn/author/defect z-scores uniformly for all files and did not model expected test-code volatility | Large non-actionable HIGH clusters in active codebases, reduced signal credibility and triage focus | New regression in `tests/test_coverage_pipeline_and_helpers.py` (`test_test_like_files_are_skipped_from_volatility_findings`) | Add bounded test-path classifier and skip TVS finding emission for clear test-code paths; keep production-file scoring unchanged | 7 | 8 | 2 | 112 | Mitigated |
+| TVS | FN-risk: genuinely unstable test infrastructure files are no longer surfaced by TVS | Test-like path suppression intentionally excludes all test code from TVS output | Potential delayed visibility into flaky/chaotic test harness churn | Existing volatility detection for non-test files remains covered by TVS helper tests | Keep scope tightly bounded to explicit test path/name conventions and preserve detection for production/source paths | 4 | 3 | 4 | 48 | Mitigated |
+
 ## 2026-04-12 - Issue #276: AVS false positives for passive constants/type-definition modules
 
 | Signal | Failure Mode | Cause | Effect | Detection | Mitigation | S | O | D | RPN | Status |

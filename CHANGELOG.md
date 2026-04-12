@@ -42,6 +42,7 @@
 
 ### Fixed
 
+- TVS Issue #277: exclude clear test-code paths (`tests/**`, `__tests__`, `test_*`, `*_test.py`, `*.test.*`, `*.spec.*`) from temporal-volatility finding emission to prevent non-actionable HIGH volatility false positives on test files.
 - DCA Issue #272: reduce false positives for TypeScript/JavaScript test contract harness modules (`*.testkit.ts/js/...`) by applying bounded severity dampening with explicit metadata traceability (`testkit_contract_heuristic_applied`), preventing high-severity dead-code escalation for downstream-consumed testkit APIs.
 - DCA Issue #271: in TypeScript/JavaScript, only class-like declarations marked as exported are treated as DCA export candidates; file-local `type`/`interface`/`class` declarations are no longer misreported as unused exports.
 - MAZ Issue #270: suppress missing-authorization findings for TypeScript API endpoints extracted from files that bind server listeners explicitly to loopback hosts (`127.0.0.1`, `localhost`, `::1`), preventing CRITICAL false positives for localhost-only media/dev servers.

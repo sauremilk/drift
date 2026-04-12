@@ -1,5 +1,22 @@
 # Risk Register
 
+## 2026-04-12 - Issue #277: TVS test-file volatility precision hardening
+
+- Risk ID: RISK-SIGNAL-2026-04-12-277
+- Component: `src/drift/signals/temporal_volatility.py`, `tests/test_coverage_pipeline_and_helpers.py`
+- Type: Signal precision hardening (false-positive reduction)
+- Description: Temporal Volatility (TVS) now excludes clear test-code paths from finding emission. Explicit test conventions (`tests/**`, `__tests__`, `test_*`, `*_test.py`, `*.test.*`, `*.spec.*`) are treated as expected maintenance churn and no longer escalated as volatility hotspots.
+- Trigger: `drift analyze` on active repositories where test files change frequently alongside feature and bug-fix work (for example extension workspaces with many `.test.ts` files).
+- Impact: High-positive. Removes non-actionable HIGH TVS clusters on test files and improves signal credibility/actionability.
+- Mitigation:
+  - Added `_is_test_file_path()` classifier to TVS.
+  - Skips TVS finding creation for test-classified file paths while keeping production-file volatility scoring intact.
+  - Added targeted regression test `test_test_like_files_are_skipped_from_volatility_findings`.
+- Verification:
+  - `.\.venv\Scripts\python.exe -m pytest tests/test_coverage_pipeline_and_helpers.py -q --tb=short`
+  - `.\.venv\Scripts\python.exe -m ruff check src/drift/signals/temporal_volatility.py tests/test_coverage_pipeline_and_helpers.py`
+- Residual risk: Low-Medium. TVS no longer surfaces churn in test infrastructure files; this is accepted to preserve production-focused signal actionability and reduce high-volume false positives.
+
 ## 2026-04-12 - Issue #276: AVS passive-definition Zone-of-Pain precision hardening
 
 - Risk ID: RISK-SIGNAL-2026-04-12-276
