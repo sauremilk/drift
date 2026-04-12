@@ -205,6 +205,46 @@ def test_cod_filename_domain_token_dampens_format_module() -> None:
     assert findings == []
 
 
+def test_issue_283_test_harness_file_is_ignored() -> None:
+    """Issue #283: explicit .test-harness naming should skip COD evaluation."""
+    file_path = "src/auto-reply/reply/dispatch-from-config.shared.test-harness.ts"
+    parse_result = ParseResult(
+        file_path=Path(file_path),
+        language="typescript",
+        functions=[
+            _function("parseGenericThreadSessionInfo", file_path, 10),
+            _function("createDispatcher", file_path, 20),
+            _function("buildAbortDecision", file_path, 30),
+            _function("formatRouteReplyResult", file_path, 40),
+            _function("wireDiagnosticLogging", file_path, 50),
+            _function("registerHookRunner", file_path, 60),
+        ],
+    )
+
+    findings = CohesionDeficitSignal().analyze([parse_result], {}, DriftConfig())
+    assert findings == []
+
+
+def test_issue_284_test_helpers_file_is_ignored() -> None:
+    """Issue #284: explicit .test-helpers naming should skip COD evaluation."""
+    file_path = "src/config/plugin-auto-enable.test-helpers.ts"
+    parse_result = ParseResult(
+        file_path=Path(file_path),
+        language="typescript",
+        functions=[
+            _function("resetPluginAutoEnableTestState", file_path, 10),
+            _function("makeTempDir", file_path, 20),
+            _function("makeIsolatedEnv", file_path, 30),
+            _function("writePluginManifestFixture", file_path, 40),
+            _function("wireRegistryCache", file_path, 50),
+            _function("ensurePluginLifecycle", file_path, 60),
+        ],
+    )
+
+    findings = CohesionDeficitSignal().analyze([parse_result], {}, DriftConfig())
+    assert findings == []
+
+
 # ---------------------------------------------------------------------------
 # Parametrized ground-truth fixture tests
 # ---------------------------------------------------------------------------
