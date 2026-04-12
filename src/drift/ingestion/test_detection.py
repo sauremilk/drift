@@ -6,6 +6,7 @@ import re
 from pathlib import Path
 
 _TEST_FILE_PATTERNS: tuple[re.Pattern[str], ...] = (
+    re.compile(r"(?:^|/)extensions/qa-lab/src/mock-openai-server\.ts$"),
     re.compile(r"(?:^|/)__tests__/(?:|.*)$"),
     re.compile(r"(?:^|/)__mocks__/(?:|.*)$"),
     re.compile(r"(?:^|/)__fixtures__/(?:|.*)$"),

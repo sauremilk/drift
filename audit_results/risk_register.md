@@ -1,5 +1,21 @@
 # Risk Register
 
+## 2026-04-12 - Issue #300: EDS QA-lab test-context precision hardening
+
+- Risk ID: RISK-SIGNAL-2026-04-12-300
+- Component: `src/drift/ingestion/test_detection.py`, `tests/test_test_detection.py`, `tests/test_issue_300_eds_qa_lab_mock_server.py`
+- Type: Signal precision hardening (false-positive reduction)
+- Description: Shared test detection now classifies `extensions/qa-lab/**` as test context. This prevents Explainability Deficit (EDS) from treating QA-lab mock infrastructure (for example `extensions/qa-lab/src/mock-openai-server.ts`) as production complexity debt.
+- Trigger: `drift analyze` on repositories with QA-lab style extension workspaces that host mock servers and scenario-runner support code under `extensions/qa-lab/`.
+- Impact: High-positive. Reduces non-actionable EDS findings and improves trust in default production-vs-test triage.
+- Mitigation:
+  - Added bounded test-context rule for `extensions/qa-lab/**` in shared test detection.
+  - Added regression coverage in shared classifier tests.
+  - Added EDS-focused regression to verify `finding_context=test` and LOW severity under `reduce_severity` handling.
+- Verification:
+  - `\.venv\Scripts\python.exe -m pytest tests/test_test_detection.py tests/test_issue_300_eds_qa_lab_mock_server.py -q --tb=short`
+- Residual risk: Low-Medium. Hand-written production code inside a path named `extensions/qa-lab/` will be triaged as test context; scope is intentionally narrow to explicit QA-lab workspace naming.
+
 ## 2026-04-12 - Issue #288: AVS generated-header precision hardening
 
 - Risk ID: RISK-SIGNAL-2026-04-12-288
