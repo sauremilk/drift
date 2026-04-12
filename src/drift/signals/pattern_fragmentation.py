@@ -58,6 +58,13 @@ _PLUGIN_ROOT_TOKENS: frozenset[str] = frozenset(
     },
 )
 
+_PLUGIN_VARIATION_EXPECTED_CATEGORIES: frozenset[PatternCategory] = frozenset(
+    {
+        PatternCategory.API_ENDPOINT,
+        PatternCategory.ERROR_HANDLING,
+    },
+)
+
 
 def _normalize_fingerprint(fingerprint: dict[str, Any]) -> dict[str, Any]:
     """Normalize fingerprint to reduce false positives from async/sync equivalence.
@@ -250,15 +257,24 @@ class PatternFragmentationSignal(BaseSignal):
                         frag_score *= 0.65
 
                 plugin_hints: list[str] = []
+                plugin_boundary_variation_expected = False
                 plugin_scope = _plugin_scope(module_path)
                 if plugin_scope is not None:
-                    plugin_root, _ = plugin_scope
+                    plugin_root, plugin_name = plugin_scope
                     plugin_count = len(plugin_roots.get(plugin_root, set()))
                     if plugin_count >= 3:
                         plugin_hints = [
                             "plugin-layout-detected",
                             f"multi-plugin-surface:{plugin_root}:{plugin_count}",
                         ]
+                        if category in _PLUGIN_VARIATION_EXPECTED_CATEGORIES:
+                            plugin_hints.append(
+                                (
+                                    "inter-plugin-pattern-variation-expected:"
+                                    f"{plugin_root}/{plugin_name}:{category.value}"
+                                )
+                            )
+                            plugin_boundary_variation_expected = True
                         # Distinct plugin boundaries often represent intentional
                         # extension-level API differences rather than drift.
                         frag_score *= 0.45
@@ -290,6 +306,8 @@ class PatternFragmentationSignal(BaseSignal):
                     severity = Severity.MEDIUM
                 if plugin_hints and severity in {Severity.HIGH, Severity.MEDIUM}:
                     severity = Severity.LOW
+                if plugin_boundary_variation_expected and severity is not Severity.INFO:
+                    severity = Severity.INFO
 
                 # Canonical-ratio downgrade: weak patterns (very few canonical instances)
                 # should not fire with the same urgency as dominant ones (ADR-049).
@@ -364,6 +382,9 @@ class PatternFragmentationSignal(BaseSignal):
                             "framework_context_hints": framework_hints,
                             "plugin_context_dampened": bool(plugin_hints),
                             "plugin_context_hints": plugin_hints,
+                            "plugin_boundary_variation_expected": (
+                                plugin_boundary_variation_expected
+                            ),
                             "combined_plugin_framework_cap": combined_plugin_framework_cap,
                             "deliberate_pattern_risk": (
                                 "May reflect architecture transition or deliberate variation. "

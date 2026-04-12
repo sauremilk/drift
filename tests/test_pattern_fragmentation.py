@@ -193,7 +193,7 @@ def test_identical_decorator_patterns_no_finding():
     assert findings == [], "Identical decorator patterns must not produce any PFS finding"
 
 
-def test_plugin_architecture_api_fragmentation_is_dampened_to_low():
+def test_plugin_architecture_api_fragmentation_is_dampened_to_info():
     # Plugin/extension layouts intentionally vary across plugin boundaries.
     # High-severity PFS should be dampened for extension-specific API surfaces.
     target_fingerprints = [
@@ -228,9 +228,10 @@ def test_plugin_architecture_api_fragmentation_is_dampened_to_low():
     assert len(findings) == 1
     finding = findings[0]
     assert finding.file_path.as_posix() == "extensions/bluebubbles/src"
-    assert finding.severity == Severity.LOW
+    assert finding.severity == Severity.INFO
     assert finding.metadata["plugin_context_dampened"] is True
     assert finding.metadata["plugin_context_hints"]
+    assert finding.metadata["plugin_boundary_variation_expected"] is True
 
 
 def test_combined_framework_and_plugin_dampening_caps_to_info():
@@ -305,6 +306,129 @@ def test_combined_framework_and_plugin_dampening_caps_to_info():
     assert finding.metadata["plugin_context_dampened"] is True
     assert finding.metadata["combined_plugin_framework_cap"] is True
     assert finding.severity == Severity.INFO
+
+
+def test_issue_266_api_endpoint_variants_in_multi_extension_layout_are_info():
+    # In extension monorepos, endpoint heterogeneity across plugin boundaries is
+    # expected and should stay informational, not actionable drift urgency.
+    browser_fingerprints = [
+        {"route": "health"},
+        {"route": "messages"},
+        {"route": "assets"},
+        {"route": "config"},
+    ]
+    patterns = [
+        _make_pattern(
+            PatternCategory.API_ENDPOINT,
+            "extensions/browser/src/browser/routes",
+            f"browser_route_{i}",
+            fp,
+        )
+        for i, fp in enumerate(browser_fingerprints)
+    ]
+    patterns.extend(
+        [
+            _make_pattern(
+                PatternCategory.API_ENDPOINT,
+                "extensions/discord/src/discord/routes",
+                "discord_route",
+                {"route": "messages"},
+            ),
+            _make_pattern(
+                PatternCategory.API_ENDPOINT,
+                "extensions/matrix/src/matrix/routes",
+                "matrix_route",
+                {"route": "messages"},
+            ),
+        ]
+    )
+
+    findings = PatternFragmentationSignal().analyze(_wrap(patterns), {}, None)
+    target = [
+        f
+        for f in findings
+        if f.file_path.as_posix() == "extensions/browser/src/browser/routes"
+        and f.metadata.get("category") == PatternCategory.API_ENDPOINT.value
+    ]
+
+    assert len(target) == 1
+    finding = target[0]
+    assert finding.severity == Severity.INFO
+    assert finding.metadata["plugin_context_dampened"] is True
+    assert finding.metadata["plugin_boundary_variation_expected"] is True
+    assert any(
+        hint.startswith("inter-plugin-pattern-variation-expected:")
+        for hint in finding.metadata["plugin_context_hints"]
+    )
+
+
+def test_issue_266_error_handling_variants_in_multi_extension_layout_are_info():
+    browser_error_variants = [
+        {"handler": "value_error"},
+        {"handler": "exception"},
+        {"handler": "os_error"},
+        {"handler": "runtime_error"},
+    ]
+    patterns = [
+        _make_pattern(
+            PatternCategory.ERROR_HANDLING,
+            "extensions/browser/src/browser/core",
+            f"browser_err_{i}",
+            fp,
+        )
+        for i, fp in enumerate(browser_error_variants)
+    ]
+    patterns.extend(
+        [
+            _make_pattern(
+                PatternCategory.ERROR_HANDLING,
+                "extensions/discord/src/discord/core",
+                "discord_err",
+                {"handler": "value_error"},
+            ),
+            _make_pattern(
+                PatternCategory.ERROR_HANDLING,
+                "extensions/matrix/src/matrix/core",
+                "matrix_err",
+                {"handler": "value_error"},
+            ),
+        ]
+    )
+
+    findings = PatternFragmentationSignal().analyze(_wrap(patterns), {}, None)
+    target = [
+        f
+        for f in findings
+        if f.file_path.as_posix() == "extensions/browser/src/browser/core"
+        and f.metadata.get("category") == PatternCategory.ERROR_HANDLING.value
+    ]
+
+    assert len(target) == 1
+    finding = target[0]
+    assert finding.severity == Severity.INFO
+    assert finding.metadata["plugin_context_dampened"] is True
+    assert finding.metadata["plugin_boundary_variation_expected"] is True
+
+
+def test_plugin_variation_cap_is_not_applied_for_non_plugin_layout():
+    fps = [
+        {"route": "a"},
+        {"route": "b"},
+        {"route": "c"},
+        {"route": "d"},
+    ]
+    patterns = [
+        _make_pattern(PatternCategory.API_ENDPOINT, "backend/api/routes", f"route_{i}", fp)
+        for i, fp in enumerate(fps)
+    ]
+
+    findings = PatternFragmentationSignal().analyze(_wrap(patterns), {}, None)
+    assert len(findings) == 1
+    finding = findings[0]
+    assert finding.file_path.as_posix() == "backend/api/routes"
+    assert finding.severity == Severity.HIGH
+    assert finding.metadata["plugin_context_dampened"] is False
+    assert finding.metadata["plugin_boundary_variation_expected"] is False
 
 
 def test_score_aggregation():
