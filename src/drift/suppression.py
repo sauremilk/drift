@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import re
 from collections.abc import Mapping
+from dataclasses import dataclass
+from datetime import date
 from pathlib import Path
 
 from drift.models import FileInfo, Finding, FindingStatus
@@ -22,19 +24,49 @@ _PATTERN_BY_LANG = {
 }
 
 
-def scan_suppressions(
+@dataclass(frozen=True)
+class InlineSuppression:
+    """Structured representation of a single inline ``drift:ignore`` directive."""
+
+    file_path: str
+    line_number: int
+    signals: set[str] | None
+    until: date | None = None
+    reason: str | None = None
+
+
+_UNTIL_PATTERN = re.compile(r"\buntil:(\d{4}-\d{2}-\d{2})\b")
+_REASON_PATTERN = re.compile(r"\breason:(.+)$")
+
+
+def _parse_until(text: str) -> date | None:
+    """Parse optional ``until:YYYY-MM-DD`` metadata from comment tail."""
+    match = _UNTIL_PATTERN.search(text)
+    if match is None:
+        return None
+    try:
+        return date.fromisoformat(match.group(1))
+    except ValueError:
+        return None
+
+
+def _parse_reason(text: str) -> str | None:
+    """Parse optional ``reason:...`` metadata from comment tail."""
+    match = _REASON_PATTERN.search(text)
+    if match is None:
+        return None
+    reason = match.group(1).strip()
+    return reason or None
+
+
+def collect_inline_suppressions(
     files: list[FileInfo],
     repo_path: Path,
-) -> dict[tuple[str, int], set[str] | None]:
-    """Scan source files for ``drift:ignore`` comments.
-
-    Returns a mapping of ``(posix_path, line_number)`` to the set of signal
-    type *values* that should be suppressed.  ``None`` means *all* signals.
-    """
-    # Accept both full signal names and abbreviations (e.g. AVS, PFS).
+) -> list[InlineSuppression]:
+    """Collect inline suppression directives including optional metadata."""
     from drift.config import SIGNAL_ABBREV
 
-    suppressions: dict[tuple[str, int], set[str] | None] = {}
+    entries: list[InlineSuppression] = []
 
     for finfo in files:
         pattern = _PATTERN_BY_LANG.get(finfo.language)
@@ -47,24 +79,52 @@ def scan_suppressions(
             continue
 
         for line_no, line in enumerate(text.splitlines(), start=1):
-            m = pattern.search(line)
-            if m is None:
+            match = pattern.search(line)
+            if match is None:
                 continue
-            raw = m.group(1)
+
+            raw = match.group(1)
+            signals: set[str] | None = None
             if raw:
-                signals: set[str] = set()
+                resolved: set[str] = set()
                 for token in raw.split(","):
                     signal = token.strip()
                     if not signal:
                         continue
                     abbrev = signal.upper()
                     if abbrev in SIGNAL_ABBREV:
-                        signals.add(SIGNAL_ABBREV[abbrev])
+                        resolved.add(SIGNAL_ABBREV[abbrev])
                     else:
-                        signals.add(signal.lower())
-                suppressions[(finfo.path.as_posix(), line_no)] = signals
-            else:
-                suppressions[(finfo.path.as_posix(), line_no)] = None
+                        resolved.add(signal.lower())
+                signals = resolved
+
+            tail = line[match.end() :]
+            entries.append(
+                InlineSuppression(
+                    file_path=finfo.path.as_posix(),
+                    line_number=line_no,
+                    signals=signals,
+                    until=_parse_until(tail),
+                    reason=_parse_reason(tail),
+                )
+            )
+
+    return entries
+
+
+def scan_suppressions(
+    files: list[FileInfo],
+    repo_path: Path,
+) -> dict[tuple[str, int], set[str] | None]:
+    """Scan source files for ``drift:ignore`` comments.
+
+    Returns a mapping of ``(posix_path, line_number)`` to the set of signal
+    type *values* that should be suppressed.  ``None`` means *all* signals.
+    """
+    suppressions: dict[tuple[str, int], set[str] | None] = {}
+
+    for entry in collect_inline_suppressions(files, repo_path):
+        suppressions[(entry.file_path, entry.line_number)] = entry.signals
 
     return suppressions
 

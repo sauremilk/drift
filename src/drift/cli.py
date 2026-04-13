@@ -153,7 +153,10 @@ class SuggestingGroup(click.Group):
             ),
         ),
         ("CI & Automation", ("ci", "gate", "badge", "baseline", "validate", "verify", "import")),
-        ("Configuration", ("init", "config", "preset", "calibrate", "feedback", "completions")),
+        (
+            "Configuration",
+            ("init", "config", "preset", "calibrate", "feedback", "suppress", "completions"),
+        ),
         ("Measurement", ("self", "precision", "roi-estimate", "start")),
     )
 
@@ -288,6 +291,7 @@ from drift.commands.session_report import session_report
 from drift.commands.setup import setup
 from drift.commands.start import start
 from drift.commands.status import status
+from drift.commands.suppress import suppress
 from drift.commands.timeline import timeline
 from drift.commands.trend import trend
 from drift.commands.validate_cmd import validate
@@ -319,6 +323,7 @@ main.add_command(serve)
 main.add_command(session_report)
 main.add_command(start)
 main.add_command(status)
+main.add_command(suppress)
 main.add_command(setup)
 main.add_command(timeline)
 main.add_command(trend)
