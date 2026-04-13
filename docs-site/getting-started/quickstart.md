@@ -20,6 +20,10 @@ Drift requires Python 3.11+. If your shell or CI runner is still on 3.10, fix th
 pip install -q drift-analyzer    # requires Python 3.11+ (use -q for clean output)
 ```
 
+!!! tip "One command to get started"
+    Not sure where to begin? Run `drift start` - it prints the recommended
+    first-run sequence for your repository.
+
 !!! tip "No project handy? Try on FastAPI"
     ```bash
     git clone --depth 50 https://github.com/tiangolo/fastapi /tmp/fastapi
