@@ -59,13 +59,30 @@ exclude:
 
 # Signal weights (normalized internally)
 weights:
-  pattern_fragmentation: 0.22
-  architecture_violation: 0.22
-  mutant_duplicate: 0.17
-  temporal_volatility: 0.17
-  explainability_deficit: 0.12
-  system_misalignment: 0.10
-  doc_impl_drift: 0.00  # Phase 2
+  pattern_fragmentation: 0.16
+  architecture_violation: 0.16
+  mutant_duplicate: 0.13
+  explainability_deficit: 0.09
+  temporal_volatility: 0.0   # report-only
+  system_misalignment: 0.08
+  doc_impl_drift: 0.04
+  broad_exception_monoculture: 0.04
+  test_polarity_deficit: 0.04
+  guard_clause_deficit: 0.03
+  cohesion_deficit: 0.01
+  naming_contract_violation: 0.04
+  bypass_accumulation: 0.03
+  exception_contract_drift: 0.03
+  co_change_coupling: 0.005
+  fan_out_explosion: 0.005
+  hardcoded_secret: 0.01
+  phantom_reference: 0.02
+  missing_authorization: 0.02
+  insecure_default: 0.01
+  ts_architecture: 0.0        # report-only
+  cognitive_complexity: 0.0   # report-only
+  circular_import: 0.0        # report-only
+  dead_code_accumulation: 0.0 # report-only
 
 # Detection thresholds
 thresholds:
@@ -89,6 +106,8 @@ policies:
 # CI severity gate
 fail_on: none
 ```
+
+Tip: Run `drift config show --repo .` to inspect your effective configuration (including calibration-adjusted values).
 
 ## Signal Weights
 
