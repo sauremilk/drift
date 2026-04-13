@@ -517,15 +517,15 @@ def diff(
             try:
                 from_path = Path(from_file).resolve()
                 to_path = Path(to_file).resolve()
-                from_findings, score_before = _load_snapshot_findings(from_path)
-                to_findings, score_after = _load_snapshot_findings(to_path)
+                from_findings, snapshot_score_before = _load_snapshot_findings(from_path)
+                to_findings, snapshot_score_after = _load_snapshot_findings(to_path)
                 result = _build_snapshot_diff_response(
                     from_path=from_path,
                     to_path=to_path,
                     from_findings=from_findings,
                     to_findings=to_findings,
-                    score_before=score_before,
-                    score_after=score_after,
+                    score_before=snapshot_score_before,
+                    score_after=snapshot_score_after,
                     max_findings=max_findings,
                     response_detail=response_detail,
                 )

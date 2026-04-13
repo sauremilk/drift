@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 
@@ -237,7 +238,11 @@ async def run_session_start(
     return json.dumps(result, default=str)
 
 
-async def run_session_status(*, session_id: str, session_error_response: Any) -> str:
+async def run_session_status(
+    *,
+    session_id: str,
+    session_error_response: Callable[[str, str, str], str],
+) -> str:
     from drift.session import SessionManager
 
     session = SessionManager.instance().get(session_id)
@@ -265,7 +270,7 @@ async def run_session_update(
     target_path: str | None,
     mark_tasks_complete: str | None,
     save_to_disk: bool,
-    session_error_response: Any,
+    session_error_response: Callable[[str, str, str], str],
 ) -> str:
     import warnings
 
@@ -319,7 +324,11 @@ async def run_session_update(
     return json.dumps(result, default=str)
 
 
-async def run_session_end(*, session_id: str, session_error_response: Any) -> str:
+async def run_session_end(
+    *,
+    session_id: str,
+    session_error_response: Callable[[str, str, str], str],
+) -> str:
     from drift.session import SessionManager
 
     session = SessionManager.instance().get(session_id)

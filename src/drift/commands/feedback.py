@@ -207,10 +207,10 @@ def summary(repo: Path, config: Path | None) -> None:
             fp = int(status_counts.get("fp", 0))
             fn = int(status_counts.get("fn", 0))
         else:
-            m = metrics.get(signal_name)
-            tp = int(getattr(m, "tp", 0)) if m is not None else 0
-            fp = int(getattr(m, "fp", 0)) if m is not None else 0
-            fn = int(getattr(m, "fn", 0)) if m is not None else 0
+            metric_entry = metrics.get(signal_name)
+            tp = int(getattr(metric_entry, "tp", 0)) if metric_entry is not None else 0
+            fp = int(getattr(metric_entry, "fp", 0)) if metric_entry is not None else 0
+            fn = int(getattr(metric_entry, "fn", 0)) if metric_entry is not None else 0
 
         source_text = _format_feedback_source(tp=tp, fp=fp, fn=fn)
         display_signal = abbrev_by_signal.get(signal_name, signal_name).upper()

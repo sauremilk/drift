@@ -22,8 +22,7 @@ def _load_compiler_options(tsconfig_path: Path) -> dict[str, object]:
 
     compiler_options = data.get("compilerOptions", {})
     if not isinstance(compiler_options, dict):
-        _out = {}
-        return _out
+        return {}
     return compiler_options
 
 

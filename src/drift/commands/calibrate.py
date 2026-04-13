@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+from collections.abc import Sequence
 from datetime import UTC, datetime
 from pathlib import Path
 
@@ -317,7 +318,7 @@ def _write_calibrated_weights(
     )
 
 
-def _summarize_feedback_counts(events: list[object]) -> dict[str, dict[str, int]]:
+def _summarize_feedback_counts(events: Sequence[object]) -> dict[str, dict[str, int]]:
     """Summarize TP/FP/FN counts while tolerating malformed test doubles."""
     counts: dict[str, dict[str, int]] = {}
     for event in events:
