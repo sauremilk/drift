@@ -125,7 +125,9 @@ async def run_session_start(
             ),
         )
 
-        def _autopilot_from_shared_analysis() -> tuple[dict[str, Any], dict[str, Any], dict[str, Any]]:
+        def _autopilot_from_shared_analysis() -> tuple[
+            dict[str, Any], dict[str, Any], dict[str, Any]
+        ]:
             repo_path = Path(resolved)
             cfg = _load_config_cached(repo_path)
             cfg_warnings = _warn_config_issues(cfg)

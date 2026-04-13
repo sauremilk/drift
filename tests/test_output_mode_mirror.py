@@ -4,8 +4,6 @@ from __future__ import annotations
 
 import copy
 
-import pytest
-
 from drift.response_shaping import apply_output_mode
 
 

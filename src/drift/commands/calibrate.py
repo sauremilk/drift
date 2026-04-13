@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-from datetime import UTC, datetime
 import json
+from datetime import UTC, datetime
 from pathlib import Path
 
 import click
@@ -90,7 +90,9 @@ def run(repo: Path, dry_run: bool, config: Path | None, fmt: str) -> None:
                 f" ({result.total_events} events,"
                 f" {result.signals_with_data} signals with data)\n"
             )
-            console.print(f"{'Signal':<30} {'Default':>8} {'Calibrated':>10} {'Delta':>8} {'Conf.':>6}")
+            console.print(
+                f"{'Signal':<30} {'Default':>8} {'Calibrated':>10} {'Delta':>8} {'Conf.':>6}"
+            )
             console.print("-" * 65)
             for signal_name, info in sorted(diff.items()):
                 delta_str = f"{info['delta']:+.4f}"

@@ -190,7 +190,10 @@ def explain(
                     repo_root=Path(repo_path).resolve() if repo_path else Path.cwd(),
                 )
                 _ecfg = _load_config_cached(Path(repo_path).resolve() if repo_path else Path.cwd())
-                finding_result = apply_output_mode(finding_result, getattr(_ecfg, "output_mode", "full"))
+                finding_result = apply_output_mode(
+                    finding_result,
+                    getattr(_ecfg, "output_mode", "full"),
+                )
                 return shape_for_profile(finding_result, response_profile)
 
         # Not found — helpful error

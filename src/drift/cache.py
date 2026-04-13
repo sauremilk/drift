@@ -43,10 +43,9 @@ class ParseCache:
     def __init__(self, cache_dir: Path) -> None:
         self._cache_dir = cache_dir / "parse"
         self._cache_dir.mkdir(parents=True, exist_ok=True)
-        try:
+        with suppress(OSError):
+            # Best-effort: Windows does not support POSIX permissions
             os.chmod(self._cache_dir, 0o700)
-        except OSError:
-            pass  # Best-effort: Windows does not support POSIX permissions
         self._evict_stale()
 
     def _evict_stale(self) -> None:

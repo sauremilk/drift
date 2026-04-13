@@ -50,9 +50,7 @@ def _can_use_session_fix_plan_fast_path(
         return False
     if include_non_operational:
         return False
-    if response_profile not in (None, "planner", "coder"):
-        return False
-    return True
+    return response_profile in (None, "planner", "coder")
 
 
 def _session_fix_plan_fast_response(session: Any, *, max_tasks: int) -> dict[str, Any]:

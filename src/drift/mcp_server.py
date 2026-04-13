@@ -2700,7 +2700,9 @@ async def drift_feedback(
             start_line=start_line if start_line > 0 else None,
             evidence={"reason": reason} if reason else {},
         )
-        feedback_path, _local_feedback_path, _shared_feedback_path = resolve_feedback_paths(repo, cfg)
+        feedback_path, _local_feedback_path, _shared_feedback_path = resolve_feedback_paths(
+            repo, cfg
+        )
         record_feedback(feedback_path, event)
         return json.dumps({
             "status": "recorded",
@@ -2753,7 +2755,9 @@ async def drift_calibrate(
     def _sync() -> str:
         repo = _Path(path).resolve()
         cfg = DriftConfig.load(repo)
-        feedback_path, _local_feedback_path, _shared_feedback_path = resolve_feedback_paths(repo, cfg)
+        feedback_path, _local_feedback_path, _shared_feedback_path = resolve_feedback_paths(
+            repo, cfg
+        )
         events = load_feedback(feedback_path)
 
         if not events:

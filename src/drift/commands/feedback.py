@@ -117,7 +117,7 @@ def summary(repo: Path, config: Path | None) -> None:
     """Show aggregated feedback counts per signal."""
     from drift.calibration.feedback import feedback_metrics, load_feedback, resolve_feedback_paths
     from drift.calibration.status import load_calibration_status
-    from drift.config import DriftConfig, SIGNAL_ABBREV, SignalWeights
+    from drift.config import SIGNAL_ABBREV, DriftConfig, SignalWeights
 
     cfg = DriftConfig.load(repo, config)
     feedback_path, _local_feedback_path, _shared_feedback_path = resolve_feedback_paths(repo, cfg)
@@ -199,7 +199,9 @@ def summary(repo: Path, config: Path | None) -> None:
         default_weight = float(default_weights.get(signal_name, 0.0))
         calibrated_weight = float(configured_weights.get(signal_name, default_weight))
 
-        status_counts = status_signals.get(signal_name, {}) if isinstance(status_signals, dict) else {}
+        status_counts = (
+            status_signals.get(signal_name, {}) if isinstance(status_signals, dict) else {}
+        )
         if isinstance(status_counts, dict):
             tp = int(status_counts.get("tp", 0))
             fp = int(status_counts.get("fp", 0))

@@ -6,7 +6,6 @@ import json
 from pathlib import Path
 from typing import Any
 
-
 CALIBRATION_STATUS_REL_PATH = ".drift/calibration_status.json"
 
 

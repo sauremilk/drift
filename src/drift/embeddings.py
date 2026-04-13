@@ -12,6 +12,7 @@ import hashlib
 import logging
 import os
 import threading
+from contextlib import suppress
 from pathlib import Path
 from typing import TYPE_CHECKING, cast
 
@@ -76,10 +77,9 @@ class EmbeddingCache:
         self._dir: Path | None = cache_dir / "embeddings" / safe / f"v{_CACHE_VERSION}"
         try:
             self._dir.mkdir(parents=True, exist_ok=True)
-            try:
+            with suppress(OSError):
+                # Best-effort: Windows does not support POSIX permissions
                 os.chmod(self._dir, 0o700)
-            except OSError:
-                pass  # Best-effort: Windows does not support POSIX permissions
         except OSError as exc:
             # Cache is optional; disable it when the filesystem is unavailable.
             logger.warning("Embedding cache disabled: could not create cache directory (%s)", exc)

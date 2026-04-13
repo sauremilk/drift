@@ -138,6 +138,9 @@ def diff(
 
     # Offline mode follows issue #355 success criterion:
     # exit 1 when newly introduced HIGH/CRITICAL findings are present.
-    if from_file is not None and to_file is not None:
-        if int(result.get("new_high_or_critical", 0)) > 0:
-            raise click.exceptions.Exit(1)
+    if (
+        from_file is not None
+        and to_file is not None
+        and int(result.get("new_high_or_critical", 0)) > 0
+    ):
+        raise click.exceptions.Exit(1)
