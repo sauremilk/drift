@@ -22,6 +22,9 @@ The agent-native commands are intended to replace ad-hoc shell parsing workflows
 They emit stable JSON payloads that are small by default and explicitly
 decision-oriented.
 
+For the stable Python function surface and deprecation contract, see
+[Python API (`drift.api`)](python-api.md).
+
 ## Agent decision fields
 
 `drift scan` and `drift diff` include machine-oriented decision fields so agents

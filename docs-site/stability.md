@@ -42,9 +42,17 @@ Users can treat these areas as the most production-near parts of drift:
 
 - deterministic core analysis for Python repositories
 - local CLI usage
+- `drift.api` stable public functions listed in `drift.api.STABLE_API`
 - report-only CI rollout
 - SARIF and JSON outputs for review workflows
 - signal-by-signal interpretation backed by public artifacts
+
+### `drift.api` deprecation promise
+
+For stable symbols listed in `drift.api.STABLE_API`, drift does not remove
+public functions silently in a SemVer minor release. Deprecations are first
+announced with warnings plus changelog notes, and removals happen only in a
+major release after at least one minor release with deprecation warning.
 
 Users should treat these areas more cautiously:
 

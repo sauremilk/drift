@@ -1,3 +1,5 @@
+# ruff: noqa: F401
+
 """Programmatic API for drift analysis — agent-native, JSON-first.
 
 This package provides the formalized public interface consumed by both the
@@ -7,6 +9,11 @@ contract.
 
 Backward-compatible re-export surface: every symbol that was previously
 available via ``from drift.api import X`` continues to work unchanged.
+
+Stability contract:
+        - Symbols in ``STABLE_API`` are the supported public API surface.
+        - Symbols in ``LEGACY_API`` are backward-compatibility re-exports and may
+            evolve faster; prefer ``STABLE_API`` for new integrations.
 """
 
 from __future__ import annotations
@@ -69,8 +76,8 @@ from drift.api_helpers import (
 )
 from drift.finding_context import is_non_operational_context, split_findings_by_context
 
-__all__ = [
-    # Public endpoints
+STABLE_API = [
+    # Stable public endpoints
     "brief",
     "diff",
     "drift_map",
@@ -84,6 +91,9 @@ __all__ = [
     "validate",
     "verify",
     "to_json",
+]
+
+LEGACY_API = [
     # Internal (kept for backward compatibility)
     "_baseline_store",
     "_BATCH_SCAN_THRESHOLD",
@@ -127,3 +137,5 @@ __all__ = [
     "is_non_operational_context",
     "split_findings_by_context",
 ]
+
+__all__ = [*STABLE_API, *LEGACY_API]

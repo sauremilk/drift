@@ -134,6 +134,7 @@ nav:
     - Diagnose vs. Navigation: product/example-findings.md
   - Referenz:
     - CLI Commands: reference/commands.md
+    - Python API (`drift.api`): reference/python-api.md
     - API & Outputs: reference/api-outputs.md
     - Konfiguration: getting-started/configuration.md
     - Negative Context: reference/negative-context.md
