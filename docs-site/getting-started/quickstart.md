@@ -156,7 +156,7 @@ drift self
 # .pre-commit-config.yaml
 repos:
   - repo: https://github.com/mick-gsk/drift
-    rev: DRIFT_LATEST_TAG
+        rev: v2.9.15
     hooks:
       - id: drift-report          # start report-only, switch to drift-check later
 ```
