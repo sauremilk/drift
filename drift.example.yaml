@@ -34,8 +34,6 @@ auto_calibrate: true
 # performance tuning, and advanced policies, see:
 # https://mick-gsk.github.io/drift/getting-started/configuration/
 # ──────────────────────────────────────────────────────────────────────
-    api_endpoint: 3
-
   # AI attribution override: set a fixed ratio if your repo is fully AI-built
   # but Drift's automatic detection can't infer it from git history alone.
   # ai_attribution:
