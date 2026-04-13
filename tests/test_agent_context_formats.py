@@ -61,6 +61,7 @@ class TestValidTargets:
         assert "cursor" in VALID_TARGETS
         assert "windsurf" in VALID_TARGETS
         assert "claude" in VALID_TARGETS
+        assert "agents" in VALID_TARGETS
 
     def test_excludes_all(self) -> None:
         # "all" is a CLI choice but not a generate target
@@ -146,6 +147,11 @@ class TestGenerateForTarget:
         result = generate_for_target("claude", analysis)
         assert result.startswith("# Architectural Constraints")
 
+    def test_agents_uses_claude_format(self) -> None:
+        analysis = _make_analysis()
+        result = generate_for_target("agents", analysis)
+        assert result.startswith("# Architectural Constraints")
+
 
 class TestTargetDefaultPath:
     def test_copilot_path(self) -> None:
@@ -163,3 +169,7 @@ class TestTargetDefaultPath:
     def test_claude_path(self) -> None:
         p = target_default_path("claude", Path("/repo"))
         assert p == Path("/repo/CLAUDE.md")
+
+    def test_agents_path(self) -> None:
+        p = target_default_path("agents", Path("/repo"))
+        assert p == Path("/repo/AGENTS.md")

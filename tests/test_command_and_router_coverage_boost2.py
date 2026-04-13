@@ -321,6 +321,11 @@ def test_baseline_and_copilot_context(monkeypatch, tmp_path: Path) -> None:
     )
     assert cwind.exit_code == 0
 
+    cagents = runner.invoke(
+        copilot_context, ["--repo", str(tmp_path), "--target", "agents", "--write"]
+    )
+    assert cagents.exit_code == 0
+
 
 def test_plugins_and_a2a_router(monkeypatch, tmp_path: Path) -> None:
     import click

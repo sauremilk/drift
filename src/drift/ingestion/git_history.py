@@ -96,6 +96,7 @@ _CONVENTIONAL_COMMIT_RE = re.compile(
 _AI_TOOL_FILE_INDICATORS: dict[str, str] = {
     ".claude/": "claude",
     "CLAUDE.md": "claude",
+    "AGENTS.md": "agents",
     ".claudeignore": "claude",
     ".copilotignore": "copilot",
     ".github/copilot-instructions.md": "copilot",

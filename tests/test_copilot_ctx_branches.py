@@ -198,6 +198,10 @@ class TestTargetDefaultPath:
         p = target_default_path("claude", Path("/repo"))
         assert p == Path("/repo/CLAUDE.md")
 
+    def test_agents(self):
+        p = target_default_path("agents", Path("/repo"))
+        assert p == Path("/repo/AGENTS.md")
+
     def test_copilot_default(self):
         p = target_default_path("copilot", Path("/repo"))
         assert p == Path("/repo/.github/copilot-instructions.md")
@@ -222,6 +226,11 @@ class TestGenerateForTarget:
     def test_claude_delegation(self):
         a = _analysis()
         result = generate_for_target("claude", a)
+        assert "drift-generated" in result.lower() or "Drift" in result
+
+    def test_agents_delegation(self):
+        a = _analysis()
+        result = generate_for_target("agents", a)
         assert "drift-generated" in result.lower() or "Drift" in result
 
     def test_copilot_default(self):

@@ -40,6 +40,10 @@ class TestDetectAIToolIndicators:
         (tmp_path / "CLAUDE.md").write_text("# Claude config")
         assert detect_ai_tool_indicators(tmp_path) == ["claude"]
 
+    def test_agents_md(self, tmp_path: Path) -> None:
+        (tmp_path / "AGENTS.md").write_text("# Agent config")
+        assert detect_ai_tool_indicators(tmp_path) == ["agents"]
+
     def test_claudeignore(self, tmp_path: Path) -> None:
         (tmp_path / ".claudeignore").write_text("")
         assert detect_ai_tool_indicators(tmp_path) == ["claude"]

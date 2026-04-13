@@ -302,7 +302,9 @@ def _wrap_markers(content: str) -> str:
 # ---------------------------------------------------------------------------
 
 #: Valid target identifiers for ``--target``
-VALID_TARGETS: frozenset[str] = frozenset({"copilot", "cursor", "claude", "windsurf"})
+VALID_TARGETS: frozenset[str] = frozenset(
+    {"copilot", "cursor", "claude", "windsurf", "agents"}
+)
 
 
 def generate_cursorrules(analysis: RepoAnalysis) -> str:
@@ -383,6 +385,8 @@ def target_default_path(target: str, repo_path: Path) -> Path:
         return repo_path / ".windsurfrules"
     if target == "claude":
         return repo_path / "CLAUDE.md"
+    if target == "agents":
+        return repo_path / "AGENTS.md"
     # copilot (default)
     return repo_path / ".github" / "copilot-instructions.md"
 
@@ -394,6 +398,8 @@ def generate_for_target(target: str, analysis: RepoAnalysis) -> str:
     if target == "windsurf":
         return generate_cursorrules(analysis)
     if target == "claude":
+        return generate_claude_instructions(analysis)
+    if target == "agents":
         return generate_claude_instructions(analysis)
     return generate_instructions(analysis)
 

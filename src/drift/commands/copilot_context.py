@@ -64,13 +64,14 @@ from drift.commands import console
     "--target",
     "-t",
     type=click.Choice(
-        ["copilot", "cursor", "windsurf", "claude", "all"],
+        ["copilot", "cursor", "windsurf", "claude", "agents", "all"],
         case_sensitive=False,
     ),
     default="copilot",
     help=(
         "Target agent platform: copilot (.github/copilot-instructions.md), "
-        "cursor (.cursorrules), windsurf (.windsurfrules), claude (CLAUDE.md), or all."
+        "cursor (.cursorrules), windsurf (.windsurfrules), "
+        "claude (CLAUDE.md), agents (AGENTS.md), or all."
     ),
 )
 def copilot_context(
@@ -99,6 +100,7 @@ def copilot_context(
         drift copilot-context --target cursor   # generate .cursorrules format
         drift copilot-context --target windsurf # generate .windsurfrules format
         drift copilot-context --target claude   # generate CLAUDE.md format
+        drift copilot-context --target agents   # generate AGENTS.md format
         drift copilot-context --target all -w   # write all formats at once
     """
     from drift.analyzer import analyze_repo
@@ -143,7 +145,7 @@ def copilot_context(
             # Preview: show copilot format to stdout
             click.echo(generate_instructions(analysis))
             return
-        targets = ["copilot", "cursor", "windsurf", "claude"]
+        targets = ["copilot", "cursor", "windsurf", "claude", "agents"]
         for t in targets:
             rendered_t = generate_for_target(t, analysis)
             t_path = target_default_path(t, repo_path)
