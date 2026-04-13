@@ -254,7 +254,7 @@ class InsecureDefaultSignal(BaseSignal):
                 encoding="utf-8", errors="replace"
             )
             tree = ast.parse(source, filename=str(pr.file_path))
-        except (SyntaxError, OSError):
+        except (OSError, SyntaxError):
             return
 
         self._check_tree(tree, pr.file_path, source, findings)

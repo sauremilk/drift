@@ -459,7 +459,7 @@ class HardcodedSecretSignal(BaseSignal):
                 encoding="utf-8", errors="replace"
             )
             tree = ast.parse(source, filename=str(pr.file_path))
-        except (SyntaxError, OSError):
+        except (OSError, SyntaxError):
             return findings
 
         parent_map = {
