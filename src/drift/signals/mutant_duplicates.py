@@ -34,7 +34,7 @@ from drift.signals._utils import is_test_file
 from drift.signals.base import BaseSignal, register_signal
 
 if TYPE_CHECKING:
-    from drift.protocols import EmbeddingServiceProtocol
+    from drift.signals.base import EmbeddingServiceProtocol
 
 logger = logging.getLogger("drift.mds")
 
