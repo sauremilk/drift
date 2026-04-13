@@ -26,6 +26,7 @@ from drift.api_helpers import (
     signal_scope_label,
 )
 from drift.finding_context import is_non_operational_context
+from drift.fix_plan_dismissals import get_active_dismissal_ids
 
 if TYPE_CHECKING:
     from drift.analyzer import ProgressCallback
@@ -278,6 +279,17 @@ def _build_fix_plan_response_from_analysis(
             context = str(t.metadata.get("finding_context", "production"))
             context_counts[context] = context_counts.get(context, 0) + 1
 
+    dismissed_ids = get_active_dismissal_ids(repo_path, getattr(cfg, "cache_dir", ".drift-cache"))
+    excluded_dismissed = 0
+    if dismissed_ids:
+        before = len(tasks)
+        tasks = [t for t in tasks if t.id not in dismissed_ids]
+        excluded_dismissed = before - len(tasks)
+        if excluded_dismissed > 0:
+            out_warnings.append(
+                f"Excluded {excluded_dismissed} dismissed task(s) from fix-plan scope"
+            )
+
     limited = tasks[:max_tasks]
 
     # Path diagnostic: explain empty results when target_path was used
@@ -341,6 +353,10 @@ def _build_fix_plan_response_from_analysis(
             ),
             "include_non_operational": include_non_operational,
             "excluded_from_fix_plan": excluded_non_operational,
+        },
+        dismissed={
+            "active_count": len(dismissed_ids),
+            "excluded_from_fix_plan": excluded_dismissed,
         },
         path_diagnostic=path_diagnostic,
         finding_id_diagnostic=finding_id_diagnostic,

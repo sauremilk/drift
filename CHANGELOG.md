@@ -7,6 +7,7 @@
 - `drift trend --json` flag — emit trend data as machine-readable JSON.
 - `drift feedback` N column shows total observations per signal.
 - `scope_warning` field in brief API response when scope confidence < 50%.
+- `drift fix-plan` dismissal workflow: `--dismiss <task-id>`, `--show-dismissed`, and `--reset` with default 7-day TTL backed by `.drift-cache/fix-plan-dismissed.json`.
 
 ### Changed
 

@@ -12,6 +12,13 @@ import click
 from drift.api import fix_plan as api_fix_plan
 from drift.api import to_json
 from drift.commands._io import _is_non_tty_stdout
+from drift.config import DriftConfig
+from drift.fix_plan_dismissals import (
+    DEFAULT_TTL_DAYS,
+    dismiss_task,
+    get_active_dismissals,
+    reset_dismissals,
+)
 
 _progress_start: float = 0.0
 
@@ -79,6 +86,28 @@ def _json_progress_callback(phase: str, current: int, total: int) -> None:
     help="Include fixture/generated/migration/docs findings in prioritized tasks.",
 )
 @click.option(
+    "--dismiss",
+    "dismiss_task_id",
+    default=None,
+    help=(
+        "Temporarily dismiss a fix-plan task id from output "
+        f"(default TTL: {DEFAULT_TTL_DAYS} days)."
+    ),
+)
+@click.option(
+    "--show-dismissed",
+    is_flag=True,
+    default=False,
+    help="Show currently dismissed fix-plan tasks.",
+)
+@click.option(
+    "--reset",
+    "reset_dismissed",
+    is_flag=True,
+    default=False,
+    help="Clear all dismissed fix-plan tasks.",
+)
+@click.option(
     "--progress",
     type=click.Choice(["auto", "json", "none"]),
     default="auto",
@@ -112,6 +141,9 @@ def fix_plan(
     include_deferred: bool,
     automation_fit_min: str | None,
     include_non_operational: bool,
+    dismiss_task_id: str | None,
+    show_dismissed: bool,
+    reset_dismissed: bool,
     progress: str,
     output: Path | None,
     output_format: str,
@@ -131,18 +163,65 @@ def fix_plan(
         _progress_start = time.monotonic()
         progress_cb = _json_progress_callback
 
-    result = api_fix_plan(
-        path,
-        finding_id=finding_id,
-        signal=signal,
-        max_tasks=max_tasks,
-        automation_fit_min=automation_fit_min,
-        target_path=target_path,
-        exclude_paths=list(exclude_paths) or None,
-        include_deferred=include_deferred,
-        include_non_operational=include_non_operational,
-        on_progress=progress_cb,
-    )
+    special_ops = [
+        bool(dismiss_task_id),
+        show_dismissed,
+        reset_dismissed,
+    ]
+    if sum(1 for enabled in special_ops if enabled) > 1:
+        raise click.UsageError("Use only one of --dismiss, --show-dismissed, or --reset at a time")
+
+    repo_path = path.resolve()
+    cfg = DriftConfig.load(repo_path)
+    cache_dir = getattr(cfg, "cache_dir", ".drift-cache")
+
+    if dismiss_task_id:
+        task_id = dismiss_task_id.strip()
+        if not task_id:
+            raise click.UsageError("--dismiss requires a non-empty task id")
+        record = dismiss_task(
+            repo_path,
+            task_id,
+            cache_dir,
+            ttl_days=DEFAULT_TTL_DAYS,
+        )
+        result = {
+            "schema_version": "2.1",
+            "operation": "dismiss",
+            "task_id": record["task_id"],
+            "dismissed_at": record["dismissed_at"],
+            "expires_at": record["expires_at"],
+            "ttl_days": DEFAULT_TTL_DAYS,
+            "cache_file": f"{cache_dir}/fix-plan-dismissed.json",
+        }
+    elif show_dismissed:
+        result = {
+            "schema_version": "2.1",
+            "operation": "show-dismissed",
+            "cache_file": f"{cache_dir}/fix-plan-dismissed.json",
+            "dismissed": get_active_dismissals(repo_path, cache_dir),
+        }
+    elif reset_dismissed:
+        removed = reset_dismissals(repo_path, cache_dir)
+        result = {
+            "schema_version": "2.1",
+            "operation": "reset",
+            "removed": removed,
+            "cache_file": f"{cache_dir}/fix-plan-dismissed.json",
+        }
+    else:
+        result = api_fix_plan(
+            path,
+            finding_id=finding_id,
+            signal=signal,
+            max_tasks=max_tasks,
+            automation_fit_min=automation_fit_min,
+            target_path=target_path,
+            exclude_paths=list(exclude_paths) or None,
+            include_deferred=include_deferred,
+            include_non_operational=include_non_operational,
+            on_progress=progress_cb,
+        )
 
     # API-level validation errors (e.g. unknown signal) must surface as
     # CLI failures so machine-mode callers receive a non-zero exit code.

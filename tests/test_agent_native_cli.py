@@ -32,6 +32,9 @@ def test_fix_plan_help() -> None:
     assert "--exclude" in result.output
     assert "--include-deferred" in result.output
     assert "--progress" in result.output
+    assert "--dismiss" in result.output
+    assert "--show-dismissed" in result.output
+    assert "--reset" in result.output
 
 
 def test_start_help() -> None:
@@ -299,6 +302,57 @@ def test_fix_plan_include_deferred_pass_through(monkeypatch) -> None:
     result = runner.invoke(main, ["fix-plan", "--repo", ".", "--include-deferred"])
     assert result.exit_code == 0
     assert captured.get("include_deferred") is True
+
+
+def test_fix_plan_dismiss_show_and_reset_flow(tmp_path: Path) -> None:
+    """dismiss/show/reset should manage .drift-cache/fix-plan-dismissed.json."""
+    runner = CliRunner()
+
+    dismiss_result = runner.invoke(
+        main,
+        ["fix-plan", "--repo", str(tmp_path), "--dismiss", "pfs-abc123", "--format", "json"],
+    )
+    assert dismiss_result.exit_code == 0
+    dismiss_payload = json.loads(dismiss_result.output)
+    assert dismiss_payload["operation"] == "dismiss"
+    assert dismiss_payload["task_id"] == "pfs-abc123"
+
+    show_result = runner.invoke(
+        main,
+        ["fix-plan", "--repo", str(tmp_path), "--show-dismissed", "--format", "json"],
+    )
+    assert show_result.exit_code == 0
+    show_payload = json.loads(show_result.output)
+    assert show_payload["operation"] == "show-dismissed"
+    assert any(item.get("task_id") == "pfs-abc123" for item in show_payload["dismissed"])
+
+    reset_result = runner.invoke(
+        main,
+        ["fix-plan", "--repo", str(tmp_path), "--reset", "--format", "json"],
+    )
+    assert reset_result.exit_code == 0
+    reset_payload = json.loads(reset_result.output)
+    assert reset_payload["operation"] == "reset"
+    assert reset_payload["removed"] >= 1
+
+    show_after_reset = runner.invoke(
+        main,
+        ["fix-plan", "--repo", str(tmp_path), "--show-dismissed", "--format", "json"],
+    )
+    assert show_after_reset.exit_code == 0
+    show_after_reset_payload = json.loads(show_after_reset.output)
+    assert show_after_reset_payload["dismissed"] == []
+
+
+def test_fix_plan_rejects_multiple_dismissal_operations(tmp_path: Path) -> None:
+    """Only one of --dismiss/--show-dismissed/--reset may be used at once."""
+    runner = CliRunner()
+    result = runner.invoke(
+        main,
+        ["fix-plan", "--repo", str(tmp_path), "--dismiss", "pfs-abc123", "--reset"],
+    )
+    assert result.exit_code == 2
+    assert "Use only one of --dismiss, --show-dismissed, or --reset" in result.output
 
 
 # ---------------------------------------------------------------------------

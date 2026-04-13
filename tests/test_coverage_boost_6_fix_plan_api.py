@@ -403,6 +403,39 @@ def test_include_deferred_true_keeps_deferred_tasks(tmp_path: Path) -> None:
     assert result.get("task_count", 0) >= 1
 
 
+def test_dismissed_tasks_are_excluded_from_fix_plan(tmp_path: Path) -> None:
+    """Dismissed task ids should be filtered from fix-plan output."""
+    tasks = [
+        _make_task(task_id="pfs-abc123", signal_type="PFS"),
+        _make_task(task_id="mds-def456", signal_type="MDS"),
+    ]
+    analysis = _make_analysis(findings=[_make_finding(), _make_finding(signal_type="MDS")])
+    cfg = _make_cfg()
+
+    with (
+        patch("drift.output.agent_tasks.analysis_to_agent_tasks", return_value=tasks),
+        patch("drift.api.fix_plan.get_active_dismissal_ids", return_value={"pfs-abc123"}),
+    ):
+        result = _build_fix_plan_response_from_analysis(
+            analysis=analysis,
+            cfg=cfg,
+            repo_path=tmp_path,
+            finding_id=None,
+            signal=None,
+            max_tasks=5,
+            automation_fit_min=None,
+            target_path=None,
+            exclude_paths=None,
+            include_deferred=True,
+            include_non_operational=True,
+        )
+
+    ids = {task["id"] for task in result.get("tasks", [])}
+    assert "pfs-abc123" not in ids
+    assert "mds-def456" in ids
+    assert result.get("dismissed", {}).get("excluded_from_fix_plan") == 1
+
+
 # ---------------------------------------------------------------------------
 # --format option: CLI TTY/non-TTY routing (ADR-047)
 # ---------------------------------------------------------------------------
