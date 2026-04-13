@@ -10,6 +10,13 @@ from typing import TYPE_CHECKING, Any
 
 from drift.config import DriftConfig
 from drift.finding_context import classify_finding_context
+from drift.finding_priority import (
+    _dedupe_findings,
+    _expected_benefit_for_finding,
+    _next_step_for_finding,
+    _priority_class,
+    _priority_rank,
+)
 from drift.signal_mapping import _ABBREV_TO_SIGNAL, signal_abbrev
 
 if TYPE_CHECKING:
@@ -40,8 +47,6 @@ def _select_priority_findings_from_list(
     Uses the same structural-first ordering as machine-readable fix-first output
     so CLI entry points do not drift apart in their recommended starting point.
     """
-    from drift.output.json_output import _dedupe_findings, _priority_class, _priority_rank
-
     deduped, _counts = _dedupe_findings(findings)
     prioritized = sorted(
         deduped,
@@ -83,12 +88,6 @@ def build_first_run_summary(
     language: str | None = None,
 ) -> dict[str, Any]:
     """Build a compact first-run summary for CLI and JSON surfaces."""
-    from drift.output.json_output import (
-        _expected_benefit_for_finding,
-        _next_step_for_finding,
-        _priority_class,
-    )
-
     top_findings = select_priority_findings(analysis, max_items=max_items)
     lang = (language or "en").lower()
     is_german = lang.startswith("de")
@@ -174,8 +173,6 @@ def _finding_fingerprint_value(f: Any) -> str:
 
 def _finding_concise(f: Any) -> dict[str, Any]:
     """Minimal finding dict for concise responses."""
-    from drift.output.json_output import _next_step_for_finding
-
     signal = signal_abbrev(f.signal_type)
     severity = f.severity.value
 
@@ -199,11 +196,6 @@ def _finding_concise(f: Any) -> dict[str, Any]:
 
 def _finding_detailed(f: Any, *, rank: int | None = None) -> dict[str, Any]:
     """Full finding dict for detailed responses."""
-    from drift.output.json_output import (
-        _expected_benefit_for_finding,
-        _next_step_for_finding,
-        _priority_class,
-    )
     from drift.recommendations import generate_recommendation
 
     rec = generate_recommendation(f)
@@ -301,8 +293,6 @@ def _top_signals(
 
 def _fix_first_concise(analysis: RepoAnalysis, max_items: int = 5) -> list[dict[str, Any]]:
     """Build compact fix_first list (deduplicated)."""
-    from drift.output.json_output import _expected_benefit_for_finding, _next_step_for_finding
-
     items: list[dict[str, Any]] = []
     for idx, f in enumerate(select_priority_findings(analysis, max_items=max_items), start=1):
         signal = signal_abbrev(f.signal_type)

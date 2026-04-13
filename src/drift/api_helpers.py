@@ -12,6 +12,14 @@ from typing import TYPE_CHECKING, Any
 
 from drift.config import DriftConfig
 from drift.finding_context import classify_finding_context
+from drift.finding_priority import (
+    _SEVERITY_RANK,
+    _dedupe_findings,
+    _expected_benefit_for_finding,
+    _next_step_for_finding,
+    _priority_class,
+    _priority_rank,
+)
 
 # --- Re-exports: finding rendering ---
 from drift.finding_rendering import (  # noqa: F401
@@ -127,8 +135,6 @@ def finding_base_payload(f: Any) -> dict[str, Any]:
 
 def _finding_concise(f: Any) -> dict[str, Any]:
     """Minimal finding dict for concise responses."""
-    from drift.output.json_output import _next_step_for_finding
-
     payload = finding_base_payload(f)
     payload["next_step"] = _next_step_for_finding(f)
     return payload
@@ -136,11 +142,6 @@ def _finding_concise(f: Any) -> dict[str, Any]:
 
 def _finding_detailed(f: Any, *, rank: int | None = None) -> dict[str, Any]:
     """Full finding dict for detailed responses."""
-    from drift.output.json_output import (
-        _expected_benefit_for_finding,
-        _next_step_for_finding,
-        _priority_class,
-    )
     from drift.recommendations import generate_recommendation
 
     rec = generate_recommendation(f)
@@ -171,15 +172,6 @@ def _finding_detailed(f: Any, *, rank: int | None = None) -> dict[str, Any]:
 
 def _fix_first_concise(analysis: RepoAnalysis, max_items: int = 5) -> list[dict[str, Any]]:
     """Build compact fix_first list (deduplicated)."""
-    from drift.output.json_output import (
-        _SEVERITY_RANK,
-        _dedupe_findings,
-        _expected_benefit_for_finding,
-        _next_step_for_finding,
-        _priority_class,
-        _priority_rank,
-    )
-
     deduped, _counts = _dedupe_findings(analysis.findings)
 
     prioritized = sorted(

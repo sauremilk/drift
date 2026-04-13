@@ -244,7 +244,7 @@ def diff(
         # synthetic so agents don't misinterpret zero as the repo baseline (#119).
         score_basis = "historical" if has_trend_baseline else "zero_default"
 
-        from drift.output.json_output import _priority_class
+        from drift.finding_priority import _priority_class
 
         drift_categories = sorted({_priority_class(f) for f in scoped_new}) if scoped_new else []
         affected = sorted({

@@ -14,8 +14,8 @@ from pathlib import Path
 from typing import Any
 
 from drift import __version__
-from drift.api_helpers import build_drift_score_scope
 from drift.models import Finding, RepoAnalysis
+from drift.response_shaping import build_drift_score_scope
 
 # ---------------------------------------------------------------------------
 # Finding fingerprint
