@@ -9,6 +9,14 @@ exclude:
   - "tagesplanung/**"
   - "site/**"
   - "overrides/**"
+  - "extensions/**/node_modules/**"
+  - "examples/**"
+  - "scripts/**"
+  - "docs-site/**"
+  - "tests/fixtures/**"
+  - "hooks/**"
+  - "demos/**"
+  - ".drift/**"
 
 calibration:
   enabled: true

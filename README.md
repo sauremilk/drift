@@ -294,9 +294,11 @@ If your team ships most changes via AI coding tools (Copilot, Cursor, Claude), d
 
 **From Ruff / pylint:** Drift operates one layer above single-file style. It detects when AI generates the same error handler four different ways across modules — something no linter sees.
 
-**From Semgrep / CodeQL:** Semgrep finds known vulnerability patterns in single files. Drift finds structural erosion across files — pattern fragmentation, layer violations, temporal volatility — that security scanners don't target.
+**From Semgrep / CodeQL:** Semgrep finds known vulnerability patterns in single files. Drift finds structural erosion across files — pattern fragmentation, layer violations, temporal volatility — that security scanners don't target. Semgrep Pro Engine adds cross-file dataflow analysis for security — drift adds cross-file structural coherence analysis for architecture. Different questions.
 
-**From SonarQube:** Drift runs locally with zero server setup and produces deterministic, reproducible findings per signal. Add it alongside SonarQube — not instead.
+**From SonarQube:** Drift runs locally with zero server setup and produces deterministic, reproducible findings per signal. Add it alongside SonarQube — not instead. See [drift vs SonarQube](https://mick-gsk.github.io/drift/comparisons/drift-vs-sonarqube/) for the detailed comparison.
+
+**From GitHub Copilot Code Review:** Copilot Review checks the PR after the code is written. Drift operates before (`drift brief` generates guardrails before an agent task starts) and during (`drift nudge` gives directional feedback inside the editing session). Use both — different positions in the workflow.
 
 **From jscpd / CPD:** Drift's duplicate detection is AST-level, not text-level. It finds near-duplicates that text diff misses and places them in architectural context.
 
@@ -357,6 +359,58 @@ Paste the Markdown output into your README:
 | [Vibe-coding Playbook](examples/vibe-coding/README.md) | 30-day rollout guide for AI-heavy teams |
 | [Open Research Questions](RESEARCH.md) | 5 falsifiable hypotheses on validity and effectiveness |
 | [Contributing](CONTRIBUTING.md) | Dev setup, FP/FN reporting, signal development |
+
+---
+
+## 🛠 Troubleshooting
+
+<details>
+<summary><strong>No Python files found</strong></summary>
+
+drift walks the repo starting from the path passed to `--repo`. If the path is wrong or the repo uses a non-standard layout, use `--repo /absolute/path/to/project` and verify via `drift analyze --repo . --format json | python -m json.tool | Select-String files`.
+
+</details>
+
+<details>
+<summary><strong>Shallow clone — git signals are missing or unreliable</strong></summary>
+
+Time-based and co-change signals (TVS, CCC, AVS) require full git history. Unshallow the clone:
+
+```bash
+git fetch --unshallow
+```
+
+In CI (GitHub Actions), add `fetch-depth: 0` to your `actions/checkout` step.
+
+</details>
+
+<details>
+<summary><strong>drift.yaml schema validation failed</strong></summary>
+
+Validate your config against the schema:
+
+```bash
+python -m jsonschema -i drift.yaml drift.schema.json   # requires pip install jsonschema
+```
+
+Or regenerate a fresh config: `drift init` (overwrites drift.yaml with safe defaults).
+
+</details>
+
+<details>
+<summary><strong>drift: command not found after install</strong></summary>
+
+The `drift` binary may not be on your PATH. Check:
+
+```bash
+which drift          # macOS/Linux
+where drift          # Windows
+python -m drift analyze --repo .   # always works regardless of PATH
+```
+
+If you installed with `pip install --user`, add `~/.local/bin` (Linux/macOS) or `%APPDATA%\Python\Scripts` (Windows) to your PATH.
+
+</details>
 
 ---
 

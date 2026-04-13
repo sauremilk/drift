@@ -508,4 +508,123 @@ gh release create v2.5.1 --title "v2.5.1" --generate-notes
 After pushing `.pre-commit-hooks.yaml`, drift is automatically indexed at
 https://pre-commit.ci. No further action needed.
 
+---
+
+## 11. Blog-Post Outlines (distribution-phase content)
+
+Three ready-to-draft articles targeting the competitive landscape from the
+Q2 2026 analysis. Each has a confirmed angle, target audience, platform, and
+key claims.
+
+---
+
+### Article A — "drift vs SonarQube: What your SAST tool doesn't see"
+
+**Platform:** Dev.to, Hashnode
+**Tags:** `python`, `architecture`, `static-analysis`, `sonarqube`
+**Target audience:** teams already running SonarQube who wonder if they have
+a structural coherence gap
+
+**Outline:**
+
+1. **Hook:** You run SonarQube. Your security score is green. So why does your
+   codebase resist change more every quarter?
+2. **The gap:** SonarQube finds known-bad patterns. Drift finds structural erosion
+   — the same problem solved four different ways, modules that shouldn't know
+   about each other, the architectural shape of your repo changing silently.
+3. **Concrete example:** MDS finding on a 50-file codebase that SonarQube would
+   pass. Side-by-side: SonarQube report (clean), drift report (3 MDS findings,
+   1 PFS finding).
+4. **The temporal layer:** SonarQube sees the current snapshot. Drift sees the
+   trajectory. Co-Change Coupling and Temporal Volatility only exist in the git
+   history — no scanner without history analysis can find them.
+5. **Setup CLI:** `pip install drift-analyzer && drift analyze --repo .` in 30s.
+6. **Call to action:** Add drift alongside SonarQube. Not instead.
+
+**Key claims (safe to publish):**
+- Drift runs in seconds locally with zero server setup
+- Bayesian per-repo calibration adapts signal weights to observed repair outcomes
+- SARIF output integrates with GitHub Code Scanning alongside CodeQL findings
+
+---
+
+### Article B — "Why deterministic analysis outperforms LLM-based code review"
+
+**Platform:** r/Python, Hacker News, r/ExperiencedDevs
+**Tags:** `python`, `ai`, `code-quality`, `architecture`
+**Target audience:** teams evaluating DeepSource, AI-based review tools, or
+considering `git ls-files | xargs cat | claude "..."` workflows
+
+**Outline:**
+
+1. **Hook:** LLM-based code review is impressive. It is also non-reproducible.
+   The same code produces different results on different runs — that is a
+   fundamental property of any LLM-based system.
+2. **The compliance problem:** For FinTech, HealthTech, or any team that needs
+   audit trails, non-reproducible findings are not findings — they are opinions.
+3. **What determinism buys you:**
+   - Same input → same output on every run, every developer, every CI agent
+   - Exit codes that CI gates can rely on
+   - SARIF output that tools can track and compare over time
+   - Trend lines that reflect reality, not model variance
+4. **Concrete comparison:** DeepSource autofix (stochastic) vs drift finding
+   (deterministic). The DeepSource result is plausible. The drift result is
+   the same every time.
+5. **When LLM review is genuinely better:** Ad-hoc exploration, single-developer
+   projects, reviews that need natural language explanation. Drift does not try
+   to compete here.
+6. **Call to action:** Determinism and CI-grade output for team environments.
+   LLM reviews for personal exploration. Both have a place — knowing which
+   question you're asking determines which tool to use.
+
+**Key claims (safe to publish):**
+- Drift uses Python's built-in `ast` module and statistical comparison — zero ML
+- No API keys, no external service calls, no flaky results
+- Bayesian calibration uses observed repair data, not LLM judgment
+
+---
+
+### Article C — "Pre-task guardrails: How drift works before GitHub Copilot Code Review"
+
+**Platform:** LinkedIn, Dev.to
+**Tags:** `ai`, `copilot`, `architecture`, `developer-workflow`
+**Target audience:** developers and engineering leads using GitHub Copilot who
+are evaluating their AI-assisted workflow quality
+
+**Outline:**
+
+1. **Hook:** GitHub Copilot Code Review (GA March 2026) reviews your PR. It is
+   useful. But by the time your PR exists, your architecture has already been
+   shaped.
+2. **The workflow gap:** Copilot Review operates at the post-task stage. There
+   is no tool in the standard workflow that operates at the pre-task stage —
+   before the agent starts generating code.
+3. **drift brief:** `drift brief --task "add payment integration"` analyzes the
+   affected scope, identifies elevated signals, and returns concrete guardrails
+   for the agent to follow. This runs before any code is written.
+4. **drift nudge:** During the session, `drift nudge` via MCP gives directional
+   feedback after each file edit — is the change improving or degrading
+   structural coherence? Fast enough for inner-loop use.
+5. **The combined workflow:**
+   ```
+   drift brief → agent task → drift nudge (during) → Copilot Review (on PR)
+   ```
+   Prevention at the start. Verification at the end.
+6. **Call to action:** Add `drift mcp` to your Cursor or Claude Code config.
+   Start with `drift brief` on your next agent task.
+
+**Key claims (safe to publish):**
+- `drift brief` returns UP TO 50 guardrails scoped to the task description
+- `drift nudge` runs file-local signals in < 200ms for inner-loop use
+- MCP server: 17 tools covering the full agent workflow
+
+---
+
+**Publication notes:**
+- All articles reference [Comparison Hub](https://mick-gsk.github.io/drift/comparisons/)
+  for citation-level accuracy
+- Safe factual claims sourced from `docs-site/product/press-brand.md`
+- Do not claim specific competitor precision/recall numbers without a link to
+  their published benchmarks
+
 The icon then appears on the pre-commit.ci page and in their search.

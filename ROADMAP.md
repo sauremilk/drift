@@ -75,6 +75,10 @@ moratorium for language expansion.
 - **v2.4.x:** Context and export surfaces expanded — finding-context triage policy, CSV output for `analyze`/`check`, `diff` score-basis clarity, and stronger MCP robustness (schema typing, structured error envelopes, Windows stdio stability).
 
 - **v2.5.0:** Schema-based config validation, mutation testing infrastructure, per-signal cap for scan, signal abbreviation map, CITATION.cff automation, and diverse-strategy scan improvements.
+- **v2.7.0:** Signal filtering for scan — `--exclude-signals` and `--max-per-signal`; harmonized scan finding fields (`signal_abbrev`, `signal_id`, `severity_rank`, `fingerprint`, `cross_validation`); false-positive reductions for DIA, AVS, MAZ, BEM, NBV, ECM, and HSC.
+- **v2.9.8:** Calibration hardening — AVS, DIA, and MDS quality improvements, updated thresholds, extended feedback tooling, and refreshed golden snapshots.
+- **v2.9.13:** Six new output formats: `pr-comment`, `junit`, `llm`, `ci`, and `gate`; shell tab-completion via `drift completions`; signal clarity hardening (EDS, PFS, AVS, CCC); actionability improvements across CXS, TVS, DCA, MAZ, TSB, and PHR.
+- **v2.9.15:** Fix-intent contracts and shadow-verify for risky cross-file edits (ADR-063/064); repair-template registry and coverage matrix (ADR-065).
 
 ---
 

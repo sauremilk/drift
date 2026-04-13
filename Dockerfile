@@ -1,5 +1,5 @@
 # syntax=docker/dockerfile:1
-FROM python:3.13-slim AS base
+FROM python:3.13-slim@sha256:d168b8d9eb761f4d3fe305ebd04aeb7e7f2de0297cec5fb2f8f6403244621664 AS base
 
 LABEL org.opencontainers.image.source="https://github.com/mick-gsk/drift"
 LABEL org.opencontainers.image.description="Catches structural erosion from AI-generated code that passes all your tests"

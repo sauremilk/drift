@@ -1,5 +1,22 @@
 # Risk Register
 
+## 2025-07-26 - ADR-070: drift verify — binary pass/fail coherence verification
+
+- Risk ID: RISK-OUTPUT-2025-07-26-ADR070-VERIFY
+- Component: `src/drift/api/verify.py`, `src/drift/commands/verify.py`, `src/drift/mcp_server.py` (drift_verify tool), `src/drift/tool_metadata.py`
+- Type: New API function + CLI command + MCP tool (additive, no breaking change)
+- Description: New `drift verify` command wraps `shadow_verify()` with a binary pass/fail envelope suitable for CI gating and agentic workflows. Applies severity-threshold gate (default: high) and score-degradation check to produce blocking reasons.
+- Trigger: `drift verify` CLI, `verify()` API, or `drift_verify` MCP tool invocation.
+- Impact: No impact on existing functionality. shadow_verify is called as-is. verify() adds a pass/fail decision layer on top.
+- Mitigation:
+  - 20 unit tests cover pass/fail logic, severity gate, direction detection, error propagation, CLI exit codes
+  - MCP tool follows identical session-resolution pattern as drift_shadow_verify
+  - CLI exit code 1 for fail (unless --exit-zero), matching `drift check` convention
+- Verification:
+  - `python -m pytest tests/test_verify.py -v --tb=short`
+  - `python -m pytest tests/test_tool_metadata.py -v --tb=short`
+- Residual risk: Low. false-pass if shadow_verify has finding-identity bugs (documented in ADR-064 FMEA). No new trust boundary introduced.
+
 ## 2025-07-24 - ADR-068/069: Package-Dekomposition + Protocol Dependency Inversion
 
 - Risk ID: RISK-ARCH-2025-07-24-ADR068-PACKAGE-DECOMPOSITION

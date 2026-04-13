@@ -1,5 +1,42 @@
 # Fault Tree Analysis
 
+## 2025-07-26 - ADR-070: drift verify — false-pass fault tree
+
+### Top Event (TE-VERIFY-070)
+verify() returns pass=True despite genuine structural coherence degradation.
+
+### FT-1: False-pass through severity gate bypass
+
+```
+          TE-FALSE-PASS: verify pass=True but repo actually degraded
+                         |
+                      OR-Gate
+               +---------+---------+---------+
+              FP-1      FP-2      FP-3
+```
+
+- **FP-1 (MCS)**: shadow_verify delta returns 0 despite real score change (rounding/identity bug in baseline comparison).
+  - Mitigation: threshold 0.001; shadow_verify has its own tests; documented limitation in ADR-064.
+- **FP-2 (MCS)**: New finding severity not in severity_order list (e.g. custom severity).
+  - Mitigation: severity_order includes all standard levels (critical, high, medium, low, info); unknown severities fall through (not blocked).
+- **FP-3 (MCS)**: scope_files too narrow — findings outside scope not checked.
+  - Mitigation: documented behavior — scope restricts intentionally. Without scope, all findings are compared.
+
+### FT-2: False-fail (verify blocks clean edit)
+
+```
+          TE-FALSE-FAIL: verify pass=False but edit is actually safe
+                         |
+                      OR-Gate
+               +---------+---------+
+              FF-1      FF-2
+```
+
+- **FF-1 (MCS)**: shadow_verify reports pre-existing finding as "new" (finding identity bug on file rename).
+  - Mitigation: documented in ADR-064 FMEA (RISK: Finding-Identity). scope_files limits blast radius.
+- **FF-2 (MCS)**: Score delta positive due to unrelated file changes in working tree.
+  - Mitigation: --scope flag restricts analysis; --staged-only for precise commit verification.
+
 ## 2025-07-24 - ADR-068/069: Package-Dekomposition + Protocol Dependency Inversion
 
 ### Top Event (TE-ARCH-068-069)

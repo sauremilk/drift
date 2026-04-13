@@ -17,6 +17,8 @@ Contributions — especially independent replications — are welcome. See [Cont
 
 **Status:** Open — no independent replication exists.
 
+**Instrument:** `scripts/generate_annotation_sheet.py --compare rater1.json rater2.json` computes Cohen's κ over blind annotations. Gate: κ ≥ 0.60 for sufficient inter-rater agreement. Output: `benchmark_results/annotation_agreement.json`.
+
 ---
 
 ## H2 — Construct validity of "structural drift"
@@ -28,6 +30,8 @@ Contributions — especially independent replications — are welcome. See [Cont
 **Validation approach:** Run drift on 50+ diverse repositories. Perform exploratory factor analysis on signal scores. If signals cluster into ≤ 3 coherent factors, the construct has good internal structure. If they scatter into > 6 uncorrelated factors, the composite score conflates unrelated dimensions.
 
 **Status:** Open — requires a large-scale corpus study.
+
+**Instrument:** `scripts/corpus_scan.py` batch-scans the 10 oracle repos, builds a signal score correlation matrix, and performs PCA via power iteration. Gate: ≤ 3 components explain ≥ 70 % of variance. Output: `benchmark_results/corpus_scan.json`.
 
 ---
 
@@ -41,6 +45,8 @@ Contributions — especially independent replications — are welcome. See [Cont
 
 **Status:** Open — requires longitudinal data collection.
 
+**Instrument:** `scripts/mutation_gap_report.py` clusters real-world findings from `*_full.json` evidence files and compares against the 25-pattern mutation suite. Gate: coverage ≥ 80 %. Output: `benchmark_results/mutation_gap_report.json`.
+
 ---
 
 ## H4 — Agent guardrail compliance rate
@@ -53,6 +59,8 @@ Contributions — especially independent replications — are welcome. See [Cont
 
 **Status:** Open — requires controlled agent experiments. One observational session available.
 
+**Instrument:** `scripts/brief_ab_study.py run-mock` generates deterministic mock agent diffs without an API key (seed-based). Full pipeline: `generate-prompts → run-mock → evaluate → stats → assemble`. Output: `benchmark_results/brief_ab_study.json`.
+
 ---
 
 ## H5 — Falsifiability of "drift brief" effectiveness claims
@@ -64,6 +72,8 @@ Contributions — especially independent replications — are welcome. See [Cont
 **Validation approach:** Design 10 pathological codebase configurations where drift signals are technically accurate but the recommended constraints would be counterproductive (e.g., intentional code duplication for isolation, deprecated-looking modules that are actively maintained). Run agents with and without brief constraints. If agents score worse with constraints in ≥ 3/10 scenarios, the brief mechanism needs scope guards.
 
 **Status:** Open — requires adversarial scenario design. One observational counter-signal available.
+
+**Instrument:** `scripts/adversarial_brief_audit.py` runs `drift brief` on 5 adversarial fixtures (`benchmarks/gauntlet/scenarios/adversarial/`) and checks whether output recommends harmful actions. Gate: harmful constraints in ≥ 3/5 fixtures → scope guards needed. Output: `benchmark_results/adversarial_brief_audit.json`.
 
 ---
 

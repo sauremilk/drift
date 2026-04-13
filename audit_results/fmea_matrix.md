@@ -1,5 +1,14 @@
 # FMEA Matrix
 
+## 2025-07-26 - ADR-070: drift verify — binary pass/fail coherence verification
+
+| Component | Failure Mode | Cause | Effect | Detection | Mitigation | S | O | D | RPN | Status |
+|---|---|---|---|---|---|---:|---:|---:|---:|---|
+| verify() severity gate | False-pass: finding at threshold severity not blocked | Off-by-one in severity_order index comparison (<=) | Agent or CI treats degrading repo as clean | `TestVerifyApi::test_fail_on_new_high_finding` + `test_pass_when_finding_below_threshold` | Gate uses explicit ordered list with `<=` for at-or-above semantics; parameterised tests cover boundary | 5 | 2 | 1 | 10 | Mitigated |
+| verify() score delta gate | Score degradation not detected | shadow_verify delta wrong sign or zero due to rounding | Verify returns pass=True despite genuine degradation | `TestVerifyApi::test_fail_on_score_degradation`; threshold 0.001 | Hard threshold with explicit tolerance; test covers positive delta | 4 | 2 | 1 | 8 | Mitigated |
+| drift_verify MCP tool | Stale session path used instead of user path | Session resolution precedence wrong | Analysis runs against wrong directory | Follows same pattern as drift_shadow_verify with identical resolution | Session path used only when path is default ("."); explicit path always wins | 3 | 2 | 2 | 12 | Mitigated |
+| CLI exit code | Exit code 0 on fail when --exit-zero forgotten | Default exit code path uses EXIT_FINDINGS_ABOVE_THRESHOLD | CI pipeline breaks unexpectedly | `TestVerifyCommand::test_cli_fail_exits_one` + `test_cli_exit_zero_flag` | Default fail_on="high" + explicit exit code mapping; --exit-zero opt-in | 4 | 2 | 1 | 8 | Mitigated |
+
 ## 2025-07-24 - ADR-068/069: Package-Dekomposition models/config/errors + Protocol Dependency Inversion
 
 | Component | Failure Mode | Cause | Effect | Detection | Mitigation | S | O | D | RPN | Status |

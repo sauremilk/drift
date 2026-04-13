@@ -10,7 +10,9 @@ It is intentionally compact so that third parties can describe drift consistentl
 - Primary: quality control layer for AI-generated Python code
 - Secondary: AI code coherence monitor — deterministic architecture erosion detection
 - Secondary: structural rot from vibe-coding, caught before it compounds
+- Secondary: drift knows how your code changed over time — no IDE or LLM does
 - Tertiary: cross-file coherence analysis for fast-growing repositories
+- Tertiary: the observability layer for agentic development — reproducible, auditable, CI-grade
 
 ## One-sentence description
 
@@ -42,6 +44,10 @@ Drift is a quality control layer for AI-generated Python code. It catches struct
 ## Suggested comparison framing
 
 Use drift when the missing question is not whether code is syntactically correct or policy-compliant, but whether AI-generated code is silently making your repository harder to reason about.
+
+Use drift **before the PR** (`drift brief`, `drift nudge`) to prevent structural drift during agent sessions. Use drift **alongside SonarQube or CodeQL** — not instead — for the structural coherence layer that security scanners do not cover.
+
+Use drift when you need the temporal dimension: how your codebase has changed over time, which modules are accumulating churn from too many authors, and whether your architecture is trending toward more or fewer violations. No IDE, LLM, or security scanner provides this historical view.
 
 ## Source pages for deeper verification
 

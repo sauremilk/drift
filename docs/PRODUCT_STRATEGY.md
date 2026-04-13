@@ -295,6 +295,75 @@ Files: 490 | Functions: 5,073
 
 ---
 
+## 10. Strategische Positionierung 2027: Prevention vs. Observability
+
+> **Status:** Dokumentiert als strategische Vorbereitung. Keine sofortige Umsetzungskonsequenz.
+> **Anlass:** Q2 2026 Competitive Analysis (Risiko 7: Self-correcting Agents)
+
+### Die strategische Kernfrage
+
+Ist drift ein **Prevention-Tool** (verhindert Drift, bevor er entsteht) oder ein
+**Observability-Tool** (weist nach, dass Drift stattgefunden hat oder verhindert
+wurde) — und welches davon hat in einer Welt selbstkorrigierender Agents
+langfristig einen Markt?
+
+### These
+
+Drift ist heute **beides** — und das ist richtig.
+
+Kurzfristig (2026) differenziert die **Prevention-Ebene** gegen alle Konkurrenten:
+- `drift brief` generiert Guardrails, bevor ein Agent Code schreibt
+- `drift nudge` gibt direktionales Feedback während der Session
+
+Diese Ebene setzt voraus, dass Coding Agents blind genug sind, um externe
+strukturelle Kontextinformationen zu benötigen. Das ist heute der Fall.
+
+Langfristig (2027+) könnte sich das ändern: Wenn Agents systematisch per
+Repository-RAG ihre eigene Code-Base-Kenntnis verbessern und Architecture-as-
+System-Prompt zum Standard wird, schrumpft der Naturwert von `drift brief`
+und `drift nudge` auf ihren **Differenz-Anteil**: historische Daten, die kein
+RAG and kein Snapshot-Analyzer hat.
+
+Die **Observability-Ebene** überlebt strukturell unabhängig davon:
+- `drift trend` — Nachweis, dass die Architektur stabil bleibt
+- `drift analyze` in CI — deterministisches Compliance-Gate
+- SARIF + GitHub Code Scanning — auditierbare Evidenz pro Commit
+- Bayesian Calibration — nachgewiesene, reproduzierbare Kalibrierung
+
+Teams brauchen Evidenz unabhängig davon, ob Agents Drift verhindern. Compliance,
+Audits, Retrospektiven, Performance Reviews — alle erfordern Nachweis, nicht nur
+Prävention.
+
+### Pivot-Kriterien (zu beobachten, nicht sofort handeln)
+
+Ein Reframing von "Prevention-Tool" zu "Observability-Tool" ist angebracht, wenn:
+
+1. **Nutzungsverschiebung:** `drift brief`-Aufrufe sinken relativ zu `drift analyze`-
+   Aufrufen — ein Signal, dass Pre-task-Guardrails seltener gebraucht werden
+2. **Marktverschiebung:** >50% der Nutzer-Repos enthalten Architecture-System-Prompts
+   als explizite Konfiguration
+3. **Agent-Verhalten:** Coding Agents beginnen proaktiv, strukturelle Kontext-
+   informationen vom Repository anzufordern (via RAG oder proprietäre Analyse)
+
+### Stabilisierungsmaßnahmen (schon heute richtig)
+
+Die folgenden Maßnahmen stärken **sowohl** Prevention **als auch** Observability
+und sind deshalb unabhängig vom Zukunfts-Szenario sinnvoll:
+
+- `drift trend` priorisieren und sichtbarer kommunizieren
+- SARIF-Integration als Kernwert in Vergleichsseiten hervorheben
+- Bayesian Calibration als dauerhaften Differenzierungswert positionieren
+- "The observability layer for agentic development" als sekundäres Messaging-Element
+  vorbereiten (bereits in `press-brand.md` verankert)
+
+### Was nicht getan werden sollte (vor dem Pivot-Kriterium)
+
+- Keine vorzeitige Feature-Abwertung von `drift brief` oder `drift nudge`
+- Kein Reframing im öffentlichen Messaging ohne messbares Nutzungssignal
+- Kein Feature-Pivot weg von Prevention, solange die Prevention-Ebene Adoptionswert hat
+
+---
+
 ## 10. Plattform-Risiko & defensiver Moat
 
 ### Risikoszenario

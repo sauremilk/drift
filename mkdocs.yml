@@ -184,6 +184,8 @@ nav:
     - Overview: comparisons/index.md
     - Drift vs. Ruff: comparisons/drift-vs-ruff.md
     - Drift vs. Semgrep/CodeQL: comparisons/drift-vs-semgrep-codeql.md
+    - Drift vs. SonarQube: comparisons/drift-vs-sonarqube.md
+    - Drift vs. Copilot Review: comparisons/drift-vs-copilot-review.md
     - Drift vs. Architecture Conformance: comparisons/drift-vs-architecture-conformance.md
   - Trust & Evidence: trust-evidence.md
   - Prove It: prove-it.md
