@@ -102,7 +102,7 @@ runs:
       shell: bash
       run: pip install --quiet "${{ inputs.drift-version }}"
 
-    - name: Run drift check
+    - name: Run drift ci
       id: drift-run
       shell: bash
       env:
@@ -127,19 +127,19 @@ runs:
         if [ "${DRIFT_UPLOAD_SARIF}" = "true" ]; then
           SARIF_FILE="${RUNNER_TEMP}/drift-results.sarif"
           DRIFT_EXIT=0
-          drift check ${ARGS} --format sarif > "${SARIF_FILE}" || DRIFT_EXIT=$?
+          drift ci ${ARGS} --format sarif > "${SARIF_FILE}" || DRIFT_EXIT=$?
           echo "sarif-file=${SARIF_FILE}" >> "${GITHUB_OUTPUT}"
           # Always produce JSON for metrics outputs
-          drift check ${ARGS} --format json --fail-on none > "${RUNNER_TEMP}/drift-results.json" 2>/dev/null || true
+          drift ci ${ARGS} --format json --fail-on none > "${RUNNER_TEMP}/drift-results.json" 2>/dev/null || true
           exit ${DRIFT_EXIT}
         else
           # Always produce JSON for metrics outputs
           JSON_FILE="${RUNNER_TEMP}/drift-results.json"
           DRIFT_EXIT=0
-          drift check ${ARGS} --format json > "${JSON_FILE}" || DRIFT_EXIT=$?
+          drift ci ${ARGS} --format json > "${JSON_FILE}" || DRIFT_EXIT=$?
           # Also show the user-chosen format on stdout if not already json
           if [ "${DRIFT_FORMAT}" != "json" ]; then
-            drift check ${ARGS} --format "${DRIFT_FORMAT}" --fail-on none 2>/dev/null || true
+            drift ci ${ARGS} --format "${DRIFT_FORMAT}" --fail-on none 2>/dev/null || true
           fi
           exit ${DRIFT_EXIT}
         fi
