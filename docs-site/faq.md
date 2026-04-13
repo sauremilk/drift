@@ -36,7 +36,7 @@ Avoid using drift as a first-day hard gate on tiny repositories or when the real
 
 The conservative public benchmark claim on this site is 77% strict precision / 95% lenient on the historical v0.5 six-signal baseline (286 findings, 5 repositories, score-weighted sample, single-rater classification with 51 disputed cases).
 
-Precision has not yet been revalidated for the current 15-signal composite model, so treat that number as a historical reference point, not as a blanket claim for every signal or every repository.
+Precision has not yet been fully revalidated for the current 24-signal composite model (19 scoring-active), so treat the 77%/95% figure as a historical reference point from the v0.5 six-signal baseline, not as a blanket claim for every signal or every repository. Several core signals have maintained stable precision since that study, but the full composite has not been re-benchmarked as a unit since ADR-039 expanded the scoring set.
 
 See [Trust and Evidence](trust-evidence.md), [Benchmarking and Trust](benchmarking.md), and [STUDY.md](https://github.com/mick-gsk/drift/blob/main/docs/STUDY.md).
 
