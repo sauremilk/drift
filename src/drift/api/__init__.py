@@ -36,6 +36,7 @@ from drift.api.scan import (
 )
 from drift.api.shadow_verify import shadow_verify
 from drift.api.validate import validate
+from drift.api.verify import verify
 
 # Backward-compat: all symbols formerly available as ``drift.api.X``
 from drift.api_helpers import (
@@ -81,6 +82,7 @@ __all__ = [
     "scan",
     "shadow_verify",
     "validate",
+    "verify",
     "to_json",
     # Internal (kept for backward compatibility)
     "_baseline_store",

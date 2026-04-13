@@ -230,7 +230,7 @@ class TestValidatePlan:
         assert result.valid is True
         assert result.recommendation == "continue"
 
-    @patch("drift.api_helpers._git_cmd")
+    @patch("drift.task_graph._git_cmd")
     def test_unchanged_repo(self, mock_git):
         mock_git.return_value = "abc123"
         plan = _FakePlan(
@@ -242,7 +242,7 @@ class TestValidatePlan:
         result = validate_plan(plan, "/repo")  # type: ignore[arg-type]
         assert result.valid is True
 
-    @patch("drift.api_helpers._git_cmd")
+    @patch("drift.task_graph._git_cmd")
     def test_head_changed(self, mock_git):
         def side_effect(repo_path, *args):
             if "rev-parse" in args and "HEAD" in args and "--abbrev-ref" not in args:
@@ -262,7 +262,7 @@ class TestValidatePlan:
         assert result.valid is False
         assert "head_commit_changed" in result.triggered
 
-    @patch("drift.api_helpers._git_cmd")
+    @patch("drift.task_graph._git_cmd")
     def test_affected_files_modified(self, mock_git):
         def side_effect(repo_path, *args):
             if "rev-parse" in args and "--abbrev-ref" not in args:

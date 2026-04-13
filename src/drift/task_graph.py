@@ -14,13 +14,124 @@ from collections import defaultdict
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any
 
-from drift.api_helpers import _derive_repair_exemplar
 from drift.fix_intent import derive_fix_intent
+from drift.models import SignalType
 from drift.next_step_contract import DONE_SAFE_TO_COMMIT
 from drift.signal_mapping import signal_abbrev
 
 if TYPE_CHECKING:
     from drift.models import AgentTask
+
+
+# ---------------------------------------------------------------------------
+# Repair Exemplar — concrete code example + patch shape (ADR-064)
+# ---------------------------------------------------------------------------
+
+# Signal-specific patch-shape defaults keyed by SignalType string
+_PATCH_SHAPE_DEFAULTS: dict[str, dict[str, Any]] = {
+    SignalType.PATTERN_FRAGMENTATION: {
+        "immutable_parts_default": ["function signature"],
+    },
+    SignalType.BROAD_EXCEPTION_MONOCULTURE: {
+        "canonical_structure_default": "specific-exception-with-recovery",
+        "immutable_parts_default": ["exception message text"],
+    },
+    SignalType.GUARD_CLAUSE_DEFICIT: {
+        "canonical_structure_default": "early-return-guard-clause",
+        "immutable_parts_default": ["main logic body"],
+    },
+    SignalType.MUTANT_DUPLICATE: {
+        "immutable_parts_default": ["call sites"],
+    },
+    SignalType.DOC_IMPL_DRIFT: {
+        "canonical_structure_default": "docstring-matches-signature",
+        "immutable_parts_default": ["function signature", "implementation body"],
+    },
+    SignalType.TEST_POLARITY_DEFICIT: {
+        "canonical_structure_default": "success-and-error-path-tests",
+        "immutable_parts_default": ["production code"],
+    },
+    SignalType.NAMING_CONTRACT_VIOLATION: {
+        "canonical_structure_default": "convention-compliant-name",
+        "immutable_parts_default": ["implementation body"],
+    },
+    SignalType.EXCEPTION_CONTRACT_DRIFT: {
+        "canonical_structure_default": "module-consistent-exception-type",
+        "immutable_parts_default": ["function signature"],
+    },
+}
+
+
+def _derive_repair_exemplar(t: Any) -> dict[str, Any] | None:
+    """Derive a concrete repair exemplar for batch-eligible tasks (ADR-064).
+
+    Returns a dict with ``exemplar_snippet`` (canonical target code) and
+    ``patch_shape`` (structure / deviation / immutable-parts metadata),
+    or ``None`` when no concrete example is available.
+
+    Data sources (priority order):
+      1. ``metadata["canonical_snippet"]`` — PFS: real source extracted at scan time
+      2. First ``NegativeContext.canonical_alternative`` — full multiline code block
+    """
+    signal_type: str = getattr(t, "signal_type", "")
+    metadata: dict[str, Any] = getattr(t, "metadata", {}) or {}
+    negative_context = getattr(t, "negative_context", [])
+
+    # --- exemplar_snippet ---
+    # Prio 1: canonical_snippet in metadata (PFS stores up to 400 chars of real source)
+    exemplar_snippet: str | None = metadata.get("canonical_snippet") or None
+
+    # Prio 2: canonical_alternative from the first NegativeContext (full multiline block)
+    if not exemplar_snippet:
+        for nc in negative_context:
+            alt = getattr(nc, "canonical_alternative", "")
+            if alt and alt.strip():
+                exemplar_snippet = alt.strip()[:600]
+                break
+
+    if not exemplar_snippet:
+        return None
+
+    # --- patch_shape ---
+    defaults = _PATCH_SHAPE_DEFAULTS.get(signal_type, {})
+
+    # canonical_structure: human-readable name for the target form
+    if signal_type == SignalType.PATTERN_FRAGMENTATION:
+        canonical_structure = str(metadata.get("canonical_variant", "canonical-pattern"))[:60]
+    elif signal_type == SignalType.MUTANT_DUPLICATE:
+        func_a = str(metadata.get("function_a", "canonical-function"))
+        canonical_structure = f"reuse-{func_a}"[:80]
+    else:
+        canonical_structure = defaults.get(
+            "canonical_structure_default",
+            signal_type.replace("_", "-") if signal_type else "canonical-form",
+        )
+
+    # local_deviation: what is wrong at this specific location
+    if signal_type == SignalType.PATTERN_FRAGMENTATION:
+        category = str(metadata.get("category", "pattern"))
+        num_variants = metadata.get("num_variants", metadata.get("variant_count", "?"))
+        local_deviation = f"{category} has {num_variants} variants; align to canonical"
+    elif signal_type == SignalType.BROAD_EXCEPTION_MONOCULTURE:
+        handler_action = str(metadata.get("handler_action", "pass"))
+        local_deviation = f"broad 'except' with '{handler_action}' — replace with specific type"
+    else:
+        action: str = str(getattr(t, "action", "") or "")
+        local_deviation = action[:200] if action else canonical_structure
+
+    # immutable_parts: task constraints first, then signal-specific defaults; deduplicated
+    constraints: list[str] = list(getattr(t, "constraints", []) or [])
+    signal_defaults: list[str] = defaults.get("immutable_parts_default", [])
+    immutable_parts = list(dict.fromkeys(constraints + signal_defaults))
+
+    return {
+        "exemplar_snippet": exemplar_snippet,
+        "patch_shape": {
+            "canonical_structure": canonical_structure,
+            "local_deviation": local_deviation,
+            "immutable_parts": immutable_parts,
+        },
+    }
 
 
 def _task_to_api_dict(t: Any) -> dict[str, Any]:
@@ -650,11 +761,21 @@ def _derive_task_contract(task_dict: dict[str, Any]) -> dict[str, Any]:
     related = task_dict.get("related_files", [])
     allowed.extend(r for r in related if r not in allowed)
 
-    return {
-        "allowed_files": allowed,
-        "completion_evidence": {
+    # ADR-064: cross-file-risky tasks require shadow-verify instead of nudge.
+    if task_dict.get("shadow_verify"):
+        completion_evidence: dict[str, Any] = {
+            "type": "shadow_verify_clean",
+            "tool": "drift_shadow_verify",
+            "predicate": "shadow_clean == true",
+        }
+    else:
+        completion_evidence = {
             "type": "nudge_safe",
             "tool": "drift_nudge",
             "predicate": "safe_to_commit == true",
-        },
+        }
+
+    return {
+        "allowed_files": allowed,
+        "completion_evidence": completion_evidence,
     }
