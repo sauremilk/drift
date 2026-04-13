@@ -9,10 +9,12 @@ ground truth.
 Usage:
     python scripts/generate_annotation_sheet.py [--n 50] [--seed 42]
     python scripts/generate_annotation_sheet.py --evaluate annotated.json
+    python scripts/generate_annotation_sheet.py --compare rater1.json rater2.json
 
 Outputs:
     benchmark_results/annotation_sheet.json   — for reviewers (no scores)
     benchmark_results/annotation_key.json     — answer key (with scores, hidden)
+    benchmark_results/annotation_agreement.json — inter-rater agreement (κ)
 """
 
 from __future__ import annotations
@@ -193,6 +195,146 @@ def evaluate(annotated_path: str) -> None:
         print("\nNo labeled findings found. Did the reviewer fill in the 'label' field?")
 
 
+def _cohens_kappa(labels_a: list[str], labels_b: list[str]) -> float:
+    """Compute Cohen's kappa for two lists of categorical labels."""
+    if len(labels_a) != len(labels_b):
+        raise ValueError("Rater label lists must have equal length")
+    n = len(labels_a)
+    if n == 0:
+        return float("nan")
+    categories = sorted(set(labels_a) | set(labels_b))
+    # Build confusion matrix
+    matrix: dict[str, dict[str, int]] = {c: {d: 0 for d in categories} for c in categories}
+    for a, b in zip(labels_a, labels_b, strict=False):
+        matrix[a][b] += 1
+    # Observed agreement
+    p_o = sum(matrix[c][c] for c in categories) / n
+    # Expected agreement by chance
+    p_e = 0.0
+    for c in categories:
+        row_sum = sum(matrix[c][d] for d in categories) / n
+        col_sum = sum(matrix[d][c] for d in categories) / n
+        p_e += row_sum * col_sum
+    if p_e >= 1.0:
+        return 1.0 if p_o >= 1.0 else 0.0
+    return (p_o - p_e) / (1.0 - p_e)
+
+
+def compare(path_a: str, path_b: str) -> None:
+    """Compare two annotated sheets and compute Cohen's kappa (H1 instrument)."""
+    data_a = json.loads(Path(path_a).read_text(encoding="utf-8"))
+    data_b = json.loads(Path(path_b).read_text(encoding="utf-8"))
+
+    # Index by finding id
+    map_a = {item["id"]: item.get("label", "").strip().upper() for item in data_a}
+    map_b = {item["id"]: item.get("label", "").strip().upper() for item in data_b}
+
+    valid_labels = {"TP", "FP", "DISPUTED"}
+    common_ids = sorted(set(map_a) & set(map_b))
+    # Keep only items where both raters provided a valid label
+    paired: list[tuple[str, str, str]] = []
+    for fid in common_ids:
+        la = map_a[fid]
+        lb = map_b[fid]
+        if la in valid_labels and lb in valid_labels:
+            paired.append((fid, la, lb))
+
+    if not paired:
+        print("No commonly-labeled findings found between the two files.", file=sys.stderr)
+        sys.exit(1)
+
+    labels_a = [la for _, la, _ in paired]
+    labels_b = [lb for _, _, lb in paired]
+
+    # Overall kappa
+    kappa_overall = _cohens_kappa(labels_a, labels_b)
+
+    # Per-signal kappa
+    by_signal: dict[str, list[tuple[str, str]]] = defaultdict(list)
+    signal_map_a = {item["id"]: item.get("signal", "unknown") for item in data_a}
+    for fid, la, lb in paired:
+        sig = signal_map_a.get(fid, "unknown")
+        by_signal[sig].append((la, lb))
+
+    kappa_per_signal: dict[str, float | None] = {}
+    for sig in sorted(by_signal):
+        pairs = by_signal[sig]
+        if len(pairs) < 3:
+            kappa_per_signal[sig] = None
+            continue
+        sig_a = [p[0] for p in pairs]
+        sig_b = [p[1] for p in pairs]
+        kappa_per_signal[sig] = _cohens_kappa(sig_a, sig_b)
+
+    # Agreement breakdown
+    agree = sum(1 for la, lb in zip(labels_a, labels_b, strict=False) if la == lb)
+    agreement_pct = agree / len(paired)
+
+    # Contested items (different labels)
+    contested = [
+        {"id": fid, "rater_a": la, "rater_b": lb}
+        for fid, la, lb in paired if la != lb
+    ]
+
+    # Print summary
+    print("=" * 72)
+    print("INTER-RATER AGREEMENT (Cohen's κ)")
+    print("=" * 72)
+    print(f"  Paired items:     {len(paired)}")
+    print(f"  Agreement:        {agree}/{len(paired)} ({agreement_pct:.1%})")
+    print(f"  Cohen's κ:        {kappa_overall:.3f}")
+    print()
+    _kappa_interp = (
+        "almost perfect" if kappa_overall >= 0.81 else
+        "substantial" if kappa_overall >= 0.61 else
+        "moderate" if kappa_overall >= 0.41 else
+        "fair" if kappa_overall >= 0.21 else
+        "slight" if kappa_overall >= 0.0 else
+        "poor"
+    )
+    print(f"  Interpretation:   {_kappa_interp} (Landis & Koch)")
+    print()
+    print(f"  {'Signal':<28s} {'n':>4s} {'κ':>8s}")
+    print(f"  {'-'*28} {'----':>4s} {'--------':>8s}")
+    for sig in sorted(kappa_per_signal):
+        k = kappa_per_signal[sig]
+        n = len(by_signal[sig])
+        if k is None:
+            print(f"  {sig:<28s} {n:>4d} {'n<3':>8s}")
+        else:
+            print(f"  {sig:<28s} {n:>4d} {k:>8.3f}")
+
+    if contested:
+        print(f"\n  Contested items ({len(contested)}):")
+        for c in contested[:20]:
+            print(f"    {c['id']}: rater_a={c['rater_a']}  rater_b={c['rater_b']}")
+        if len(contested) > 20:
+            print(f"    ... and {len(contested) - 20} more")
+
+    # H1 gate
+    gate = kappa_overall >= 0.60
+    print(f"\n  H1 Gate (κ ≥ 0.60): {'PASS' if gate else 'FAIL'}")
+
+    # Write artifact
+    artifact = {
+        "n_paired": len(paired),
+        "agreement_pct": round(agreement_pct, 4),
+        "kappa_overall": round(kappa_overall, 4),
+        "kappa_interpretation": _kappa_interp,
+        "kappa_per_signal": {
+            sig: round(k, 4) if k is not None else None
+            for sig, k in sorted(kappa_per_signal.items())
+        },
+        "contested_items": contested,
+        "h1_gate_pass": gate,
+        "rater_a": str(Path(path_a).name),
+        "rater_b": str(Path(path_b).name),
+    }
+    out_path = RESULTS_DIR / "annotation_agreement.json"
+    out_path.write_text(json.dumps(artifact, indent=2, ensure_ascii=False), encoding="utf-8")
+    print(f"\n  Artifact written to: {out_path}")
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="Blind annotation tooling")
     parser.add_argument("--n", type=int, default=50, help="Sample size (default: 50)")
@@ -201,9 +343,15 @@ def main() -> None:
         "--evaluate", type=str, default=None,
         help="Path to annotated JSON file for evaluation",
     )
+    parser.add_argument(
+        "--compare", nargs=2, metavar=("RATER_A", "RATER_B"),
+        help="Compare two annotated sheets and compute Cohen's κ",
+    )
     args = parser.parse_args()
 
-    if args.evaluate:
+    if args.compare:
+        compare(args.compare[0], args.compare[1])
+    elif args.evaluate:
         evaluate(args.evaluate)
     else:
         generate(n=args.n, seed=args.seed)

@@ -26,6 +26,7 @@ import contextlib
 import json
 import math
 import os
+import random
 import re
 import subprocess
 import sys
@@ -216,6 +217,131 @@ def cmd_generate_prompts(args: argparse.Namespace) -> None:
         print(f"\n{skipped} task(s) skipped (already exist).")
     if not args.dry_run:
         print(f"\nPrompts written to: {PROMPTS_DIR}")
+
+
+# ---------------------------------------------------------------------------
+# Subcommand: run-mock (H4 instrument — no API key required)
+# ---------------------------------------------------------------------------
+
+
+def _generate_mock_diff(
+    task: dict[str, Any],
+    treatment: str,
+    rng: random.Random,
+    brief_result: dict[str, Any] | None = None,
+) -> str:
+    """Generate a deterministic mock diff simulating agent edits.
+
+    Treatment group: attempts to follow brief constraints (fewer violations).
+    Control group: naive edits (more pattern violations).
+    """
+    target = task["target_files"][0] if task["target_files"] else "file.py"
+
+    if treatment == "treatment" and brief_result:
+        # Treatment: cleaner edits inspired by brief constraints
+        new_lines = [
+            "# Refactored per drift brief constraints",
+            f"def {task['id'].lower().replace('-', '_')}_fix():",
+            f"    \"\"\"Fix for: {task['task_description'][:60]}\"\"\"",
+            "    pass  # Minimal, constraint-aware implementation",
+            "",
+        ]
+    else:
+        # Control: naive edits that introduce structural issues
+        dup_func = f"def handle_{rng.randint(1000, 9999)}():"
+        new_lines = [
+            "# Quick fix attempt",
+            dup_func,
+            "    \"\"\"Auto-generated handler.\"\"\"",
+            "    try:",
+            "        result = do_something()",
+            "    except Exception:",
+            "        pass  # TODO: handle properly",
+            "    return result",
+            "",
+            f"def handle_{rng.randint(1000, 9999)}():",
+            "    \"\"\"Another handler — similar pattern.\"\"\"",
+            "    try:",
+            "        result = do_something()",
+            "    except Exception:",
+            "        pass  # TODO: handle properly",
+            "    return result",
+            "",
+        ]
+
+    added = "\n".join(f"+{line}" for line in new_lines)
+    return (
+        f"diff --git a/{target} b/{target}\n"
+        f"--- a/{target}\n"
+        f"+++ b/{target}\n"
+        f"@@ -1,0 +1,{len(new_lines)} @@\n"
+        f"{added}\n"
+    )
+
+
+def cmd_run_mock(args: argparse.Namespace) -> None:
+    """Generate deterministic mock agent responses without LLM API calls."""
+    import random as random_mod  # noqa: PLC0415
+
+    if not PROMPTS_DIR.exists():
+        sys.exit(f"Prompts directory not found: {PROMPTS_DIR}. Run generate-prompts first.")
+
+    RESPONSES_DIR.mkdir(parents=True, exist_ok=True)
+    prompt_files = sorted(PROMPTS_DIR.glob("*.json"))
+    if not prompt_files:
+        sys.exit("No prompt files found. Run generate-prompts first.")
+
+    rng = random_mod.Random(args.seed)
+    print(f"Generating mock agent responses for {len(prompt_files)} prompts (seed={args.seed}) ...")
+
+    for pf in prompt_files:
+        stem = pf.stem
+        diff_out = RESPONSES_DIR / f"{stem}.diff"
+        meta_out = RESPONSES_DIR / f"{stem}_meta.json"
+
+        if diff_out.exists() and not args.force:
+            print(f"  [{stem}] already exists, skipping")
+            continue
+
+        payload = json.loads(pf.read_text(encoding="utf-8"))
+        task_id = payload["task_id"]
+        treatment = payload["treatment"]
+
+        # Load brief result from treatment prompt if available
+        brief_result = None
+        if treatment == "treatment":
+            for msg in payload.get("messages", []):
+                content = msg.get("content", "")
+                if "<drift_brief>" in content:
+                    start = content.find("<drift_brief>") + len("<drift_brief>")
+                    end = content.find("</drift_brief>")
+                    if end > start:
+                        with contextlib.suppress(json.JSONDecodeError):
+                            brief_result = json.loads(content[start:end].strip())
+
+        # Build a minimal task dict for the generator
+        corpus = _load_corpus()
+        task_map = {t["id"]: t for t in corpus["tasks"]}
+        task = task_map.get(task_id, {"id": task_id, "target_files": ["file.py"],
+                                       "task_description": "unknown task"})
+
+        diff_content = _generate_mock_diff(task, treatment, rng, brief_result)
+        diff_out.write_text(diff_content, encoding="utf-8")
+
+        meta_out.write_text(
+            json.dumps({
+                "task_id": task_id,
+                "treatment": treatment,
+                "model": "mock-agent",
+                "temperature": 0.0,
+                "status": "ok",
+                "seed": args.seed,
+            }, indent=2),
+            encoding="utf-8",
+        )
+        print(f"  [{stem}] mock diff written")
+
+    print(f"\nMock responses written to: {RESPONSES_DIR}")
 
 
 # ---------------------------------------------------------------------------
@@ -658,6 +784,14 @@ def _build_parser() -> argparse.ArgumentParser:
     )
     p_llm.add_argument("--force", action="store_true", help="Re-run even if response files exist.")
 
+    # run-mock (H4 instrument — no API key required)
+    p_mock = sub.add_parser(
+        "run-mock",
+        help="Generate deterministic mock agent diffs without LLM API (H4).",
+    )
+    p_mock.add_argument("--seed", type=int, default=42, help="Random seed (default: 42).")
+    p_mock.add_argument("--force", action="store_true", help="Overwrite existing responses.")
+
     # evaluate
     p_eval = sub.add_parser(
         "evaluate",
@@ -685,6 +819,7 @@ def main() -> None:
     dispatch = {
         "generate-prompts": cmd_generate_prompts,
         "run-llm": cmd_run_llm,
+        "run-mock": cmd_run_mock,
         "evaluate": cmd_evaluate,
         "stats": cmd_stats,
         "assemble": cmd_assemble,
