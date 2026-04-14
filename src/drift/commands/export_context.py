@@ -99,17 +99,24 @@ def export_context(
     """
     from drift.analyzer import analyze_repo
     from drift.config import DriftConfig
+    from drift.finding_context import split_findings_by_context
     from drift.negative_context import findings_to_negative_context
     from drift.negative_context.export import render_negative_context_markdown
 
     repo_path = repo.resolve()
     cfg = DriftConfig.load(config or repo_path)
+    triage_cfg = cfg if hasattr(cfg, "finding_context") else DriftConfig()
 
     click.echo("Running drift analysis...", err=True)
     analysis = analyze_repo(repo_path, config=cfg, since_days=since)
+    prioritized_findings, _excluded_findings, _context_counts = split_findings_by_context(
+        analysis.findings,
+        triage_cfg,
+        include_non_operational=False,
+    )
 
     items = findings_to_negative_context(
-        analysis.findings,
+        prioritized_findings,
         scope=scope,
         max_items=max_items,
     )
@@ -125,14 +132,14 @@ def export_context(
     if include_positive and fmt != "raw":
         from drift.copilot_context import generate_instructions
 
-        positive_section = generate_instructions(analysis)
+        positive_section = generate_instructions(analysis, config=triage_cfg)
         markdown = positive_section + "\n---\n\n" + markdown
     elif include_positive and fmt == "raw":
         import json
 
         from drift.copilot_context import generate_instructions
 
-        positive_section = generate_instructions(analysis)
+        positive_section = generate_instructions(analysis, config=triage_cfg)
         raw_data = json.loads(markdown)
         raw_data["positive_context"] = positive_section
         markdown = json.dumps(raw_data, indent=2)

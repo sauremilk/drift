@@ -43,6 +43,19 @@ def test_default_classification_migration_docs_and_production() -> None:
     assert classify_path_context(Path("src/core/service.py"), cfg) == "production"
 
 
+def test_default_classification_marks_work_artifacts_and_audit_outputs_non_operational() -> None:
+    cfg = DriftConfig()
+
+    assert (
+        classify_path_context(Path("work_artifacts/context_eval/export_raw.py"), cfg)
+        == "fixture"
+    )
+    assert (
+        classify_path_context(Path("audit_results/snapshots/sample_repo/service.py"), cfg)
+        == "fixture"
+    )
+
+
 def test_override_rules_use_precedence_and_pattern_specificity() -> None:
     cfg = DriftConfig(
         finding_context=FindingContextPolicy(

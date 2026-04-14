@@ -11,9 +11,18 @@ from __future__ import annotations
 import hashlib
 from collections import Counter
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 from drift.api_helpers import build_drift_score_scope, signal_abbrev
+from drift.finding_context import (
+    classify_path_context,
+    is_non_operational_context,
+    split_findings_by_context,
+)
 from drift.models import Finding, RepoAnalysis, SignalType
+
+if TYPE_CHECKING:
+    from drift.config import DriftConfig
 
 # ---------------------------------------------------------------------------
 # Constants
@@ -159,10 +168,58 @@ def _format_rule(signal: SignalType, findings: list[Finding]) -> str | None:
     return "\n".join(lines) if lines else None
 
 
-def _collect_actionable_findings(analysis: RepoAnalysis) -> dict[SignalType, list[Finding]]:
+def _resolve_config(config: DriftConfig | None = None) -> DriftConfig:
+    """Return the provided config or a default DriftConfig instance."""
+    if config is not None and hasattr(config, "finding_context"):
+        return config
+
+    from drift.config import DriftConfig
+
+    return DriftConfig()
+
+
+def _operational_findings(
+    findings: list[Finding],
+    *,
+    config: DriftConfig | None = None,
+) -> list[Finding]:
+    """Return findings prioritized for agent-facing context outputs."""
+    cfg = _resolve_config(config)
+    prioritized, _excluded, _counts = split_findings_by_context(
+        findings,
+        cfg,
+        include_non_operational=False,
+    )
+    return prioritized
+
+
+def _select_hotspot_module(
+    analysis: RepoAnalysis,
+    *,
+    config: DriftConfig | None = None,
+):
+    """Prefer the most eroded operational module for guidance footers."""
+    if not analysis.module_scores:
+        return None
+
+    cfg = _resolve_config(config)
+    operational_modules = [
+        module
+        for module in analysis.module_scores
+        if not is_non_operational_context(classify_path_context(module.path, cfg), cfg)
+    ]
+    candidates = operational_modules or analysis.module_scores
+    return max(candidates, key=lambda m: m.drift_score)
+
+
+def _collect_actionable_findings(
+    analysis: RepoAnalysis,
+    *,
+    config: DriftConfig | None = None,
+) -> dict[SignalType, list[Finding]]:
     """Collect actionable findings that qualify for Copilot guidance."""
     actionable: dict[SignalType, list[Finding]] = {}
-    for finding in analysis.findings:
+    for finding in _operational_findings(analysis.findings, config=config):
         try:
             signal = SignalType(finding.signal_type)
         except ValueError:
@@ -189,9 +246,13 @@ def _scope_for_finding(finding: Finding) -> str:
     return parent
 
 
-def generate_constraints_payload(analysis: RepoAnalysis) -> dict[str, object]:
+def generate_constraints_payload(
+    analysis: RepoAnalysis,
+    *,
+    config: DriftConfig | None = None,
+) -> dict[str, object]:
     """Generate a machine-readable constraints payload for agent workflows."""
-    actionable = _collect_actionable_findings(analysis)
+    actionable = _collect_actionable_findings(analysis, config=config)
     constraints: list[dict[str, object]] = []
 
     for signal in sorted(actionable, key=lambda s: len(actionable[s]), reverse=True):
@@ -237,12 +298,16 @@ def generate_constraints_payload(analysis: RepoAnalysis) -> dict[str, object]:
     return payload
 
 
-def generate_instructions(analysis: RepoAnalysis) -> str:
+def generate_instructions(
+    analysis: RepoAnalysis,
+    *,
+    config: DriftConfig | None = None,
+) -> str:
     """Generate a Markdown section with Copilot instructions from analysis results.
 
     Only actionable signals with sufficient severity/frequency are included.
     """
-    actionable = _collect_actionable_findings(analysis)
+    actionable = _collect_actionable_findings(analysis, config=config)
 
     if not actionable:
         return _wrap_markers(
@@ -268,8 +333,8 @@ def generate_instructions(analysis: RepoAnalysis) -> str:
         direction = analysis.trend.direction
         delta = analysis.trend.delta
         sections.append(f"- **Trend**: {direction}" + (f" (delta {delta:+.2f})" if delta else ""))
-    if analysis.module_scores:
-        worst = max(analysis.module_scores, key=lambda m: m.drift_score)
+    worst = _select_hotspot_module(analysis, config=config)
+    if worst is not None:
         sections.append(
             f"- **Most eroded module**: `{worst.path.as_posix()}` "
             f"(score: {worst.drift_score:.3f})"
@@ -307,13 +372,17 @@ VALID_TARGETS: frozenset[str] = frozenset(
 )
 
 
-def generate_cursorrules(analysis: RepoAnalysis) -> str:
+def generate_cursorrules(
+    analysis: RepoAnalysis,
+    *,
+    config: DriftConfig | None = None,
+) -> str:
     """Generate ``.cursorrules`` content from analysis results.
 
     Cursor uses a flat rule-per-line format inside a ``.cursorrules``
     file at the repository root.
     """
-    actionable = _collect_actionable_findings(analysis)
+    actionable = _collect_actionable_findings(analysis, config=config)
 
     lines: list[str] = []
     lines.append("# Architectural constraints (drift-generated)")
@@ -338,13 +407,17 @@ def generate_cursorrules(analysis: RepoAnalysis) -> str:
     return "\n".join(lines) + "\n"
 
 
-def generate_claude_instructions(analysis: RepoAnalysis) -> str:
+def generate_claude_instructions(
+    analysis: RepoAnalysis,
+    *,
+    config: DriftConfig | None = None,
+) -> str:
     """Generate ``CLAUDE.md`` content from analysis results.
 
     Claude Code uses a ``CLAUDE.md`` file at the repository root.
     Format uses Markdown with a clear instruction section.
     """
-    actionable = _collect_actionable_findings(analysis)
+    actionable = _collect_actionable_findings(analysis, config=config)
 
     sections: list[str] = []
     sections.append("# Architectural Constraints (drift-generated)\n")
@@ -364,8 +437,8 @@ def generate_claude_instructions(analysis: RepoAnalysis) -> str:
             rule_text = f.fix or f.description or f.title
             sections.append(f"- **{abbr}**: {rule_text}")
 
-    if analysis.module_scores:
-        worst = max(analysis.module_scores, key=lambda m: m.drift_score)
+    worst = _select_hotspot_module(analysis, config=config)
+    if worst is not None:
         sections.append("")
         sections.append("## Hotspots\n")
         sections.append(
@@ -391,17 +464,22 @@ def target_default_path(target: str, repo_path: Path) -> Path:
     return repo_path / ".github" / "copilot-instructions.md"
 
 
-def generate_for_target(target: str, analysis: RepoAnalysis) -> str:
+def generate_for_target(
+    target: str,
+    analysis: RepoAnalysis,
+    *,
+    config: DriftConfig | None = None,
+) -> str:
     """Generate instructions for the specified target format."""
     if target == "cursor":
-        return generate_cursorrules(analysis)
+        return generate_cursorrules(analysis, config=config)
     if target == "windsurf":
-        return generate_cursorrules(analysis)
+        return generate_cursorrules(analysis, config=config)
     if target == "claude":
-        return generate_claude_instructions(analysis)
+        return generate_claude_instructions(analysis, config=config)
     if target == "agents":
-        return generate_claude_instructions(analysis)
-    return generate_instructions(analysis)
+        return generate_claude_instructions(analysis, config=config)
+    return generate_instructions(analysis, config=config)
 
 
 # ---------------------------------------------------------------------------

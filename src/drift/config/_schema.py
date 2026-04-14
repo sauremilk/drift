@@ -243,11 +243,14 @@ class FindingContextPolicy(BaseModel):
 
     rules: list[FindingContextRule] = Field(
         default_factory=lambda: [
+            FindingContextRule(pattern="**/work_artifacts/**", context="fixture", precedence=45),
+            FindingContextRule(pattern="**/audit_results/**", context="fixture", precedence=45),
             FindingContextRule(pattern="**/benchmarks/**", context="fixture", precedence=40),
             FindingContextRule(pattern="**/benchmark_results/**", context="fixture", precedence=40),
             FindingContextRule(pattern="**/corpus/**", context="fixture", precedence=40),
             FindingContextRule(pattern="**/fixtures/**", context="fixture", precedence=35),
             FindingContextRule(pattern="**/testdata/**", context="fixture", precedence=35),
+            FindingContextRule(pattern="**/archive/**", context="fixture", precedence=35),
             FindingContextRule(pattern="**/generated/**", context="generated", precedence=35),
             FindingContextRule(pattern="**/gen/**", context="generated", precedence=30),
             FindingContextRule(pattern="**/migrations/**", context="migration", precedence=30),

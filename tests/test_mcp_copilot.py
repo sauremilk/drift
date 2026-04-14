@@ -192,6 +192,78 @@ class TestGenerateInstructions:
         result = generate_instructions(_analysis)
         assert "services" in result
 
+    def test_excludes_non_operational_work_artifacts_from_guidance(self, tmp_path: Path) -> None:
+        noisy = Finding(
+            signal_type=SignalType.ARCHITECTURE_VIOLATION,
+            severity=Severity.HIGH,
+            score=0.9,
+            title="Archived repo violation",
+            description="work artifact imports production internals",
+            file_path=Path("work_artifacts/agent-framework-target/demo/app.py"),
+            start_line=8,
+            fix="Do not import runtime internals from archived copies.",
+            impact=0.9,
+        )
+        second_noisy = Finding(
+            signal_type=SignalType.ARCHITECTURE_VIOLATION,
+            severity=Severity.MEDIUM,
+            score=0.6,
+            title="Archived repo violation 2",
+            description="another archived copy import",
+            file_path=Path("work_artifacts/agent-framework-target/demo/routes.py"),
+            start_line=4,
+            fix="Keep archived copies out of runtime guidance.",
+            impact=0.5,
+        )
+        prod_a = Finding(
+            signal_type=SignalType.ARCHITECTURE_VIOLATION,
+            severity=Severity.HIGH,
+            score=0.8,
+            title="Real api violation",
+            description="src/api/routes.py imports db code",
+            file_path=Path("src/api/routes.py"),
+            start_line=3,
+            fix="Use the service layer.",
+            impact=0.8,
+        )
+        prod_b = Finding(
+            signal_type=SignalType.ARCHITECTURE_VIOLATION,
+            severity=Severity.MEDIUM,
+            score=0.5,
+            title="Real api violation 2",
+            description="src/api/handlers.py imports db code",
+            file_path=Path("src/api/handlers.py"),
+            start_line=7,
+            fix="Route through services.",
+            impact=0.5,
+        )
+        analysis = RepoAnalysis(
+            repo_path=tmp_path,
+            analyzed_at=datetime.datetime.now(tz=datetime.UTC),
+            drift_score=0.61,
+            findings=[noisy, second_noisy, prod_a, prod_b],
+            module_scores=[
+                ModuleScore(
+                    path=Path("work_artifacts/agent-framework-target/demo"),
+                    drift_score=0.95,
+                    findings=[noisy, second_noisy],
+                ),
+                ModuleScore(
+                    path=Path("src/api"),
+                    drift_score=0.72,
+                    findings=[prod_a, prod_b],
+                ),
+            ],
+        )
+
+        result = generate_instructions(analysis)
+
+        assert "Use the service layer." in result
+        assert "src/api" in result
+        assert "work_artifacts/agent-framework-target/demo/app.py" not in result
+        assert "Most eroded module" in result
+        assert "work_artifacts/agent-framework-target/demo" not in result
+
     def test_empty_findings_produces_clean_output(self, tmp_path: Path) -> None:
         analysis = RepoAnalysis(
             repo_path=tmp_path,
