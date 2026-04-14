@@ -10,19 +10,32 @@
 
 ## What TVS detects
 
-TVS detects modules with **anomalous change patterns** — unusually high churn, many distinct authors, frequent defect-correlated commits, and high AI attribution. These are "hotspots" where architectural erosion is most likely accelerating.
+TVS detects files with **abnormal churn relative to their size and role**. It looks for hotspots that keep changing while the surrounding code stays comparatively stable — often a sign of unclear ownership, weak abstractions, or AI-generated code that is being patched repeatedly.
+
+### Minimal code example
+
+Imagine a small helper that should be boring and stable:
+
+```python
+# src/utils/normalizer.py
+
+def normalize_email(value: str) -> str:
+    return value.strip().lower()
+```
+
+If that same helper is edited in commit after commit — one week to trim dots, the next to preserve plus-addresses, then again to patch edge cases — while neighboring modules barely move, TVS treats it as a volatility hotspot. The issue is not that the file changed once; it is that the file keeps absorbing uncertainty.
 
 ### Example finding
 
 ```
-temporal_volatility in src/api/handlers.py
+temporal_volatility in src/utils/normalizer.py
   Change frequency: 12 commits in 30 days (z-score: 2.4)
   Unique authors: 5  |  AI-attributed: 60%
   Defect-correlated commits: 3/12
   → Score: 0.72 (HIGH)
 ```
 
-A file that changes frequently, by many authors, with high AI involvement and frequent bug-fix follow-ups.
+This points to a small file that is being revisited disproportionately often compared with the rest of the repository.
 
 ---
 
@@ -63,10 +76,11 @@ Modules exceeding `volatility_z_threshold` (default: 1.5 standard deviations) ar
 
 ## How to address TVS findings
 
-1. **Stabilize the module** — reduce churn by completing in-progress refactoring or consolidating competing changes.
-2. **Assign ownership** — high author entropy often means no one owns the module. Designate a responsible maintainer.
-3. **Review AI-generated changes more carefully** — AI-attributed commits in volatile modules need extra scrutiny.
-4. **Split large modules** — if a file attracts changes from many features, it may have too many responsibilities.
+1. **Extract the volatile logic behind a stable interface** — if one helper keeps changing, move the unstable rules into a dedicated module with clear boundaries.
+2. **Assign ownership** — high author entropy often means no one is really responsible for keeping the file coherent.
+3. **Add tests before the next patch** — repeated bug-fix commits usually mean the behavior is still underspecified.
+4. **Review AI-generated changes more carefully** — volatile, AI-attributed files deserve extra scrutiny before merge.
+5. **Treat TVS as a triage signal** — it tells you where to look first, not that the file is automatically wrong.
 
 ---
 

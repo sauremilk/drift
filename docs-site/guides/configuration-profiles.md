@@ -54,7 +54,7 @@ drift init --profile vibe-coding
 
 **When to use:** Any repo where 50%+ of code is AI-generated. If you use Copilot, Cursor, or Claude Code heavily — start here.
 
-📖 [Vibe-coding playbook →](../../examples/vibe-coding/README.md)
+📖 [Vibe-coding playbook →](https://github.com/mick-gsk/drift/blob/main/examples/vibe-coding/README.md)
 
 ---
 

@@ -83,7 +83,11 @@ Reference: [Negative Context](../reference/negative-context.md)
 
 **What it detects:** Files with anomalous change frequency, author diversity, or defect correlation.
 
+**Minimal example:** A tiny helper such as `normalizer.py` gets patched almost every sprint while surrounding modules stay stable. That repeated churn suggests unclear ownership or an unstable abstraction.
+
 **Techniques:** Statistical z-score on commit frequency, author entropy.
+
+See the full user-facing reference page for TVS in the signal docs.
 
 ### System Misalignment (SMS)
 
