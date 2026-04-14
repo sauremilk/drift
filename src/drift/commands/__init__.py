@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import locale
 import sys
-from typing import Any
+from typing import Any, cast
 
 from rich.console import Console
 
@@ -31,7 +31,8 @@ def make_console(*, stderr: bool = False, no_color: bool = False) -> Console:
         safe_box=not unicode_ok,
         emoji=unicode_ok,
     )
-    setattr(built, "_drift_ascii_only", not unicode_ok)
+    console_any = cast(Any, built)
+    console_any._drift_ascii_only = not unicode_ok
     return built
 
 

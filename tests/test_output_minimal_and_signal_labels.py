@@ -4,7 +4,9 @@ from __future__ import annotations
 
 import datetime
 import io
+import os
 import re
+import sys
 from pathlib import Path
 
 from click.testing import CliRunner
@@ -116,6 +118,39 @@ def test_check_no_color_uses_colorless_console(monkeypatch, tmp_path: Path) -> N
     assert captured["no_color"] is True
 
 
+def test_analyze_json_threshold_message_uses_ascii_safe_marker(monkeypatch, tmp_path: Path) -> None:
+    import drift.commands as commands
+
+    monkeypatch.setattr("drift.config.DriftConfig.load", lambda *_args, **_kwargs: _DummyConfig())
+    monkeypatch.setattr("drift.analyzer.analyze_repo", lambda *_args, **_kwargs: _sample_analysis())
+    monkeypatch.setattr("drift.scoring.engine.severity_gate_pass", lambda *_args, **_kwargs: False)
+
+    buffer = io.StringIO()
+    console = Console(
+        file=buffer,
+        force_terminal=True,
+        width=120,
+        safe_box=True,
+        emoji=False,
+        no_color=True,
+    )
+    console._drift_ascii_only = True
+    monkeypatch.setattr(commands, "make_console", lambda **_kwargs: console)
+    monkeypatch.setattr(commands, "console", console)
+
+    original_stdout = sys.stdout
+    with open(os.devnull, "w", encoding="cp1252", errors="strict") as redirected:
+        try:
+            sys.stdout = redirected
+            analyze.main(
+                args=["--repo", str(tmp_path), "--format", "json", "--exit-zero"],
+                prog_name="drift analyze",
+                standalone_mode=False,
+            )
+        finally:
+            sys.stdout = original_stdout
+
+
 def test_render_summary_ascii_fallback_is_windows_safe() -> None:
     analysis = _sample_analysis(0.42)
     analysis.total_files = 5
@@ -131,7 +166,7 @@ def test_render_summary_ascii_fallback_is_windows_safe() -> None:
         emoji=False,
         no_color=True,
     )
-    setattr(console, "_drift_ascii_only", True)
+    console._drift_ascii_only = True
 
     render_summary(analysis, console)
 
@@ -152,7 +187,7 @@ def test_init_output_ascii_fallback_is_windows_safe(monkeypatch, tmp_path: Path)
         emoji=False,
         no_color=True,
     )
-    setattr(console, "_drift_ascii_only", True)
+    console._drift_ascii_only = True
     monkeypatch.setattr(init_cmd, "console", console)
 
     runner = CliRunner()

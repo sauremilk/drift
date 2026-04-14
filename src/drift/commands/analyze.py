@@ -281,6 +281,9 @@ def analyze(
 
     # Apply --no-color: create a color-disabled console for rich output
     effective_console = build_effective_console(no_color)
+    ascii_only = bool(getattr(effective_console, "_drift_ascii_only", False))
+    ok_marker = "OK" if ascii_only else "✓"
+    fail_marker = "X" if ascii_only else "✗"
 
     cfg = DriftConfig.load(repo, config)
     if worker_strategy is not None:
@@ -482,7 +485,7 @@ def analyze(
 
         _save_bl(analysis, save_baseline_path)
         effective_console.print(
-            f"[bold green]✓ Baseline saved:[/bold green] {save_baseline_path} "
+            f"[bold green]{ok_marker} Baseline saved:[/bold green] {save_baseline_path} "
             f"({len(analysis.findings)} findings)",
         )
 
@@ -494,12 +497,13 @@ def analyze(
         if not severity_gate_pass(analysis.findings, threshold):
             if not quiet:
                 effective_console.print(
-                    f"\n[bold red]\u2717 Drift check failed:[/bold red] "
+                    f"\n[bold red]{fail_marker} Drift check failed:[/bold red] "
                     f"findings at or above '{threshold}' severity.",
                 )
             if not exit_zero:
                 sys.exit(EXIT_FINDINGS_ABOVE_THRESHOLD)
         elif not quiet:
             effective_console.print(
-                f"\n[bold green]\u2713 Drift check passed[/bold green] (threshold: {threshold}).",
+                f"\n[bold green]{ok_marker} Drift check passed[/bold green] "
+                f"(threshold: {threshold}).",
             )

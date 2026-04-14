@@ -1,5 +1,21 @@
 # Risk Register
 
+## 2026-04-14 - CLI onboarding and Windows-safe rendering hardening
+
+- Risk ID: RISK-OUTPUT-2026-04-14-CLI-UX-HARDENING
+- Component: `src/drift/commands/config_cmd.py`, `src/drift/commands/init_cmd.py`, `src/drift/commands/_shared.py`, `src/drift/output/rich_output.py`, `src/drift/copilot_context.py`
+- Type: Output resilience and actionability hardening (backward-compatible)
+- Description: The CLI now presents a newcomer-friendly configuration summary, preserves the MCP install hint literally, prioritizes operational agent context, and falls back to ASCII-safe rendering on Windows or non-UTF-8 terminals. This reduces misleading or unreadable terminal output without changing scoring behavior.
+- Trigger: Running `drift config show`, `drift init`, `drift copilot-context`, or rich CLI output in legacy or encoding-constrained terminals.
+- Impact: Positive. Improves finding credibility and next-step clarity while preserving machine-readable automation paths such as `--raw` and JSON output.
+- Mitigation:
+  - Human-facing summaries remain additive; script-safe raw output is still available.
+  - Console rendering degrades safely to ASCII when the output stream cannot encode rich glyphs.
+  - Regression tests cover config onboarding, init hint visibility, minimal output labels, and operational context prioritization.
+- Verification:
+  - `pytest tests/test_config_validate.py tests/test_init_cmd.py tests/test_output_minimal_and_signal_labels.py tests/test_mcp_copilot.py tests/test_finding_context.py -q --tb=short`
+- Residual risk: Low. Very narrow terminals may still wrap lines, but the content remains legible and automation consumers can avoid rich formatting entirely.
+
 ## 2025-07-26 - ADR-070: drift verify — binary pass/fail coherence verification
 
 - Risk ID: RISK-OUTPUT-2025-07-26-ADR070-VERIFY

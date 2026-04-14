@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import re
-from pathlib import Path
+from pathlib import Path, PurePath
 
 _TEST_FILE_PATTERNS: tuple[re.Pattern[str], ...] = (
     re.compile(r"(?:^|/)extensions/qa-lab/src/mock-openai-server\.ts$"),
@@ -32,10 +32,10 @@ _GENERATED_FILE_PATTERNS: tuple[re.Pattern[str], ...] = (
 )
 
 
-def _to_posix_lower(path: Path | str) -> str:
-    if isinstance(path, Path):
+def _to_posix_lower(path: Path | PurePath | str) -> str:
+    if isinstance(path, PurePath):
         return path.as_posix().lower()
-    return path.replace("\\", "/").lower()
+    return str(path).replace("\\", "/").lower()
 
 
 def is_test_file(path: Path | str) -> bool:

@@ -7,7 +7,7 @@ from pathlib import Path
 import click
 from rich.console import Console
 
-from drift.commands import console, make_console
+from drift.commands import make_console
 from drift.commands._io import _emit_machine_output
 
 
@@ -34,7 +34,9 @@ def configure_machine_output_console(output_format: str) -> None:
 
 def build_effective_console(no_color: bool) -> Console:
     """Create a console that respects --no-color and ASCII fallback needs."""
-    return make_console(no_color=no_color) if no_color else console
+    import drift.commands as _cmds
+
+    return _cmds.make_console(no_color=no_color) if no_color else _cmds.console
 
 
 def apply_signal_filtering(

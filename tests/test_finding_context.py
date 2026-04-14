@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 
 from drift.config import DriftConfig, FindingContextPolicy, FindingContextRule
 from drift.finding_context import (
@@ -173,3 +173,26 @@ def test_vendored_directory_is_classified_as_library(tmp_path: Path) -> None:
     finding = _finding(str(vendored), signal_type=SignalType.COHESION_DEFICIT)
 
     assert classify_finding_context(finding, cfg) == "library"
+
+
+def test_pure_posix_paths_do_not_crash_context_classification() -> None:
+    cfg = DriftConfig()
+    finding = _finding("src/core/service.py")
+    finding.file_path = PurePosixPath("src/core/service.py")
+
+    assert classify_finding_context(finding, cfg) == "production"
+
+
+def test_doc_impl_drift_in_docs_context_remains_prioritized() -> None:
+    cfg = DriftConfig()
+    finding = _finding("docs/reference/config.md", signal_type=SignalType.DOC_IMPL_DRIFT)
+
+    prioritized, excluded, counts = split_findings_by_context(
+        [finding],
+        cfg,
+        include_non_operational=False,
+    )
+
+    assert len(prioritized) == 1
+    assert len(excluded) == 0
+    assert counts["docs"] == 1

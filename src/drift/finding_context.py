@@ -11,7 +11,7 @@ import fnmatch
 import re
 from collections import Counter
 from functools import lru_cache
-from pathlib import Path
+from pathlib import Path, PurePath
 from typing import TYPE_CHECKING
 
 from drift.ingestion.test_detection import classify_file_context
@@ -132,19 +132,21 @@ def _file_header_contains_vendored_marker(path_str: str) -> bool:
     return any(pattern.search(header) for pattern in _VENDORED_HEADER_MARKERS)
 
 
-def _is_vendored_or_adapted_file(path: Path | None) -> bool:
+def _is_vendored_or_adapted_file(path: Path | PurePath | None) -> bool:
     if path is None:
         return False
 
-    if _path_contains_vendored_marker(path):
+    concrete_path = Path(str(path))
+
+    if _path_contains_vendored_marker(concrete_path):
         return True
 
-    if _file_header_contains_vendored_marker(path.as_posix()):
+    if _file_header_contains_vendored_marker(concrete_path.as_posix()):
         return True
 
     # Fall back to absolute path resolution for relative file paths.
-    if not path.is_absolute():
-        return _file_header_contains_vendored_marker(str(path.resolve()))
+    if not concrete_path.is_absolute():
+        return _file_header_contains_vendored_marker(str(concrete_path.resolve()))
 
     return False
 
@@ -205,6 +207,12 @@ def is_non_operational_context(context: str, config: DriftConfig) -> bool:
     return _normalise_context(context) in non_operational
 
 
+def _is_actionable_docs_finding(finding: Finding, context: str) -> bool:
+    """Return True for docs-context findings that still need agent attention."""
+    signal_type = str(getattr(finding, "signal_type", "")).strip().lower()
+    return context == "docs" and signal_type == "doc_impl_drift"
+
+
 def split_findings_by_context(
     findings: list[Finding],
     config: DriftConfig,
@@ -221,7 +229,11 @@ def split_findings_by_context(
         metadata = _ensure_metadata_dict(finding)
         metadata["finding_context"] = context
         counts[context] += 1
-        if include_non_operational or not is_non_operational_context(context, config):
+        if (
+            include_non_operational
+            or not is_non_operational_context(context, config)
+            or _is_actionable_docs_finding(finding, context)
+        ):
             prioritized.append(finding)
         else:
             excluded.append(finding)
