@@ -2,15 +2,37 @@
 
 from __future__ import annotations
 
+import locale
 import sys
+from typing import Any
 
 from rich.console import Console
 
-# On Windows, Rich uses a legacy renderer that encodes via cp1252 when
-# stdout is a standard stream.  This crashes on Unicode box-drawing chars.
-# Reconfigure both streams to UTF-8 before any Console is created.
-if sys.platform == "win32" and hasattr(sys.stdout, "reconfigure"):
-    sys.stdout.reconfigure(encoding="utf-8", errors="replace")  # type: ignore[union-attr]
-    sys.stderr.reconfigure(encoding="utf-8", errors="replace")  # type: ignore[union-attr]
 
-console = Console()
+def _stream_supports_unicode(stream: Any) -> bool:
+    """Return True when the target stream can safely encode Drift's rich symbols."""
+    encoding = getattr(stream, "encoding", None) or locale.getpreferredencoding(False)
+    if not encoding:
+        return False
+    try:
+        "╭╰│→✓⚠".encode(str(encoding))
+    except (LookupError, UnicodeEncodeError):
+        return False
+    return True
+
+
+def make_console(*, stderr: bool = False, no_color: bool = False) -> Console:
+    """Build a shared console with ASCII fallback for legacy Windows encodings."""
+    stream = sys.stderr if stderr else sys.stdout
+    unicode_ok = _stream_supports_unicode(stream)
+    built = Console(
+        stderr=stderr,
+        no_color=no_color,
+        safe_box=not unicode_ok,
+        emoji=unicode_ok,
+    )
+    setattr(built, "_drift_ascii_only", not unicode_ok)
+    return built
+
+
+console = make_console()

@@ -3,14 +3,18 @@
 from __future__ import annotations
 
 import datetime
+import io
+import re
 from pathlib import Path
 
 from click.testing import CliRunner
+from rich.console import Console
 
 from drift.commands.analyze import analyze
 from drift.commands.check import check
+from drift.commands.init_cmd import init
 from drift.models import RepoAnalysis, SignalType
-from drift.output.rich_output import _signal_label
+from drift.output.rich_output import _signal_label, render_summary
 
 
 class _DummyConfig:
@@ -110,3 +114,51 @@ def test_check_no_color_uses_colorless_console(monkeypatch, tmp_path: Path) -> N
 
     assert result.exit_code == 0
     assert captured["no_color"] is True
+
+
+def test_render_summary_ascii_fallback_is_windows_safe() -> None:
+    analysis = _sample_analysis(0.42)
+    analysis.total_files = 5
+    analysis.total_functions = 12
+    analysis.analysis_duration_seconds = 0.2
+
+    buffer = io.StringIO()
+    console = Console(
+        file=buffer,
+        force_terminal=True,
+        width=120,
+        safe_box=True,
+        emoji=False,
+        no_color=True,
+    )
+    setattr(console, "_drift_ascii_only", True)
+
+    render_summary(analysis, console)
+
+    text = re.sub(r"\x1b\[[0-9;]*m", "", buffer.getvalue())
+    assert "Grade" in text
+    assert all(ord(ch) < 128 for ch in text), text
+
+
+def test_init_output_ascii_fallback_is_windows_safe(monkeypatch, tmp_path: Path) -> None:
+    import drift.commands.init_cmd as init_cmd
+
+    buffer = io.StringIO()
+    console = Console(
+        file=buffer,
+        force_terminal=True,
+        width=120,
+        safe_box=True,
+        emoji=False,
+        no_color=True,
+    )
+    setattr(console, "_drift_ascii_only", True)
+    monkeypatch.setattr(init_cmd, "console", console)
+
+    runner = CliRunner()
+    result = runner.invoke(init, ["--repo", str(tmp_path), "--full"])
+
+    assert result.exit_code == 0
+    text = re.sub(r"\x1b\[[0-9;]*m", "", buffer.getvalue())
+    assert "file(s) created" in text
+    assert all(ord(ch) < 128 for ch in text), text

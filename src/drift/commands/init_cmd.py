@@ -488,15 +488,20 @@ def init(
 
     # Summary
     console.print()
+    ascii_only = bool(getattr(console, "_drift_ascii_only", False))
+    ok_marker = "OK" if ascii_only else "✓"
+    arrow = "->" if ascii_only else "→"
+    dash = " - " if ascii_only else " — "
+
     if created:
-        console.print(f"[bold green]✓ {created} file(s) created.[/bold green]")
+        console.print(f"[bold green]{ok_marker} {created} file(s) created.[/bold green]")
         console.print("\nNext steps:")
         console.print("  1. Review drift.yaml and adjust weights if needed")
         console.print("  2. Run [bold]drift analyze[/bold] to see your baseline score")
         console.print("  3. Run [bold]drift baseline save[/bold] to lock the current state")
         if profile == "vibe-coding":
             console.print(
-                "  4. Gradually escalate fail_on: none → high → medium over 4 weeks"
+                f"  4. Gradually escalate fail_on: none {arrow} high {arrow} medium over 4 weeks"
             )
     else:
-        console.print("[yellow]No files created — all targets already exist.[/yellow]")
+        console.print(f"[yellow]No files created{dash}all targets already exist.[/yellow]")

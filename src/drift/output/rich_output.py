@@ -5,11 +5,13 @@ from __future__ import annotations
 import linecache
 from typing import TYPE_CHECKING
 
+from rich import box
 from rich.console import Console
 from rich.panel import Panel
 from rich.table import Table
 from rich.text import Text
 
+from drift.commands import make_console
 from drift.finding_rendering import build_first_run_summary
 from drift.models import Finding, ModuleScore, RepoAnalysis, Severity, SignalType
 
@@ -214,6 +216,33 @@ def _signal_display_label(signal_type: str) -> str:
 _MAX_SNIPPET_LINES: int = 8  # Hard cap per finding; prevents scroll-flooding
 
 
+def _ascii_only(console: Console | None) -> bool:
+    """Return True when the current console should avoid non-ASCII glyphs."""
+    return bool(getattr(console, "_drift_ascii_only", False))
+
+
+def _glyph(console: Console | None, unicode_text: str, ascii_text: str) -> str:
+    """Pick a Unicode glyph when supported, else an ASCII fallback."""
+    return ascii_text if _ascii_only(console) else unicode_text
+
+
+def _panel_box(console: Console | None) -> box.Box:
+    """Pick a Rich box style that stays readable on legacy Windows terminals."""
+    return box.ASCII if _ascii_only(console) else box.ROUNDED
+
+
+def _table_box(console: Console | None) -> box.Box:
+    """Pick a table border style based on terminal glyph support."""
+    return box.ASCII if _ascii_only(console) else box.SIMPLE_HEAVY
+
+
+def _severity_icon(severity: Severity, *, ascii_only: bool = False) -> str:
+    """Return a severity icon that stays legible on ASCII-only consoles."""
+    if ascii_only:
+        return "!" if severity in {Severity.CRITICAL, Severity.HIGH} else "*"
+    return _SEVERITY_ICONS.get(severity, "?")
+
+
 def _read_code_snippet(
     file_path: Path | None,
     start_line: int | None,
@@ -222,6 +251,7 @@ def _read_code_snippet(
     context: int = 1,
     max_lines: int = 5,
     repo_root: Path | None = None,
+    ascii_only: bool = False,
 ) -> Text | None:
     """Read a short code snippet from a source file.
 
@@ -264,20 +294,22 @@ def _read_code_snippet(
 
     text = Text()
     gutter_width = len(str(lines[-1][0]))
+    gutter_sep = "|" if ascii_only else "│"
+    more_marker = "..." if ascii_only else "…"
     for lineno, content in lines:
         is_target = start_line <= lineno <= highlight_end
-        marker = "→" if is_target else " "
-        text.append(f"  {marker} {lineno:>{gutter_width}} │ ", style="dim")
+        marker = ">" if ascii_only and is_target else ("→" if is_target else " ")
+        text.append(f"  {marker} {lineno:>{gutter_width}} {gutter_sep} ", style="dim")
         text.append(f"{content}\n", style="bold" if is_target else "dim")
     if truncated_count:
         text.append(
-            f"  … ({truncated_count} more lines — use --no-code to hide snippets)\n",
+            f"  {more_marker} ({truncated_count} more lines - use --no-code to hide snippets)\n",
             style="dim italic",
         )
     return text
 
 
-def _score_bar(score: float, width: int = 20) -> Text:
+def _score_bar(score: float, width: int = 20, *, ascii_only: bool = False) -> Text:
     """Render a score as a colored bar."""
     filled = int(score * width)
     empty = width - filled
@@ -289,9 +321,12 @@ def _score_bar(score: float, width: int = 20) -> Text:
     else:
         color = "green"
 
+    full_char = "#" if ascii_only else "█"
+    empty_char = "-" if ascii_only else "░"
+
     bar = Text()
-    bar.append("█" * filled, style=color)
-    bar.append("░" * empty, style="dim")
+    bar.append(full_char * filled, style=color)
+    bar.append(empty_char * empty, style="dim")
     bar.append(f" {score:.2f}", style="bold " + color)
     return bar
 
@@ -366,7 +401,14 @@ def _render_first_run_panel(
     body.append(f"{next_label}: ", style=_TEAL_BOLD)
     body.append(summary["next_step"], style=_TEAL)
 
-    console.print(Panel(body, title=f"[bold]{title}[/bold]", border_style=_TEAL))
+    console.print(
+        Panel(
+            body,
+            title=f"[bold]{title}[/bold]",
+            border_style=_TEAL,
+            box=_panel_box(console),
+        ),
+    )
 
 
 def _render_first_run_next_steps(
@@ -378,30 +420,38 @@ def _render_first_run_next_steps(
     """Render a compact next-steps panel for first-run mode."""
     is_german = (language or "").lower().startswith("de")
     total = len(analysis.findings)
+    dash = " - " if _ascii_only(console) else " — "
 
     if is_german:
         title = "Naechste Schritte"
         lines = [
-            f"[bold]{total}[/bold] Befunde erkannt — oben sind die wichtigsten 3.",
+            f"[bold]{total}[/bold] Befunde erkannt{dash}oben sind die wichtigsten 3.",
             "",
-            "[bold]1.[/bold] drift setup          — Konfiguration erstellen",
-            "[bold]2.[/bold] drift analyze         — Alle Befunde anzeigen",
-            "[bold]3.[/bold] drift mcp --serve     — KI-Agent-Integration starten",
-            "[bold]4.[/bold] drift check --fail-on high  — Als CI-Gate verwenden",
+            f"[bold]1.[/bold] drift setup          {dash}Konfiguration erstellen",
+            f"[bold]2.[/bold] drift analyze         {dash}Alle Befunde anzeigen",
+            f"[bold]3.[/bold] drift mcp --serve     {dash}KI-Agent-Integration starten",
+            f"[bold]4.[/bold] drift check --fail-on high  {dash}Als CI-Gate verwenden",
         ]
     else:
         lines = [
-            f"[bold]{total}[/bold] findings detected — the top 3 are shown above.",
+            f"[bold]{total}[/bold] findings detected{dash}the top 3 are shown above.",
             "",
-            "[bold]1.[/bold] drift setup          — generate a config file",
-            "[bold]2.[/bold] drift analyze         — see all findings",
-            "[bold]3.[/bold] drift mcp --serve     — start AI agent integration",
-            "[bold]4.[/bold] drift check --fail-on high  — use as CI gate",
+            f"[bold]1.[/bold] drift setup          {dash}generate a config file",
+            f"[bold]2.[/bold] drift analyze         {dash}see all findings",
+            f"[bold]3.[/bold] drift mcp --serve     {dash}start AI agent integration",
+            f"[bold]4.[/bold] drift check --fail-on high  {dash}use as CI gate",
         ]
         title = "Next Steps"
 
     body = Text.from_markup("\n".join(lines))
-    console.print(Panel(body, title=f"[bold]{title}[/bold]", border_style=_TEAL))
+    console.print(
+        Panel(
+            body,
+            title=f"[bold]{title}[/bold]",
+            border_style=_TEAL,
+            box=_panel_box(console),
+        ),
+    )
 
 
 def render_summary(
@@ -412,24 +462,27 @@ def render_summary(
 ) -> None:
     """Render the top-level analysis summary."""
     if console is None:
-        console = Console()
+        console = make_console()
 
-    # Header
+    ascii_only = _ascii_only(console)
+
     console.print()
     header_color = _SEVERITY_COLORS.get(analysis.severity, "white")
 
-    # Letter grade (A–F) for quick comprehension
     grade_letter, grade_label = analysis.grade
-    grade_text = f"  Grade {grade_letter} — {grade_label}"
+    grade_sep = " - " if ascii_only else " — "
+    info_sep = "  |  " if ascii_only else "  │  "
+    range_text = "0.30-0.65" if ascii_only else "0.30–0.65"
+    grade_text = f"  Grade {grade_letter}{grade_sep}{grade_label}"
+    first_run_hint = f"{info_sep}Typical first-run range: {range_text}"
 
-    # First-run context hint: typical range seen across open-source repos
-    first_run_hint = "  │  Typical first-run range: 0.30–0.65"
-
-    # Build trend suffix (ADR-005)
     trend = analysis.trend
     if trend and trend.direction != "baseline" and trend.delta is not None:
         arrow = (
-            "↓" if trend.direction == "improving"
+            "v" if ascii_only and trend.direction == "improving"
+            else "^" if ascii_only and trend.direction == "degrading"
+            else "->" if ascii_only
+            else "↓" if trend.direction == "improving"
             else "↑" if trend.direction == "degrading"
             else "→"
         )
@@ -440,12 +493,10 @@ def render_summary(
         )
         trend_parts: tuple[tuple[str, str], ...] = (
             ("  ", ""),
-            (f"Δ {trend.delta:+.3f} {arrow} {trend.direction}", delta_color),
+            (f"delta {trend.delta:+.3f} {arrow} {trend.direction}", delta_color),
         )
     else:
-        trend_parts = (
-            ("  — baseline", "dim"),
-        )
+        trend_parts = (("  - baseline", "dim"),)
 
     console.print(
         Panel(
@@ -455,11 +506,11 @@ def render_summary(
                 (grade_text, f"bold {header_color}"),
                 (first_run_hint, "dim"),
                 *trend_parts,
-                ("  │  ", "dim"),
+                (info_sep, "dim"),
                 (f"{analysis.total_files} files", ""),
-                ("  │  ", "dim"),
+                (info_sep, "dim"),
                 (f"{analysis.total_functions} functions", ""),
-                ("  │  ", "dim"),
+                (info_sep, "dim"),
                 (f"AI: {analysis.ai_attributed_ratio:.0%}", ""),
                 *(
                     (
@@ -471,21 +522,21 @@ def render_summary(
                     else ()
                 ),
                 *(
-                    (("  │  ", "dim"), (f"{analysis.suppressed_count} suppressed", "dim italic"))
+                    ((info_sep, "dim"), (f"{analysis.suppressed_count} suppressed", "dim italic"))
                     if analysis.suppressed_count
                     else ()
                 ),
                 *(
                     (
-                        ("  │  ", "dim"),
+                        (info_sep, "dim"),
                         (f"{analysis.context_tagged_count} ctx-tagged", "dim italic"),
                     )
                     if analysis.context_tagged_count
                     else ()
                 ),
-                ("  │  ", "dim"),
+                (info_sep, "dim"),
                 (f"{analysis.analysis_duration_seconds:.1f}s", "dim"),
-                ("  │  ", "dim"),
+                (info_sep, "dim"),
                 (
                     "DEGRADED" if analysis.is_degraded else "COMPLETE",
                     "bold yellow" if analysis.is_degraded else "bold green",
@@ -493,6 +544,7 @@ def render_summary(
             ),
             title=f"[bold]drift analyze[/bold]  {analysis.repo_path}",
             border_style=header_color,
+            box=_panel_box(console),
         ),
     )
 
@@ -506,14 +558,18 @@ def render_summary(
 
     _render_phase_timing(analysis, console)
 
-    # Warn when TypeScript/JS files were skipped due to missing tree-sitter
+    warn_icon = _glyph(console, "⚠", "!")
+    right_arrow = _glyph(console, "→", "->")
+    le_op = "<=" if ascii_only else "≤"
+    dash = " - " if ascii_only else " — "
+
     if analysis.skipped_languages:
         summary = ", ".join(
             f"{lang} ({n})" for lang, n in sorted(analysis.skipped_languages.items())
         )
         console.print(
             Text.assemble(
-                ("  ⚠ Skipped ", "bold yellow"),
+                (f"  {warn_icon} Skipped ", "bold yellow"),
                 (f"{sum(analysis.skipped_languages.values())} file(s)", "bold yellow"),
                 (f": {summary}. ", ""),
                 ("Install: ", ""),
@@ -521,35 +577,34 @@ def render_summary(
             ),
         )
 
-    # Trend sparkline (ADR-005)
     if trend and trend.recent_scores and trend.direction != "baseline":
-        scores_str = " → ".join(f"{s:.3f}" for s in trend.recent_scores)
+        sep = " -> " if ascii_only else " → "
+        scores_str = sep.join(f"{s:.3f}" for s in trend.recent_scores)
         depth = trend.history_depth
         sfx = "s" if depth != 1 else ""
         console.print(f"  [dim]Trend: {scores_str} ({depth} snapshot{sfx})[/dim]")
     elif trend and trend.direction == "baseline":
         console.print(
-            "  [dim]⚠ Run drift analyze again after structural"
-            " changes to establish trend.[/dim]",
+            f"  [dim]{warn_icon} Run drift analyze again after structural "
+            "changes to establish trend.[/dim]",
         )
 
-    # Score orientation hint — helps first-time users interpret the score
     if analysis.drift_score > 0.30:
         console.print(
-            f"  [dim]→ Score {analysis.drift_score:.2f} above target"
-            " (\u2264 0.30) \u2014 run [bold]drift fix-plan --max-tasks 3[/bold]"
+            f"  [dim]{right_arrow} Score {analysis.drift_score:.2f} above target"
+            f" ({le_op} 0.30){dash}run [bold]drift fix-plan --max-tasks 3[/bold]"
             " for prioritized next steps.[/dim]"
         )
     else:
+        ok_text = "[ok]" if ascii_only else "✓"
         console.print(
-            f"  [dim]→ Score {analysis.drift_score:.2f}"
-            " at or below target (\u2264 0.30) \u2713[/dim]"
+            f"  [dim]{right_arrow} Score {analysis.drift_score:.2f}"
+            f" at or below target ({le_op} 0.30) {ok_text}[/dim]"
         )
 
-    # Small-repo hint — signal precision improves with more files
     if 0 < analysis.total_files < 20:
         console.print(
-            f"  [dim]⚠ Small repo ({analysis.total_files} files) — "
+            f"  [dim]{warn_icon} Small repo ({analysis.total_files} files){dash}"
             "signal precision improves with 20+ files. "
             "Results are indicative, not definitive.[/dim]"
         )
