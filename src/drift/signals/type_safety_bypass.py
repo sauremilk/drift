@@ -239,6 +239,9 @@ class TypeSafetyBypassSignal(BaseSignal):
 
             bypass_count = len(bypasses)
             effective_count = _effective_bypass_count(bypasses)
+            if effective_count == 0.0:
+                continue
+
             score = round(min(1.0, effective_count / max(1, threshold)), 3)
             if path_context == "test" and handling == "reduce_severity":
                 score = round(score * 0.4, 3)

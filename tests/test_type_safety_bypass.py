@@ -312,15 +312,18 @@ class TestTypeSafetyBypassSignal:
         ]
 
         findings = TypeSafetyBypassSignal().analyze(parse_results, {}, DriftConfig())
-        assert len(findings) == 2
+        # SDK-only file has effective_count == 0.0 → no finding (fully suppressed, #367)
+        # Plain file has 3 non-null assertions (weight 1.0 each) → fires
+        assert len(findings) == 1
 
-        by_name = {finding.file_path.name: finding for finding in findings}
-        sdk_finding = by_name["pw-tools-core.interactions.ts"]
-        plain_finding = by_name["interactions.ts"]
-
-        assert sdk_finding.score < plain_finding.score
-        assert sdk_finding.metadata["kind_distribution"].get("non_null_assertion_sdk", 0) == 3
+        plain_finding = findings[0]
+        assert plain_finding.file_path.name == "interactions.ts"
         assert plain_finding.metadata["kind_distribution"].get("non_null_assertion", 0) == 3
+
+        sdk_names = {f.file_path.name for f in findings}
+        assert "pw-tools-core.interactions.ts" not in sdk_names, (
+            "SDK-only file must not emit a finding when all bypass weights are 0.0"
+        )
 
     def test_issue_274_playwright_sdk_non_null_patterns_do_not_escalate_to_high(
         self, tmp_path: Path
@@ -376,7 +379,7 @@ class TestTypeSafetyBypassSignal:
         self, tmp_path: Path
     ) -> None:
         from drift.config import DriftConfig
-        from drift.models import ParseResult, Severity
+        from drift.models import ParseResult
         from drift.signals.type_safety_bypass import TypeSafetyBypassSignal
 
         file_path = (
@@ -410,12 +413,10 @@ class TestTypeSafetyBypassSignal:
         )
 
         findings = TypeSafetyBypassSignal().analyze([pr], {}, DriftConfig())
-        assert len(findings) == 1
-        finding = findings[0]
-
-        assert finding.severity == Severity.LOW
-        assert finding.score == 0.0
-        assert finding.metadata["kind_distribution"].get("non_null_assertion_sdk", 0) == 4
+        # After fix #367: all of these are non_null_assertion_sdk (weight 0.0) → no finding emitted
+        assert findings == [], (
+            "SDK-only non-null assertions must produce no finding (effective_count == 0.0, #367)"
+        )
 
     def test_issue_278_event_emitter_patterns_without_sdk_import_are_not_dampened(
         self, tmp_path: Path
@@ -454,7 +455,7 @@ class TestTypeSafetyBypassSignal:
         self, tmp_path: Path
     ) -> None:
         from drift.config import DriftConfig
-        from drift.models import ParseResult, Severity
+        from drift.models import ParseResult
         from drift.signals.type_safety_bypass import TypeSafetyBypassSignal
 
         file_path = (
@@ -495,13 +496,11 @@ class TestTypeSafetyBypassSignal:
         )
 
         findings = TypeSafetyBypassSignal().analyze([pr], {}, DriftConfig())
-        assert len(findings) == 1
-        finding = findings[0]
-
-        assert finding.severity == Severity.LOW
-        assert finding.score == 0.0
-        assert finding.metadata["kind_distribution"].get("double_cast_sdk_guarded", 0) == 2
-        assert finding.metadata["kind_distribution"].get("double_cast", 0) == 0
+        # After fix #367: all casts are double_cast_sdk_guarded (weight 0.0) → no finding emitted
+        assert findings == [], (
+            "SDK runtime-guarded double casts must produce no finding"
+            " (effective_count == 0.0, #367)"
+        )
 
     def test_issue_279_playwright_double_cast_without_runtime_guard_stays_weighted(
         self, tmp_path: Path
