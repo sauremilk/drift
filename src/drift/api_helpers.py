@@ -13,12 +13,11 @@ from typing import TYPE_CHECKING, Any
 from drift.config import DriftConfig
 from drift.finding_context import classify_finding_context
 from drift.finding_priority import (
-    _SEVERITY_RANK,
+    _composite_sort_key,
     _dedupe_findings,
     _expected_benefit_for_finding,
     _next_step_for_finding,
     _priority_class,
-    _priority_rank,
 )
 
 # --- Re-exports: finding rendering ---
@@ -175,13 +174,10 @@ def _fix_first_concise(analysis: RepoAnalysis, max_items: int = 5) -> list[dict[
     """Build compact fix_first list (deduplicated)."""
     deduped, _counts = _dedupe_findings(analysis.findings)
 
+    file_histories = getattr(analysis, "file_histories", None) or {}
     prioritized = sorted(
         deduped,
-        key=lambda f: (
-            _priority_rank(_priority_class(f)),
-            _SEVERITY_RANK[f.severity],
-            -float(f.impact),
-        ),
+        key=lambda f: _composite_sort_key(f, file_histories=file_histories),
     )
 
     seen_file_signal: set[tuple[str, str]] = set()

@@ -11,11 +11,11 @@ from typing import TYPE_CHECKING, Any
 from drift.config import DriftConfig
 from drift.finding_context import classify_finding_context
 from drift.finding_priority import (
+    _composite_sort_key,
     _dedupe_findings,
     _expected_benefit_for_finding,
     _next_step_for_finding,
     _priority_class,
-    _priority_rank,
 )
 from drift.signal_mapping import _ABBREV_TO_SIGNAL, signal_abbrev
 
@@ -41,19 +41,19 @@ def _select_priority_findings_from_list(
     findings: list[Any],
     *,
     max_items: int,
+    file_histories: dict[str, Any] | None = None,
 ) -> list[Any]:
     """Return deduplicated, first-run priority findings.
 
     Uses the same structural-first ordering as machine-readable fix-first output
     so CLI entry points do not drift apart in their recommended starting point.
+    When *file_histories* is provided, context-aware ranking (churn, ownership,
+    recency) refines the sort order within equal structural-class/severity tiers.
     """
     deduped, _counts = _dedupe_findings(findings)
     prioritized = sorted(
         deduped,
-        key=lambda f: (
-            _priority_rank(_priority_class(f)),
-            -severity_rank(f.severity.value),
-            -float(f.impact),
+        key=lambda f: _composite_sort_key(f, file_histories=file_histories) + (
             -float(f.score),
             f.signal_type,
             f.file_path.as_posix() if f.file_path else "",
@@ -78,7 +78,12 @@ def _select_priority_findings_from_list(
 
 def select_priority_findings(analysis: RepoAnalysis, *, max_items: int = 3) -> list[Any]:
     """Return deduplicated, first-run priority findings for an analysis."""
-    return _select_priority_findings_from_list(analysis.findings, max_items=max_items)
+    file_histories = getattr(analysis, "file_histories", None) or {}
+    return _select_priority_findings_from_list(
+        analysis.findings,
+        max_items=max_items,
+        file_histories=file_histories,
+    )
 
 
 def build_first_run_summary(

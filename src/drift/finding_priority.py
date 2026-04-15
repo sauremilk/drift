@@ -6,8 +6,14 @@ cycles between serialization layers.
 
 from __future__ import annotations
 
+import datetime
+from typing import TYPE_CHECKING, Any
+
 from drift.models import Finding, Severity, SignalType
 from drift.recommendations import generate_recommendation
+
+if TYPE_CHECKING:
+    from drift.models import FileHistory
 
 _ARCHITECTURE_BOUNDARY_SIGNALS = {
     SignalType.ARCHITECTURE_VIOLATION,
@@ -100,3 +106,80 @@ def _expected_benefit_for_finding(f: Finding) -> str:
     if f.severity == Severity.MEDIUM:
         return "medium"
     return "low"
+
+
+def _context_score(
+    finding: Finding,
+    file_history: FileHistory | None,
+) -> float:
+    """Return an operational-context urgency score in [0.0, 1.0].
+
+    A higher score indicates a finding in a hotter, more actively modified,
+    or more broadly owned file — making it more operationally urgent. The
+    score is used as a *secondary* sort key after structural class and
+    severity so it only breaks ties, preserving backwards-compatible
+    class-label ordering.
+
+    Inputs (all from ``FileHistory``):
+
+    * ``change_frequency_30d`` — weekly change rate over the last 30 days;
+      normalised at 2.0 changes/week (weight 50 %).
+    * ``unique_authors`` — count of distinct authors; normalised at 5
+      authors (weight 30 %).
+    * ``last_modified`` — days since last commit to the file; normalised
+      at 365 days (weight 20 %, higher recency → higher score).
+
+    When *file_history* is ``None`` or a field is missing, the component
+    defaults to 0.0, which leaves existing sort order unchanged.
+    """
+    if file_history is None:
+        return 0.0
+
+    churn = getattr(file_history, "change_frequency_30d", 0.0) or 0.0
+    authors = getattr(file_history, "unique_authors", 0) or 0
+    last_modified: datetime.datetime | None = getattr(file_history, "last_modified", None)
+
+    churn_score = min(1.0, churn / 2.0)
+    ownership_score = min(1.0, authors / 5.0)
+
+    if last_modified is not None:
+        now = datetime.datetime.now(tz=datetime.timezone.utc)
+        if last_modified.tzinfo is None:
+            last_modified = last_modified.replace(tzinfo=datetime.timezone.utc)
+        days_since = max(0.0, (now - last_modified).total_seconds() / 86400.0)
+        recency_score = max(0.0, 1.0 - days_since / 365.0)
+    else:
+        recency_score = 0.0
+
+    return 0.5 * churn_score + 0.3 * ownership_score + 0.2 * recency_score
+
+
+def _composite_sort_key(
+    finding: Finding,
+    file_history: FileHistory | None = None,
+    file_histories: dict[str, Any] | None = None,
+) -> tuple:
+    """Return a sort key that combines structural class, severity, and operational context.
+
+    Pass *file_history* directly, or provide the full *file_histories* mapping
+    by file path and let this function resolve the right entry.  When both are
+    ``None``, the key degrades gracefully to the legacy ``(_priority_rank,
+    _SEVERITY_RANK, -impact)`` ordering.
+    """
+    if file_history is None and file_histories is not None and finding.file_path is not None:
+        file_history = file_histories.get(finding.file_path.as_posix())
+
+    pclass = _priority_class(finding)
+    ctx = _context_score(finding, file_history)
+
+    # Use the string .value to stay robust against fake/duck-typed severity objects.
+    severity_str = getattr(finding.severity, "value", str(finding.severity)).lower()
+    _SRANK_STR = {"critical": 0, "high": 1, "medium": 2, "low": 3, "info": 4}
+    srank = _SRANK_STR.get(severity_str, 4)
+
+    return (
+        _priority_rank(pclass),
+        srank,
+        round(-ctx, 6),
+        -float(finding.impact),
+    )
