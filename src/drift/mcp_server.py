@@ -408,7 +408,15 @@ async def _run_api_tool(tool_name: str, api_fn: Any, **kwargs: Any) -> str:
             error["tool"] = tool_name
             return json.dumps(error, default=str)
 
-    return cast(str, await _run_sync_in_thread(_sync))
+    # abandon_on_cancel=True: when the MCP client disconnects, the async
+    # coroutine receives CancelledError immediately instead of blocking the
+    # event loop while anyio waits for the thread to finish.  The worker
+    # thread keeps running to natural completion (Python threads cannot be
+    # force-stopped), but session-state mutations in calling coroutines are
+    # never reached because CancelledError (a BaseException) propagates
+    # past all `except Exception` handlers.  This satisfies the minimum
+    # fix requested in #376.
+    return cast(str, await _run_sync_in_thread(_sync, abandon_on_cancel=True))
 
 try:
     from mcp.server.fastmcp import FastMCP as _ImportedFastMCP
@@ -2713,7 +2721,8 @@ async def drift_map(
                 kwargs.get("path", path),
                 target_path=kwargs.get("target_path"),
                 max_modules=max_modules,
-            )
+            ),
+            abandon_on_cancel=True,
         )
         raw = json.dumps(result, default=str)
         if session is not None:
@@ -2821,7 +2830,7 @@ async def drift_feedback(
             "finding_id": event.finding_id,
         })
 
-    raw = await _run_sync_in_thread(_sync)
+    raw = await _run_sync_in_thread(_sync, abandon_on_cancel=True)
     if session:
         session.touch()
     return _enrich_response_with_session(raw, session, "drift_feedback")
@@ -2917,7 +2926,7 @@ async def drift_calibrate(
             ),
         }, default=str)
 
-    raw = await _run_sync_in_thread(_sync)
+    raw = await _run_sync_in_thread(_sync, abandon_on_cancel=True)
     if session:
         session.touch()
     return _enrich_response_with_session(raw, session, "drift_calibrate")
