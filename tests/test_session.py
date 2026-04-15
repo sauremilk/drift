@@ -296,3 +296,58 @@ class TestSessionManager:
         bad_file.write_text("not json", encoding="utf-8")
         mgr = SessionManager.instance()
         assert mgr.load_from_disk(bad_file) is None
+
+    # -- Issue 373: mutable input isolation ---------------------------------
+
+    def test_create_isolates_signals_list(self):
+        mgr = SessionManager.instance()
+        signals = ["PFS", "AVS"]
+        sid = mgr.create("/tmp/repo", signals=signals)
+        signals.append("CLK")
+        session = mgr.get(sid)
+        assert session is not None
+        assert session.signals == ["PFS", "AVS"], (
+            "mutation after create must not affect stored signals"
+        )
+
+    def test_create_isolates_exclude_paths_list(self):
+        mgr = SessionManager.instance()
+        exclude = ["tests/", "docs/"]
+        sid = mgr.create("/tmp/repo", exclude_paths=exclude)
+        exclude.append("build/")
+        session = mgr.get(sid)
+        assert session is not None
+        assert session.exclude_paths == ["tests/", "docs/"]
+
+    def test_update_isolates_selected_tasks_list(self):
+        mgr = SessionManager.instance()
+        sid = mgr.create("/tmp/repo")
+        tasks = [{"id": "T1", "title": "task one"}]
+        mgr.update(sid, selected_tasks=tasks)
+        tasks.append({"id": "T2", "title": "intruder"})
+        session = mgr.get(sid)
+        assert session is not None
+        assert len(session.selected_tasks) == 1
+        assert session.selected_tasks[0]["id"] == "T1"
+
+    def test_update_isolates_completed_task_ids_list(self):
+        mgr = SessionManager.instance()
+        sid = mgr.create("/tmp/repo")
+        completed = ["T1"]
+        mgr.update(sid, completed_task_ids=completed)
+        completed.append("T2")
+        session = mgr.get(sid)
+        assert session is not None
+        assert session.completed_task_ids == ["T1"]
+
+    def test_shared_payload_does_not_bleed_across_sessions(self):
+        mgr = SessionManager.instance()
+        signals = ["PFS"]
+        sid1 = mgr.create("/tmp/repo1", signals=signals)
+        sid2 = mgr.create("/tmp/repo2", signals=signals)
+        signals.append("AVS")
+        s1 = mgr.get(sid1)
+        s2 = mgr.get(sid2)
+        assert s1 is not None and s2 is not None
+        assert s1.signals == ["PFS"]
+        assert s2.signals == ["PFS"]

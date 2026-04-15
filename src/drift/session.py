@@ -982,10 +982,10 @@ class SessionManager:
             session_id=session_id,
             repo_path=str(Path(repo_path).resolve()),
             ttl_seconds=ttl_seconds,
-            signals=signals,
-            exclude_signals=exclude_signals,
+            signals=list(signals) if signals is not None else None,
+            exclude_signals=list(exclude_signals) if exclude_signals is not None else None,
             target_path=target_path,
-            exclude_paths=exclude_paths,
+            exclude_paths=list(exclude_paths) if exclude_paths is not None else None,
         )
         self._sessions[session_id] = session
         logger.debug("Session created: %s for %s", session_id[:8], repo_path)
@@ -1025,8 +1025,20 @@ class SessionManager:
             "guardrails_prompt_block",
         }
 
+        _list_fields = {
+            "signals",
+            "exclude_signals",
+            "exclude_paths",
+            "last_scan_top_signals",
+            "selected_tasks",
+            "completed_task_ids",
+            "guardrails",
+        }
+
         for key, value in kwargs.items():
             if key in allowed_fields:
+                if key in _list_fields and isinstance(value, list):
+                    value = list(value)
                 setattr(session, key, value)
             else:
                 logger.warning("Session update: ignoring unknown field %r", key)

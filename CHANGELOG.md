@@ -18,6 +18,7 @@ Short version: Add verify and interactive init flows, trend JSON output, fix-pla
 ### Fixed
 
 - Preserve the literal MCP install hint in drift init output so onboarding shows drift-analyzer[mcp] correctly.
+- **Session mutable input isolation (#373)**: `SessionManager.create` and `SessionManager.update` now defensively copy all caller-supplied list arguments (`signals`, `exclude_signals`, `exclude_paths`, `selected_tasks`, `completed_task_ids`, `last_scan_top_signals`, `guardrails`). External mutation of the original lists after a create or update call no longer affects the stored session state, preventing cross-session bleed in MCP multi-agent workflows.
 - Make `drift config show` print a newcomer-friendly overview of the active profile, globs, non-defaults, and recommended next command while keeping YAML-only output available via `--raw`.
 - Resolve adaptive recommendation typing and add managed inline suppression tooling for ignore comments.
 - Reject duplicate abbreviation registrations in `register_signal_meta` with a `ValueError` instead of silently overwriting core signal mappings (#368).
