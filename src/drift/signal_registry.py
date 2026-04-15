@@ -278,6 +278,15 @@ _CORE_SIGNALS: Final[list[SignalMeta]] = [
         has_recommender=False, has_fix_field=True, has_verify_plan=True,
         benchmark_coverage="none",
     ),
+    # ── typescript_quality ────────────────────────────────────────────────
+    SignalMeta(
+        "type_safety_bypass", "TSB", "Type Safety Bypass",
+        "style_hygiene", 0.0,
+        "Detects patterns that bypass TypeScript's type system (as any, @ts-ignore, double casts).",
+        repair_level="example_based",
+        has_recommender=False, has_fix_field=True, has_verify_plan=True,
+        benchmark_coverage="moderate",
+    ),
 ]
 
 # ---------------------------------------------------------------------------
@@ -297,9 +306,21 @@ def register_signal_meta(meta: SignalMeta) -> None:
     Call this from your plugin's top-level module before Drift initialises.
     Duplicate registrations for the same ``signal_id`` are silently ignored
     to keep import-order idempotent.
+
+    Raises:
+        ValueError: If ``meta.abbrev`` is already claimed by a different signal.
+            Plugin signals must use unique abbreviations that do not collide
+            with core or other plugin abbreviations.
     """
     if meta.signal_id in _REGISTRY:
         return  # Already registered — core or duplicate plugin
+    if meta.abbrev in _ABBREV_MAP:
+        existing_id = _ABBREV_MAP[meta.abbrev]
+        raise ValueError(
+            f"Abbreviation {meta.abbrev!r} is already registered for signal "
+            f"{existing_id!r}. Plugin signal {meta.signal_id!r} must use a "
+            f"unique abbreviation."
+        )
     _REGISTRY[meta.signal_id] = meta
     _ABBREV_MAP[meta.abbrev] = meta.signal_id
 

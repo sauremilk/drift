@@ -41,9 +41,9 @@ def _clean_registry():
 
 
 class TestSignalRegistryCore:
-    def test_all_meta_returns_24_core_signals(self):
+    def test_all_meta_returns_25_core_signals(self):
         meta = get_all_meta()
-        assert len(meta) == 24
+        assert len(meta) == 25
 
     def test_all_abbrevs_are_unique(self):
         abbrevs = [m.abbrev for m in get_all_meta()]
@@ -60,8 +60,8 @@ class TestSignalRegistryCore:
         assert m["MDS"] == "mutant_duplicate"
         assert m["HSC"] == "hardcoded_secret"
 
-    def test_get_abbrev_map_has_24_entries(self):
-        assert len(get_abbrev_map()) == 24
+    def test_get_abbrev_map_has_25_entries(self):
+        assert len(get_abbrev_map()) == 25
 
     def test_get_signal_to_abbrev_reverses_abbrev_map(self):
         abbrev_map = get_abbrev_map()
@@ -226,7 +226,7 @@ class TestPluginRegistration:
 
         assert get_meta("my_custom_signal") is plugin_meta
         assert get_abbrev_map()["MCS"] == "my_custom_signal"
-        assert len(get_all_meta()) == 25  # 24 core + 1 plugin
+        assert len(get_all_meta()) == 26  # 25 core + 1 plugin
 
     def test_duplicate_registration_is_idempotent(self):
         plugin_meta = SignalMeta(
@@ -240,8 +240,49 @@ class TestPluginRegistration:
         register_signal_meta(plugin_meta)
         register_signal_meta(plugin_meta)  # Second call — must not duplicate
 
-        assert len(get_all_meta()) == 25
+        assert len(get_all_meta()) == 26
         assert list(get_all_meta()).count(plugin_meta) == 1
+
+    def test_duplicate_abbreviation_raises_value_error(self):
+        """Registering a plugin signal with a core abbreviation must raise ValueError."""
+        conflicting_meta = SignalMeta(
+            signal_id="fake_signal",
+            abbrev="PFS",  # already used by pattern_fragmentation
+            signal_name="Fake Signal",
+            category="structural_risk",
+            default_weight=0.0,
+            is_core=False,
+        )
+        with pytest.raises(ValueError, match="PFS"):
+            register_signal_meta(conflicting_meta)
+
+        # Core mapping must not have been overwritten
+        assert resolve_abbrev("PFS") == "pattern_fragmentation"
+
+    def test_duplicate_abbreviation_between_plugins_raises(self):
+        """Two plugin signals sharing an abbreviation — second must raise."""
+        first = SignalMeta(
+            signal_id="plugin_a",
+            abbrev="PLA",
+            signal_name="Plugin A",
+            category="style_hygiene",
+            default_weight=0.0,
+            is_core=False,
+        )
+        second = SignalMeta(
+            signal_id="plugin_b",
+            abbrev="PLA",  # duplicate of first plugin
+            signal_name="Plugin B",
+            category="style_hygiene",
+            default_weight=0.0,
+            is_core=False,
+        )
+        register_signal_meta(first)
+        with pytest.raises(ValueError, match="PLA"):
+            register_signal_meta(second)
+
+        # First plugin mapping must still be intact
+        assert resolve_abbrev("PLA") == "plugin_a"
 
     def test_reset_removes_plugin_signal(self):
         plugin_meta = SignalMeta(
@@ -253,11 +294,11 @@ class TestPluginRegistration:
             is_core=False,
         )
         register_signal_meta(plugin_meta)
-        assert len(get_all_meta()) == 25
+        assert len(get_all_meta()) == 26
 
         _reset_registry()
 
-        assert len(get_all_meta()) == 24
+        assert len(get_all_meta()) == 25
         assert get_meta("temp_signal") is None
 
 
