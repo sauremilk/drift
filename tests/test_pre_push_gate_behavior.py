@@ -120,6 +120,11 @@ def _run_pre_push(
     env_overrides: dict[str, str] | None,
 ) -> tuple[int, str]:
     env = os.environ.copy()
+    # Strip inherited DRIFT_SKIP_* vars so gate-failure tests aren't affected by
+    # the caller's bypass flags (e.g. set during a push session).
+    _drift_skip_keys = [k for k in env if k.startswith("DRIFT_SKIP_")]
+    for k in _drift_skip_keys:
+        env.pop(k, None)
     if env_overrides:
         env.update(env_overrides)
 
