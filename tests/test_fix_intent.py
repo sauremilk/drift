@@ -32,6 +32,7 @@ from drift.fix_intent import (
     EDIT_KIND_UNSPECIFIED,
     EDIT_KIND_UPDATE_DOCSTRING,
     EDIT_KIND_UPDATE_EXCEPTION_CONTRACT,
+    FORBIDDEN_IMPLEMENTATION_CHANGE,
     FORBIDDEN_NEW_ABSTRACTION,
     FORBIDDEN_PRODUCTION_CODE_CHANGE,
     FORBIDDEN_SIGNATURE_CHANGE,
@@ -317,6 +318,16 @@ class TestDeriveFixIntent:
         result = derive_fix_intent(t, _make_task_dict())
         assert result["edit_kind"] == EDIT_KIND_ADD_TEST
         assert FORBIDDEN_PRODUCTION_CODE_CHANGE in result["forbidden_changes"]
+
+    def test_forbidden_changes_implementation_and_signature_for_add_authorization_check(
+        self,
+    ) -> None:
+        # EDIT_KIND_ADD_AUTHORIZATION_CHECK must forbid impl and signature rewrites (Issue #385).
+        t = _FakeTask(signal_type=SignalType.MISSING_AUTHORIZATION)
+        result = derive_fix_intent(t, _make_task_dict())
+        assert result["edit_kind"] == EDIT_KIND_ADD_AUTHORIZATION_CHECK
+        assert FORBIDDEN_IMPLEMENTATION_CHANGE in result["forbidden_changes"]
+        assert FORBIDDEN_SIGNATURE_CHANGE in result["forbidden_changes"]
 
     def test_forbidden_changes_no_duplicates(self) -> None:
         t = _FakeTask(signal_type=SignalType.MUTANT_DUPLICATE)
