@@ -8,7 +8,7 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-from drift.cache import ParseCache
+from drift.cache import _PARSE_CACHE_VERSION, ParseCache
 from drift.embeddings import EmbeddingCache
 from drift.models import ParseResult
 
@@ -60,6 +60,61 @@ def test_concurrent_put_get_does_not_crash(tmp_path: Path) -> None:
 
     with ThreadPoolExecutor(max_workers=8) as executor:
         list(executor.map(_worker, range(64)))
+
+
+def test_parse_cache_version_mismatch_evicts_entry(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    """get() must evict and return None when _v doesn't match."""
+    import json
+
+    cache = ParseCache(tmp_path)
+    content_hash = "aabbccddeeff0011" * 2
+    result = ParseResult(file_path=Path("a.py"), language="python")
+    cache.put(content_hash, result)
+
+    # Tamper with the stored _v to simulate a future/past schema version.
+    cache_file = tmp_path / "parse" / f"{content_hash}.json"
+    data = json.loads(cache_file.read_text(encoding="utf-8"))
+    data["_v"] = _PARSE_CACHE_VERSION + 999
+    cache_file.write_text(json.dumps(data), encoding="utf-8")
+
+    assert cache.get(content_hash) is None
+    assert not cache_file.exists()
+
+
+def test_parse_cache_drift_version_mismatch_evicts_entry(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    """get() must evict and return None when _drift_v doesn't match."""
+    import json
+
+    cache = ParseCache(tmp_path)
+    content_hash = "1122334455667788" * 2
+    result = ParseResult(file_path=Path("b.py"), language="python")
+    cache.put(content_hash, result)
+
+    cache_file = tmp_path / "parse" / f"{content_hash}.json"
+    data = json.loads(cache_file.read_text(encoding="utf-8"))
+    data["_drift_v"] = "0.0.0-stale"
+    cache_file.write_text(json.dumps(data), encoding="utf-8")
+
+    assert cache.get(content_hash) is None
+    assert not cache_file.exists()
+
+
+def test_parse_cache_roundtrip_with_version_tags(tmp_path: Path) -> None:
+    """put() + get() round-trip succeeds when versions match."""
+    cache = ParseCache(tmp_path)
+    content_hash = "ffeeddccbbaa9988" * 2
+    result = ParseResult(file_path=Path("c.py"), language="python")
+    cache.put(content_hash, result)
+
+    recovered = cache.get(content_hash)
+    assert recovered is not None
+    assert recovered.file_path == Path("c.py")
 
 
 def test_embedding_cache_init_swallows_mkdir_oserror(

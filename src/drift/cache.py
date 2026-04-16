@@ -31,6 +31,12 @@ if TYPE_CHECKING:
 logger = logging.getLogger("drift")
 
 
+# Version tag embedded in each parse cache entry.  Bump when ParseResult,
+# FunctionInfo, ClassInfo, or any serialized field changes incompatibly.
+# v1: initial versioned entries (adds _v + _drift_v to all stored entries).
+_PARSE_CACHE_VERSION = 1
+
+
 class ParseCache:
     """Disk-backed parse result cache."""
 
@@ -74,6 +80,12 @@ class ParseCache:
             return None
         try:
             data = json.loads(path.read_text(encoding="utf-8"))
+            if data.get("_v") != _PARSE_CACHE_VERSION:
+                path.unlink(missing_ok=True)
+                return None
+            if data.get("_drift_v") != _drift_version:
+                path.unlink(missing_ok=True)
+                return None
             return _deserialize(data)
         except Exception:
             # Corrupted cache entry — remove and miss
@@ -94,6 +106,8 @@ class ParseCache:
 
 def _serialize(pr: ParseResult) -> dict[str, Any]:
     return {
+        "_v": _PARSE_CACHE_VERSION,
+        "_drift_v": _drift_version,
         "file_path": pr.file_path.as_posix(),
         "language": pr.language,
         "line_count": pr.line_count,
