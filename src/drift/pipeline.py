@@ -889,7 +889,7 @@ class SignalPhase:
                         signal.name,
                         type(exc).__name__,
                         exc,
-                        exc_info=logger.isEnabledFor(logging.DEBUG),
+                        exc_info=True,
                     )
                     degradation.causes.add("signal_failure")
                     degradation.components.add(f"signal:{signal.name}")

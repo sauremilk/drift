@@ -4,8 +4,11 @@ from __future__ import annotations
 
 import datetime
 import importlib
+import logging
 from pathlib import Path
 from types import SimpleNamespace
+
+import pytest
 
 from drift.cache import ParseCache
 from drift.config import DriftConfig
@@ -325,6 +328,46 @@ def test_signal_phase_records_degradation_on_signal_failure(tmp_path: Path) -> N
     assert event["details"]["signal"] == "failing"
     assert event["details"]["error_type"] == "RuntimeError"
     assert event["details"]["error_message"] == "boom"
+
+
+def test_signal_phase_warning_always_includes_exc_info(
+    tmp_path: Path, caplog: pytest.LogCaptureFixture
+) -> None:
+    """Regression test for issue #411: exc_info must be True unconditionally."""
+
+    class _FailingSignal:
+        name = "failing411"
+
+        def analyze(self, *_args: object, **_kwargs: object) -> list[Finding]:
+            raise ValueError("issue411")
+
+    cfg = _config()
+    parsed = IngestionPhase(is_git_repo_fn=lambda _p: False).run(
+        tmp_path,
+        [],
+        cfg,
+        since_days=30,
+        workers=1,
+        degradation=DegradationInfo(causes=set(), components=set(), events=[]),
+    )
+
+    phase = SignalPhase(
+        embedding_factory=lambda **_kwargs: None,
+        signal_factory=lambda _ctx: [_FailingSignal()],
+    )
+
+    # Set WARNING level (not DEBUG) — stack trace must still be captured
+    with caplog.at_level(logging.WARNING, logger="drift"):
+        phase.run(
+            tmp_path, cfg, parsed,
+            degradation=DegradationInfo(causes=set(), components=set(), events=[]),
+        )
+
+    warning_records = [r for r in caplog.records if "failing411" in r.getMessage()]
+    assert warning_records, "Expected a warning log for the failing signal"
+    assert warning_records[0].exc_info is not None, (
+        "Stack trace must be attached unconditionally (exc_info=True), not only at DEBUG"
+    )
 
 
 def test_signal_phase_filters_active_signals(tmp_path: Path) -> None:
