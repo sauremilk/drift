@@ -11,6 +11,7 @@ import hashlib
 import heapq
 import subprocess
 import uuid
+import warnings
 from collections import defaultdict
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any
@@ -289,6 +290,12 @@ def _task_graph_dependencies(
                 adj[task.id].append(dep)
                 children[dep].append(task.id)
                 in_degree[task.id] += 1
+            else:
+                warnings.warn(
+                    f"Task '{task.id}' depends_on unknown task ID '{dep}' — dependency ignored.",
+                    UserWarning,
+                    stacklevel=3,
+                )
     return adj, children, in_degree
 
 
