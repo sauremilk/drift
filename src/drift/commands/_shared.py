@@ -66,9 +66,21 @@ def apply_baseline_filtering(analysis, cfg, baseline_file: Path | None) -> None:
     if baseline_file is None:
         return
 
+    import json as _json
+
     from drift.baseline import baseline_diff, load_baseline
 
-    fingerprints = load_baseline(baseline_file)
+    try:
+        fingerprints = load_baseline(baseline_file)
+    except (OSError, ValueError, _json.JSONDecodeError) as exc:
+        import click as _click
+
+        _click.echo(
+            f"Baseline file is corrupt — delete it and re-save: "
+            f"drift baseline save  ({exc})",
+            err=True,
+        )
+        raise SystemExit(1) from exc
     new, known = baseline_diff(analysis.findings, fingerprints)
     analysis.findings = new
     analysis.suppressed_count += len(known)

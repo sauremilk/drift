@@ -165,7 +165,16 @@ def diff(
     if no_embeddings:
         cfg.embeddings_enabled = False
 
-    fingerprints = load_baseline(bl_path)
+    import json as _json
+
+    try:
+        fingerprints = load_baseline(bl_path)
+    except (OSError, ValueError, _json.JSONDecodeError) as exc:
+        console.print(
+            f"[bold red]✗ Baseline file is corrupt[/bold red] — delete it and re-save: "
+            f"[bold]drift baseline save[/bold]  ({exc})"
+        )
+        raise SystemExit(1) from exc
 
     with console.status("[bold blue]Analyzing repository..."):
         analysis = analyze_repo(repo, cfg, since_days=since, workers=workers)

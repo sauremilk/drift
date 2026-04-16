@@ -541,3 +541,127 @@ class TestBaselineFlagOnAnalyze:
         assert payload["baseline"]["applied"] is True
         assert payload["baseline"]["new_findings_count"] == 1
         assert payload["baseline"]["baseline_matched_count"] == 1
+
+
+# ===========================================================================
+# Tests for Issue #413: atomic save_baseline() and corrupt-file handling
+# ===========================================================================
+
+
+class TestAtomicSaveBaseline:
+    def test_save_baseline_creates_file(self, tmp_path: Path) -> None:
+        """save_baseline() must produce a valid, loadable file."""
+        analysis = _make_analysis([_make_finding()])
+        bl_path = tmp_path / "bl.json"
+
+        save_baseline(analysis, bl_path)
+
+        assert bl_path.exists()
+        fps = load_baseline(bl_path)
+        assert len(fps) == 1
+
+    def test_save_baseline_no_temp_file_left_on_success(self, tmp_path: Path) -> None:
+        """After a successful save, no *.json temp file must remain beside the baseline."""
+        analysis = _make_analysis([_make_finding()])
+        bl_path = tmp_path / "bl.json"
+
+        save_baseline(analysis, bl_path)
+
+        leftover = [f for f in tmp_path.iterdir() if f != bl_path]
+        assert leftover == [], f"Unexpected temp files: {leftover}"
+
+    def test_save_baseline_atomic_replaces_existing(self, tmp_path: Path) -> None:
+        """A second save must atomically replace the first without leaving partial data."""
+        analysis1 = _make_analysis([_make_finding(title="First")])
+        analysis2 = _make_analysis([_make_finding(title="Second"), _make_finding(title="Third")])
+        bl_path = tmp_path / "bl.json"
+
+        save_baseline(analysis1, bl_path)
+        save_baseline(analysis2, bl_path)
+
+        fps = load_baseline(bl_path)
+        assert len(fps) == 2
+
+
+class TestCorruptBaselineCallers:
+    """Callers must emit a friendly error instead of a bare traceback on corrupt baseline."""
+
+    def _write_corrupt(self, path: Path) -> None:
+        path.write_text("{ this is not json", encoding="utf-8")
+
+    def test_ci_corrupt_baseline_exits_with_message(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+        tmp_path: Path,
+    ) -> None:
+        """drift ci --baseline on a corrupt file must exit 1 with a friendly message."""
+        from click.testing import CliRunner
+
+        from drift.cli import main
+
+        repo = tmp_path / "repo"
+        repo.mkdir()
+        bl = tmp_path / "bad.json"
+        self._write_corrupt(bl)
+
+        def _fake_analyze(*_a, **_kw):
+            return _make_analysis([])
+
+        monkeypatch.setattr("drift.analyzer.analyze_repo", _fake_analyze)
+
+        runner = CliRunner()
+        result = runner.invoke(
+            main,
+            ["ci", "--repo", str(repo), "--baseline", str(bl), "--exit-zero"],
+            catch_exceptions=False,
+        )
+        assert result.exit_code == 1
+        assert "corrupt" in result.output.lower()
+        assert "drift baseline save" in result.output
+
+    def test_shared_apply_baseline_filtering_corrupt(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+        tmp_path: Path,
+    ) -> None:
+        """apply_baseline_filtering() must raise SystemExit(1) on corrupt baseline."""
+        from drift.commands._shared import apply_baseline_filtering
+        from drift.config import DriftConfig
+
+        bl = tmp_path / "bad.json"
+        self._write_corrupt(bl)
+        analysis = _make_analysis([_make_finding()])
+        cfg = DriftConfig()
+
+        with pytest.raises(SystemExit) as exc_info:
+            apply_baseline_filtering(analysis, cfg, bl)
+        assert exc_info.value.code == 1
+
+    def test_baseline_diff_command_corrupt(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+        tmp_path: Path,
+    ) -> None:
+        """drift baseline diff on a corrupt file must exit 1 with a friendly message."""
+        from click.testing import CliRunner
+
+        from drift.cli import main
+
+        repo = tmp_path / "repo"
+        repo.mkdir()
+        bl = tmp_path / "bad.json"
+        self._write_corrupt(bl)
+
+        def _fake_analyze(*_a, **_kw):
+            return _make_analysis([])
+
+        monkeypatch.setattr("drift.analyzer.analyze_repo", _fake_analyze)
+
+        runner = CliRunner()
+        result = runner.invoke(
+            main,
+            ["baseline", "diff", "--repo", str(repo), "--baseline-file", str(bl)],
+            catch_exceptions=False,
+        )
+        assert result.exit_code == 1
+        assert "corrupt" in result.output.lower()

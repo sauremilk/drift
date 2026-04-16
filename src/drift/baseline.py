@@ -10,6 +10,9 @@ from __future__ import annotations
 import hashlib
 import json
 import logging
+import os
+import tempfile
+from contextlib import suppress
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -72,7 +75,15 @@ def save_baseline(analysis: RepoAnalysis, path: Path) -> None:
         "findings": entries,
     }
 
-    path.write_text(json.dumps(data, indent=2) + "\n", encoding="utf-8")
+    fd, tmp = tempfile.mkstemp(dir=path.parent, suffix=".json")
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8") as fh:
+            fh.write(json.dumps(data, indent=2) + "\n")
+        Path(tmp).replace(path)
+    except OSError:
+        with suppress(OSError):
+            Path(tmp).unlink(missing_ok=True)
+        raise
 
 
 def load_baseline(path: Path) -> set[str]:

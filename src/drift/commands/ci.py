@@ -140,9 +140,19 @@ def ci(
 
     # Baseline filtering
     if baseline_file is not None:
+        import json as _json
+
         from drift.baseline import baseline_diff, load_baseline
 
-        fingerprints = load_baseline(baseline_file)
+        try:
+            fingerprints = load_baseline(baseline_file)
+        except (OSError, ValueError, _json.JSONDecodeError) as exc:
+            click.echo(
+                f"drift ci: Baseline file is corrupt — delete it and re-save: "
+                f"drift baseline save  ({exc})",
+                err=True,
+            )
+            sys.exit(1)
         new, _known = baseline_diff(analysis.findings, fingerprints)
         analysis.findings = new
 
