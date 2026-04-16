@@ -674,6 +674,10 @@ class IncrementalSignalRunner:
         Findings produced by the full scan that created *baseline*.
     baseline_parse_results:
         ParseResults from the baseline scan, keyed by posix path.
+    repo_path:
+        Absolute path to the repository root.  Passed to
+        ``SignalCapabilities`` so that file-local signals resolve paths
+        relative to the actual repository instead of the process cwd.
     """
 
     def __init__(
@@ -683,11 +687,13 @@ class IncrementalSignalRunner:
         config: DriftConfig,
         baseline_findings: list[Finding],
         baseline_parse_results: dict[str, ParseResult],
+        repo_path: Path = Path("."),
     ) -> None:
         self._baseline = baseline
         self._config = config
         self._baseline_findings = baseline_findings
         self._baseline_parse_map = baseline_parse_results
+        self._repo_path = repo_path
 
     # ------------------------------------------------------------------
 
@@ -738,10 +744,8 @@ class IncrementalSignalRunner:
         file_local_findings: list[Finding] = []
         file_local_signal_names: list[str] = []
 
-        from pathlib import Path as _Path
-
         dummy_caps = SignalCapabilities(
-            repo_path=_Path("."),
+            repo_path=self._repo_path,
             embedding_service=None,
             commits=[],
         )
