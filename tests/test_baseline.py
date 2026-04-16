@@ -148,6 +148,65 @@ class TestBaselineIO:
         with pytest.raises(ValueError, match="Invalid baseline"):
             load_baseline(bad)
 
+    def test_version_mismatch_emits_warning(
+        self, tmp_path: Path, caplog: pytest.LogCaptureFixture
+    ) -> None:
+        """load_baseline() should warn when stored drift_version != running version."""
+        import logging
+
+        findings = [_make_finding(title="A")]
+        analysis = _make_analysis(findings)
+        bl_path = tmp_path / "baseline.json"
+
+        save_baseline(analysis, bl_path)
+
+        # Tamper stored version to simulate a version upgrade.
+        data = json.loads(bl_path.read_text())
+        data["drift_version"] = "0.0.0-old"
+        bl_path.write_text(json.dumps(data), encoding="utf-8")
+
+        with caplog.at_level(logging.WARNING, logger="drift.baseline"):
+            fps = load_baseline(bl_path)
+
+        # Fingerprints are still returned.
+        assert len(fps) == 1
+        # A warning must have been emitted.
+        assert any(
+            "0.0.0-old" in record.message and record.name == "drift.baseline"
+            for record in caplog.records
+        )
+
+    def test_same_version_no_warning(
+        self, tmp_path: Path, caplog: pytest.LogCaptureFixture
+    ) -> None:
+        """load_baseline() should not warn when versions match."""
+        import logging
+
+        findings = [_make_finding(title="A")]
+        analysis = _make_analysis(findings)
+        bl_path = tmp_path / "baseline.json"
+
+        save_baseline(analysis, bl_path)
+
+        with caplog.at_level(logging.WARNING, logger="drift.baseline"):
+            load_baseline(bl_path)
+
+        assert not any(r.name == "drift.baseline" for r in caplog.records)
+
+    def test_missing_version_field_no_error(self, tmp_path: Path) -> None:
+        """load_baseline() must not crash when drift_version field is absent (legacy files)."""
+        findings = [_make_finding(title="A")]
+        analysis = _make_analysis(findings)
+        bl_path = tmp_path / "baseline.json"
+
+        save_baseline(analysis, bl_path)
+        data = json.loads(bl_path.read_text())
+        del data["drift_version"]
+        bl_path.write_text(json.dumps(data), encoding="utf-8")
+
+        fps = load_baseline(bl_path)
+        assert len(fps) == 1
+
 
 # ===========================================================================
 # Unit tests: baseline_diff
