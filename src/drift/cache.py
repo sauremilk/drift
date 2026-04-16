@@ -10,6 +10,7 @@ import hashlib
 import json
 import logging
 import os
+import tempfile
 import time
 from contextlib import suppress
 from pathlib import Path
@@ -105,10 +106,16 @@ class ParseCache:
     def put(self, content_hash: str, result: ParseResult) -> None:
         """Store a parse result in the cache."""
         data = _serialize(result)
+        path = self._cache_path(content_hash)
         try:
-            self._cache_path(content_hash).write_text(
-                json.dumps(data, default=str), encoding="utf-8"
-            )
+            fd, tmp = tempfile.mkstemp(dir=self._cache_dir, suffix=".json")
+            try:
+                with os.fdopen(fd, "w", encoding="utf-8") as fh:
+                    fh.write(json.dumps(data, default=str))
+                Path(tmp).replace(path)
+            except OSError:
+                with suppress(OSError):
+                    Path(tmp).unlink(missing_ok=True)
         except OSError:
             # Cache is an optimization only; analysis must proceed without it.
             return
@@ -433,7 +440,14 @@ class SignalCache:
                 },
                 default=str,
             )
-            path.write_text(payload, encoding="utf-8")
+            fd, tmp = tempfile.mkstemp(dir=self._cache_dir, suffix=".json")
+            try:
+                with os.fdopen(fd, "w", encoding="utf-8") as fh:
+                    fh.write(payload)
+                Path(tmp).replace(path)
+            except OSError:
+                with suppress(OSError):
+                    Path(tmp).unlink(missing_ok=True)
         except OSError:
             return
 
