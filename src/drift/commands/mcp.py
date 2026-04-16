@@ -21,6 +21,29 @@ def _load_mcp_entrypoints() -> tuple[Callable[[], list[dict[str, Any]]], Callabl
     return module.get_tool_catalog, module.main
 
 
+_MCP_CORE_MODULES = (
+    "drift.output",
+    "drift.incremental",
+    "drift.api",
+    "drift.api_helpers",
+)
+
+
+def _check_mcp_core_imports() -> list[str]:
+    """Return a list of internal drift modules that fail to import.
+
+    Called at MCP server startup so broken installations are surfaced
+    immediately rather than on first tool invocation (Issue #365).
+    """
+    broken: list[str] = []
+    for module_name in _MCP_CORE_MODULES:
+        try:
+            importlib.import_module(module_name)
+        except ImportError:
+            broken.append(module_name)
+    return broken
+
+
 def _is_missing_mcp_dependency(exc: Exception) -> bool:
     """Return True only when the missing dependency is the optional mcp extra."""
     if isinstance(exc, ImportError):
@@ -151,6 +174,18 @@ def mcp(serve: bool, list_tools: bool, show_schema: bool, allow_tty: bool) -> No
         if _is_missing_mcp_dependency(exc):
             _raise_missing_mcp_extra(exc)
         raise
+
+    broken = _check_mcp_core_imports()
+    if broken:
+        broken_list = ", ".join(broken)
+        raise DriftSystemError(
+            "DRIFT-2011",
+            message=(
+                f"Drift installation is incomplete: internal module(s) not importable: "
+                f"{broken_list}. "
+                "Please reinstall: pip install --upgrade 'drift-analyzer[mcp]'"
+            ),
+        )
 
     if allow_tty:
         _emit_tty_startup_handshake(tools_count=len(get_tool_catalog()))

@@ -139,6 +139,13 @@ ERROR_REGISTRY: dict[str, ErrorInfo] = {
         action="Install with: pip install drift-analyzer[{extra}]",
         category="system",
     ),
+    "DRIFT-2011": ErrorInfo(
+        code="DRIFT-2011",
+        summary="Drift installation incomplete: internal module not importable: {module}",
+        why="One or more core Drift submodules failed to import after package installation",
+        action="Reinstall with: pip install --upgrade 'drift-analyzer[mcp]'",
+        category="system",
+    ),
     # ── Analysis errors (3xxx) ────────────────────────────────────────────
     "DRIFT-3001": ErrorInfo(
         code="DRIFT-3001",
