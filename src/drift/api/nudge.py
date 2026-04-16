@@ -504,6 +504,7 @@ def nudge(
                 config=cfg,
                 baseline_findings=baseline_findings,
                 baseline_parse_results=baseline_parse_map,
+                repo_path=repo_path,
             )
             inc_result = runner.run(effective_changed_set, current_parse)
 
