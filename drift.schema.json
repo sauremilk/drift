@@ -336,6 +336,59 @@
       "title": "FindingContextRule",
       "type": "object"
     },
+    "GradeBandConfig": {
+      "additionalProperties": false,
+      "description": "A single grade band entry for the composite drift score.\n\nGrade bands map score ranges to letter grades and human-readable labels.\nThresholds are evaluated in order; the first entry whose ``threshold``\nexceeds the score is selected.\n\nExample::\n\n    - threshold: 0.20\n      grade: A\n      label: \"Excellent\"",
+      "properties": {
+        "grade": {
+          "description": "Letter grade, e.g. 'A', 'B', \u2026, 'F'.",
+          "title": "Grade",
+          "type": "string"
+        },
+        "label": {
+          "description": "Human-readable label, e.g. 'Excellent'.",
+          "title": "Label",
+          "type": "string"
+        },
+        "threshold": {
+          "description": "Upper boundary (exclusive) for this grade.",
+          "exclusiveMinimum": 0.0,
+          "title": "Threshold",
+          "type": "number"
+        }
+      },
+      "required": [
+        "threshold",
+        "grade",
+        "label"
+      ],
+      "title": "GradeBandConfig",
+      "type": "object"
+    },
+    "GuidedThresholds": {
+      "additionalProperties": false,
+      "description": "Score band thresholds for guided-mode traffic light (green / yellow / red).\n\nThese thresholds determine how the composite drift score maps to a\ntraffic-light status in ``drift status`` / guided mode.",
+      "properties": {
+        "green_max": {
+          "default": 0.35,
+          "description": "Scores at or below this value are shown as green (healthy).",
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "title": "Green Max",
+          "type": "number"
+        },
+        "yellow_max": {
+          "default": 0.65,
+          "description": "Scores above green_max and at or below this value are shown as yellow (caution).",
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "title": "Yellow Max",
+          "type": "number"
+        }
+      },
+      "title": "GuidedThresholds",
+      "type": "object"
+    },
     "LanguagesConfig": {
       "additionalProperties": false,
       "description": "Per-language scanning settings (drift.yaml \u2192 ``languages:``).",
@@ -632,6 +685,44 @@
       "title": "RecommendationsConfig",
       "type": "object"
     },
+    "ScoringConfig": {
+      "additionalProperties": false,
+      "description": "Tunable scoring-engine parameters (drift.yaml \u2192 ``scoring:``)\n\nAll settings default to the validated ADR-003/ADR-041 values and are\nbackward-compatible \u2014 changing these knobs only affects repos that\nexplicitly set them.\n\nExample drift.yaml::\n\n    scoring:\n      dampening_k: 10\n      breadth_cap: 3.0\n      feedback_blend_alpha: 0.3",
+      "properties": {
+        "breadth_cap": {
+          "default": 4.0,
+          "description": "Ceiling for the log-based breadth multiplier applied to impact scores (ADR-041). Prevents very large related-file clusters from inflating scores unboundedly.",
+          "exclusiveMinimum": 0.0,
+          "title": "Breadth Cap",
+          "type": "number"
+        },
+        "dampening_k": {
+          "default": 20,
+          "description": "Count-dampening constant for signal aggregation (ADR-041). Finding counts above this value produce a dampening factor near 1.0. Lower values increase sensitivity to high-finding signals.",
+          "minimum": 1,
+          "title": "Dampening K",
+          "type": "integer"
+        },
+        "feedback_blend_alpha": {
+          "default": 0.0,
+          "description": "Blend factor for feedback-informed weight adjustment. 0.0 = pure auto-calibrate from finding distribution (default). 1.0 = weights fully driven by persisted feedback metrics. Values between 0 and 1 linearly interpolate both approaches. Effective only when ``calibration.enabled = true`` and feedback data exists at ``calibration.feedback_path``.",
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "title": "Feedback Blend Alpha",
+          "type": "number"
+        },
+        "grade_bands": {
+          "description": "Ordered list of score thresholds that map drift scores to letter grades. Each entry selects the grade when ``score < threshold``. The last entry should have a threshold above 1.0 as a catch-all.",
+          "items": {
+            "$ref": "#/$defs/GradeBandConfig"
+          },
+          "title": "Grade Bands",
+          "type": "array"
+        }
+      },
+      "title": "ScoringConfig",
+      "type": "object"
+    },
     "SignalWeights": {
       "additionalProperties": true,
       "description": "Weights for each detection signal in composite scoring.\n\nWeights are normalised internally \u2014 they don't need to sum to 1.0,\nbut a warning is emitted if they deviate significantly.\n\nSignals can be run in report-only mode by assigning weight 0.0.\nThis keeps detection visible while removing score impact until\nprecision/recall is sufficiently validated.",
@@ -754,6 +845,11 @@
         "ts_architecture": {
           "default": 0.0,
           "title": "Ts Architecture",
+          "type": "number"
+        },
+        "type_safety_bypass": {
+          "default": 0.0,
+          "title": "Type Safety Bypass",
           "type": "number"
         }
       },
@@ -1055,6 +1151,18 @@
       "title": "Git History Index Subdir",
       "type": "string"
     },
+    "guided_thresholds": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/GuidedThresholds"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "Score band thresholds for guided-mode traffic light. When set via 'extends:', the profile's guided thresholds are applied automatically."
+    },
     "include": {
       "items": {
         "type": "string"
@@ -1106,6 +1214,9 @@
     },
     "recommendations": {
       "$ref": "#/$defs/RecommendationsConfig"
+    },
+    "scoring": {
+      "$ref": "#/$defs/ScoringConfig"
     },
     "signal_cache_dependency_scopes_enabled": {
       "default": true,
