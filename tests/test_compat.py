@@ -271,6 +271,39 @@ class TestGitHubFormat:
         output = findings_to_github_annotations(analysis)
         assert output == ""
 
+    def test_newlines_in_description_and_fix_are_encoded(self):
+        """Newlines in description/fix must be %0A-encoded (issue #388)."""
+        from drift.models import Finding, RepoAnalysis, Severity, SignalType
+        from drift.output.github_format import findings_to_github_annotations
+
+        finding = Finding(
+            signal_type=SignalType.PATTERN_FRAGMENTATION,
+            rule_id="test",
+            severity=Severity.HIGH,
+            score=0.5,
+            impact=1,
+            title="multi-line test",
+            description="First sentence.\nSecond sentence.",
+            fix="Fix line one.\nFix line two.",
+            file_path=Path("src/foo.py"),
+            start_line=1,
+            end_line=1,
+        )
+        analysis = RepoAnalysis(
+            repo_path=Path("."),
+            analyzed_at=datetime.datetime.now(tz=datetime.UTC),
+            drift_score=0.5,
+            module_scores=[],
+            findings=[finding],
+        )
+        output = findings_to_github_annotations(analysis)
+        # Must be a single line per annotation
+        assert "\n" not in output
+        # Newlines must be percent-encoded
+        assert "%0A" in output
+        assert "First sentence.%0ASecond sentence." in output
+        assert "Fix line one.%0AFix line two." in output
+
 
 # ---------------------------------------------------------------------------
 # CLI --output-format alias

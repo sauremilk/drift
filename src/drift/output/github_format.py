@@ -29,9 +29,9 @@ def findings_to_github_annotations(analysis: RepoAnalysis) -> str:
         line = f.start_line or 1
         end_line = f.end_line or line
         title = f"{f.signal_type}: {f.title}"
-        msg = f.description
+        msg = f.description.replace("\n", "%0A").replace("\r", "")
         if f.fix:
-            msg += f" Fix: {f.fix}"
+            msg += " Fix: " + f.fix.replace("\n", "%0A").replace("\r", "")
         lines.append(
             f"::{level} file={file},line={line},endLine={end_line},title={title}::{msg}"
         )
