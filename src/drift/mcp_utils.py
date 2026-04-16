@@ -84,6 +84,43 @@ async def _run_sync_with_timeout(
     )
 
 
+def _is_broken_internal_drift_module(exc: BaseException) -> bool:
+    """Return True when an ImportError refers to an internal drift.* module.
+
+    This distinguishes broken-installation errors (e.g. ``No module named
+    'drift.output'``) from missing-optional-extra errors (e.g. ``No module
+    named 'mcp'``) so callers can produce a more actionable message.
+    """
+    if not isinstance(exc, ImportError):
+        return False
+    missing = getattr(exc, "name", None) or ""
+    return missing.startswith("drift.") or missing == "drift"
+
+
+def _broken_internal_module_error(tool_name: str, exc: ImportError) -> dict[str, Any]:
+    """Build a user-friendly DRIFT-5001 payload for a broken internal module."""
+    from drift.api_helpers import _error_response
+
+    missing = getattr(exc, "name", None) or str(exc)
+    error = _error_response(
+        "DRIFT-5001",
+        (
+            f"Drift installation appears incomplete: module '{missing}' "
+            f"is not importable. "
+            f"Please reinstall: pip install --upgrade 'drift-analyzer[mcp]'"
+        ),
+        recoverable=False,
+    )
+    error["tool"] = tool_name
+    error["broken_module"] = missing
+    error["agent_instruction"] = (
+        f"The tool '{tool_name}' failed because a required Drift internal module "
+        f"('{missing}') could not be imported. "
+        "Ask the user to reinstall Drift: pip install --upgrade 'drift-analyzer[mcp]'"
+    )
+    return error
+
+
 async def _run_api_tool(tool_name: str, api_fn: Any, **kwargs: Any) -> str:
     """Run an API function in a thread and return a JSON string.
 
