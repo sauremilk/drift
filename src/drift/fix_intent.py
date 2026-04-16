@@ -39,6 +39,7 @@ EDIT_KIND_REDUCE_DEPENDENCIES = "reduce_dependencies"
 EDIT_KIND_EXTRACT_MODULE = "extract_module"
 EDIT_KIND_DECOUPLE_MODULES = "decouple_modules"
 EDIT_KIND_UPDATE_EXCEPTION_CONTRACT = "update_exception_contract"
+EDIT_KIND_SCOPE_PROMPT_BOUNDARY = "scope_prompt_boundary"
 EDIT_KIND_UNSPECIFIED = "unspecified"
 
 # forbidden_changes — geschlossene Wertemenge
@@ -71,6 +72,7 @@ CROSS_FILE_RISKY_EDIT_KINDS: frozenset[str] = frozenset(
         EDIT_KIND_REDUCE_DEPENDENCIES,
         EDIT_KIND_EXTRACT_MODULE,
         EDIT_KIND_DECOUPLE_MODULES,
+        EDIT_KIND_SCOPE_PROMPT_BOUNDARY,
         EDIT_KIND_DELETE_SYMBOL,
         EDIT_KIND_RENAME_SYMBOL,
     }
@@ -228,6 +230,11 @@ _EXPECTED_AST_DELTA_FOR_EDIT_KIND: dict[str, dict[str, Any]] = {
         "scope": "function",
         "touches_signature": False,
     },
+    EDIT_KIND_SCOPE_PROMPT_BOUNDARY: {
+        "type": "boundary_add",
+        "scope": "cross-module",
+        "touches_signature": False,
+    },
     EDIT_KIND_UNSPECIFIED: {
         "type": "unspecified",
         "scope": "local",
@@ -304,6 +311,10 @@ _FORBIDDEN_CHANGES_FOR_EDIT_KIND: dict[str, list[str]] = {
         FORBIDDEN_SIGNATURE_CHANGE,
     ],
     EDIT_KIND_UPDATE_EXCEPTION_CONTRACT: [],
+    EDIT_KIND_SCOPE_PROMPT_BOUNDARY: [
+        FORBIDDEN_SIGNATURE_CHANGE,
+        FORBIDDEN_IMPLEMENTATION_CHANGE,
+    ],
     EDIT_KIND_UNSPECIFIED: [],
 }
 
@@ -331,9 +342,34 @@ def _refine_edit_kind(signal_type: str, metadata: dict[str, Any], base: str) -> 
         return EDIT_KIND_ADD_DOCSTRING  # Fallback: Docstring aufwerten
 
     if signal_type == SignalType.ARCHITECTURE_VIOLATION:
-        title = metadata.get("title", "")
-        if "blast" in title.lower():
+        title = metadata.get("title", "").lower()
+        category = metadata.get("category", "").lower()
+        violation_type = metadata.get("violation_type", "").lower()
+
+        # Explicit routing via metadata fields
+        if violation_type in ("decouple", "layer_violation") or category in (
+            "coupling",
+            "layer_violation",
+        ):
+            return EDIT_KIND_DECOUPLE_MODULES
+        if violation_type == "fan_out" or category == "fan_out":
             return EDIT_KIND_REDUCE_DEPENDENCIES
+        if violation_type in ("llm_prompt", "prompt_injection") or category in (
+            "llm",
+            "prompt_injection",
+        ):
+            return EDIT_KIND_SCOPE_PROMPT_BOUNDARY
+
+        # Title heuristics
+        if "blast" in title:
+            return EDIT_KIND_REDUCE_DEPENDENCIES
+        if any(kw in title for kw in ("layer", "coupling")):
+            return EDIT_KIND_DECOUPLE_MODULES
+        if any(kw in title for kw in ("inject", "service")):
+            return EDIT_KIND_UNSPECIFIED
+        if any(kw in title for kw in ("prompt", "llm", "agent")):
+            return EDIT_KIND_SCOPE_PROMPT_BOUNDARY
+
         return EDIT_KIND_REMOVE_IMPORT
 
     return base

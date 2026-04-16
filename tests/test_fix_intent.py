@@ -29,6 +29,7 @@ from drift.fix_intent import (
     EDIT_KIND_REMOVE_IMPORT,
     EDIT_KIND_RENAME_SYMBOL,
     EDIT_KIND_REPLACE_LITERAL,
+    EDIT_KIND_SCOPE_PROMPT_BOUNDARY,
     EDIT_KIND_UNSPECIFIED,
     EDIT_KIND_UPDATE_DOCSTRING,
     EDIT_KIND_UPDATE_EXCEPTION_CONTRACT,
@@ -212,6 +213,94 @@ class TestRefineEditKind:
         result = _refine_edit_kind(
             SignalType.ARCHITECTURE_VIOLATION,
             {"title": "Layer violation: data imports presentation"},
+            EDIT_KIND_REMOVE_IMPORT,
+        )
+        assert result == EDIT_KIND_DECOUPLE_MODULES
+
+    def test_avs_coupling_in_title(self) -> None:
+        result = _refine_edit_kind(
+            SignalType.ARCHITECTURE_VIOLATION,
+            {"title": "Tight coupling between payment and order services"},
+            EDIT_KIND_REMOVE_IMPORT,
+        )
+        assert result == EDIT_KIND_DECOUPLE_MODULES
+
+    def test_avs_inject_in_title(self) -> None:
+        result = _refine_edit_kind(
+            SignalType.ARCHITECTURE_VIOLATION,
+            {"title": "Injection-based dependency on auth service"},
+            EDIT_KIND_REMOVE_IMPORT,
+        )
+        assert result == EDIT_KIND_UNSPECIFIED
+
+    def test_avs_service_in_title(self) -> None:
+        result = _refine_edit_kind(
+            SignalType.ARCHITECTURE_VIOLATION,
+            {"title": "Service locator anti-pattern in core module"},
+            EDIT_KIND_REMOVE_IMPORT,
+        )
+        assert result == EDIT_KIND_UNSPECIFIED
+
+    def test_avs_llm_in_title(self) -> None:
+        result = _refine_edit_kind(
+            SignalType.ARCHITECTURE_VIOLATION,
+            {"title": "LLM input passes through unsanitized route"},
+            EDIT_KIND_REMOVE_IMPORT,
+        )
+        assert result == EDIT_KIND_SCOPE_PROMPT_BOUNDARY
+
+    def test_avs_prompt_in_title(self) -> None:
+        result = _refine_edit_kind(
+            SignalType.ARCHITECTURE_VIOLATION,
+            {"title": "Prompt boundary missing in handler chain"},
+            EDIT_KIND_REMOVE_IMPORT,
+        )
+        assert result == EDIT_KIND_SCOPE_PROMPT_BOUNDARY
+
+    def test_avs_explicit_violation_type_decouple(self) -> None:
+        result = _refine_edit_kind(
+            SignalType.ARCHITECTURE_VIOLATION,
+            {"violation_type": "decouple", "title": ""},
+            EDIT_KIND_REMOVE_IMPORT,
+        )
+        assert result == EDIT_KIND_DECOUPLE_MODULES
+
+    def test_avs_explicit_violation_type_fan_out(self) -> None:
+        result = _refine_edit_kind(
+            SignalType.ARCHITECTURE_VIOLATION,
+            {"violation_type": "fan_out", "title": ""},
+            EDIT_KIND_REMOVE_IMPORT,
+        )
+        assert result == EDIT_KIND_REDUCE_DEPENDENCIES
+
+    def test_avs_explicit_violation_type_prompt_injection(self) -> None:
+        result = _refine_edit_kind(
+            SignalType.ARCHITECTURE_VIOLATION,
+            {"violation_type": "prompt_injection", "title": ""},
+            EDIT_KIND_REMOVE_IMPORT,
+        )
+        assert result == EDIT_KIND_SCOPE_PROMPT_BOUNDARY
+
+    def test_avs_explicit_category_coupling(self) -> None:
+        result = _refine_edit_kind(
+            SignalType.ARCHITECTURE_VIOLATION,
+            {"category": "coupling", "title": ""},
+            EDIT_KIND_REMOVE_IMPORT,
+        )
+        assert result == EDIT_KIND_DECOUPLE_MODULES
+
+    def test_avs_explicit_category_llm(self) -> None:
+        result = _refine_edit_kind(
+            SignalType.ARCHITECTURE_VIOLATION,
+            {"category": "llm", "title": ""},
+            EDIT_KIND_REMOVE_IMPORT,
+        )
+        assert result == EDIT_KIND_SCOPE_PROMPT_BOUNDARY
+
+    def test_avs_no_heuristic_match_falls_back_to_remove_import(self) -> None:
+        result = _refine_edit_kind(
+            SignalType.ARCHITECTURE_VIOLATION,
+            {"title": "Unclassified architecture issue"},
             EDIT_KIND_REMOVE_IMPORT,
         )
         assert result == EDIT_KIND_REMOVE_IMPORT
