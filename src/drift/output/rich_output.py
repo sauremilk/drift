@@ -62,6 +62,12 @@ _SIGNAL_LABELS: dict[str, str] = {
     SignalType.MISSING_AUTHORIZATION: "MAZ",
     SignalType.INSECURE_DEFAULT: "ISD",
     SignalType.HARDCODED_SECRET: "HSC",
+    SignalType.PHANTOM_REFERENCE: "PHR",
+    SignalType.TYPE_SAFETY_BYPASS: "TSB",
+    SignalType.FAN_OUT_EXPLOSION: "FOE",
+    SignalType.COGNITIVE_COMPLEXITY: "CXS",
+    SignalType.CIRCULAR_IMPORT: "CIR",
+    SignalType.DEAD_CODE_ACCUMULATION: "DCA",
 }
 
 # Human-readable short names shown alongside abbreviations in the findings table.
@@ -87,6 +93,7 @@ _SIGNAL_SHORT_NAMES: dict[str, str] = {
     "ISD": "Insecure Default",
     "HSC": "Hardcoded Secret",
     "PHR": "Phantom Ref.",
+    "TSB": "Type Safety",
     "FOE": "Fan-out Expl.",
     "CXS": "Cognitive Compl.",
     "CIR": "Circular Import",
