@@ -276,10 +276,20 @@ def _match_keywords(
 
     # Inject user-defined scope aliases (from drift.yaml brief.scope_aliases)
     if scope_aliases:
+        repo_resolved = repo_path.resolve()
         for alias, target in scope_aliases.items():
             normalised = PurePosixPath(target).as_posix().strip("/")
-            if normalised:
-                dir_map[alias.lower()] = normalised
+            if not normalised:
+                continue
+            if ".." in normalised.split("/"):
+                continue
+            full = repo_path / normalised
+            try:
+                if not full.resolve().is_relative_to(repo_resolved):
+                    continue
+            except OSError:
+                continue
+            dir_map[alias.lower()] = normalised
 
     # Build symbol map lazily (only if needed after dir matching)
     symbol_map: dict[str, str] | None = None
@@ -382,8 +392,26 @@ def resolve_scope(
     # Manual override — highest confidence
     if scope_override:
         normalised = PurePosixPath(scope_override).as_posix().strip("/")
+        if not normalised:
+            raise ValueError(
+                f"scope_override {scope_override!r} normalises to an empty path."
+            )
+        if ".." in normalised.split("/"):
+            raise ValueError(
+                f"scope_override {scope_override!r} contains path traversal components."
+            )
+        full = repo_path / normalised
+        try:
+            if not full.resolve().is_relative_to(repo_path):
+                raise ValueError(
+                    f"scope_override {scope_override!r} resolves outside the repository root."
+                )
+        except OSError as exc:
+            raise ValueError(
+                f"scope_override {scope_override!r} could not be resolved: {exc}"
+            ) from exc
         return ResolvedScope(
-            paths=[normalised] if normalised else [],
+            paths=[normalised],
             confidence=0.95,
             method="manual_override",
             matched_tokens=[],
