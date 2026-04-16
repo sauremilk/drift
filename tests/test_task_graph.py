@@ -352,11 +352,29 @@ class TestCycleDetection:
 
 
 class TestUnknownDependencies:
-    def test_unknown_dep_ignored(self) -> None:
+    def test_unknown_dep_emits_warning(self) -> None:
         a = _task("a", depends_on=["nonexistent"])
-        g = build_task_graph([a])
+        with pytest.warns(UserWarning, match=r"nonexistent"):
+            g = build_task_graph([a])
         assert len(g.tasks) == 1
         assert g.tasks[0].preferred_order == 0
+
+    def test_unknown_dep_still_builds_graph(self) -> None:
+        a = _task("a", depends_on=["does-not-exist"])
+        b = _task("b", depends_on=[])
+        with pytest.warns(UserWarning):
+            g = build_task_graph([a, b])
+        assert len(g.tasks) == 2
+        # Both tasks are in phase 0 because dependency was unresolvable
+        assert len(g.execution_phases) == 1
+
+    def test_multiple_unknown_deps_each_warn(self) -> None:
+        a = _task("a", depends_on=["x", "y"])
+        with pytest.warns(UserWarning) as record:
+            build_task_graph([a])
+        messages = [str(w.message) for w in record]
+        assert any("x" in m for m in messages)
+        assert any("y" in m for m in messages)
 
 
 # ---------------------------------------------------------------------------
