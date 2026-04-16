@@ -1,5 +1,18 @@
 # Risk Register
 
+## 2026-04-16 - GitHub Actions annotation newline encoding + TSB bypass suppression
+
+- Risk ID: RISK-OUTPUT-2026-04-16-GITHUB-FORMAT-TSB-FIX
+- Component: `src/drift/output/github_format.py`, `src/drift/signals/type_safety_bypass.py`
+- Type: Output correctness fix + Signal precision hardening (both backward-compatible)
+- Description: (1) `github_format.py`: newlines in finding messages are now `%0A`-encoded so GitHub Actions `::error` annotations do not break on multi-line messages. (2) `type_safety_bypass.py`: TSB findings are now suppressed when `effective_bypass_count` is zero to eliminate spurious critical-severity findings on clean files. Both are fix-type changes with no scoring model change.
+- Trigger: GitHub Actions annotation output with multi-line messages; TSB scan on files with no actual bypass patterns.
+- Impact: Positive. Reduces annotation rendering defects in CI; reduces TSB false positives. No user-visible API change.
+- Mitigation:
+  - Regression tests: `tests/test_type_safety_bypass.py`, `tests/test_cli_runtime.py`
+  - Output-format gate: annotation encoding is unit-tested and verified against live CI output
+- Residual risk: Negligible. Both changes are strictly precision-improving with no new trust boundaries.
+
 ## 2026-04-14 - CLI onboarding and Windows-safe rendering hardening
 
 - Risk ID: RISK-OUTPUT-2026-04-14-CLI-UX-HARDENING
