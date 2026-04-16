@@ -6,6 +6,7 @@ import json
 import sys
 from pathlib import Path
 
+import pytest
 import yaml
 
 from drift.task_spec import ArchitectureLayer, TaskSpec, validate_task_spec
@@ -83,6 +84,28 @@ class TestTaskSpecModel:
             acceptance_criteria=["Docs updated correctly"],
         )
         assert spec.commit_type == ""
+
+    def test_invalid_commit_type_raises_validation_error(self):
+        from pydantic import ValidationError
+
+        with pytest.raises(ValidationError):
+            TaskSpec(
+                goal="Add a new signal for phantom references",
+                affected_layers=[ArchitectureLayer.SIGNALS],
+                acceptance_criteria=["Signal registered in config.py"],
+                commit_type="FOOBAR",
+            )
+
+    def test_uppercase_commit_type_raises_validation_error(self):
+        from pydantic import ValidationError
+
+        with pytest.raises(ValidationError):
+            TaskSpec(
+                goal="Add a new signal for phantom references",
+                affected_layers=[ArchitectureLayer.SIGNALS],
+                acceptance_criteria=["Signal registered in config.py"],
+                commit_type="FEAT",
+            )
 
     def test_all_architecture_layers_exist(self):
         expected = {

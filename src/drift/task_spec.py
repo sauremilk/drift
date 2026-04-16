@@ -28,7 +28,7 @@ Example YAML (embedded in drift.yaml or standalone)::
 from __future__ import annotations
 
 from enum import StrEnum
-from typing import Annotated
+from typing import Annotated, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
@@ -120,7 +120,7 @@ class TaskSpec(BaseModel):
             "None = auto-infer."
         ),
     )
-    commit_type: str = Field(
+    commit_type: Literal["feat", "fix", "refactor", "docs", "test", "chore", ""] = Field(
         default="",
         description=(
             "Expected conventional commit type (feat, fix, refactor, docs, test, chore). "
