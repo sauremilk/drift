@@ -247,10 +247,19 @@ def build_task_graph(tasks: list[AgentTask]) -> TaskGraph:
     (sets of tasks runnable in parallel), and identifies the critical
     path (longest dependency chain).
 
-    Raises ``ValueError`` on dependency cycles.
+    Raises ``ValueError`` on dependency cycles or duplicate task IDs.
     """
     if not tasks:
         return TaskGraph()
+
+    seen: dict[str, int] = {}
+    for t in tasks:
+        seen[t.id] = seen.get(t.id, 0) + 1
+    duplicates = sorted(tid for tid, count in seen.items() if count > 1)
+    if duplicates:
+        raise ValueError(
+            f"Duplicate task IDs in build_task_graph: {duplicates}"
+        )
 
     task_map: dict[str, AgentTask] = {task.id: task for task in tasks}
     task_ids = set(task_map)

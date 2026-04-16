@@ -274,6 +274,23 @@ class TestCriticalPathEdgeCases:
         g = build_task_graph([])
         assert g.critical_path == []
 
+    def test_duplicate_ids_raise_value_error(self) -> None:
+        """build_task_graph must raise ValueError on duplicate task IDs (#404)."""
+        t1 = _task("task-a")
+        t2 = _task("task-a")
+        with pytest.raises(ValueError, match="task-a"):
+            build_task_graph([t1, t2])
+
+    def test_duplicate_ids_lists_all_duplicates(self) -> None:
+        """ValueError message must list every duplicate ID."""
+        tasks = [_task("x"), _task("x"), _task("y"), _task("y"), _task("z")]
+        with pytest.raises(ValueError, match="x") as exc_info:
+            build_task_graph(tasks)
+        msg = str(exc_info.value)
+        assert "x" in msg
+        assert "y" in msg
+        assert "z" not in msg  # z appears only once — not a duplicate
+
 
 
 
