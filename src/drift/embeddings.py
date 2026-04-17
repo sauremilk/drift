@@ -87,7 +87,7 @@ class EmbeddingCache:
 
     @staticmethod
     def _key(text: str) -> str:
-        return hashlib.sha256(text.encode("utf-8")).hexdigest()[:16]
+        return hashlib.sha256(text.encode("utf-8")).hexdigest()[:32]
 
     def get(self, text: str) -> np.ndarray | None:
         if not _EMBEDDINGS_AVAILABLE:
@@ -225,20 +225,29 @@ class EmbeddingService:
             self._model = self._load_model_with_timeout()
         return self._model
 
+    @staticmethod
+    def _sanitize_text(text: str) -> str:
+        """Normalise raw input before embedding and cache-key lookup."""
+        return text.replace("\x00", "").strip()
+
     # -- public API ----------------------------------------------------------
 
     def embed_text(self, text: str) -> np.ndarray | None:
         """Embed a single text string.  Returns a 1-D float32 vector, or None."""
+        sanitized = self._sanitize_text(text)
+        if not sanitized:
+            logger.debug("Skipping embedding for empty or invalid input after sanitization.")
+            return None
         if self._cache:
-            hit = self._cache.get(text)
+            hit = self._cache.get(sanitized)
             if hit is not None:
                 return hit
         model = self._ensure_model()
         if model is None:
             return None
-        vec: np.ndarray = model.encode(text, convert_to_numpy=True, normalize_embeddings=True)
+        vec: np.ndarray = model.encode(sanitized, convert_to_numpy=True, normalize_embeddings=True)
         if self._cache:
-            self._cache.put(text, vec)
+            self._cache.put(sanitized, vec)
         return vec
 
     def embed_texts(self, texts: list[str]) -> list[np.ndarray | None]:
@@ -246,38 +255,40 @@ class EmbeddingService:
         if not texts:
             return []
 
-        # Check cache for each text
-        if self._cache:
-            hit_idx, hit_vec, miss_idx = self._cache.get_batch(texts)
-        else:
-            hit_idx, hit_vec, miss_idx = [], [], list(range(len(texts)))
-
-        model = self._ensure_model()
-        if model is None:
+        sanitized = [self._sanitize_text(text) for text in texts]
+        valid_idx = [i for i, text in enumerate(sanitized) if text]
+        if not valid_idx:
+            logger.debug("Skipping embedding batch: empty/invalid inputs after sanitization.")
             return [None] * len(texts)
 
-        # Encode uncached texts
-        miss_vecs: np.ndarray | None = None
+        valid_texts = [sanitized[i] for i in valid_idx]
+        result: list[np.ndarray | None] = [None] * len(texts)
+
+        # Check cache for each text
+        if self._cache:
+            hit_idx, hit_vec, miss_idx = self._cache.get_batch(valid_texts)
+        else:
+            hit_idx, hit_vec, miss_idx = [], [], list(range(len(valid_texts)))
+
+        for j, rel_idx in enumerate(hit_idx):
+            result[valid_idx[rel_idx]] = hit_vec[j]
+
         if miss_idx:
-            miss_texts = [texts[i] for i in miss_idx]
+            model = self._ensure_model()
+            if model is None:
+                return result
+            miss_texts = [valid_texts[i] for i in miss_idx]
             miss_vecs = model.encode(
                 miss_texts,
                 batch_size=self._batch_size,
                 convert_to_numpy=True,
                 normalize_embeddings=True,
             )
-            # Store in cache
-            if self._cache:
-                for j, idx in enumerate(miss_idx):
-                    self._cache.put(texts[idx], miss_vecs[j])
-
-        # Reassemble full result in original order
-        result: list[np.ndarray | None] = [None] * len(texts)
-        for j, idx in enumerate(hit_idx):
-            result[idx] = hit_vec[j]
-        if miss_vecs is not None:
-            for j, idx in enumerate(miss_idx):
-                result[idx] = miss_vecs[j]
+            for j, rel_idx in enumerate(miss_idx):
+                orig_idx = valid_idx[rel_idx]
+                result[orig_idx] = miss_vecs[j]
+                if self._cache:
+                    self._cache.put(valid_texts[rel_idx], miss_vecs[j])
         return result
 
     # -- similarity helpers --------------------------------------------------

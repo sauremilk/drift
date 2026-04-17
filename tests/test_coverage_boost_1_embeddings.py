@@ -37,6 +37,13 @@ def test_safe_model_name_unchanged_without_slashes() -> None:
     assert _safe_model_name("all-MiniLM-L6-v2") == "all-MiniLM-L6-v2"
 
 
+def test_embedding_cache_key_uses_128bit_prefix() -> None:
+    text = "cache-key-sample"
+    key = EmbeddingCache._key(text)
+    assert len(key) == 32
+    assert key == hashlib.sha256(text.encode("utf-8")).hexdigest()[:32]
+
+
 # ---------------------------------------------------------------------------
 # EmbeddingCache — full put/get cycle
 # ---------------------------------------------------------------------------
@@ -60,7 +67,7 @@ def test_cache_get_corrupted_file_returns_none(tmp_path: Path) -> None:
     cache = EmbeddingCache(tmp_path, model_name="test-m")
     if cache._dir is None:
         pytest.skip("Cache dir not created")
-    key = hashlib.sha256(b"corrupt").hexdigest()[:16]
+    key = cache._key("corrupt")
     (cache._dir / f"{key}.bin").write_bytes(b"NOT_FLOAT32_DATA")
     result = cache.get("corrupt")
     # After frombuffer on bad data: either None or array; .bin file may be gone
