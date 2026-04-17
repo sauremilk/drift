@@ -514,7 +514,7 @@ wheels = [
 
 [[package]]
 name = "drift-analyzer"
-version = "2.10.1"
+version = "2.11.2"
 source = { editable = "." }
 dependencies = [
     { name = "click" },
