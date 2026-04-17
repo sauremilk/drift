@@ -1241,7 +1241,7 @@ class AnalysisPipeline:
                     config,
                 )
                 for result in integration_results:
-                    analysis.integration_findings.extend(result.findings)
+                    analysis.findings.extend(result.findings)
             except Exception:  # noqa: BLE001
                 logging.getLogger("drift").warning(
                     "Integration hook failed; continuing without integration results.",

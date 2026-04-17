@@ -14,7 +14,7 @@ import shlex
 import subprocess
 from dataclasses import dataclass
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     pass
@@ -125,7 +125,8 @@ def parse_json_output(raw: str) -> list[dict] | dict | None:
         if end <= start:
             continue
         try:
-            return json.loads(text[start : end + 1])
+            parsed: list[dict[Any, Any]] | dict[Any, Any] = json.loads(text[start : end + 1])
+            return parsed
         except json.JSONDecodeError:
             continue
     logger.debug("Could not parse JSON from integration output: %r", text[:200])
