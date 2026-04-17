@@ -250,7 +250,13 @@ def _collect_broad_security_suppressions(
             "signal": key[2],
         })
 
-    records.sort(key=lambda item: (str(item["file"]), int(item["line"]), str(item["signal"])))
+    records.sort(
+        key=lambda item: (
+            str(item["file"]),
+            cast("int | None", item["line"]) or 0,
+            str(item["signal"]),
+        )
+    )
     return records
 
 
