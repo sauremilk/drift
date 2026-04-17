@@ -6,6 +6,7 @@ Phase 3: Signal scope registry, ``IncrementalResult``, ``IncrementalSignalRunner
 
 from __future__ import annotations
 
+import threading
 import time
 from pathlib import Path
 
@@ -14,6 +15,7 @@ import pytest
 from drift.cache import SignalCache
 from drift.config import DriftConfig
 from drift.incremental import (  # noqa: I001
+    BaselineManager,
     BaselineSnapshot,
     IncrementalResult,
     IncrementalSignalRunner,
@@ -600,3 +602,58 @@ class TestIncrementalSignalRunner:
         # This test guards the invariant, independent of repo-specific findings.
         assert result.delta == pytest.approx(result.score - baseline.score)
         assert result.direction == _direction_for_delta(result.delta)
+
+
+class TestBaselineManagerSingleton:
+    @pytest.fixture(autouse=True)
+    def _reset_singleton(self) -> None:
+        BaselineManager.reset_instance()
+        yield
+        BaselineManager.reset_instance()
+
+    def test_instance_creates_singleton_only_once_under_concurrent_access(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        original_new = BaselineManager.__new__
+        call_count = 0
+        call_count_lock = threading.Lock()
+        first_call_entered = threading.Event()
+        release_first_call = threading.Event()
+
+        def instrumented_new(cls, *args, **kwargs):  # type: ignore[no-untyped-def]
+            nonlocal call_count
+            with call_count_lock:
+                call_count += 1
+                current_call = call_count
+            if current_call == 1:
+                first_call_entered.set()
+                release_first_call.wait(timeout=1.0)
+            return original_new(cls)
+
+        monkeypatch.setattr(BaselineManager, "__new__", instrumented_new)
+
+        thread_errors: list[BaseException] = []
+
+        def call_instance() -> None:
+            try:
+                BaselineManager.instance()
+            except BaseException as exc:  # pragma: no cover - defensive thread capture
+                thread_errors.append(exc)
+
+        t1 = threading.Thread(target=call_instance)
+        t1.start()
+        assert first_call_entered.wait(timeout=1.0)
+
+        t2 = threading.Thread(target=call_instance)
+        t2.start()
+
+        # Give the second thread a chance to contend while first construction is paused.
+        time.sleep(0.05)
+        release_first_call.set()
+
+        t1.join(timeout=2.0)
+        t2.join(timeout=2.0)
+
+        assert not thread_errors
+        assert call_count == 1

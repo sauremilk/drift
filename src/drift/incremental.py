@@ -174,6 +174,7 @@ _NUDGE_BASELINE_SCHEMA_VERSION = 1
 _GIT_STATE_CACHE_LOCK = threading.Lock()
 _GIT_STATE_CACHE: dict[str, tuple[float, _GitState | None]] = {}
 _GIT_STATE_CACHE_TTL = 5.0
+_BASELINE_MANAGER_LOCK = threading.Lock()
 
 
 @dataclass(slots=True)
@@ -279,7 +280,9 @@ class BaselineManager:
     def instance(cls) -> BaselineManager:
         """Return the module-level singleton (created on first call)."""
         if cls._instance is None:
-            cls._instance = cls()
+            with _BASELINE_MANAGER_LOCK:
+                if cls._instance is None:
+                    cls._instance = cls()
         return cls._instance
 
     @classmethod
