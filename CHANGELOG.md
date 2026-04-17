@@ -7,6 +7,7 @@
 
 ### Fixed
 
+- **Plugin-signal calibration evidence silently discarded in `build_profile()` (#442)**: calibration now explicitly detects evidence for plugin signal IDs that are not present in configured `weights`, logs a debug message listing those signals, and exposes them via `CalibrationResult.plugin_calibrated_weights` instead of silently dropping them.
 - **Non-atomic calibration persistence can corrupt history/status/effort files on interruption (#433)**: `save_snapshot()` in `calibration/history.py`, `write_calibration_status()` in `calibration/status.py`, and `save_calibration()` in `calibration/recommendation_calibrator.py` now use temp-file + atomic replace writes. On write/replace errors, temporary files are cleaned up and previously persisted data remains intact.
 - **Non-atomic calibrate config writes can corrupt drift.yaml on interruption (#434)**: `calibrate._write_calibrated_weights()` and `calibrate reset` now persist config updates via sibling temp-file + atomic replace instead of direct `write_text()`. If replace fails, temporary files are cleaned up and the original config remains unchanged.
 - **Embedding input sanitization prevents cached null-vectors (#430)**: `EmbeddingService.embed_text()` and `embed_texts()` now sanitize inputs by removing null bytes and trimming whitespace before cache/model usage. Empty sanitized inputs are skipped with debug logs and return `None` entries without invoking model encoding or storing cache entries.

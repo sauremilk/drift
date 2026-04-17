@@ -51,6 +51,7 @@ class CalibrationResult:
     """Result of a calibration run."""
 
     calibrated_weights: SignalWeights
+    plugin_calibrated_weights: dict[str, float] = field(default_factory=dict)
     evidence: dict[str, SignalEvidence] = field(default_factory=dict)
     confidence_per_signal: dict[str, float] = field(default_factory=dict)
     clamped_signals: list[str] = field(default_factory=list)
@@ -111,6 +112,13 @@ def build_profile(
 
     Returns:
         CalibrationResult with calibrated weights and per-signal evidence.
+
+    Notes:
+        Plugin signals that appear in evidence but are not present in
+        ``default_weights`` cannot be applied to ``calibrated_weights``
+        directly. They are surfaced in
+        ``CalibrationResult.plugin_calibrated_weights`` as derived calibration
+        candidates and logged at debug level.
     """
     if default_weights is None:
         default_weights = SignalWeights()
@@ -144,6 +152,7 @@ def build_profile(
                 signal_ev.fn += unattributed_fn.fn
 
     calibrated: dict[str, float] = {}
+    plugin_calibrated: dict[str, float] = {}
     confidence_map: dict[str, float] = {}
 
     for signal_key, default_w in default_dict.items():
@@ -171,6 +180,22 @@ def build_profile(
 
         calibrated[signal_key] = round(base_calibrated, 6)
 
+    plugin_signal_keys = sorted(
+        signal_key
+        for signal_key in evidence
+        if signal_key not in default_dict and signal_key != "_unattributed"
+    )
+    if plugin_signal_keys:
+        logger.debug(
+            "Plugin calibration evidence found for signals not in configured weights: %s",
+            ", ".join(plugin_signal_keys),
+        )
+    plugin_calibrated = {
+        signal_key: 0.0
+        for signal_key in plugin_signal_keys
+        if evidence[signal_key].total_observations > 0
+    }
+
     # Don't let any active signal go below a minimum threshold
     # (prevents total suppression from noisy feedback)
     min_floor = 0.001
@@ -192,6 +217,7 @@ def build_profile(
 
     return CalibrationResult(
         calibrated_weights=calibrated_weights,
+        plugin_calibrated_weights=plugin_calibrated,
         evidence=evidence,
         confidence_per_signal=confidence_map,
         clamped_signals=sorted(clamped_signals),

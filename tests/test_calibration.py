@@ -306,6 +306,34 @@ class TestProfileBuilder:
             for rec in caplog.records
         )
 
+    def test_plugin_signal_evidence_is_exposed_with_debug_logging(
+        self,
+        caplog: pytest.LogCaptureFixture,
+    ) -> None:
+        """Plugin evidence outside configured weights is surfaced explicitly."""
+        import logging
+
+        from drift.calibration.profile_builder import build_profile
+        from drift.config import SignalWeights
+
+        plugin_signal = "my_org__custom_cohesion"
+        events = [_fe(signal=plugin_signal, file=f"f{i}.py") for i in range(25)]
+        defaults = SignalWeights()
+
+        with caplog.at_level(logging.DEBUG):
+            result = build_profile(events, defaults, min_samples=20)
+
+        assert plugin_signal in result.evidence
+        assert plugin_signal in result.plugin_calibrated_weights
+        assert plugin_signal not in result.calibrated_weights.as_dict()
+        assert result.confidence_per_signal.get(plugin_signal, 0.0) == 0.0
+        assert result.plugin_calibrated_weights[plugin_signal] == 0.0
+        assert any(
+            "Plugin calibration evidence found for signals not in configured weights" in rec.getMessage()
+            and plugin_signal in rec.getMessage()
+            for rec in caplog.records
+        )
+
 
 # ---------------------------------------------------------------------------
 # Scan history tests
