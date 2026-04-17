@@ -31,6 +31,7 @@ class TestTaskSpecModel:
             goal="Add new code clone detection signal",
             affected_layers=[ArchitectureLayer.SIGNALS],
             acceptance_criteria=["Signal detects clones with >80% precision"],
+            depends_on=["ADR-042"],
         )
         assert spec.requires_adr is True
         assert spec.requires_audit_update is True
@@ -40,6 +41,7 @@ class TestTaskSpecModel:
             goal="Add CSV output format",
             affected_layers=[ArchitectureLayer.OUTPUT],
             acceptance_criteria=["CSV export works for all finding types"],
+            depends_on=["ADR-043"],
         )
         assert spec.requires_adr is True
         assert spec.requires_audit_update is True

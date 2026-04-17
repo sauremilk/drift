@@ -89,6 +89,9 @@ def test_calibrate_run_text_and_write(
     monkeypatch.setattr("drift.config.DriftConfig.load", lambda *_args, **_kwargs: fake_cfg)
     monkeypatch.setattr("drift.calibration.feedback.load_feedback", lambda _p: [SimpleNamespace()])
     monkeypatch.setattr(
+        "drift.calibration.feedback.dedupe_feedback_events", lambda events: events
+    )
+    monkeypatch.setattr(
         "drift.calibration.profile_builder.build_profile",
         lambda *_args, **_kwargs: _FakeCalibrationResult(),
     )
