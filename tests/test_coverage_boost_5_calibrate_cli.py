@@ -349,3 +349,54 @@ def test_reset_no_weights_in_config(tmp_path: Path) -> None:
 
     assert result.exit_code == 0
     assert "No custom weights" in result.output
+
+
+def test_write_calibrated_weights_keeps_original_on_replace_error(tmp_path: Path) -> None:
+    import yaml
+
+    from drift.commands.calibrate import _write_calibrated_weights
+
+    config_file = tmp_path / "drift.yaml"
+    original_content = yaml.dump({"weights": {"pattern_fragmentation": 0.1}, "x": 1})
+    config_file.write_text(original_content, encoding="utf-8")
+
+    fake_weights = MagicMock()
+    fake_weights.as_dict.return_value = {"pattern_fragmentation": 0.5}
+    fake_result = MagicMock()
+    fake_result.calibrated_weights = fake_weights
+
+    def _boom(_src: str, _dst: str) -> None:
+        raise OSError("simulated replace failure")
+
+    with patch("drift.commands.calibrate.os.replace", side_effect=_boom):
+        try:
+            _write_calibrated_weights(tmp_path, config_file, fake_result)
+            assert False, "Expected OSError"
+        except OSError:
+            pass
+
+    assert config_file.read_text(encoding="utf-8") == original_content
+    leftovers = [p for p in tmp_path.iterdir() if p.name != "drift.yaml"]
+    assert leftovers == []
+
+
+def test_reset_keeps_original_on_replace_error(tmp_path: Path) -> None:
+    runner = CliRunner()
+    import yaml
+
+    config_file = tmp_path / "drift.yaml"
+    original_data = {"weights": {"pfs": 1.2}, "analysis": {"timeout": 30}}
+    config_file.write_text(yaml.dump(original_data), encoding="utf-8")
+
+    def _boom(_src: str, _dst: str) -> None:
+        raise OSError("simulated replace failure")
+
+    with (
+        patch("drift.config.DriftConfig._find_config_file", return_value=config_file),
+        patch("drift.commands.calibrate.os.replace", side_effect=_boom),
+    ):
+        result = runner.invoke(calibrate, ["reset", "--repo", str(tmp_path)])
+
+    assert result.exit_code != 0
+    remaining = yaml.safe_load(config_file.read_text(encoding="utf-8"))
+    assert remaining == original_data

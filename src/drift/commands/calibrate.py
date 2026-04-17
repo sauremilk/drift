@@ -2,7 +2,10 @@
 
 from __future__ import annotations
 
+import contextlib
 import json
+import os
+import tempfile
 from collections.abc import Sequence
 from datetime import UTC, datetime
 from pathlib import Path
@@ -229,13 +232,31 @@ def reset(repo: Path, config: Path | None) -> None:
 
     if "weights" in data:
         del data["weights"]
-        config_path.write_text(
+        _atomic_write_text(
+            config_path,
             yaml.dump(data, default_flow_style=False, allow_unicode=True, sort_keys=False),
-            encoding="utf-8",
         )
         console.print("[green]Calibrated weights removed. Defaults will be used.[/green]")
     else:
         console.print("[dim]No custom weights found in config.[/dim]")
+
+
+def _atomic_write_text(path: Path, content: str, *, encoding: str = "utf-8") -> None:
+    """Write text atomically by writing to a sibling temp file and replacing target."""
+    fd, temp_path = tempfile.mkstemp(
+        dir=str(path.parent),
+        prefix=f".{path.name}.",
+        suffix=".tmp",
+    )
+
+    try:
+        with os.fdopen(fd, "w", encoding=encoding) as handle:
+            handle.write(content)
+        os.replace(temp_path, path)
+    except OSError:
+        with contextlib.suppress(OSError):
+            Path(temp_path).unlink(missing_ok=True)
+        raise
 
 
 def _collect_git_correlation(
@@ -312,9 +333,9 @@ def _write_calibrated_weights(
     if custom_weights:
         data["weights"] = custom_weights
 
-    actual_config.write_text(
+    _atomic_write_text(
+        actual_config,
         yaml.dump(data, default_flow_style=False, allow_unicode=True, sort_keys=False),
-        encoding="utf-8",
     )
 
 
