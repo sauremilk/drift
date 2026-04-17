@@ -7,6 +7,7 @@
 
 ### Fixed
 
+- **Strict-Guardrails Cache-Invalidierung in aktiver Session (#488)**: `_strict_guardrails_enabled()` in `mcp_orchestration` cached den Wert zuvor über die gesamte Session-Laufzeit. Der Cache wird jetzt pro Tool-Call-Token invalidiert, sodass Änderungen an `agent.strict_guardrails` in `drift.yaml` während einer laufenden Session beim nächsten Tool-Call wirksam werden; ein Regressionstest deckt den Toggle-Fall (`false -> true`) explizit ab.
 - **Async MCP session loop resolution modernized (#487)**: `run_session_start()` in `mcp_router_session` now uses `asyncio.get_running_loop()` (statt `get_event_loop()`) im `async def`-Kontext, damit Autopilot-Pfade unter Python 3.12+ ohne Deprecation-Regression stabil bleiben; ein Regressionstest verhindert Rueckfall.
 - **`drift_fix_plan` Router-Fast-Path pending-Filter korrigiert (#486)**: `_session_fix_plan_fast_response()` in `mcp_router_repair` nutzt jetzt `session.queue_status()`-Semantik, sodass `claimed`- und `failed`-Tasks nicht mehr fälschlich als `pending` ausgeliefert werden; die vollständigen Task-Payloads aus `selected_tasks` bleiben dabei erhalten.
 - **`drift_fix_plan` Fast-Path Profile-Konsistenz (#485)**: Die zulässigen Profile für den Session-Queue-Fast-Path sind nun explizit dokumentiert (`None`, `planner`, `coder`) und per Regressionstest abgesichert; `verifier` bleibt korrekt im API-Fallback-Pfad statt Cache-Hit.

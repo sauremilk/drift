@@ -54,6 +54,36 @@ class TestMcpErrorEnvelope:
         assert result["tool"] == "drift_scan"
 
 
+class TestMcpRouterScanGuardrails:
+    def test_drift_scan_honors_router_guardrail_block(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        from drift import mcp_server
+
+        blocked = json.dumps(
+            {
+                "type": "error",
+                "error_code": "DRIFT-6002",
+                "blocked_tool": "drift_scan",
+            }
+        )
+
+        monkeypatch.setattr(
+            "drift.mcp_router_analysis._strict_guardrail_block_response",
+            lambda *_a, **_k: blocked,
+        )
+
+        def _scan_should_not_run(*_args: object, **_kwargs: object) -> None:
+            raise AssertionError("drift.api.scan should not run when strict guardrail blocks")
+
+        monkeypatch.setattr("drift.api.scan", _scan_should_not_run)
+
+        raw = _run_tool(mcp_server.drift_scan(path="."))
+
+        assert raw == blocked
+
+
 class TestValidateProgressMetrics:
     def test_validate_reports_resolved_count_from_fingerprint_delta(
         self,
@@ -556,6 +586,35 @@ class TestMcpStrictGuardrails:
 
         assert result.get("error_code") != "DRIFT-6002"
         assert result.get("status") == "ok"
+
+    def test_strict_mode_config_change_is_applied_during_active_session(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+        tmp_path: Path,
+    ) -> None:
+        """Changing agent.strict_guardrails during a live session must take effect (#488)."""
+        from drift import mcp_server
+
+        self._write_agent_config(tmp_path, strict=False)
+        monkeypatch.setattr(
+            "drift.api.diff",
+            lambda *_a, **_kw: {"status": "ok", "drift_detected": False},
+        )
+
+        start = json.loads(_run_tool(mcp_server.drift_session_start(path=str(tmp_path))))
+        sid = start["session_id"]
+
+        first = json.loads(_run_tool(mcp_server.drift_diff(session_id=sid)))
+        assert first.get("status") == "ok"
+        assert first.get("error_code") != "DRIFT-6002"
+
+        self._write_agent_config(tmp_path, strict=True)
+
+        second = json.loads(_run_tool(mcp_server.drift_diff(session_id=sid)))
+        assert second["type"] == "error"
+        assert second["error_code"] == "DRIFT-6002"
+        assert second["blocked_tool"] == "drift_diff"
+        assert any(r["reason"] == "missing_scan_baseline" for r in second["block_reasons"])
 
     def test_strict_mode_blocks_session_end_with_open_tasks(self, tmp_path: Path) -> None:
         from drift import mcp_server

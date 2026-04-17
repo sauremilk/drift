@@ -546,8 +546,10 @@ def _strict_guardrails_enabled(session: Any) -> bool:
     if session is None:
         return False
 
+    call_token = (getattr(session, "_last_call_begin", None), getattr(session, "tool_calls", None))
     cached = getattr(session, "_strict_guardrails_enabled_cache", None)
-    if isinstance(cached, bool):
+    cached_token = getattr(session, "_strict_guardrails_enabled_cache_call_token", None)
+    if isinstance(cached, bool) and cached_token == call_token:
         return cached
 
     from drift.config import DriftConfig
@@ -561,8 +563,9 @@ def _strict_guardrails_enabled(session: Any) -> bool:
         agent_cfg = getattr(cfg, "agent", None)
         enabled = bool(getattr(agent_cfg, "strict_guardrails", False))
 
-    # Cache once per session to avoid repeated config parsing on every tool call.
+    # Cache once per tool call and invalidate between calls or after session updates.
     session._strict_guardrails_enabled_cache = enabled
+    session._strict_guardrails_enabled_cache_call_token = call_token
     return enabled
 
 
