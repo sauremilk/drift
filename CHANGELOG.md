@@ -1,5 +1,19 @@
 ## [Unreleased]
 
+## [2.11.2] - 2026-04-17
+
+### Fixed
+
+- **Error action messages now reference `drift config validate`**: `DRIFT-1001` and `DRIFT-1002` error actions now point users to `drift config validate` for diagnosing configuration issues instead of the less useful `drift config show`.
+- **Golden snapshot and test fixture alignment**: updated JSON golden snapshot and `_FakeAnalysis` test stubs to include `broad_security_suppressions`, `expired_suppression_count`, and `expired_suppressions` attributes required by recent analysis model extensions.
+- **Ruff lint and mypy type errors resolved**: trailing whitespace, unsorted imports, and an `int(object)` type error in `pipeline.py` line sort key fixed across `api/scan.py`, `mcp_enrichment.py`, `mcp_router_session.py`, and test files.
+
+### Docs
+
+- Added inline quick-start comments to `action.yml` and `.pre-commit-hooks.yaml` for easier onboarding.
+- Translated ROADMAP distribution milestone table to English.
+- Clarified optional dependency group descriptions in `pyproject.toml`.
+
 ### Added
 
 - **Defect corpus benchmark**: ground-truth fixture set and recall benchmark (`scripts/defect_corpus_benchmark.py`, `benchmarks/defect_corpus/`, `benchmark_results/defect_corpus_recall.json`) for externally validated signal recall measurement.
