@@ -107,4 +107,4 @@ def test_feedback_summary_shows_weight_effect_after_calibrate_run(tmp_path: Path
     phr_default = SignalWeights().as_dict()["phantom_reference"]
     assert f"{phr_default:>5.2f}" in summary_result.output
     assert "0.70" in summary_result.output
-    assert "5 FP marks applied" in summary_result.output
+    assert "1 FP marks applied" in summary_result.output

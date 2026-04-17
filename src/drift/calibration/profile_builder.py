@@ -124,6 +124,21 @@ def build_profile(
 
     # Compute calibrated weights
     default_dict = default_weights.as_dict()
+
+    # GitHub correlator can emit "_unattributed" FN when no prior signal was
+    # linked to a buggy file. Distribute this weak FN evidence across active
+    # signals so FN boosting can still react during calibration.
+    unattributed_fn = evidence.get("_unattributed")
+    if unattributed_fn is not None and unattributed_fn.fn > 0:
+        for signal_key, default_w in default_dict.items():
+            if default_w <= 0:
+                continue
+            signal_ev = evidence.get(signal_key)
+            if signal_ev is None:
+                evidence[signal_key] = SignalEvidence(signal_type=signal_key, fn=unattributed_fn.fn)
+            else:
+                signal_ev.fn += unattributed_fn.fn
+
     calibrated: dict[str, float] = {}
     confidence_map: dict[str, float] = {}
 
@@ -161,11 +176,12 @@ def build_profile(
     calibrated_weights = default_weights.model_copy(update=calibrated)
 
     signals_with_data = sum(1 for e in evidence.values() if e.total_observations > 0)
+    total_events = sum(c["tp"] + c["fp"] + c["fn"] for c in summary.values())
 
     return CalibrationResult(
         calibrated_weights=calibrated_weights,
         evidence=evidence,
         confidence_per_signal=confidence_map,
-        total_events=len(events),
+        total_events=total_events,
         signals_with_data=signals_with_data,
     )

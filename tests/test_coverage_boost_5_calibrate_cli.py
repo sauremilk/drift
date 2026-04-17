@@ -177,6 +177,53 @@ def test_run_with_history_dir(tmp_path: Path) -> None:
     assert result.exit_code == 0
 
 
+def test_run_dedupes_cross_source_and_prefers_explicit_feedback(tmp_path: Path) -> None:
+    from drift.calibration.feedback import FeedbackEvent
+
+    runner = CliRunner()
+    cfg = _make_cfg(tmp_path, history_exists=True)
+    build_result = _make_build_result(total_events=1, signals_with_data=1, diff={})
+    fake_snapshot = MagicMock()
+
+    user_event = FeedbackEvent(
+        signal_type="phantom_reference",
+        file_path="src/x.py",
+        verdict="fp",
+        source="user",
+    )
+    git_event = FeedbackEvent(
+        signal_type="phantom_reference",
+        file_path="src/x.py",
+        verdict="tp",
+        source="git_correlation",
+    )
+
+    captured: dict[str, list[FeedbackEvent]] = {}
+
+    def _capture_build_profile(
+        events: list[FeedbackEvent], *_args: Any, **_kwargs: Any
+    ) -> MagicMock:
+        captured["events"] = events
+        return build_result
+
+    with (
+        patch("drift.config.DriftConfig.load", return_value=cfg),
+        patch("drift.calibration.feedback.load_feedback", return_value=[user_event]),
+        patch("drift.calibration.history.load_snapshots", return_value=[fake_snapshot]),
+        patch("drift.commands.calibrate._collect_git_correlation", return_value=[git_event]),
+        patch(
+            "drift.calibration.profile_builder.build_profile", side_effect=_capture_build_profile
+        ),
+    ):
+        result = runner.invoke(calibrate, ["run", "--repo", str(tmp_path), "--format", "json"])
+
+    assert result.exit_code == 0
+    assert "events" in captured
+    assert len(captured["events"]) == 1
+    assert captured["events"][0].source == "user"
+    assert captured["events"][0].verdict == "fp"
+
+
 # ---------------------------------------------------------------------------
 # calibrate run — json format with diff
 # ---------------------------------------------------------------------------
@@ -371,7 +418,7 @@ def test_write_calibrated_weights_keeps_original_on_replace_error(tmp_path: Path
     with patch("drift.commands.calibrate.os.replace", side_effect=_boom):
         try:
             _write_calibrated_weights(tmp_path, config_file, fake_result)
-            assert False, "Expected OSError"
+            raise AssertionError("Expected OSError")
         except OSError:
             pass
 

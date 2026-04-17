@@ -111,6 +111,18 @@ class TestFeedbackSummary:
         assert s["pfs"] == {"tp": 2, "fp": 1, "fn": 0}
         assert s["avs"] == {"tp": 0, "fp": 0, "fn": 1}
 
+    def test_summary_dedupes_cross_source_by_signal_and_file(self) -> None:
+        from drift.calibration.feedback import feedback_summary
+
+        events = [
+            _fe(signal="pfs", file="a.py", verdict="fp", source="user"),
+            _fe(signal="pfs", file="a.py", verdict="tp", source="git_correlation"),
+            _fe(signal="pfs", file="b.py", verdict="tp", source="git_correlation"),
+        ]
+
+        s = feedback_summary(events)  # type: ignore[arg-type]
+        assert s["pfs"] == {"tp": 1, "fp": 1, "fn": 0}
+
 
 # ---------------------------------------------------------------------------
 # Profile builder tests
@@ -223,6 +235,34 @@ class TestProfileBuilder:
         w_boost = result_boost.calibrated_weights.as_dict()["architecture_violation"]
         w_no_boost = result_no_boost.calibrated_weights.as_dict()["architecture_violation"]
         assert w_boost > w_no_boost
+
+    def test_unattributed_fn_is_distributed_for_fn_boost(self) -> None:
+        """Unattributed FN events should still influence FN boosting."""
+        from drift.calibration.profile_builder import build_profile
+        from drift.config import SignalWeights
+
+        sig = "architecture_violation"
+        events = [_fe(signal=sig, file=f"tp{i}.py") for i in range(10)] + [
+            _fe(signal=sig, file=f"fp{i}.py", verdict="fp") for i in range(10)
+        ] + [_fe(signal="_unattributed", file=f"fn{i}.py", verdict="fn") for i in range(10)]
+
+        defaults = SignalWeights()
+        result_with_unattributed = build_profile(
+            events,
+            defaults,
+            min_samples=20,
+            fn_boost_factor=0.5,
+        )
+        result_without_unattributed = build_profile(
+            events[:-10],
+            defaults,
+            min_samples=20,
+            fn_boost_factor=0.5,
+        )
+
+        w_with = result_with_unattributed.calibrated_weights.as_dict()[sig]
+        w_without = result_without_unattributed.calibrated_weights.as_dict()[sig]
+        assert w_with > w_without
 
 
 # ---------------------------------------------------------------------------

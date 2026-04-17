@@ -33,7 +33,11 @@ def calibrate() -> None:
 @click.option("--format", "fmt", type=click.Choice(["text", "json"]), default="text")
 def run(repo: Path, dry_run: bool, config: Path | None, fmt: str) -> None:
     """Compute calibrated weights from all evidence sources."""
-    from drift.calibration.feedback import load_feedback, resolve_feedback_paths
+    from drift.calibration.feedback import (
+        dedupe_feedback_events,
+        load_feedback,
+        resolve_feedback_paths,
+    )
     from drift.calibration.profile_builder import build_profile
     from drift.calibration.status import write_calibration_status
     from drift.config import DriftConfig, SignalWeights
@@ -54,6 +58,8 @@ def run(repo: Path, dry_run: bool, config: Path | None, fmt: str) -> None:
             # Load git commits for correlation
             git_events = _collect_git_correlation(repo, snapshots, cfg)
             events.extend(git_events)
+
+    events = dedupe_feedback_events(events)
 
     if not events:
         if fmt == "json":

@@ -115,13 +115,18 @@ def mark(
 )
 def summary(repo: Path, config: Path | None) -> None:
     """Show aggregated feedback counts per signal."""
-    from drift.calibration.feedback import feedback_metrics, load_feedback, resolve_feedback_paths
+    from drift.calibration.feedback import (
+        dedupe_feedback_events,
+        feedback_metrics,
+        load_feedback,
+        resolve_feedback_paths,
+    )
     from drift.calibration.status import load_calibration_status
     from drift.config import SIGNAL_ABBREV, DriftConfig, SignalWeights
 
     cfg = DriftConfig.load(repo, config)
     feedback_path, _local_feedback_path, _shared_feedback_path = resolve_feedback_paths(repo, cfg)
-    events = load_feedback(feedback_path)
+    events = dedupe_feedback_events(load_feedback(feedback_path))
 
     if not events:
         console.print("[dim]No feedback recorded yet.[/dim]")

@@ -9,6 +9,15 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any, Literal
 
+_SOURCE_PRIORITY: dict[str, int] = {
+    # Explicit/user-confirmed evidence outranks inferred evidence.
+    "user": 0,
+    "inline_confirm": 1,
+    "inline_suppress": 1,
+    "github_api": 2,
+    "git_correlation": 3,
+}
+
 
 @dataclass
 class FeedbackEvent:
@@ -91,6 +100,51 @@ def load_feedback(feedback_path: Path) -> list[FeedbackEvent]:
     return events
 
 
+def dedupe_feedback_events(events: list[FeedbackEvent]) -> list[FeedbackEvent]:
+    """Deduplicate events across sources by (signal_type, file_path).
+
+    When multiple events describe the same finding pair, keep the most
+    authoritative source. Explicit user-side evidence wins over inferred
+    git-correlation events.
+    """
+    selected: dict[tuple[str, str], FeedbackEvent] = {}
+    for event in events:
+        key = (event.signal_type, event.file_path)
+        current = selected.get(key)
+        if current is None or _is_preferred_event(event, current):
+            selected[key] = event
+    return list(selected.values())
+
+
+def _is_preferred_event(candidate: FeedbackEvent, current: FeedbackEvent) -> bool:
+    """Return True when candidate should replace current for a dedup key."""
+    cand_prio = _SOURCE_PRIORITY.get(candidate.source, 99)
+    curr_prio = _SOURCE_PRIORITY.get(current.source, 99)
+    if cand_prio != curr_prio:
+        return cand_prio < curr_prio
+
+    cand_ts = _safe_parse_iso(candidate.timestamp)
+    curr_ts = _safe_parse_iso(current.timestamp)
+    if cand_ts is None:
+        return False
+    if curr_ts is None:
+        return True
+    return cand_ts > curr_ts
+
+
+def _safe_parse_iso(raw: str) -> datetime | None:
+    """Parse ISO timestamps while tolerating a trailing Z suffix."""
+    text = raw.strip()
+    if not text:
+        return None
+    if text.endswith("Z"):
+        text = text[:-1] + "+00:00"
+    try:
+        return datetime.fromisoformat(text)
+    except ValueError:
+        return None
+
+
 def feedback_summary(events: list[FeedbackEvent]) -> dict[str, dict[str, int]]:
     """Aggregate feedback events into per-signal TP/FP/FN counts.
 
@@ -103,7 +157,7 @@ def feedback_summary(events: list[FeedbackEvent]) -> dict[str, dict[str, int]]:
         }
     """
     summary: dict[str, dict[str, int]] = {}
-    for event in events:
+    for event in dedupe_feedback_events(events):
         if event.signal_type not in summary:
             summary[event.signal_type] = {"tp": 0, "fp": 0, "fn": 0}
         summary[event.signal_type][event.verdict] += 1
