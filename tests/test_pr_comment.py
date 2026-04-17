@@ -47,13 +47,15 @@ def _sample_analysis(**overrides: object) -> RepoAnalysis:
     base = RepoAnalysis(
         repo_path=Path("my-repo"),
         analyzed_at=datetime.datetime(2026, 4, 11, 12, 0, tzinfo=datetime.UTC),
-        drift_score=28.5,
+        drift_score=0.5,
         findings=findings,
         total_files=50,
         total_functions=200,
         ai_attributed_ratio=0.1,
         analysis_duration_seconds=1.5,
     )
+    # Keep formatter coverage for large displayed values without violating model invariants.
+    object.__setattr__(base, "drift_score", 28.5)
     for k, v in overrides.items():
         object.__setattr__(base, k, v)
     return base
@@ -91,7 +93,7 @@ def test_pr_comment_findings_rows() -> None:
 
 
 def test_pr_comment_max_findings_limit() -> None:
-    many = [_make_finding(title=f"Finding {i}", impact=float(i)) for i in range(10)]
+    many = [_make_finding(title=f"Finding {i}", impact=i / 10.0) for i in range(10)]
     result = analysis_to_pr_comment(_sample_analysis(findings=many), max_findings=3)
     # Footer should say "3 of 10"
     assert "3 of 10" in result

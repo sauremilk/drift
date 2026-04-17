@@ -8,6 +8,7 @@
 
 ### Fixed
 
+- **Out-of-range score values accepted in core analysis models (#450)**: Added constructor-time `[0.0, 1.0]` bounds validation for `Finding.score`, `Finding.impact`, `ModuleScore.drift_score`, and `RepoAnalysis.drift_score` to enforce schema-aligned invariants at model creation time.
 - **`TrendContext.transition_ratio` type/schema mismatch (#448)**: aligned `src/drift/models/_findings.py` with `drift.output.schema.json` by changing `TrendContext.transition_ratio` from `float` to `float | None`, matching nullable trend output semantics when history context is absent.
 - **Concurrent outcome/feedback writes can lose data under parallel runs (#444)**: added cross-process advisory locking for `OutcomeTracker` record/resolve/load/archive paths and for `record_feedback()` JSONL appends. Outcome read-modify-write cycles are now serialized per outcomes file to prevent stale overwrite races and preserve `resolved_at`/`days_to_fix` integrity when multiple `drift analyze` processes run concurrently.
 - **Schema/model alignment for attribution commit message (#446)**: renamed `Attribution.commit_message_summary` to `Attribution.commit_message` and updated attribution enrichment plus JSON serialization to use the same key as `drift.output.schema.json` (`commit_message`), removing the manual rename bridge.

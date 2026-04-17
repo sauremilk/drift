@@ -24,6 +24,12 @@ if TYPE_CHECKING:
 # ---------------------------------------------------------------------------
 
 
+def _validate_unit_interval(value: float, field_name: str) -> None:
+    """Validate a normalized score field constrained to [0.0, 1.0]."""
+    if not (0.0 <= value <= 1.0):
+        raise ValueError(f"{field_name} must be in [0.0, 1.0], got {value}")
+
+
 @dataclass
 class LogicalLocation:
     """AST-based logical location for a finding.
@@ -82,6 +88,8 @@ class Finding:
     }
 
     def __post_init__(self) -> None:
+        _validate_unit_interval(self.score, "Finding.score")
+        _validate_unit_interval(self.impact, "Finding.impact")
         if self.rule_id is None:
             self.rule_id = str(self.signal_type)
         # Ensure machine-readable location is always populated when a file
@@ -120,6 +128,9 @@ class ModuleScore:
     file_count: int = 0
     function_count: int = 0
     ai_ratio: float = 0.0
+
+    def __post_init__(self) -> None:
+        _validate_unit_interval(self.drift_score, "ModuleScore.drift_score")
 
     @property
     def severity(self) -> Severity:
@@ -172,6 +183,9 @@ class RepoAnalysis:
     analyzer_warnings: list[AnalyzerWarning] = field(default_factory=list)
     #: Findings produced by integration adapters (never affect drift_score).
     integration_findings: list[Finding] = field(default_factory=list)
+
+    def __post_init__(self) -> None:
+        _validate_unit_interval(self.drift_score, "RepoAnalysis.drift_score")
 
     @property
     def severity(self) -> Severity:
