@@ -199,6 +199,19 @@ class TestCosineSimMatrix:
         assert result[0, 0] == pytest.approx(1.0, abs=1e-5)
         assert result[0, 1] == pytest.approx(0.0, abs=1e-5)
 
+    def test_cosine_similarity_matrix_normalizes_unnormalized_rows(self):
+        svc = EmbeddingService()
+        a = np.array([[2.0, 0.0], [0.0, 0.0]], dtype=np.float32)
+        b = np.array([[3.0, 0.0], [0.0, 5.0]], dtype=np.float32)
+
+        result = svc.cosine_similarity_matrix(a, b)
+
+        assert result.shape == (2, 2)
+        assert result[0, 0] == pytest.approx(1.0, abs=1e-5)
+        assert result[0, 1] == pytest.approx(0.0, abs=1e-5)
+        assert result[1, 0] == pytest.approx(0.0, abs=1e-5)
+        assert result[1, 1] == pytest.approx(0.0, abs=1e-5)
+
 
 # ---------------------------------------------------------------------------
 # EmbeddingService — build_index numpy fallback

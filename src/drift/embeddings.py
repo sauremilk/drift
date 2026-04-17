@@ -137,6 +137,9 @@ class EmbeddingCache:
 # ---------------------------------------------------------------------------
 
 _DEFAULT_MODEL = "all-MiniLM-L6-v2"
+_MODEL_LOAD_TIMEOUT_ENV = "DRIFT_EMBEDDING_MODEL_LOAD_TIMEOUT"
+_HF_HUB_DOWNLOAD_TIMEOUT_ENV = "HF_HUB_DOWNLOAD_TIMEOUT"
+_MODEL_LOAD_TIMEOUT_SECONDS_DEFAULT = 30.0
 
 
 class EmbeddingService:
@@ -163,12 +166,63 @@ class EmbeddingService:
 
     # -- lazy model loading --------------------------------------------------
 
+    @staticmethod
+    def _model_load_timeout_seconds() -> float:
+        raw_timeout = os.getenv(
+            _MODEL_LOAD_TIMEOUT_ENV,
+            os.getenv(_HF_HUB_DOWNLOAD_TIMEOUT_ENV, str(_MODEL_LOAD_TIMEOUT_SECONDS_DEFAULT)),
+        )
+        try:
+            timeout = float(raw_timeout)
+        except ValueError:
+            return _MODEL_LOAD_TIMEOUT_SECONDS_DEFAULT
+        if timeout <= 0:
+            return _MODEL_LOAD_TIMEOUT_SECONDS_DEFAULT
+        return timeout
+
+    def _load_model_with_timeout(self) -> SentenceTransformer | None:
+        timeout_seconds = self._model_load_timeout_seconds()
+        model_box: dict[str, SentenceTransformer | None] = {"model": None}
+        error_box: dict[str, Exception | None] = {"error": None}
+
+        if _HF_HUB_DOWNLOAD_TIMEOUT_ENV not in os.environ:
+            os.environ[_HF_HUB_DOWNLOAD_TIMEOUT_ENV] = str(timeout_seconds)
+
+        def _load() -> None:
+            try:
+                model_box["model"] = SentenceTransformer(self._model_name)
+            except Exception as exc:  # pragma: no cover - exercised via caller tests
+                error_box["error"] = exc
+
+        loader = threading.Thread(target=_load, daemon=True)
+        loader.start()
+        loader.join(timeout=timeout_seconds)
+
+        if loader.is_alive():
+            logger.warning(
+                "Loading embedding model '%s' timed out after %.2fs; embeddings disabled.",
+                self._model_name,
+                timeout_seconds,
+            )
+            return None
+
+        load_error = error_box["error"]
+        if load_error is not None:
+            logger.warning(
+                "Failed to load embedding model '%s': %s",
+                self._model_name,
+                load_error,
+            )
+            return None
+
+        return model_box["model"]
+
     def _ensure_model(self) -> SentenceTransformer | None:
         if self._model is None:
             if not _EMBEDDINGS_AVAILABLE:
                 return None
             logger.info("Loading embedding model '%s'…", self._model_name)
-            self._model = SentenceTransformer(self._model_name)
+            self._model = self._load_model_with_timeout()
         return self._model
 
     # -- public API ----------------------------------------------------------
@@ -240,7 +294,17 @@ class EmbeddingService:
     @staticmethod
     def cosine_similarity_matrix(a: np.ndarray, b: np.ndarray) -> np.ndarray:
         """Pairwise cosine similarity matrix between two sets of vectors."""
-        return a @ b.T  # type: ignore[no-any-return]
+        a_arr = np.asarray(a, dtype=np.float32)
+        b_arr = np.asarray(b, dtype=np.float32)
+
+        norm_a = np.linalg.norm(a_arr, axis=1, keepdims=True)
+        norm_b = np.linalg.norm(b_arr, axis=1, keepdims=True)
+
+        a_norm = np.divide(a_arr, norm_a, out=np.zeros_like(a_arr), where=norm_a != 0.0)
+        b_norm = np.divide(b_arr, norm_b, out=np.zeros_like(b_arr), where=norm_b != 0.0)
+
+        sims = a_norm @ b_norm.T
+        return np.clip(sims, -1.0, 1.0)
 
     # -- FAISS index ---------------------------------------------------------
 
