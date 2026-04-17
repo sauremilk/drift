@@ -61,14 +61,14 @@ def _select_priority_findings_from_list(
         ),
     )
 
-    seen_file_signal: set[tuple[str, str]] = set()
+    seen_file_signal_line: set[tuple[str, str, int]] = set()
     unique: list[Any] = []
     for finding in prioritized:
         file_path = finding.file_path.as_posix() if finding.file_path else ""
-        key = (file_path, finding.signal_type)
-        if key in seen_file_signal:
+        key = (file_path, finding.signal_type, int(finding.start_line or 0))
+        if key in seen_file_signal_line:
             continue
-        seen_file_signal.add(key)
+        seen_file_signal_line.add(key)
         unique.append(finding)
         if len(unique) >= max_items:
             break
