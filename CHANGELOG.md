@@ -14,6 +14,10 @@ Short version: Fix configuration error messages, golden snapshot alignment, lint
 
 - Added inline quick-start comments to `action.yml` and `.pre-commit-hooks.yaml`; translated ROADMAP to English; clarified optional-dep descriptions in `pyproject.toml`.
 
+## [2.11.1] - 2026-04-16
+
+Short version: Precision and stability fixes across signals, MCP session management, incremental analysis, and output visibility.
+
 ### Added
 
 - **Defect corpus benchmark**: ground-truth fixture set and recall benchmark (`scripts/defect_corpus_benchmark.py`, `benchmarks/defect_corpus/`, `benchmark_results/defect_corpus_recall.json`) for externally validated signal recall measurement.
