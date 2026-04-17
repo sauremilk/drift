@@ -329,7 +329,10 @@ class TestProfileBuilder:
         assert result.confidence_per_signal.get(plugin_signal, 0.0) == 0.0
         assert result.plugin_calibrated_weights[plugin_signal] == 0.0
         assert any(
-            "Plugin calibration evidence found for signals not in configured weights" in rec.getMessage()
+            (
+                "Plugin calibration evidence found for signals not in configured weights"
+                in rec.getMessage()
+            )
             and plugin_signal in rec.getMessage()
             for rec in caplog.records
         )
