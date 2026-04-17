@@ -15,6 +15,7 @@ import drift.signals
 from drift.config import DriftConfig
 from drift.ingestion.file_discovery import discover_files
 from drift.models import FileInfo, RepoAnalysis, TrendContext
+from drift.models._enums import AnalysisStatus
 from drift.pipeline import (
     DEFAULT_WORKERS,
     AnalysisPipeline,
@@ -95,7 +96,7 @@ def _mark_analysis_degraded(
     details: dict[str, str] | None = None,
 ) -> None:
     """Attach a degradation event to an existing analysis result."""
-    analysis.analysis_status = "degraded"
+    analysis.analysis_status = AnalysisStatus.DEGRADED
     if cause not in analysis.degradation_causes:
         analysis.degradation_causes.append(cause)
     if component not in analysis.degradation_components:

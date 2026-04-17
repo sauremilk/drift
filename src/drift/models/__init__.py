@@ -11,6 +11,9 @@ from drift.models._enums import (
     OUTPUT_SCHEMA_VERSION as OUTPUT_SCHEMA_VERSION,
 )
 from drift.models._enums import (
+    AnalysisStatus as AnalysisStatus,
+)
+from drift.models._enums import (
     FindingStatus as FindingStatus,
 )
 from drift.models._enums import (
@@ -36,6 +39,9 @@ from drift.models._enums import (
 )
 from drift.models._enums import (
     SignalType as SignalType,
+)
+from drift.models._enums import (
+    TrendDirection as TrendDirection,
 )
 from drift.models._enums import (
     severity_for_score as severity_for_score,
@@ -94,6 +100,8 @@ __all__ = [
     "OUTPUT_SCHEMA_VERSION",
     "Severity",
     "FindingStatus",
+    "TrendDirection",
+    "AnalysisStatus",
     "SignalType",
     "RegressionReasonCode",
     "RegressionPattern",

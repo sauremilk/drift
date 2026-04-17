@@ -5,7 +5,13 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any, ClassVar
 
-from drift.models._enums import FindingStatus, Severity, severity_for_score
+from drift.models._enums import (
+    AnalysisStatus,
+    FindingStatus,
+    Severity,
+    TrendDirection,
+    severity_for_score,
+)
 
 if TYPE_CHECKING:
     import datetime
@@ -132,7 +138,7 @@ class TrendContext:
 
     previous_score: float | None
     delta: float | None
-    direction: str  # "improving" | "stable" | "degrading" | "baseline"
+    direction: TrendDirection
     recent_scores: list[float]
     history_depth: int
     transition_ratio: float
@@ -164,7 +170,7 @@ class RepoAnalysis:
     baseline_new_count: int | None = None
     baseline_matched_count: int | None = None
     trend: TrendContext | None = None
-    analysis_status: str = "complete"  # "complete" | "degraded"
+    analysis_status: AnalysisStatus = AnalysisStatus.COMPLETE
     degradation_causes: list[str] = field(default_factory=list)
     degradation_components: list[str] = field(default_factory=list)
     degradation_events: list[dict[str, Any]] = field(default_factory=list)
@@ -187,7 +193,7 @@ class RepoAnalysis:
 
     @property
     def is_degraded(self) -> bool:
-        return self.analysis_status == "degraded"
+        return self.analysis_status == AnalysisStatus.DEGRADED
 
     @property
     def is_fully_reliable(self) -> bool:

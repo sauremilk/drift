@@ -37,6 +37,7 @@ from drift.ingestion.git_history import (
     parse_git_history,
 )
 from drift.models import (
+    AnalysisStatus,
     CommitInfo,
     FileHistory,
     FileInfo,
@@ -1197,7 +1198,11 @@ class ResultAssemblyPhase:
             suppressed_count=artifacts.scored.suppressed_count,
             expired_suppression_count=len(artifacts.scored.expired_suppressions),
             context_tagged_count=artifacts.scored.context_tagged_count,
-            analysis_status=("degraded" if artifacts.degradation.events else "complete"),
+            analysis_status=(
+                AnalysisStatus.DEGRADED
+                if artifacts.degradation.events
+                else AnalysisStatus.COMPLETE
+            ),
             degradation_causes=sorted(artifacts.degradation.causes),
             degradation_components=sorted(artifacts.degradation.components),
             degradation_events=artifacts.degradation.events,

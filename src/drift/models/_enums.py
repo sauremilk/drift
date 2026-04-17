@@ -31,6 +31,18 @@ class FindingStatus(StrEnum):
     RESOLVED = "resolved"
 
 
+class TrendDirection(StrEnum):
+    IMPROVING = "improving"
+    STABLE = "stable"
+    DEGRADING = "degrading"
+    BASELINE = "baseline"
+
+
+class AnalysisStatus(StrEnum):
+    COMPLETE = "complete"
+    DEGRADED = "degraded"
+
+
 class SignalType(StrEnum):
     PATTERN_FRAGMENTATION = "pattern_fragmentation"
     ARCHITECTURE_VIOLATION = "architecture_violation"

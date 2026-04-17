@@ -6,6 +6,7 @@ import json
 from pathlib import Path
 
 from drift.models import RepoAnalysis, TrendContext
+from drift.models._enums import TrendDirection
 from drift.scoring.engine import compute_signal_scores
 
 NOISE_FLOOR = 0.005
@@ -50,7 +51,7 @@ def build_trend_context(current_score: float, snapshots: list[dict]) -> TrendCon
         return TrendContext(
             previous_score=None,
             delta=None,
-            direction="baseline",
+            direction=TrendDirection.BASELINE,
             recent_scores=[],
             history_depth=0,
             transition_ratio=0.0,
@@ -60,11 +61,11 @@ def build_trend_context(current_score: float, snapshots: list[dict]) -> TrendCon
     delta = round(current_score - prev, 4)
 
     if abs(delta) < NOISE_FLOOR:
-        direction = "stable"
+        direction = TrendDirection.STABLE
     elif delta < 0:
-        direction = "improving"
+        direction = TrendDirection.IMPROVING
     else:
-        direction = "degrading"
+        direction = TrendDirection.DEGRADING
 
     recent = [s["drift_score"] for s in valid[-5:]]
 
