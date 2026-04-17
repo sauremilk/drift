@@ -4,18 +4,13 @@ Short version: Arch-graph API, remediation memory (ADR-072), consolidation oppor
 
 ### Added
 
-- **Remediation Memory (ADR-072)**: `RepairTemplateRegistry.similar_outcomes()` returns compact past-outcome summaries per (signal, edit_kind); `fix_plan` now enriches each `AgentTask` with `similar_outcomes` from the registry to guide repair choices.
-- **Consolidation Opportunity Detector (ADR-073)**: `build_consolidation_groups()` clusters batch-eligible tasks into `ConsolidationGroup` objects; `TaskGraph` exposes `consolidation_opportunities` in its API dict; each task carries a `consolidation_group_id` back-reference.
-- **`steer` and `suggest_rules` API functions**: new `drift.api.steer` and `drift.api.suggest_rules` entry points backed by the new `drift.arch_graph` module (ArchGraph, ArchGraphStore, decision constraints, feedback proposals, reuse index).
-- **`record_outcome` enriched**: `task_id`, `new_findings_count`, and `resolved_count` fields added for richer outcome tracking per outcome record.
+- **Arch-graph API + ADR-072 + ADR-073**: `drift.arch_graph` module (ArchGraph, ArchGraphStore, decision constraints, feedback-loop, reuse index, seeding); `drift.api.steer` and `drift.api.suggest_rules` entry points; `RepairTemplateRegistry.similar_outcomes()` and `fix_plan`-level `similar_outcomes` enrichment (ADR-072); `build_consolidation_groups()` + `TaskGraph.consolidation_opportunities` + per-task `consolidation_group_id` (ADR-073); `record_outcome` enriched with `task_id`, `new_findings_count`, `resolved_count`.
 
 ### Fixed
 
-- **Negative-context registry coverage gate (#472)**: Added a registry-based policy assertion so every signal registered in [src/drift/signal_registry.py](src/drift/signal_registry.py) must be covered by a dedicated negative-context generator or explicitly listed in fallback-only policy; `type_safety_bypass` is now explicitly declared fallback-only to avoid silent policy drift.
-- **Telemetry path sanitization strips home-directory usernames (#464)**: `telemetry._sanitize()` now masks home-directory path prefixes to `~` for string values, preventing OS username leakage via `params.path`, `config_file`, and `baseline_file` in `.drift/agent_usage.jsonl` while preserving relative diagnostic context.
-- **Error action messages now reference `drift config validate`**: `DRIFT-1001` and `DRIFT-1002` error actions now point users to `drift config validate` for diagnosing configuration issues.
-- **Test fixture alignment**: updated JSON golden snapshot and `_FakeAnalysis` stubs for `broad_security_suppressions` and expired-suppression attributes.
-- **Ruff and mypy cleanup**: trailing whitespace, unsorted imports, and `int(object)` type error in `pipeline.py` resolved.
+- **Negative-context registry coverage gate (#472)**: registry-based policy assertion added; `type_safety_bypass` declared fallback-only.
+- **Telemetry path sanitization (#464)**: home-directory path prefixes masked to `~` to prevent OS username leakage.
+- **Error messages and test alignment**: `DRIFT-1001`/`DRIFT-1002` now reference `drift config validate`; JSON snapshot and stubs aligned; ruff/mypy cleanup.
 
 ### Docs
 
