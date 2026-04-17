@@ -274,7 +274,7 @@ class TestOutcomeTracker:
         assert archived == 0
 
         archive_path = path.with_suffix(".archive.jsonl")
-        
+
         archive_text = archive_path.read_text(encoding='utf-8')
         archive_lines = [line for line in archive_text.splitlines() if line.strip()]
         assert len(archive_lines) == 1

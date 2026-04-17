@@ -73,7 +73,7 @@ class PatchIntent(BaseModel):
     quality_constraints: list[str] = Field(default_factory=list)
     acceptance_criteria: list[str] = Field(default_factory=list)
     constraints: list[str] = Field(default_factory=list)
-    created_at: _dt.datetime = Field(default_factory=lambda: _dt.datetime.now(_dt.timezone.utc))
+    created_at: _dt.datetime = Field(default_factory=lambda: _dt.datetime.now(_dt.UTC))
 
     def to_api_dict(self) -> dict[str, Any]:
         """Serialize for API / MCP responses."""
@@ -102,7 +102,7 @@ class PatchVerdict(BaseModel):
     reasons: list[str] = Field(default_factory=list)
     evidence: dict[str, Any] = Field(default_factory=dict)
     merge_readiness: str = "ready"
-    checked_at: _dt.datetime = Field(default_factory=lambda: _dt.datetime.now(_dt.timezone.utc))
+    checked_at: _dt.datetime = Field(default_factory=lambda: _dt.datetime.now(_dt.UTC))
 
     def to_api_dict(self) -> dict[str, Any]:
         """Serialize for API / MCP responses."""

@@ -300,6 +300,7 @@ from drift.commands.setup import setup
 from drift.commands.start import start
 from drift.commands.status import status
 from drift.commands.suppress import suppress
+from drift.commands.synthesize_cmd import synthesize
 from drift.commands.timeline import timeline
 from drift.commands.trend import trend
 from drift.commands.validate_cmd import validate
@@ -346,6 +347,7 @@ main.add_command(ci)
 main.add_command(completions)
 main.add_command(visualize)
 main.add_command(watch)
+main.add_command(synthesize)
 
 
 def safe_main() -> None:

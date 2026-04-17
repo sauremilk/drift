@@ -69,7 +69,7 @@ class CompiledPolicy:
 
     task: str
     compiled_at: str = field(
-        default_factory=lambda: datetime.datetime.now(datetime.timezone.utc).isoformat()
+        default_factory=lambda: datetime.datetime.now(datetime.UTC).isoformat()
     )
     scope: dict[str, Any] = field(default_factory=dict)
     rules: list[PolicyRule] = field(default_factory=list)
