@@ -118,6 +118,42 @@ class RepairLevel(StrEnum):
     VERIFIABLE = "verifiable"
 
 
+class TaskComplexity(StrEnum):
+    HIGH = "high"
+    MEDIUM = "medium"
+    LOW = "low"
+
+
+class AutomationFit(StrEnum):
+    HIGH = "high"
+    MEDIUM = "medium"
+    LOW = "low"
+
+
+class ReviewRisk(StrEnum):
+    LOW = "low"
+    MEDIUM = "medium"
+    HIGH = "high"
+
+
+class ChangeScope(StrEnum):
+    LOCAL = "local"
+    MODULE = "module"
+    CROSS_MODULE = "cross-module"
+
+
+class VerificationStrength(StrEnum):
+    STRONG = "strong"
+    MODERATE = "moderate"
+    WEAK = "weak"
+
+
+class RepairMaturity(StrEnum):
+    VERIFIED = "verified"
+    EXPERIMENTAL = "experimental"
+    INDIRECT_ONLY = "indirect-only"
+
+
 class PatternCategory(StrEnum):
     ERROR_HANDLING = "error_handling"
     DATA_ACCESS = "data_access"

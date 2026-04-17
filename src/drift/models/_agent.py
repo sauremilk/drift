@@ -6,7 +6,52 @@ from dataclasses import dataclass, field
 from typing import Any
 
 from drift.models._context import NegativeContext
-from drift.models._enums import RegressionPattern, Severity
+from drift.models._enums import (
+    AutomationFit,
+    ChangeScope,
+    RegressionPattern,
+    RepairMaturity,
+    ReviewRisk,
+    Severity,
+    TaskComplexity,
+    VerificationStrength,
+)
+
+# ---------------------------------------------------------------------------
+# Consolidation Group (ADR-073)
+# ---------------------------------------------------------------------------
+
+
+@dataclass
+class ConsolidationGroup:
+    """A cluster of batch-eligible tasks that can be resolved by one consolidation.
+
+    Produced by :func:`drift.task_graph.build_consolidation_groups` and
+    included in fix-plan responses as ``consolidation_opportunities``.
+    """
+
+    group_id: str
+    signal: str
+    edit_kind: str
+    instance_count: int
+    canonical_file: str | None = None
+    affected_files: list[str] = field(default_factory=list)
+    task_ids: list[str] = field(default_factory=list)
+    estimated_net_finding_reduction: int = 0
+
+    def to_api_dict(self) -> dict[str, Any]:
+        """Serialize for API responses."""
+        return {
+            "group_id": self.group_id,
+            "signal": self.signal,
+            "edit_kind": self.edit_kind,
+            "instance_count": self.instance_count,
+            "canonical_file": self.canonical_file,
+            "affected_files": self.affected_files[:15],
+            "affected_files_total": len(self.affected_files),
+            "task_ids": self.task_ids,
+            "estimated_net_finding_reduction": self.estimated_net_finding_reduction,
+        }
 
 
 @dataclass
@@ -25,20 +70,20 @@ class AgentTask:
     end_line: int | None = None
     symbol: str | None = None
     related_files: list[str] = field(default_factory=list)
-    complexity: str = "medium"
+    complexity: TaskComplexity = TaskComplexity.MEDIUM
     expected_effect: str = ""
     success_criteria: list[str] = field(default_factory=list)
     depends_on: list[str] = field(default_factory=list)
     metadata: dict[str, Any] = field(default_factory=dict)
     # Phase 1: Automation fitness classification
-    automation_fit: str = "medium"  # "high" | "medium" | "low"
-    review_risk: str = "medium"  # "low" | "medium" | "high"
-    change_scope: str = "local"  # "local" | "module" | "cross-module"
-    verification_strength: str = "moderate"  # "strong" | "moderate" | "weak"
+    automation_fit: AutomationFit = AutomationFit.MEDIUM
+    review_risk: ReviewRisk = ReviewRisk.MEDIUM
+    change_scope: ChangeScope = ChangeScope.LOCAL
+    verification_strength: VerificationStrength = VerificationStrength.MODERATE
     # Phase 2: Do-not-over-fix guardrails
     constraints: list[str] = field(default_factory=list)
     # Phase 4: Signal-specific repair maturity
-    repair_maturity: str = "experimental"  # "verified" | "experimental" | "indirect-only"
+    repair_maturity: RepairMaturity = RepairMaturity.EXPERIMENTAL
     # Negative context: anti-patterns the agent must NOT reproduce
     negative_context: list[NegativeContext] = field(default_factory=list)
     # Expected score reduction when this task is resolved
@@ -57,3 +102,7 @@ class AgentTask:
     # None = insufficient outcome data in the registry (<3 entries)
     template_confidence: float | None = None
     regression_guidance: list[RegressionPattern] = field(default_factory=list)
+    # ADR-072: Outcome-informed repair recommendations
+    similar_outcomes: dict[str, Any] | None = None
+    # ADR-073: Consolidation opportunity back-reference
+    consolidation_group_id: str | None = None

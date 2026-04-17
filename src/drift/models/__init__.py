@@ -6,12 +6,19 @@ import X`` statements continue to work without modification.
 """
 
 from drift.models._agent import AgentTask as AgentTask
+from drift.models._agent import ConsolidationGroup as ConsolidationGroup
 from drift.models._context import NegativeContext as NegativeContext
 from drift.models._enums import (
     OUTPUT_SCHEMA_VERSION as OUTPUT_SCHEMA_VERSION,
 )
 from drift.models._enums import (
     AnalysisStatus as AnalysisStatus,
+)
+from drift.models._enums import (
+    AutomationFit as AutomationFit,
+)
+from drift.models._enums import (
+    ChangeScope as ChangeScope,
 )
 from drift.models._enums import (
     FindingStatus as FindingStatus,
@@ -35,13 +42,25 @@ from drift.models._enums import (
     RepairLevel as RepairLevel,
 )
 from drift.models._enums import (
+    RepairMaturity as RepairMaturity,
+)
+from drift.models._enums import (
+    ReviewRisk as ReviewRisk,
+)
+from drift.models._enums import (
     Severity as Severity,
 )
 from drift.models._enums import (
     SignalType as SignalType,
 )
 from drift.models._enums import (
+    TaskComplexity as TaskComplexity,
+)
+from drift.models._enums import (
     TrendDirection as TrendDirection,
+)
+from drift.models._enums import (
+    VerificationStrength as VerificationStrength,
 )
 from drift.models._enums import (
     severity_for_score as severity_for_score,
@@ -109,6 +128,12 @@ __all__ = [
     "PatternCategory",
     "NegativeContextCategory",
     "NegativeContextScope",
+    "TaskComplexity",
+    "AutomationFit",
+    "ReviewRisk",
+    "ChangeScope",
+    "VerificationStrength",
+    "RepairMaturity",
     "severity_for_score",
     # Parse / ingestion
     "FileInfo",
@@ -131,5 +156,6 @@ __all__ = [
     "RepoAnalysis",
     # Agent
     "AgentTask",
+    "ConsolidationGroup",
     "NegativeContext",
 ]
