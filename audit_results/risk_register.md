@@ -1,5 +1,19 @@
 # Risk Register
 
+## 2026-04-17 - LLM output max-findings cap
+
+- Risk ID: RISK-OUTPUT-2026-04-17-LLM-MAX-FINDINGS-CAP
+- Component: `src/drift/output/llm_output.py`
+- Type: Output behavior change (additive parameter, backward-compatible)
+- Description: `analysis_to_llm()` gains a `max_findings` parameter (default 50) that caps the number of findings serialized into the LLM plain-text report. Previously the function included all findings, which could produce outputs exceeding typical LLM context windows.
+- Trigger: Repositories with more than 50 findings when `llm` output format is used.
+- Impact: Positive. Prevents token-overflow silent truncation by LLM clients; default preserves prior behavior for repos with ≤50 findings.
+- Mitigation:
+  - Default value (50) matches the existing practical cap in most callers.
+  - Finding selection prioritizes by severity so highest-impact findings are always included.
+  - Callers that need all findings can pass `max_findings=0` (unlimited).
+- Residual risk: Low. Callers that relied on implicit unlimited output may receive fewer findings; this is a safe degradation and the parameter is documented.
+
 ## 2026-04-17 - File discovery extension coverage + output field additions
 
 - Risk ID: RISK-INGESTION-OUTPUT-2026-04-17-DISCOVERY-AND-OUTPUT-FIELDS
