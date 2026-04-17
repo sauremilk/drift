@@ -38,7 +38,7 @@ from drift.config._schema import (
 
 def _default_includes() -> list[str]:
     """Return default include patterns, auto-extending for TypeScript when available."""
-    patterns = ["**/*.py"]
+    patterns = ["**/*.py", "**/*.pyi"]
     # Avoid depending on ingestion module internals while still enabling
     # TS/JS includes when optional parser dependencies are installed.
     has_tree_sitter = importlib.util.find_spec("tree_sitter") is not None

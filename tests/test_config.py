@@ -15,6 +15,7 @@ def test_default_config():
     assert config.weights.doc_impl_drift == 0.04
     assert config.auto_calibrate is True
     assert "**/*.py" in config.include
+    assert "**/*.pyi" in config.include
     assert "**/__pycache__/**" in config.exclude
     assert "**/.conda/**" in config.exclude
     assert "**/.env/**" in config.exclude
