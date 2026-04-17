@@ -25,6 +25,7 @@ async def run_session_start(
     autopilot_payload: str,
     response_profile: str | None,
 ) -> str:
+    from drift.mcp_enrichment import _enrich_response_with_session
     from drift.session import SessionManager
 
     payload_mode = str(autopilot_payload).strip().lower()
@@ -228,7 +229,8 @@ async def run_session_start(
             "params": {"session_id": session_id},
         }
 
-    return json.dumps(result, default=str)
+    raw = json.dumps(result, default=str)
+    return _enrich_response_with_session(raw, session, "drift_session_start")
 
 
 async def run_session_status(

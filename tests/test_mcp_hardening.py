@@ -271,6 +271,23 @@ class TestMcpSessionIntegration:
         assert result["status"] == "ok"
         assert len(result["session_id"]) == 32
 
+    def test_session_start_non_autopilot_returns_session_block(self) -> None:
+        """Non-autopilot session start must still include enriched session metadata."""
+        from drift import mcp_server
+
+        raw = _run_tool(
+            mcp_server.drift_session_start(
+                path="/tmp/test",
+                autopilot=False,
+            )
+        )
+        result = json.loads(raw)
+
+        assert result["status"] == "ok"
+        assert "session" in result
+        assert result["session"]["session_id"] == result["session_id"]
+        assert "next_tools" in result["session"]
+
     def test_session_status_returns_summary(self) -> None:
         from drift import mcp_server
 
@@ -495,6 +512,22 @@ class TestMcpSessionIntegration:
         assert result["type"] == "error"
         assert result["error_code"] == "DRIFT-1003"
         assert result["invalid_fields"][0]["field"] == "autopilot_payload"
+
+    def test_session_start_returns_structured_error_when_capacity_reached(self) -> None:
+        from drift import mcp_server
+        from drift.session import SessionManager
+
+        mgr = SessionManager(max_sessions=1)
+        first = mgr.create("/tmp/test")
+        assert first
+
+        with pytest.MonkeyPatch.context() as mp:
+            mp.setattr("drift.session.SessionManager.instance", lambda: mgr)
+            raw = _run_tool(mcp_server.drift_session_start(path="/tmp/test"))
+
+        result = json.loads(raw)
+        assert result["type"] == "error"
+        assert result["error_code"] == "DRIFT-4000"
 
 
 class TestMcpStrictGuardrails:
