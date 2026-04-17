@@ -40,6 +40,7 @@ LANGUAGE_MAP: dict[str, str] = {
 }
 
 SUPPORTED_LANGUAGES = {"python"}
+_TYPESCRIPT_FAMILY_LANGUAGES = {"typescript", "tsx", "javascript", "jsx"}
 
 _DISCOVERY_MANIFEST_VERSION = 1
 _DISCOVERY_MANIFEST_FILE = "file_discovery_manifest.json"
@@ -309,12 +310,12 @@ def discover_files(
     """
     supported = _detect_supported_languages()
     if not ts_enabled:
-        supported.discard("typescript")
+        supported.difference_update(_TYPESCRIPT_FAMILY_LANGUAGES)
 
     if include is None:
         include = ["**/*.py"]
-        if "typescript" in supported:
-            include.extend(["**/*.ts", "**/*.tsx"])
+        if ts_enabled:
+            include.extend(["**/*.ts", "**/*.tsx", "**/*.js", "**/*.jsx"])
     if exclude is None:
         exclude = [
             "**/node_modules/**",
@@ -372,6 +373,12 @@ def discover_files(
         ):
             cached_items = entry.get("files")
             if isinstance(cached_items, list):
+                if skipped_out is not None:
+                    cached_skipped = entry.get("skipped_languages")
+                    if isinstance(cached_skipped, dict):
+                        for language, count in cached_skipped.items():
+                            if isinstance(language, str) and isinstance(count, int):
+                                skipped_out[language] = count
                 cached_files = _deserialize_files(cached_items)
                 return cached_files
 
@@ -470,6 +477,7 @@ def discover_files(
                 "value": invalidator_value,
             },
             "files": _serialize_files(files),
+            "skipped_languages": skipped_langs,
         }
         if len(entries) > _DISCOVERY_MANIFEST_MAX_ENTRIES:
             sorted_items = sorted(

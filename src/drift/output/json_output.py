@@ -259,6 +259,7 @@ def _analysis_status_to_dict(analysis: RepoAnalysis) -> dict[str, Any]:
         "causes": analysis.degradation_causes,
         "affected_components": analysis.degradation_components,
         "events": analysis.degradation_events,
+        "skipped_languages": analysis.skipped_languages or None,
     }
 
 

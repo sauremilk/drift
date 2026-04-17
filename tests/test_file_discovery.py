@@ -250,6 +250,55 @@ class TestDiscoverFiles:
         assert "app.py" in paths
         assert "app.ts" in paths
 
+    def test_default_include_counts_unsupported_typescript(self, tmp_path, monkeypatch):
+        (tmp_path / "app.py").write_text("x = 1")
+        (tmp_path / "app.ts").write_text("export const x = 1;")
+
+        monkeypatch.setattr(
+            "drift.ingestion.file_discovery._detect_supported_languages",
+            lambda: {"python"},
+        )
+
+        skipped: dict[str, int] = {}
+        files = discover_files(tmp_path, skipped_out=skipped, cache_dir=".drift-cache")
+
+        paths = {f.path.as_posix() for f in files}
+        assert "app.py" in paths
+        assert "app.ts" not in paths
+        assert skipped == {"typescript": 1}
+
+    def test_cache_hit_preserves_skipped_language_counts(self, tmp_path, monkeypatch):
+        (tmp_path / "app.py").write_text("x = 1")
+        (tmp_path / "app.ts").write_text("export const x = 1;")
+
+        monkeypatch.setattr(
+            "drift.ingestion.file_discovery._detect_supported_languages",
+            lambda: {"python"},
+        )
+
+        first_skipped: dict[str, int] = {}
+        first_files = discover_files(
+            tmp_path,
+            skipped_out=first_skipped,
+            cache_dir=".drift-cache",
+        )
+        assert {f.path.as_posix() for f in first_files} == {"app.py"}
+        assert first_skipped == {"typescript": 1}
+
+        def _fail_glob(self, _pattern):
+            raise AssertionError("glob should not run on discovery cache hit")
+
+        monkeypatch.setattr("pathlib.Path.glob", _fail_glob)
+
+        second_skipped: dict[str, int] = {}
+        second_files = discover_files(
+            tmp_path,
+            skipped_out=second_skipped,
+            cache_dir=".drift-cache",
+        )
+        assert {f.path.as_posix() for f in second_files} == {"app.py"}
+        assert second_skipped == {"typescript": 1}
+
     def test_supported_languages_detected_once(self, tmp_path, monkeypatch):
         (tmp_path / "app.py").write_text("x = 1")
 
