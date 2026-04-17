@@ -367,6 +367,14 @@ def test_ensure_model_returns_none_and_logs_warning_on_load_error(
 
     assert result is None
     assert "Failed to load embedding model" in caplog.text
+    assert "OSError" in caplog.text
+    warning_records = [
+        record
+        for record in caplog.records
+        if record.name == "drift.embeddings" and record.levelname == "WARNING"
+    ]
+    assert warning_records
+    assert warning_records[-1].exc_info is not None
 
 
 @patch("drift.embeddings._EMBEDDINGS_AVAILABLE", True)

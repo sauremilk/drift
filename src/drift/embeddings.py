@@ -209,9 +209,11 @@ class EmbeddingService:
         load_error = error_box["error"]
         if load_error is not None:
             logger.warning(
-                "Failed to load embedding model '%s': %s",
+                "Failed to load embedding model '%s': %s: %s — embeddings disabled for this run.",
                 self._model_name,
+                type(load_error).__name__,
                 load_error,
+                exc_info=(type(load_error), load_error, load_error.__traceback__),
             )
             return None
 
