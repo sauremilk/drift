@@ -3,6 +3,10 @@
 from __future__ import annotations
 
 import json
+import logging
+import os
+import tempfile
+from contextlib import suppress
 from pathlib import Path
 
 from drift.models import RepoAnalysis, TrendContext
@@ -10,6 +14,7 @@ from drift.models._enums import TrendDirection
 from drift.scoring.engine import compute_signal_scores
 
 NOISE_FLOOR = 0.005
+LOGGER = logging.getLogger(__name__)
 
 
 def load_history_with_status(history_file: Path) -> tuple[list[dict], bool]:
@@ -20,8 +25,18 @@ def load_history_with_status(history_file: Path) -> tuple[list[dict], bool]:
         data = json.loads(history_file.read_text(encoding="utf-8"))
         if isinstance(data, list):
             return data, False
+        LOGGER.warning(
+            "Trend history file %s is corrupt: expected JSON list but got %s; history will reset.",
+            history_file,
+            type(data).__name__,
+        )
         return [], True
-    except Exception:
+    except Exception as exc:
+        LOGGER.warning(
+            "Trend history file %s is corrupt and cannot be parsed; history will reset.",
+            history_file,
+            exc_info=exc,
+        )
         return [], True
 
 
@@ -34,7 +49,21 @@ def load_history(history_file: Path) -> list[dict]:
 def save_history(history_file: Path, snapshots: list[dict]) -> None:
     """Persist snapshots (last 100) to the history JSON file."""
     history_file.parent.mkdir(parents=True, exist_ok=True)
-    history_file.write_text(json.dumps(snapshots[-100:], indent=2), encoding="utf-8")
+    content = json.dumps(snapshots[-100:], indent=2)
+    fd, tmp_name = tempfile.mkstemp(
+        dir=str(history_file.parent),
+        prefix=f".{history_file.name}.",
+        suffix=".tmp",
+    )
+    tmp_path = Path(tmp_name)
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8") as handle:
+            handle.write(content)
+        tmp_path.replace(history_file)
+    except OSError:
+        with suppress(OSError):
+            tmp_path.unlink(missing_ok=True)
+        raise
 
 
 def build_trend_context(current_score: float, snapshots: list[dict]) -> TrendContext:
