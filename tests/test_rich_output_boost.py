@@ -214,3 +214,38 @@ def test_small_helpers_of_rich_output(tmp_path: Path) -> None:
 
     missing = ro._read_code_snippet(Path("does-not-exist.py"), 1)
     assert missing is None
+
+
+def test_render_summary_surfaces_parser_failure_files() -> None:
+    from drift.output import rich_output as ro
+
+    analysis = RepoAnalysis(
+        repo_path=Path("."),
+        analyzed_at=datetime.datetime.now(tz=datetime.UTC),
+        drift_score=0.31,
+        total_files=2,
+        total_functions=1,
+        ai_attributed_ratio=0.0,
+        analysis_duration_seconds=0.4,
+        analysis_status="degraded",
+        degradation_causes=["parser_failure"],
+        degradation_components=["parser"],
+        degradation_events=[
+            {
+                "cause": "parser_failure",
+                "component": "parser",
+                "message": "Parser failed for src/broken.ts; file skipped in degraded mode.",
+                "details": {
+                    "file": "src/broken.ts",
+                    "error": "Unexpected token",
+                },
+            }
+        ],
+    )
+    console = Console(record=True, force_terminal=True, width=120)
+
+    ro.render_summary(analysis, console=console)
+
+    output = console.export_text()
+    assert "Parser failures" in output
+    assert "src/broken.ts" in output

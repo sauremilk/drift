@@ -250,6 +250,38 @@ def _severity_icon(severity: Severity, *, ascii_only: bool = False) -> str:
     return _SEVERITY_ICONS.get(severity, "?")
 
 
+def _parser_failure_files(analysis: RepoAnalysis) -> list[str]:
+    """Return sorted parser-failure file paths extracted from degradation events."""
+    files: set[str] = set()
+    for event in analysis.degradation_events:
+        if str(event.get("cause", "")) != "parser_failure":
+            continue
+        details = event.get("details")
+        if isinstance(details, dict):
+            file_path = details.get("file")
+            if isinstance(file_path, str) and file_path:
+                files.add(file_path)
+    return sorted(files)
+
+
+def _render_parser_failure_summary(analysis: RepoAnalysis, console: Console) -> None:
+    """Render an explicit parser-failure notice for degraded analyses."""
+    if "parser_failure" not in analysis.degradation_causes:
+        return
+
+    failed_files = _parser_failure_files(analysis)
+    if not failed_files:
+        return
+
+    shown = failed_files[:5]
+    remainder = len(failed_files) - len(shown)
+    suffix = f" (+{remainder} more)" if remainder > 0 else ""
+    console.print(
+        "  [bold yellow]Parser failures[/bold yellow]: "
+        f"{', '.join(shown)}{suffix}",
+    )
+
+
 def _read_code_snippet(
     file_path: Path | None,
     start_line: int | None,
@@ -562,6 +594,7 @@ def render_summary(
             f"  [bold yellow]Analysis degraded[/bold yellow]: causes={causes}; "
             f"components={components}",
         )
+        _render_parser_failure_summary(analysis, console)
 
     _render_phase_timing(analysis, console)
 
