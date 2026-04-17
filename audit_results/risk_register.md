@@ -1,6 +1,20 @@
 # Risk Register
 
-## 2026-04-16 - GitHub Actions annotation newline encoding + TSB bypass suppression
+## 2026-04-17 - File discovery extension coverage + output field additions
+
+- Risk ID: RISK-INGESTION-OUTPUT-2026-04-17-DISCOVERY-AND-OUTPUT-FIELDS
+- Component: `src/drift/ingestion/file_discovery.py`, `src/drift/output/json_output.py`, `src/drift/output/rich_output.py`
+- Type: Ingestion scope expansion + additive output fields (backward-compatible)
+- Description: (1) `file_discovery.py`: default discovery and language detection now include `.pyi`, `.mjs`, `.cjs`, `.mts`, `.cts` so modern stub and module files are no longer silently excluded from analysis scope. (2) `json_output.py`: JSON output now includes `broad_security_suppressions` top-level field listing any bare drift:ignore suppressions over security signals. (3) `rich_output.py`: rich summary now surfaces a dedicated `Parser failures` line when degradation includes `parser_failure` events.
+- Trigger: Analysis of repos with TypeScript module, stub, or ESM files; repos using bare drift:ignore over security signals; repos with parser coverage gaps.
+- Impact: Positive. Wider file coverage reduces false negatives; explicit security suppression visibility reduces audit blind spots; parser failure visibility improves reliability signaling.
+- Mitigation:
+  - Regression tests: `tests/test_file_discovery.py`, `tests/test_json_output.py`, `tests/test_rich_output_boost.py`, `tests/test_scan_diversity.py`
+  - New fields are additive; no existing consumer field is removed or renamed.
+  - Discovery scope expansion only affects file types previously ignored — no behavioral regression on existing Python-only repos.
+- Residual risk: Low. Additional file types are enumerated but not analyzed if tree-sitter is unavailable; `skipped_languages` surfaces the count. No new trust boundary introduced.
+
+
 
 - Risk ID: RISK-OUTPUT-2026-04-16-GITHUB-FORMAT-TSB-FIX
 - Component: `src/drift/output/github_format.py`, `src/drift/signals/type_safety_bypass.py`
