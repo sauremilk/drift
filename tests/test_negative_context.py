@@ -744,3 +744,42 @@ class TestPhantomReferenceGenerator:
         nc = result[0]
         assert "auth.py" in nc.forbidden_pattern
         assert "ANTI-PATTERN" in nc.forbidden_pattern
+
+
+# ---------------------------------------------------------------------------
+# TSB generator (Issue #462)
+# ---------------------------------------------------------------------------
+
+
+class TestTypeSafetyBypassGenerator:
+    """TSB must have explicit category mapping and dedicated generator."""
+
+    def test_tsb_has_dedicated_generator(self) -> None:
+        assert str(SignalType.TYPE_SAFETY_BYPASS) in _GENERATORS
+
+    def test_tsb_returns_style_hygiene_guidance_without_fallback_metadata(self) -> None:
+        f = _finding(
+            signal_type=SignalType.TYPE_SAFETY_BYPASS,
+            severity=Severity.MEDIUM,
+            title="3 type safety bypasses in src/app.ts",
+            file_path="src/app.ts",
+            metadata={
+                "bypass_count": 3,
+                "bypasses": [
+                    {"kind": "as_any", "line": 12, "detail": "as any cast"},
+                    {"kind": "ts_ignore", "line": 20, "detail": "@ts-ignore directive"},
+                    {
+                        "kind": "double_cast",
+                        "line": 31,
+                        "detail": "double cast (as unknown as T)",
+                    },
+                ],
+            },
+        )
+        result = findings_to_negative_context([f])
+        assert len(result) >= 1
+        nc = result[0]
+        assert nc.source_signal == SignalType.TYPE_SAFETY_BYPASS
+        assert nc.category == NegativeContextCategory.COMPLETENESS
+        assert "as any" in nc.description.lower() or "@ts-ignore" in nc.description.lower()
+        assert nc.metadata.get("fallback_policy") is None

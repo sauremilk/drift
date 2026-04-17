@@ -8,6 +8,7 @@
 
 ### Fixed
 
+- **`TYPE_SAFETY_BYPASS` negative-context mapping/generator gap (#462)**: added an explicit `TYPE_SAFETY_BYPASS` entry to `negative_context._SIGNAL_CATEGORY` and a dedicated `_gen_tsb` generator so TSB findings no longer fall through to implicit fallback with miscategorized architecture output.
 - **Unknown `drift:ignore[ABBREV]` tokens silently became no-op suppressions (#468)**: `collect_inline_suppressions()` now emits `WARNING` logs with file/line and the unknown abbreviation, lists known abbreviations, and no longer stores unknown tokens as pseudo-signal IDs.
 - **Unknown `drift:context` tags were silently accepted and still dampened findings (#463)**: `scan_context_tags()` now validates tags against an explicit allow-list, ignores unknown tags for scoring, and emits warning logs with file/line context so typos do not silently suppress finding priority.
 - **Expired `drift:ignore until:` comments were never enforced during `drift analyze` (#461)**: `scan_suppressions()` now preserves full `InlineSuppression` metadata and `filter_findings()` now skips suppressions whose `until` date is in the past, so temporary suppressions expire as documented.

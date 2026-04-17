@@ -976,6 +976,68 @@ def _gen_tsa(finding: Finding) -> list[NegativeContext]:
     ]
 
 
+@_register(SignalType.TYPE_SAFETY_BYPASS)
+def _gen_tsb(finding: Finding) -> list[NegativeContext]:
+    """TypeScript type-system bypasses should be replaced with safe narrowing."""
+    meta = finding.metadata
+    bypasses = meta.get("bypasses", [])
+    bypass_count = int(meta.get("bypass_count", len(bypasses)))
+
+    kinds: list[str] = []
+    for bypass in bypasses:
+        if isinstance(bypass, dict):
+            kind = bypass.get("kind")
+            if isinstance(kind, str) and kind not in kinds:
+                kinds.append(kind)
+
+    kind_to_label = {
+        "as_any": "as any",
+        "double_cast": "double cast (as unknown as T)",
+        "double_cast_sdk_guarded": "double cast (SDK-guarded)",
+        "non_null_assertion": "non-null assertion (!)",
+        "non_null_assertion_sdk": "non-null assertion (SDK pattern)",
+        "ts_ignore": "@ts-ignore",
+        "ts_expect_error": "@ts-expect-error",
+    }
+    labels = [kind_to_label.get(k, k.replace("_", " ")) for k in kinds]
+    bypass_summary = ", ".join(labels[:4]) if labels else "type-system bypass patterns"
+
+    return [
+        NegativeContext(
+            anti_pattern_id=_neg_id(SignalType.TYPE_SAFETY_BYPASS, finding),
+            category=NegativeContextCategory.COMPLETENESS,
+            source_signal=SignalType.TYPE_SAFETY_BYPASS,
+            severity=finding.severity,
+            scope=_scope_from_finding(finding),
+            description=(
+                f"Type safety bypass detected ({bypass_count} instance"
+                f"{'s' if bypass_count != 1 else ''}: {bypass_summary}). "
+                "Avoid weakening TypeScript guarantees with bypass directives and unsafe casts."
+            ),
+            forbidden_pattern=(
+                "# ANTI-PATTERN: Bypassing TypeScript safety checks\n"
+                "value as any\n"
+                "// @ts-ignore\n"
+                "const typed = raw as unknown as MyType"
+            ),
+            canonical_alternative=(
+                "# REQUIRED: Prefer type guards and explicit narrowing\n"
+                "if (isMyType(raw)) {\n"
+                "  const typed: MyType = raw\n"
+                "}\n"
+                "# Replace @ts-ignore with a concrete type fix or safe runtime check"
+            ),
+            affected_files=_affected(finding),
+            confidence=0.82,
+            rationale=(
+                "Type-safety bypasses hide static type errors and increase runtime defect risk. "
+                "Use explicit narrowing and precise type definitions instead."
+            ),
+            metadata={"bypass_kinds": kinds[:10]} if kinds else {},
+        )
+    ]
+
+
 @_register(SignalType.BYPASS_ACCUMULATION)
 def _gen_bat(finding: Finding) -> list[NegativeContext]:
     """FM-11 (RPN 105): TODO/placeholder accumulation."""

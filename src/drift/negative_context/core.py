@@ -74,6 +74,7 @@ _SIGNAL_CATEGORY: dict[str, NegativeContextCategory] = {
     SignalType.TS_ARCHITECTURE: NegativeContextCategory.ARCHITECTURE,
     SignalType.COGNITIVE_COMPLEXITY: NegativeContextCategory.COMPLEXITY,
     SignalType.PHANTOM_REFERENCE: NegativeContextCategory.COMPLETENESS,
+    SignalType.TYPE_SAFETY_BYPASS: NegativeContextCategory.COMPLETENESS,
 }
 
 
