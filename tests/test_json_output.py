@@ -162,6 +162,18 @@ def test_analysis_to_json_exposes_degraded_status() -> None:
     assert payload["analysis_status"]["causes"] == ["signal_failure"]
 
 
+def test_analysis_to_json_exposes_skipped_languages_in_analysis_status() -> None:
+    analysis = _sample_analysis()
+    analysis.skipped_languages = {"typescript": 2, "javascript": 1}
+
+    payload = json.loads(analysis_to_json(analysis))
+
+    assert payload["analysis_status"]["skipped_languages"] == {
+        "typescript": 2,
+        "javascript": 1,
+    }
+
+
 def test_findings_to_sarif_handles_finding_without_file_path() -> None:
     finding = _sample_finding(with_file=False)
     analysis = _sample_analysis()
