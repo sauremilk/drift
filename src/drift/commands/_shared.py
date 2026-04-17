@@ -190,7 +190,7 @@ def render_or_emit_output(
         )
         from drift.output.llm_output import analysis_to_llm
 
-        llm_text = analysis_to_llm(analysis)
+        llm_text = analysis_to_llm(analysis, max_findings=max_findings)
         _emit_machine_output(llm_text, output_file)
         return
 

@@ -4,6 +4,7 @@ from __future__ import annotations
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
+import pytest
 from rich.console import Console
 
 from drift.commands._shared import (
@@ -142,6 +143,33 @@ def test_render_github_calls_emit(tmp_path: Path) -> None:
 
     mock_gh.assert_called_once_with(analysis)
     mock_emit.assert_called_once_with("::notice::", None)
+
+
+# --------------------------------------------------------------------------
+# _render_or_emit_output — llm
+# --------------------------------------------------------------------------
+
+
+def test_render_llm_passes_max_findings(tmp_path: Path) -> None:
+    analysis = _make_analysis()
+    with open(tmp_path / "out.txt", "w", encoding="utf-8") as fh:
+        console = Console(file=fh)
+        with patch("drift.output.llm_output.analysis_to_llm", return_value="llm") as mock_llm, patch(
+            "drift.commands._shared._emit_machine_output"
+        ) as mock_emit, pytest.warns(DeprecationWarning, match=r"--format llm is deprecated"):
+            _render_or_emit_output(
+                analysis=analysis,
+                output_format="llm",
+                compact_json=False,
+                drift_score_scope="repo",
+                output_file=None,
+                effective_console=console,
+                max_findings=7,
+                no_code=False,
+            )
+
+    mock_llm.assert_called_once_with(analysis, max_findings=7)
+    mock_emit.assert_called_once_with("llm", None)
 
 
 # --------------------------------------------------------------------------

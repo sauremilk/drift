@@ -110,3 +110,51 @@ def test_llm_token_efficiency() -> None:
     for line in finding_lines:
         # Each finding line should be under 200 chars
         assert len(line) < 200, f"Finding line too long ({len(line)} chars): {line}"
+
+
+def test_llm_respects_max_findings_and_reports_omitted() -> None:
+    findings = [
+        Finding(
+            signal_type=SignalType.SYSTEM_MISALIGNMENT,
+            severity=Severity.MEDIUM,
+            score=0.3,
+            title="Medium first",
+            description="medium",
+            file_path=Path("src/medium.py"),
+            start_line=11,
+            end_line=12,
+            impact=0.9,
+        ),
+        Finding(
+            signal_type=SignalType.PATTERN_FRAGMENTATION,
+            severity=Severity.HIGH,
+            score=0.7,
+            title="High lower impact",
+            description="high",
+            file_path=Path("src/high_b.py"),
+            start_line=21,
+            end_line=22,
+            impact=0.2,
+        ),
+        Finding(
+            signal_type=SignalType.PATTERN_FRAGMENTATION,
+            severity=Severity.HIGH,
+            score=0.8,
+            title="High higher impact",
+            description="high",
+            file_path=Path("src/high_a.py"),
+            start_line=31,
+            end_line=32,
+            impact=0.8,
+        ),
+    ]
+
+    output = analysis_to_llm(_sample_analysis(findings=findings), max_findings=2)
+    lines = output.strip().split("\n")
+
+    # header + 2 findings + omitted + footer
+    assert len(lines) == 5
+    assert "High higher impact" in lines[1]
+    assert "High lower impact" in lines[2]
+    assert "(+1 more findings omitted - re-run with --max-findings to adjust)" in lines[3]
+    assert "3 findings" in lines[-1]
