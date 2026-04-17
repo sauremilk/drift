@@ -11,6 +11,8 @@ import asyncio
 import contextlib
 import io
 import json
+import logging
+import uuid
 from typing import Any, cast
 
 try:
@@ -29,6 +31,8 @@ _RESPONSE_DETAIL_VALUES = frozenset({"concise", "detailed"})
 _RESPONSE_PROFILE_VALUES = frozenset({"planner", "coder", "verifier", "merge_readiness"})
 _FAIL_ON_VALUES = frozenset({"critical", "high", "medium", "low", "none"})
 _AUTOMATION_FIT_MIN_VALUES = frozenset({"low", "medium", "high"})
+
+logger = logging.getLogger("drift")
 
 
 # ---------------------------------------------------------------------------
@@ -86,16 +90,36 @@ async def _run_api_tool(tool_name: str, api_fn: Any, **kwargs: Any) -> str:
     Uses abandon_on_cancel so MCP client disconnects propagate immediately.
     """
 
+    request_id = str(uuid.uuid4())
+    logger.debug("[%s] %s called params=%s", request_id, tool_name, kwargs)
+
     def _sync() -> str:
         try:
             with contextlib.redirect_stdout(io.StringIO()):
                 result = api_fn(**kwargs)
+            if isinstance(result, dict):
+                result.setdefault("request_id", request_id)
+            else:
+                result = {
+                    "type": "ok",
+                    "tool": tool_name,
+                    "request_id": request_id,
+                    "result": result,
+                }
             return json.dumps(result, default=str)
         except Exception as exc:
             from drift.api_helpers import _error_response
 
+            logger.warning(
+                "[%s] DRIFT-5001 from %s: %r",
+                request_id,
+                tool_name,
+                exc,
+                exc_info=True,
+            )
             error = _error_response("DRIFT-5001", str(exc), recoverable=True)
             error["tool"] = tool_name
+            error["request_id"] = request_id
             return json.dumps(error, default=str)
 
     return cast(str, await _run_sync_in_thread(_sync, abandon_on_cancel=True))
