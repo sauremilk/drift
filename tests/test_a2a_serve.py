@@ -59,7 +59,7 @@ class TestAgentCard:
     def test_agent_card_has_eight_skills(self, client: TestClient) -> None:
         resp = client.get("/.well-known/agent-card.json")
         card = resp.json()
-        assert len(card["skills"]) == 8
+        assert len(card["skills"]) == 12
         skill_ids = {s["id"] for s in card["skills"]}
         expected = {
             "scan",
@@ -70,6 +70,10 @@ class TestAgentCard:
             "nudge",
             "brief",
             "negative_context",
+            "compile_policy",
+            "patch_begin",
+            "patch_check",
+            "patch_commit",
         }
         assert skill_ids == expected
 

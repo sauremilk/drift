@@ -143,4 +143,54 @@ def _build_skills() -> list[dict[str, Any]]:
                 "Show me which anti-patterns to avoid in this codebase.",
             ],
         },
+        {
+            "id": "compile_policy",
+            "name": "Drift Compile Policy",
+            "description": (
+                "Compile a task-specific policy package with scope boundaries, "
+                "prohibitions, reuse targets, and review triggers from the "
+                "current repository state. Call before writing code."
+            ),
+            "tags": ["policy", "governance", "agent-steering", "planning"],
+            "examples": [
+                "Compile a policy for adding logging to the ingestion module.",
+                "What constraints apply to refactoring the scoring engine?",
+            ],
+        },
+        {
+            "id": "patch_begin",
+            "name": "Drift Patch Begin",
+            "description": (
+                "Declare patch intent before editing files. Phase 1 of the "
+                "transactional patch protocol (ADR-074)."
+            ),
+            "tags": ["patch", "intent", "agent-steering", "transactional"],
+            "examples": [
+                "Declare that I will edit src/api.py and src/models.py.",
+            ],
+        },
+        {
+            "id": "patch_check",
+            "name": "Drift Patch Check",
+            "description": (
+                "Validate scope compliance after editing. Phase 2 of the "
+                "transactional patch protocol (ADR-074)."
+            ),
+            "tags": ["patch", "verification", "scope", "transactional"],
+            "examples": [
+                "Check if my edits stayed within the declared scope.",
+            ],
+        },
+        {
+            "id": "patch_commit",
+            "name": "Drift Patch Commit",
+            "description": (
+                "Generate evidence record for a completed patch. Phase 3 of "
+                "the transactional patch protocol (ADR-074)."
+            ),
+            "tags": ["patch", "evidence", "transactional"],
+            "examples": [
+                "Generate evidence for my completed edit.",
+            ],
+        },
     ]

@@ -26,6 +26,7 @@ from drift.api._util import to_json
 
 # -- Public endpoints -------------------------------------------------------
 from drift.api.brief import brief
+from drift.api.compile_policy import compile_policy
 from drift.api.diff import _diff_next_actions, diff
 from drift.api.drift_map_api import drift_map
 from drift.api.explain import _repo_examples_for_signal, explain
@@ -33,6 +34,7 @@ from drift.api.fix_plan import _fix_plan_agent_instruction, fix_plan
 from drift.api.generate_skills import generate_skills
 from drift.api.neg_context import negative_context
 from drift.api.nudge import _baseline_store, invalidate_nudge_baseline, nudge
+from drift.api.patch import patch_begin, patch_check, patch_commit
 from drift.api.scan import (
     _BATCH_SCAN_THRESHOLD,
     _DIVERSE_MIN_TOP_IMPACT_SHARE,
@@ -82,6 +84,7 @@ from drift.finding_context import is_non_operational_context, split_findings_by_
 STABLE_API = [
     # Stable public endpoints
     "brief",
+    "compile_policy",
     "diff",
     "drift_map",
     "explain",
@@ -89,6 +92,9 @@ STABLE_API = [
     "negative_context",
     "nudge",
     "invalidate_nudge_baseline",
+    "patch_begin",
+    "patch_check",
+    "patch_commit",
     "scan",
     "shadow_verify",
     "generate_skills",

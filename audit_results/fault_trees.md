@@ -1,5 +1,23 @@
 # Fault Tree Analysis
 
+## 2025-07-27 - ADR-074: Patch Engine — false-clean fault tree
+
+### Top Event (TE-PATCH-074)
+patch_check() returns status=CLEAN despite files outside declared scope.
+
+### FT-1: False-clean through scope validation bypass
+
+```
+          TE-FALSE-CLEAN: patch_check clean but scope violated
+                         |
+                      OR-Gate
+               +---------+---------+
+              FP-1      FP-2
+```
+
+- FP-1: **Git diff incomplete** — `git diff --name-only HEAD` misses a changed file (e.g. new untracked file). Mitigation: untracked files show in `git diff HEAD` if staged.
+- FP-2: **Path normalization mismatch** — declared_files uses different separator than git output. Mitigation: git output on all platforms uses forward slashes with `--relative`.
+
 ## 2025-07-26 - ADR-070: drift verify — false-pass fault tree
 
 ### Top Event (TE-VERIFY-070)

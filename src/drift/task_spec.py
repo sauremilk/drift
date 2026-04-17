@@ -27,8 +27,10 @@ Example YAML (embedded in drift.yaml or standalone)::
 
 from __future__ import annotations
 
+from dataclasses import dataclass
 from enum import StrEnum
-from typing import Annotated, Literal
+from pathlib import Path
+from typing import Annotated
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
@@ -47,6 +49,15 @@ class ArchitectureLayer(StrEnum):
     SCRIPTS = "scripts"
     DOCS = "docs"
     PROMPTS = "prompts"
+
+
+@dataclass(slots=True)
+class TaskSpecValidationResult:
+    """Structured semantic validation result for TaskSpec checks."""
+
+    is_valid: bool
+    errors: list[str]
+    warnings: list[str]
 
 
 class TaskSpec(BaseModel):
@@ -120,7 +131,7 @@ class TaskSpec(BaseModel):
             "None = auto-infer."
         ),
     )
-    commit_type: Literal["feat", "fix", "refactor", "docs", "test", "chore", ""] = Field(
+    commit_type: str = Field(
         default="",
         description=(
             "Expected conventional commit type (feat, fix, refactor, docs, test, chore). "
@@ -158,20 +169,53 @@ class TaskSpec(BaseModel):
             self.requires_adr = False
         return self
 
+    @model_validator(mode="after")
+    def _validate_blocking_semantics(self) -> TaskSpec:
+        """Enforce blocking semantic constraints at model load time."""
+        if self.requires_adr and not any("ADR" in dep.upper() for dep in self.depends_on):
+            raise ValueError(
+                "requires_adr is true but no ADR identifier in depends_on — "
+                "specify the ADR number (e.g. 'ADR-034')."
+            )
+        if self.commit_type == "feat" and not self.acceptance_criteria:
+            raise ValueError(
+                "commit_type is 'feat' but no acceptance_criteria defined — "
+                "feature evidence gate will require these."
+            )
+        return self
 
-def validate_task_spec(spec: TaskSpec) -> list[str]:
-    """Validate a TaskSpec and return a list of issues found.
+    @classmethod
+    def from_yaml(cls, path: str | Path) -> TaskSpec:
+        """Load a TaskSpec from YAML and run full semantic validation."""
+        import yaml  # type: ignore[import-untyped]
 
-    Returns an empty list if the spec is valid and complete.
+        spec_path = Path(path)
+        data = yaml.safe_load(spec_path.read_text(encoding="utf-8"))
+        if not isinstance(data, dict):
+            raise ValueError(f"Expected a mapping in {spec_path}, got {type(data).__name__}.")
+        spec = cls.model_validate(data)
+        result = validate_task_spec(spec)
+        if result.errors:
+            raise ValueError(
+                "TaskSpec contains blocking semantic issues: " + "; ".join(result.errors)
+            )
+        return spec
+
+
+def validate_task_spec(spec: TaskSpec) -> TaskSpecValidationResult:
+    """Validate a TaskSpec and return structured semantic validation results.
+
+    Blocking issues are returned in ``errors`` and advisories in ``warnings``.
 
     Args:
         spec: The task specification to validate.
     """
-    issues: list[str] = []
+    errors: list[str] = []
+    warnings: list[str] = []
 
     # Check scope boundaries are set for non-trivial tasks
     if not spec.scope_boundaries and spec.affected_layers != [ArchitectureLayer.DOCS]:
-        issues.append(
+        warnings.append(
             "scope_boundaries is empty — consider defining allowed file patterns "
             "to prevent unintended modifications."
         )
@@ -186,21 +230,21 @@ def validate_task_spec(spec: TaskSpec) -> list[str]:
     }
     affected_set = set(spec.affected_layers)
     if code_layers & affected_set and not spec.quality_constraints:
-        issues.append(
+        warnings.append(
             "quality_constraints is empty for a code change — "
             "define measurable quality requirements."
         )
 
     # Check commit_type consistency
     if spec.commit_type == "feat" and not spec.acceptance_criteria:
-        issues.append(
+        errors.append(
             "commit_type is 'feat' but no acceptance_criteria defined — "
             "feature evidence gate will require these."
         )
 
     # Check ADR requirement awareness
     if spec.requires_adr and "ADR" not in " ".join(spec.depends_on):
-        issues.append(
+        errors.append(
             "requires_adr is true but no ADR identifier in depends_on — "
             "specify the ADR number (e.g. 'ADR-034')."
         )
@@ -208,14 +252,14 @@ def validate_task_spec(spec: TaskSpec) -> list[str]:
     # Validate commit_type values
     valid_types = {"feat", "fix", "refactor", "docs", "test", "chore", ""}
     if spec.commit_type not in valid_types:
-        issues.append(
+        errors.append(
             f"commit_type '{spec.commit_type}' is not a valid conventional commit type. "
             f"Expected one of: {', '.join(sorted(valid_types - {''}))}."
         )
 
     # Warn when code layers are affected but tests layer is missing
     if code_layers & affected_set and ArchitectureLayer.TESTS not in spec.affected_layers:
-        issues.append(
+        warnings.append(
             "Code layers affected but 'tests' not in affected_layers — "
             "consider adding tests to ensure coverage."
         )
@@ -223,9 +267,13 @@ def validate_task_spec(spec: TaskSpec) -> list[str]:
     # Warn about very short acceptance criteria (likely vague)
     for criterion in spec.acceptance_criteria:
         if len(criterion.strip()) < 15:
-            issues.append(
+            warnings.append(
                 f"Acceptance criterion is very short ({len(criterion.strip())} chars): "
                 f"'{criterion}' — may be too vague to verify."
             )
 
-    return issues
+    return TaskSpecValidationResult(
+        is_valid=not errors,
+        errors=errors,
+        warnings=warnings,
+    )

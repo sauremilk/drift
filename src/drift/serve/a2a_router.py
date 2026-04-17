@@ -40,6 +40,10 @@ def _ensure_dispatch_table() -> dict[str, Any]:
             "nudge": _handle_nudge,
             "brief": _handle_brief,
             "negative_context": _handle_negative_context,
+            "compile_policy": _handle_compile_policy,
+            "patch_begin": _handle_patch_begin,
+            "patch_check": _handle_patch_check,
+            "patch_commit": _handle_patch_commit,
         }
     )
     return _SKILL_DISPATCH
@@ -253,3 +257,57 @@ def _handle_negative_context(params: dict[str, Any]) -> dict[str, Any]:
 
     path = _validate_repo_path(params.get("path", "."))
     return negative_context(path=path)
+
+
+def _handle_compile_policy(params: dict[str, Any]) -> dict[str, Any]:
+    from drift.api import compile_policy
+
+    path = _validate_repo_path(params.get("path", "."))
+    task = params.get("task", "")
+    return compile_policy(
+        path=path,
+        task=task,
+        task_spec_path=params.get("task_spec_path"),
+        diff_ref=params.get("diff_ref"),
+        max_rules=params.get("max_rules", 15),
+    )
+
+
+def _handle_patch_begin(params: dict[str, Any]) -> dict[str, Any]:
+    from drift.api import patch_begin
+
+    return patch_begin(
+        task_id=params["task_id"],
+        declared_files=params.get("declared_files", []),
+        expected_outcome=params.get("expected_outcome", ""),
+        session_id=params.get("session_id"),
+        blast_radius=params.get("blast_radius", "local"),
+        forbidden_paths=params.get("forbidden_paths"),
+        max_diff_lines=params.get("max_diff_lines"),
+    )
+
+
+def _handle_patch_check(params: dict[str, Any]) -> dict[str, Any]:
+    from drift.api import patch_check
+
+    path = _validate_repo_path(params.get("path", "."))
+    return patch_check(
+        task_id=params["task_id"],
+        declared_files=params.get("declared_files", []),
+        path=path,
+        forbidden_paths=params.get("forbidden_paths"),
+        max_diff_lines=params.get("max_diff_lines"),
+    )
+
+
+def _handle_patch_commit(params: dict[str, Any]) -> dict[str, Any]:
+    from drift.api import patch_commit
+
+    path = _validate_repo_path(params.get("path", "."))
+    return patch_commit(
+        task_id=params["task_id"],
+        declared_files=params.get("declared_files", []),
+        expected_outcome=params.get("expected_outcome", ""),
+        path=path,
+        session_id=params.get("session_id"),
+    )

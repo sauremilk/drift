@@ -253,6 +253,37 @@ def _build_catalog() -> dict[str, ToolMetadataEntry]:
             ),
             phases=("fix",),
         ),
+        # --- Patch Engine (ADR-074) ---
+        ToolMetadataEntry(
+            name="drift_patch_begin",
+            cost=ToolCostMetadata("low", "none", 50, 100),
+            context=ToolContextHint(
+                when_to_use="Declare intent before editing files. Call before making changes.",
+                prerequisite_tools=("drift_fix_plan",),
+                follow_up_tools=("drift_patch_check",),
+            ),
+            phases=("fix",),
+        ),
+        ToolMetadataEntry(
+            name="drift_patch_check",
+            cost=ToolCostMetadata("low", "low", 100, 500),
+            context=ToolContextHint(
+                when_to_use="Validate scope compliance after editing. Call after file changes.",
+                prerequisite_tools=("drift_patch_begin",),
+                follow_up_tools=("drift_patch_commit",),
+            ),
+            phases=("fix",),
+        ),
+        ToolMetadataEntry(
+            name="drift_patch_commit",
+            cost=ToolCostMetadata("low", "none", 50, 200),
+            context=ToolContextHint(
+                when_to_use="Generate evidence record for a completed patch.",
+                prerequisite_tools=("drift_patch_check",),
+                follow_up_tools=("drift_task_complete",),
+            ),
+            phases=("done",),
+        ),
     ]
     return {e.name: e for e in entries}
 

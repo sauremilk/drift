@@ -259,6 +259,11 @@ class DriftSession:
     failed_task_ids: list[str] = field(default_factory=list)
     task_reclaim_counts: dict[str, int] = field(default_factory=dict)
     completed_results: dict[str, dict[str, Any]] = field(default_factory=dict)
+
+    # -- Patch engine state (ADR-074) ----------------------------------------
+    active_patches: dict[str, dict[str, Any]] = field(default_factory=dict)
+    patch_history: list[dict[str, Any]] = field(default_factory=list)
+
     _lock: threading.RLock = field(
         default_factory=threading.RLock, init=False, repr=False, compare=False
     )

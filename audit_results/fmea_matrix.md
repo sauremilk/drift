@@ -1,5 +1,15 @@
 # FMEA Matrix
 
+## 2025-07-27 - ADR-074: Patch Engine — transactional protocol for agent-driven code changes
+
+| Component | Failure Mode | Cause | Effect | Detection | Mitigation | S | O | D | RPN | Status |
+|---|---|---|---|---|---|---:|---:|---:|---:|---|
+| patch_check() scope validation | False-clean: file outside declared scope not flagged | Changed files list from git incomplete (submodule, new file not tracked) | Agent proceeds with undeclared scope changes | `TestPatchCheck::test_review_required_scope_violation` | Git diff includes untracked via HEAD comparison; test mocks verify logic | 4 | 2 | 2 | 16 | Mitigated |
+| patch_check() forbidden path | Forbidden path bypassed | Path normalization mismatch (backslash vs forward slash) | Agent edits forbidden file without warning | `TestPatchCheck::test_review_required_forbidden_path` | Paths compared as-is from git output (posix); Windows path normalization documented | 3 | 2 | 2 | 12 | Mitigated |
+| patch_commit() evidence record | Evidence generated without prior check | patch_commit called without patch_check; verdict_override accepts arbitrary data | Evidence record does not reflect actual state | `TestPatchCommit::test_produces_evidence_record` (calls check internally) | When no verdict_override, patch_commit calls patch_check internally | 3 | 2 | 2 | 12 | Mitigated |
+| MCP drift_patch_begin | blast_radius enum bypass | Invalid string passed for blast_radius | Pydantic validation error returns 500 | `_validate_enum_param` check in MCP server before API call | Explicit enum validation with user-friendly error response | 4 | 2 | 1 | 8 | Mitigated |
+| Session active_patches state | Stale patch intent in session after disconnect | Session not cleaned up; active_patches accumulates | Memory leak for long-lived sessions | Session TTL and expiry already handles cleanup | active_patches cleaned by finalize_patch on commit; session expiry handles orphans | 2 | 2 | 2 | 8 | Mitigated |
+
 ## 2025-07-26 - ADR-070: drift verify — binary pass/fail coherence verification
 
 | Component | Failure Mode | Cause | Effect | Detection | Mitigation | S | O | D | RPN | Status |

@@ -1,5 +1,20 @@
 # STRIDE Threat Model
 
+## 2025-07-27 - ADR-074: Patch Engine — transactional protocol for agent-driven code changes
+
+- Scope: New API endpoints `patch_begin`, `patch_check`, `patch_commit` in [src/drift/api/patch.py](src/drift/api/patch.py). Three new MCP tools in [src/drift/mcp_server.py](src/drift/mcp_server.py). New CLI group `drift patch` in [src/drift/commands/patch_cmd.py](src/drift/commands/patch_cmd.py). New A2A skills in [src/drift/serve/a2a_router.py](src/drift/serve/a2a_router.py). Session extensions in [src/drift/session.py](src/drift/session.py).
+- Input path changes: New: `task_id`, `declared_files`, `expected_outcome`, `blast_radius`, `forbidden_paths`, `max_diff_lines` as inputs. `declared_files` is a comma-separated file list from the agent.
+- Output path changes: Additive. New `PatchIntent`, `PatchVerdict`, evidence records. All serialised as JSON dicts.
+- External interface changes: Additive. Three new MCP tools (`drift_patch_begin`, `drift_patch_check`, `drift_patch_commit`), three new API functions, one new CLI group. Advisory only — no hard enforcement.
+- Trust boundary: MCP tool inputs validated: `blast_radius` enum checked before API call. `declared_files` and `forbidden_paths` are path strings compared against git output; no file I/O performed on them.
+- STRIDE review:
+	- S (Spoofing): No new identity or authentication boundary. Patch tools use same session/repo resolution as existing tools.
+	- T (Tampering): Low risk. `declared_files` is an advisory scope declaration by the agent. An agent could declare a wide scope to avoid scope violations; enforcement is advisory by design (ADR-074).
+	- R (Repudiation): Improved traceability. Every patch produces an evidence record with intent, verdict, and diff metrics. `patch_history` in session provides audit trail.
+	- I (Information Disclosure): Low risk. Diff metrics come from `git diff --numstat`; no new file content exposed beyond what git already reports.
+	- D (Denial of Service): Low risk. `patch_check` runs `git diff` which is fast. No full `analyze_repo()` call. No heavy computation.
+	- E (Elevation of Privilege): No privilege change. Advisory enforcement — patch verdicts are informational, not blocking.
+
 ## 2025-07-22 - ADR-064: Shadow-Verify fuer cross-file-risky edit_kinds
 
 - Scope: Neuer API-Endpunkt [src/drift/api/shadow_verify.py](src/drift/api/shadow_verify.py), neues MCP-Tool `drift_shadow_verify` in [src/drift/mcp_server.py](src/drift/mcp_server.py), Erweiterung von `AgentTask` in [src/drift/models.py](src/drift/models.py), `_derive_task_contract` in [src/drift/api_helpers.py](src/drift/api_helpers.py), `_compute_shadow_verify_scope` in [src/drift/output/agent_tasks.py](src/drift/output/agent_tasks.py).

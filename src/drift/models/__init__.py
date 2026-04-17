@@ -113,6 +113,30 @@ from drift.models._parse import (
 from drift.models._parse import (
     PatternInstance as PatternInstance,
 )
+from drift.models._patch import (
+    AcceptanceResult as AcceptanceResult,
+)
+from drift.models._patch import (
+    BlastRadius as BlastRadius,
+)
+from drift.models._patch import (
+    DiffMetrics as DiffMetrics,
+)
+from drift.models._patch import (
+    PatchIntent as PatchIntent,
+)
+from drift.models._patch import (
+    PatchStatus as PatchStatus,
+)
+from drift.models._patch import (
+    PatchVerdict as PatchVerdict,
+)
+from drift.models._policy import (
+    CompiledPolicy as CompiledPolicy,
+)
+from drift.models._policy import (
+    PolicyRule as PolicyRule,
+)
 
 __all__ = [
     # Enums & constants
@@ -158,4 +182,14 @@ __all__ = [
     "AgentTask",
     "ConsolidationGroup",
     "NegativeContext",
+    # Patch engine (ADR-074)
+    "PatchStatus",
+    "BlastRadius",
+    "DiffMetrics",
+    "AcceptanceResult",
+    "PatchIntent",
+    "PatchVerdict",
+    # Policy
+    "PolicyRule",
+    "CompiledPolicy",
 ]

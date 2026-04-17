@@ -1210,6 +1210,151 @@ async def drift_calibrate(
     )
 
 
+# ---------------------------------------------------------------------------
+# Patch Engine tools (ADR-074)
+# ---------------------------------------------------------------------------
+
+_BLAST_RADIUS_VALUES = frozenset({"local", "module", "repo"})
+
+
+@mcp.tool()
+async def drift_patch_begin(
+    task_id: Annotated[
+        str,
+        Field(description="Unique identifier for the agent task."),
+    ],
+    declared_files: Annotated[
+        str,
+        Field(
+            description=(
+                "Comma-separated posix-relative file paths the agent intends to edit."
+            ),
+        ),
+    ],
+    expected_outcome: Annotated[
+        str,
+        Field(description="Short description of what the edit should achieve."),
+    ],
+    session_id: Annotated[
+        str,
+        Field(description="Optional session ID from drift_session_start."),
+    ] = "",
+    blast_radius: Annotated[
+        str,
+        Field(
+            description=(
+                "Expected blast radius: 'local' (single file), 'module' (package), "
+                "'repo' (cross-module). Default: local."
+            ),
+        ),
+    ] = "local",
+    forbidden_paths: Annotated[
+        str | None,
+        Field(
+            description="Comma-separated paths the agent must NOT touch.",
+        ),
+    ] = None,
+    max_diff_lines: Annotated[
+        int | None,
+        Field(description="Maximum total diff lines before review is required."),
+    ] = None,
+) -> str:
+    """Declare patch intent before editing files (ADR-074 phase 1)."""
+    import json
+
+    _err = _validate_enum_param(
+        "blast_radius", blast_radius, _BLAST_RADIUS_VALUES, "drift_patch_begin"
+    )
+    if _err:
+        _err["tool"] = "drift_patch_begin"
+        return json.dumps(_err)
+
+    from drift.mcp_router_patch import run_patch_begin
+
+    return await run_patch_begin(
+        task_id=task_id,
+        declared_files=declared_files,
+        expected_outcome=expected_outcome,
+        session_id=session_id,
+        blast_radius=blast_radius,
+        forbidden_paths=forbidden_paths,
+        max_diff_lines=max_diff_lines,
+    )
+
+
+@mcp.tool()
+async def drift_patch_check(
+    task_id: Annotated[
+        str,
+        Field(description="Task ID matching a prior drift_patch_begin call."),
+    ],
+    declared_files: Annotated[
+        str,
+        Field(
+            description="Comma-separated posix-relative file paths from the intent.",
+        ),
+    ],
+    path: Annotated[str, Field(description="Repository path to analyze.")] = ".",
+    session_id: Annotated[
+        str,
+        Field(description="Optional session ID from drift_session_start."),
+    ] = "",
+    forbidden_paths: Annotated[
+        str | None,
+        Field(description="Comma-separated paths the agent must NOT touch."),
+    ] = None,
+    max_diff_lines: Annotated[
+        int | None,
+        Field(description="Maximum total diff lines before review is required."),
+    ] = None,
+) -> str:
+    """Validate scope compliance after editing (ADR-074 phase 2)."""
+    from drift.mcp_router_patch import run_patch_check
+
+    return await run_patch_check(
+        task_id=task_id,
+        declared_files=declared_files,
+        path=path,
+        session_id=session_id,
+        forbidden_paths=forbidden_paths,
+        max_diff_lines=max_diff_lines,
+    )
+
+
+@mcp.tool()
+async def drift_patch_commit(
+    task_id: Annotated[
+        str,
+        Field(description="Task ID matching a prior drift_patch_begin call."),
+    ],
+    declared_files: Annotated[
+        str,
+        Field(
+            description="Comma-separated posix-relative file paths from the intent.",
+        ),
+    ],
+    expected_outcome: Annotated[
+        str,
+        Field(description="Short description of what the edit should achieve."),
+    ],
+    path: Annotated[str, Field(description="Repository path to analyze.")] = ".",
+    session_id: Annotated[
+        str,
+        Field(description="Optional session ID from drift_session_start."),
+    ] = "",
+) -> str:
+    """Generate evidence record for a completed patch (ADR-074 phase 3)."""
+    from drift.mcp_router_patch import run_patch_commit
+
+    return await run_patch_commit(
+        task_id=task_id,
+        declared_files=declared_files,
+        expected_outcome=expected_outcome,
+        path=path,
+        session_id=session_id,
+    )
+
+
 _EXPORTED_MCP_TOOLS = (
     drift_scan,
     drift_diff,
@@ -1234,6 +1379,9 @@ _EXPORTED_MCP_TOOLS = (
     drift_map,
     drift_feedback,
     drift_calibrate,
+    drift_patch_begin,
+    drift_patch_check,
+    drift_patch_commit,
 )
 
 

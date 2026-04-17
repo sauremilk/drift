@@ -283,9 +283,11 @@ from drift.commands.explain import explain
 from drift.commands.export_context import export_context
 from drift.commands.feedback import feedback
 from drift.commands.fix_plan import fix_plan
+from drift.commands.generate_skills_cmd import generate_skills
 from drift.commands.import_cmd import import_report
 from drift.commands.init_cmd import init
 from drift.commands.mcp import mcp
+from drift.commands.patch_cmd import patch
 from drift.commands.patterns import patterns
 from drift.commands.precision_cmd import precision
 from drift.commands.preset import preset
@@ -318,6 +320,7 @@ main.add_command(explain)
 main.add_command(export_context)
 main.add_command(feedback)
 main.add_command(fix_plan)
+main.add_command(generate_skills)
 main.add_command(import_report)
 main.add_command(mcp)
 main.add_command(patterns)
@@ -337,6 +340,7 @@ main.add_command(validate)
 main.add_command(self_analyze)
 main.add_command(badge)
 main.add_command(verify)
+main.add_command(patch)
 main.add_command(check, "gate")
 main.add_command(ci)
 main.add_command(completions)
