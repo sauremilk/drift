@@ -154,6 +154,30 @@
             "null"
           ]
         },
+        "phase_timing": {
+          "type": "object",
+          "description": "Duration in seconds for each analysis phase.",
+          "properties": {
+            "discover_seconds": {
+              "type": "number"
+            },
+            "parse_seconds": {
+              "type": "number"
+            },
+            "git_seconds": {
+              "type": "number"
+            },
+            "signals_seconds": {
+              "type": "number"
+            },
+            "output_seconds": {
+              "type": "number"
+            },
+            "total_seconds": {
+              "type": "number"
+            }
+          }
+        },
         "skipped_languages": {
           "type": ["object", "null"],
           "description": "Languages skipped due to missing runtime (e.g. tree-sitter). Keys are language names, values are file counts.",
