@@ -279,6 +279,45 @@ class RepairTemplateRegistry:
     # Record outcome
     # ------------------------------------------------------------------
 
+    # ------------------------------------------------------------------
+    # Similar outcomes (ADR-072)
+    # ------------------------------------------------------------------
+
+    def similar_outcomes(
+        self,
+        signal: str,
+        edit_kind: str,
+        context_class: str = "production",
+    ) -> dict[str, Any] | None:
+        """Return a compact summary of past outcomes for this (signal, edit_kind).
+
+        Returns ``None`` when no recorded data exists for the combination.
+        The returned dict is ready for direct inclusion in API responses.
+        """
+        entry = self.lookup(signal, edit_kind, context_class)
+        if entry is None:
+            return None
+
+        total = entry.improving_count + entry.stable_count + entry.regressing_count
+        if total == 0:
+            return None
+
+        conf = self.confidence(entry)
+        return {
+            "total_outcomes": total,
+            "improving": entry.improving_count,
+            "stable": entry.stable_count,
+            "regressing": entry.regressing_count,
+            "confidence": conf,
+            "known_regressions": [
+                _regression_pattern_to_dict(rp) for rp in entry.regression_patterns
+            ],
+        }
+
+    # ------------------------------------------------------------------
+    # Record outcome
+    # ------------------------------------------------------------------
+
     def record_outcome(
         self,
         *,
@@ -288,6 +327,9 @@ class RepairTemplateRegistry:
         direction: str,
         score_delta: float = 0.0,
         session_id: str = "",
+        task_id: str = "",
+        new_findings_count: int = 0,
+        resolved_count: int = 0,
         outcomes_path: Path | None = None,
     ) -> None:
         """Append one outcome record to outcomes.jsonl and update in-memory state.
@@ -295,6 +337,9 @@ class RepairTemplateRegistry:
         ``improving``, ``regressing``, and ``stable`` directions are recorded.
         ``unknown`` is silently ignored (too ambiguous for template confidence
         computation).
+
+        ADR-072 adds ``task_id``, ``new_findings_count`` and ``resolved_count``
+        for richer outcome tracking.
 
         Failures are swallowed silently so that a write error never blocks
         the agent fix-loop.
@@ -311,6 +356,9 @@ class RepairTemplateRegistry:
             "direction": direction,
             "score_delta": round(score_delta, 6),
             "session_id": session_id,
+            "task_id": task_id,
+            "new_findings_count": new_findings_count,
+            "resolved_count": resolved_count,
             "timestamp": datetime.datetime.now(datetime.UTC).isoformat(),
         }
 

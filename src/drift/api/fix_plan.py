@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
@@ -31,6 +32,37 @@ from drift.fix_plan_dismissals import get_active_dismissal_ids
 
 if TYPE_CHECKING:
     from drift.analyzer import ProgressCallback
+    from drift.models import AgentTask
+
+logger = logging.getLogger("drift")
+
+
+# ---------------------------------------------------------------------------
+# ADR-072: Remediation Memory — enrich tasks with past outcome data
+# ---------------------------------------------------------------------------
+
+
+def _enrich_tasks_with_similar_outcomes(tasks: list[AgentTask]) -> None:
+    """Attach ``similar_outcomes`` from the RepairTemplateRegistry to each task.
+
+    Swallows all errors so that registry unavailability never blocks fix_plan.
+    """
+    try:
+        from drift.repair_template_registry import get_registry
+
+        registry = get_registry()
+    except Exception:
+        logger.debug("fix_plan: could not load RepairTemplateRegistry", exc_info=True)
+        return
+
+    for task in tasks:
+        edit_kind = task.metadata.get("fix_template_class", "")
+        if not edit_kind:
+            continue
+        context = task.metadata.get("finding_context", "production")
+        outcomes = registry.similar_outcomes(task.signal_type, edit_kind, context)
+        if outcomes is not None:
+            task.similar_outcomes = outcomes
 
 
 def _fix_plan_agent_instruction(tasks: list) -> str:
@@ -127,6 +159,9 @@ def _build_fix_plan_response_from_analysis(
             )
 
     tasks = analysis_to_agent_tasks(analysis)
+
+    # ADR-072: Attach similar_outcomes from RepairTemplateRegistry
+    _enrich_tasks_with_similar_outcomes(tasks)
 
     # Filter by target_path
     if target_path:

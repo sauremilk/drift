@@ -42,6 +42,8 @@ from drift.api.scan import (
     scan,
 )
 from drift.api.shadow_verify import shadow_verify
+from drift.api.steer import steer
+from drift.api.suggest_rules import suggest_rules
 from drift.api.validate import validate
 from drift.api.verify import verify
 
@@ -88,6 +90,8 @@ STABLE_API = [
     "invalidate_nudge_baseline",
     "scan",
     "shadow_verify",
+    "steer",
+    "suggest_rules",
     "validate",
     "verify",
     "to_json",

@@ -1,5 +1,12 @@
 ## [Unreleased]
 
+### Added
+
+- **Remediation Memory (ADR-072)**: `RepairTemplateRegistry.similar_outcomes()` returns compact past-outcome summaries per (signal, edit_kind); `fix_plan` now enriches each `AgentTask` with `similar_outcomes` from the registry to guide repair choices.
+- **Consolidation Opportunity Detector (ADR-073)**: `build_consolidation_groups()` clusters batch-eligible tasks into `ConsolidationGroup` objects; `TaskGraph` exposes `consolidation_opportunities` in its API dict; each task carries a `consolidation_group_id` back-reference.
+- **`steer` and `suggest_rules` API functions**: new `drift.api.steer` and `drift.api.suggest_rules` entry points backed by the new `drift.arch_graph` module (ArchGraph, ArchGraphStore, decision constraints, feedback proposals, reuse index).
+- **`record_outcome` enriched**: `task_id`, `new_findings_count`, and `resolved_count` fields added for richer outcome tracking per outcome record.
+
 ### Fixed
 
 - **Negative-context registry coverage gate (#472)**: Added a registry-based policy assertion so every signal registered in [src/drift/signal_registry.py](src/drift/signal_registry.py) must be covered by a dedicated negative-context generator or explicitly listed in fallback-only policy; `type_safety_bypass` is now explicitly declared fallback-only to avoid silent policy drift.

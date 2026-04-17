@@ -79,6 +79,7 @@ from drift.task_graph import (  # noqa: F401
     _derive_task_contract,
     _git_cmd,
     _task_to_api_dict,
+    build_consolidation_groups,
     build_task_graph,
     build_workflow_plan,
     validate_plan,

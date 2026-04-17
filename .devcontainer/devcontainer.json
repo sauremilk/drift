@@ -5,6 +5,7 @@
     "ghcr.io/devcontainers/features/git:1": {}
   },
   "postCreateCommand": "pip install -e '.[dev]' && pre-commit install",
+  "postStartCommand": "pip install -e '.[dev]' --quiet",
   "customizations": {
     "vscode": {
       "extensions": [

@@ -17,6 +17,7 @@ from typing import TYPE_CHECKING, Any
 
 from drift.fix_intent import derive_fix_intent
 from drift.models import SignalType
+from drift.models._agent import ConsolidationGroup
 from drift.next_step_contract import DONE_SAFE_TO_COMMIT
 from drift.signal_mapping import signal_abbrev
 
@@ -210,6 +211,10 @@ def _task_to_api_dict(t: Any) -> dict[str, Any]:
     result["fix_intent"] = derive_fix_intent(t, result)
     # ADR-064: concrete repair exemplar (snippet + patch_shape) for batch-eligible tasks
     result["repair_exemplar"] = _derive_repair_exemplar(t)
+    # ADR-072: outcome-informed repair recommendations
+    result["similar_outcomes"] = getattr(t, "similar_outcomes", None)
+    # ADR-073: consolidation group back-reference
+    result["consolidation_group_id"] = getattr(t, "consolidation_group_id", None)
     return result
 
 
@@ -227,6 +232,7 @@ class TaskGraph:
     execution_phases: list[list[str]] = field(default_factory=list)
     critical_path: list[str] = field(default_factory=list)
     total_estimated_delta: float = 0.0
+    consolidation_groups: list[ConsolidationGroup] = field(default_factory=list)
 
     def to_api_dict(self) -> dict[str, Any]:
         """Serialize graph metadata for API responses."""
@@ -235,6 +241,9 @@ class TaskGraph:
             "execution_phases": self.execution_phases,
             "critical_path": self.critical_path,
             "total_estimated_delta": round(self.total_estimated_delta, 4),
+            "consolidation_opportunities": [
+                g.to_api_dict() for g in self.consolidation_groups
+            ],
         }
 
 
@@ -258,6 +267,7 @@ def build_task_graph(tasks: list[AgentTask]) -> TaskGraph:
 
     _task_graph_assign_order_and_blocks(sorted_ids, task_map, children, task_ids)
     batch_groups = _task_graph_batch_groups(tasks)
+    consolidation = build_consolidation_groups(tasks)
     phases = _task_graph_execution_phases(sorted_ids, adj)
     _task_graph_parallel_with(phases, task_map)
     critical = _task_graph_critical_path(sorted_ids, children, task_ids)
@@ -271,6 +281,7 @@ def build_task_graph(tasks: list[AgentTask]) -> TaskGraph:
         execution_phases=phases,
         critical_path=critical,
         total_estimated_delta=total_delta,
+        consolidation_groups=consolidation,
     )
 
 
@@ -345,6 +356,73 @@ def _task_graph_batch_groups(tasks: list[AgentTask]) -> dict[str, list[str]]:
         if task.batch_group and task.batch_group not in surviving:
             task.batch_group = None
     return filtered
+
+
+# ---------------------------------------------------------------------------
+# Consolidation Opportunity Detector (ADR-073)
+# ---------------------------------------------------------------------------
+
+
+def build_consolidation_groups(tasks: list[AgentTask]) -> list[ConsolidationGroup]:
+    """Cluster batch-eligible tasks into consolidation opportunities.
+
+    Groups tasks by (signal_type, fix_template_class) — the same key used
+    by :func:`_task_graph_batch_groups`.  For each group with ≥2 members,
+    builds a :class:`ConsolidationGroup` with:
+
+    - canonical_file: the file appearing most often across affected_files_for_pattern
+    - estimated_net_finding_reduction: instance_count - 1 (consolidation keeps one)
+    """
+    buckets: dict[str, list[AgentTask]] = defaultdict(list)
+    for task in tasks:
+        tmpl = task.metadata.get("fix_template_class", "")
+        if tmpl and task.metadata.get("batch_eligible", False):
+            group_key = f"{signal_abbrev(task.signal_type)}-{tmpl}"
+            buckets[group_key].append(task)
+
+    groups: list[ConsolidationGroup] = []
+    for group_key, members in sorted(buckets.items()):
+        if len(members) < 2:
+            continue
+
+        # Collect all affected files across members
+        all_files: list[str] = []
+        for m in members:
+            all_files.extend(m.metadata.get("affected_files_for_pattern", []))
+        # Dedupe while preserving order
+        seen: set[str] = set()
+        unique_files: list[str] = []
+        for f in all_files:
+            if f not in seen:
+                seen.add(f)
+                unique_files.append(f)
+
+        # Canonical file = most frequently referenced
+        file_counts: dict[str, int] = defaultdict(int)
+        for f in all_files:
+            file_counts[f] += 1
+        canonical = max(file_counts, key=lambda f: file_counts[f]) if file_counts else None
+
+        # Derive edit_kind from first member's fix_template_class
+        edit_kind = members[0].metadata.get("fix_template_class", "")
+
+        group = ConsolidationGroup(
+            group_id=group_key,
+            signal=signal_abbrev(members[0].signal_type),
+            edit_kind=edit_kind,
+            instance_count=len(members),
+            canonical_file=canonical,
+            affected_files=unique_files,
+            task_ids=[m.id for m in members],
+            estimated_net_finding_reduction=max(0, len(members) - 1),
+        )
+        groups.append(group)
+
+        # Back-reference on each task (ADR-073)
+        for m in members:
+            m.consolidation_group_id = group_key
+
+    return groups
 
 
 def _task_graph_execution_phases(

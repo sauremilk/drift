@@ -143,6 +143,48 @@ Wenn diese Datei und eine Single Source of Truth kollidieren, gilt immer die Sin
 
 ---
 
+## Drift-Version-Freshness (Pflicht für alle Agenten)
+
+Jeder Agent, der `drift` ausfuehrt, analysiert oder konfiguriert, MUSS sicherstellen,
+dass er die aktuellste verfuegbare Version nutzt. Ein Test oder eine Analyse gegen eine
+veraltete Version hat keinen Erkenntniswert.
+
+### Interner Workspace (Entwicklungsversion)
+
+Wenn ein Agent im Drift-Workspace selbst arbeitet, MUSS er die Dev-Version verwenden:
+
+```bash
+pip install -e '.[dev]'   # Dev-Version aus Workspace installieren / auffrischen
+drift --version           # Muss mit pyproject.toml uebereinstimmen
+```
+
+Der MCP-Server in `.vscode/mcp.json` zeigt auf das Workspace-venv und ist immer
+automatisch aktuell, wenn `pip install -e .` ausgefuehrt wurde.
+
+### Externe Repositories / Field-Tests
+
+Wenn ein Agent drift in einem externen Repository einsetzt, MUSS er zuerst upgraden:
+
+```bash
+pip install --upgrade drift-analyzer   # Immer zuerst: aktuellste PyPI-Version
+drift --version                        # Version im Report dokumentieren
+```
+
+Falls das Upgrade scheitert (Netzwerk, Index-Fehler), MUSS dies im Report
+dokumentiert werden und die tatsaechlich verwendete Version explizit angegeben sein.
+
+### Version im Report
+
+Jede Analyse, jedes Audit-Artefakt und jeder Field-Test-Report MUSS den Output von
+`drift --version` als Metadatum enthalten — entweder im Header oder im Repo-Profil.
+
+### Autoritativer Versions-Freshness-Standard
+
+Die vollstaendige Freshness-Regel fuer Prompts ist Single Source of Truth in
+`.github/prompts/_partials/konventionen.md` (Abschnitt "Versions-Freshness").
+
+---
+
 ## Agent-Delegation-Boundaries
 
 ### Eigenständig (ohne Maintainer-Approval)
