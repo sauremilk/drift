@@ -117,7 +117,12 @@ def test_feedback_commands(monkeypatch, tmp_path: Path) -> None:
     )
     monkeypatch.setattr(
         "drift.calibration.feedback.load_feedback",
-        lambda _p: [SimpleNamespace(signal_type="p", tp=1, fp=0, fn=0)],
+        lambda _p: [
+            SimpleNamespace(
+                signal_type="p", tp=1, fp=0, fn=0,
+                file_path="a.py", source="user", timestamp="",
+            )
+        ],
     )
     monkeypatch.setattr(
         "drift.calibration.feedback.feedback_metrics",
