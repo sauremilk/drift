@@ -251,6 +251,29 @@ def test_render_summary_surfaces_parser_failure_files() -> None:
     assert "src/broken.ts" in output
 
 
+def test_render_summary_warns_on_expired_suppressions() -> None:
+    from drift.output import rich_output as ro
+
+    analysis = RepoAnalysis(
+        repo_path=Path("."),
+        analyzed_at=datetime.datetime.now(tz=datetime.UTC),
+        drift_score=0.25,
+        total_files=1,
+        total_functions=1,
+        ai_attributed_ratio=0.0,
+        analysis_duration_seconds=0.2,
+        expired_suppression_count=2,
+        expired_suppressions=[("src/app.py", 10), ("src/app.py", 20)],
+    )
+    console = Console(record=True, force_terminal=True, width=120)
+
+    ro.render_summary(analysis, console=console)
+
+    output = console.export_text()
+    assert "suppression(s) have expired" in output
+    assert "re-active" in output
+
+
 def test_render_summary_surfaces_skipped_language_warning() -> None:
     from drift.output import rich_output as ro
 

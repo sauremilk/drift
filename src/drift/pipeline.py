@@ -60,7 +60,7 @@ from drift.signals.base import (
     SignalCapabilities,
     create_signals,
 )
-from drift.suppression import filter_findings, scan_suppressions
+from drift.suppression import SuppressionFilterResult, filter_findings, scan_suppression_entries
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -218,6 +218,40 @@ class ScoredFindings:
     suppressed_count: int
     context_tagged_count: int
     suppressed_findings: list[Finding] = field(default_factory=list)
+    expired_suppressions: list[tuple[str, int]] = field(default_factory=list)
+    broad_security_suppressions: list[dict[str, object]] = field(default_factory=list)
+
+
+def _collect_broad_security_suppressions(
+    findings: list[Finding],
+) -> list[dict[str, object]]:
+    """Collect unique file+line+signal records for broad security suppressions."""
+    records: list[dict[str, object]] = []
+    seen: set[tuple[str, int, str]] = set()
+
+    for finding in findings:
+        if not finding.metadata.get("broad_security_suppression"):
+            continue
+        if finding.file_path is None:
+            continue
+
+        line_no = finding.metadata.get("suppression_line", finding.start_line)
+        if not isinstance(line_no, int):
+            continue
+
+        signal = str(finding.signal_type)
+        key = (finding.file_path.as_posix(), line_no, signal)
+        if key in seen:
+            continue
+        seen.add(key)
+        records.append({
+            "file": key[0],
+            "line": key[1],
+            "signal": key[2],
+        })
+
+    records.sort(key=lambda item: (str(item["file"]), int(item["line"]), str(item["signal"])))
+    return records
 
 
 @dataclass(slots=True)
@@ -948,7 +982,7 @@ class ScoringPhase:
         self,
         *,
         impact_assigner: Callable[..., None] = assign_impact_scores,
-        suppression_scanner: Callable[..., dict] = scan_suppressions,
+        suppression_scanner: Callable[..., dict] = scan_suppression_entries,
         suppression_filter: Callable[
             ...,
             tuple[list[Finding], list[Finding]],
@@ -986,8 +1020,19 @@ class ScoringPhase:
         self._impact_assigner(all_findings, config.weights, breadth_cap=breadth_cap)
 
         suppressions = self._suppression_scanner(files, repo_path)
-        all_findings, suppressed_findings = self._suppression_filter(all_findings, suppressions)
+        suppression_result = self._suppression_filter(all_findings, suppressions)
+        expired_suppressions: list[tuple[str, int]] = []
+        if isinstance(suppression_result, SuppressionFilterResult):
+            all_findings = suppression_result.active
+            suppressed_findings = suppression_result.suppressed
+            expired_suppressions = [
+                (entry.file_path, entry.line_number)
+                for entry in suppression_result.expired_suppressions
+            ]
+        else:
+            all_findings, suppressed_findings = suppression_result
         suppressed_count = len(suppressed_findings)
+        broad_security_suppressions = _collect_broad_security_suppressions(suppressed_findings)
 
         ctx_tags = self._context_scanner(files, repo_path)
         all_findings, context_tagged_count = self._context_applicator(
@@ -1075,6 +1120,8 @@ class ScoringPhase:
             suppressed_count=suppressed_count,
             context_tagged_count=context_tagged_count,
             suppressed_findings=suppressed_findings,
+            expired_suppressions=expired_suppressions,
+            broad_security_suppressions=broad_security_suppressions,
         )
 
 
@@ -1116,6 +1163,8 @@ class ResultAssemblyPhase:
             module_scores=artifacts.scored.module_scores,
             findings=artifacts.scored.findings,
             suppressed_findings=artifacts.scored.suppressed_findings,
+            expired_suppressions=artifacts.scored.expired_suppressions,
+            broad_security_suppressions=artifacts.scored.broad_security_suppressions,
             pattern_catalog=pattern_catalog,
             total_files=len(files),
             total_functions=total_funcs,
@@ -1125,6 +1174,7 @@ class ResultAssemblyPhase:
             commits=artifacts.parsed.commits,
             file_histories=artifacts.parsed.file_histories,
             suppressed_count=artifacts.scored.suppressed_count,
+            expired_suppression_count=len(artifacts.scored.expired_suppressions),
             context_tagged_count=artifacts.scored.context_tagged_count,
             analysis_status=("degraded" if artifacts.degradation.events else "complete"),
             degradation_causes=sorted(artifacts.degradation.causes),

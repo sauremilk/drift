@@ -2,10 +2,11 @@
 
 from __future__ import annotations
 
+from datetime import date
 from pathlib import Path
 
 from drift.models import FileInfo, Finding, Severity, SignalType
-from drift.suppression import filter_findings, scan_suppressions
+from drift.suppression import apply_inline_suppressions, filter_findings, scan_suppressions
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -121,6 +122,19 @@ class TestFilterFindings:
         assert len(active) == 0
         assert len(suppressed) == 1
 
+    def test_bare_ignore_marks_broad_security_suppression(self) -> None:
+        finding = _make_finding(
+            signal=SignalType.HARDCODED_SECRET,
+            file_path="src/app.py",
+            start_line=5,
+        )
+
+        active, suppressed = filter_findings([finding], {("src/app.py", 5): None})
+
+        assert active == []
+        assert len(suppressed) == 1
+        assert suppressed[0].metadata["broad_security_suppression"] is True
+
     def test_suppress_matching_signal(self) -> None:
         findings = [
             _make_finding(signal=SignalType.ARCHITECTURE_VIOLATION, start_line=5),
@@ -191,3 +205,22 @@ class TestFilterFindings:
 
         assert len(active) == 0
         assert len(suppressed) == 1
+
+    def test_expired_until_is_not_applied_and_is_reported(self, tmp_path: Path) -> None:
+        src = tmp_path / "src" / "app.py"
+        src.parent.mkdir(parents=True, exist_ok=True)
+        src.write_text(
+            "x = 1  # drift:ignore[AVS] until:2025-01-01 reason:temporary\n",
+            encoding="utf-8",
+        )
+        files = [FileInfo(path=Path("src/app.py"), language="python", size_bytes=80)]
+
+        finding = _make_finding(signal=SignalType.ARCHITECTURE_VIOLATION, start_line=1)
+        result = apply_inline_suppressions([finding], files, tmp_path, today=date(2025, 3, 1))
+
+        assert len(result.active) == 1
+        assert len(result.suppressed) == 0
+        assert len(result.expired_suppressions) == 1
+        expired = result.expired_suppressions[0]
+        assert expired.file_path == "src/app.py"
+        assert expired.line_number == 1

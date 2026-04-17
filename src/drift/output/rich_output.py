@@ -603,6 +603,15 @@ def render_summary(
     le_op = "<=" if ascii_only else "≤"
     dash = " - " if ascii_only else " — "
 
+    expired_suppression_count = analysis.expired_suppression_count or len(
+        analysis.expired_suppressions
+    )
+    if expired_suppression_count:
+        console.print(
+            f"  [bold yellow]{warn_icon} {expired_suppression_count} suppression(s) "
+            "have expired and their findings are now re-active.[/bold yellow]"
+        )
+
     if analysis.skipped_languages:
         summary = ", ".join(
             f"{lang} ({n})" for lang, n in sorted(analysis.skipped_languages.items())

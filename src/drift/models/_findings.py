@@ -148,6 +148,8 @@ class RepoAnalysis:
     module_scores: list[ModuleScore] = field(default_factory=list)
     findings: list[Finding] = field(default_factory=list)
     suppressed_findings: list[Finding] = field(default_factory=list)
+    broad_security_suppressions: list[dict[str, Any]] = field(default_factory=list)
+    expired_suppressions: list[tuple[str, int]] = field(default_factory=list)
     pattern_catalog: dict[PatternCategory, list[PatternInstance]] = field(default_factory=dict)
     total_files: int = 0
     total_functions: int = 0
@@ -157,6 +159,7 @@ class RepoAnalysis:
     commits: list[CommitInfo] = field(default_factory=list)
     file_histories: dict[str, FileHistory] = field(default_factory=dict)
     suppressed_count: int = 0
+    expired_suppression_count: int = 0
     context_tagged_count: int = 0
     baseline_new_count: int | None = None
     baseline_matched_count: int | None = None
