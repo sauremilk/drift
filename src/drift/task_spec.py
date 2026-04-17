@@ -30,7 +30,10 @@ from __future__ import annotations
 from dataclasses import dataclass
 from enum import StrEnum
 from pathlib import Path
-from typing import Annotated
+from typing import TYPE_CHECKING, Annotated
+
+if TYPE_CHECKING:
+    from drift.models._patch import PatchIntent
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
@@ -200,6 +203,25 @@ class TaskSpec(BaseModel):
                 "TaskSpec contains blocking semantic issues: " + "; ".join(result.errors)
             )
         return spec
+
+    def to_patch_intent(
+        self,
+        task_id: str,
+        session_id: str | None = None,
+    ) -> PatchIntent:
+        """Convert this spec to a PatchIntent for the Patch Engine (ADR-074)."""
+        from drift.models._patch import BlastRadius, PatchIntent
+
+        return PatchIntent(
+            task_id=task_id,
+            session_id=session_id,
+            declared_files=list(self.scope_boundaries),
+            forbidden_paths=list(self.forbidden_paths),
+            quality_constraints=list(self.quality_constraints),
+            acceptance_criteria=list(self.acceptance_criteria),
+            expected_outcome=self.goal,
+            blast_radius=BlastRadius.LOCAL,
+        )
 
 
 def validate_task_spec(spec: TaskSpec) -> TaskSpecValidationResult:

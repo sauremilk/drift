@@ -3,7 +3,10 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Any
+from typing import TYPE_CHECKING, Any
+
+if TYPE_CHECKING:
+    from drift.models._patch import PatchIntent
 
 from drift.models._context import NegativeContext
 from drift.models._enums import (
@@ -106,3 +109,27 @@ class AgentTask:
     similar_outcomes: dict[str, Any] | None = None
     # ADR-073: Consolidation opportunity back-reference
     consolidation_group_id: str | None = None
+
+    def to_patch_intent(self, session_id: str | None = None) -> PatchIntent:
+        """Convert this task to a PatchIntent for the Patch Engine (ADR-074)."""
+        from drift.models._patch import BlastRadius, PatchIntent
+
+        scope_map = {
+            ChangeScope.LOCAL: BlastRadius.LOCAL,
+            ChangeScope.MODULE: BlastRadius.MODULE,
+            ChangeScope.CROSS_MODULE: BlastRadius.REPO,
+        }
+        blast = scope_map.get(self.change_scope, BlastRadius.LOCAL)
+        declared: list[str] = []
+        if self.file_path:
+            declared.append(self.file_path)
+        declared.extend(self.related_files)
+        return PatchIntent(
+            task_id=self.id,
+            session_id=session_id,
+            declared_files=declared,
+            constraints=list(self.constraints),
+            blast_radius=blast,
+            expected_outcome=self.title,
+            acceptance_criteria=list(self.success_criteria),
+        )
