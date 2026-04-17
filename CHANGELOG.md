@@ -4,6 +4,7 @@
 
 - **Defect corpus benchmark**: ground-truth fixture set and recall benchmark (`scripts/defect_corpus_benchmark.py`, `benchmarks/defect_corpus/`, `benchmark_results/defect_corpus_recall.json`) for externally validated signal recall measurement.
 - **Drift skills**: add `brainstorming`, `systematic-debugging`, `test-driven-development`, and `writing-plans` skill files under `.github/skills/` for structured agent workflows.
+- **Calibration meta-drift quality guard (`drift calibrate quality`) (#451)**: added confidence-aware divergence assessment for calibrated vs. default weights, warning generation for high-divergence/low-evidence scenarios, persisted quality metadata in `.drift/calibration_status.json`, and surfaced quality output in `drift calibrate run/status` plus new `drift calibrate quality` command.
 
 ### Fixed
 

@@ -68,6 +68,7 @@ def test_feedback_summary_shows_weight_effect_after_calibrate_run(tmp_path: Path
     class _Result:
         total_events = 5
         signals_with_data = 1
+        clamped_signals: list[str] = []
 
         @staticmethod
         def weight_diff(_default: SignalWeights) -> dict[str, dict[str, float]]:
@@ -82,7 +83,7 @@ def test_feedback_summary_shows_weight_effect_after_calibrate_run(tmp_path: Path
 
     with (
         patch("drift.config.DriftConfig.load", return_value=cfg),
-        patch("drift.calibration.feedback.load_feedback", return_value=events),
+        patch("drift.calibration.feedback.load_feedback_with_stats", return_value=(events, 0)),
         patch("drift.calibration.profile_builder.build_profile", return_value=_Result()),
         patch("drift.commands.calibrate._write_calibrated_weights", return_value=None),
     ):

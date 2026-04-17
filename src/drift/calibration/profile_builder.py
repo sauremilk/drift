@@ -90,6 +90,99 @@ class CalibrationResult:
         return diff
 
 
+@dataclass
+class CalibrationQualityAssessment:
+    """Meta-quality view for calibrated weights vs defaults."""
+
+    score: float
+    magnitude: float
+    min_confidence: float
+    warning_count: int
+    warnings: list[str] = field(default_factory=list)
+
+    def as_dict(self) -> dict[str, object]:
+        """Serialize quality metrics for CLI output and status persistence."""
+        return {
+            "score": self.score,
+            "magnitude": self.magnitude,
+            "min_confidence": self.min_confidence,
+            "warning_count": self.warning_count,
+            "warnings": list(self.warnings),
+        }
+
+
+def assess_calibration_quality(
+    result: CalibrationResult,
+    default_weights: SignalWeights,
+    *,
+    divergence_threshold: float = 0.8,
+    low_confidence_threshold: float = 0.5,
+    min_events_threshold: int = 10,
+    magnitude_threshold: float = 0.8,
+) -> CalibrationQualityAssessment:
+    """Assess whether calibration changes appear trustworthy.
+
+    The assessment compares calibrated vs default weights and combines change
+    magnitude with the weakest supporting confidence. Large shifts with weak
+    evidence are flagged as potential meta-drift.
+    """
+    diff = result.weight_diff(default_weights)
+    if not diff:
+        return CalibrationQualityAssessment(
+            score=1.0,
+            magnitude=0.0,
+            min_confidence=1.0,
+            warning_count=0,
+            warnings=[],
+        )
+
+    relative_divergences: dict[str, float] = {}
+    confidences: list[float] = []
+    warnings: list[str] = []
+
+    for signal_name, info in sorted(diff.items()):
+        default_value = float(info.get("default", 0.0))
+        calibrated_value = float(info.get("calibrated", default_value))
+        confidence = float(info.get("confidence", 0.0))
+        confidences.append(confidence)
+
+        if abs(default_value) <= 1e-9:
+            rel_divergence = abs(calibrated_value - default_value)
+        else:
+            rel_divergence = abs(calibrated_value - default_value) / abs(default_value)
+
+        relative_divergences[signal_name] = rel_divergence
+        if rel_divergence > divergence_threshold and confidence < low_confidence_threshold:
+            warnings.append(
+                "Signal "
+                f"{signal_name} diverged by {rel_divergence:.1%} from default "
+                f"with low confidence ({confidence:.1%})."
+            )
+
+    magnitude = sum(relative_divergences.values()) / max(1, len(relative_divergences))
+    min_confidence = min(confidences) if confidences else 1.0
+
+    if magnitude > magnitude_threshold and result.total_events < min_events_threshold:
+        warnings.append(
+            "Total calibration magnitude "
+            f"{magnitude:.1%} exceeds threshold with only {result.total_events} events "
+            f"(<{min_events_threshold})."
+        )
+
+    # High confidence should counterbalance larger shifts; low confidence should
+    # reduce trust in aggressive recalibration.
+    risk = min(1.0, magnitude) * (1.0 - min_confidence)
+    score = round(max(0.0, 1.0 - risk), 4)
+
+    return CalibrationQualityAssessment(
+        score=score,
+        magnitude=round(magnitude, 4),
+        min_confidence=round(min_confidence, 4),
+        warning_count=len(warnings),
+        warnings=warnings,
+    )
+
+
 def build_profile(
     events: list[FeedbackEvent],
     default_weights: SignalWeights | None = None,

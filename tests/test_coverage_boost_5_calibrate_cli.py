@@ -292,6 +292,67 @@ def test_run_json_format_with_diff(tmp_path: Path) -> None:
     assert data["dry_run"] is False
 
 
+def test_run_json_includes_quality_payload(tmp_path: Path) -> None:
+    runner = CliRunner()
+    cfg = _make_cfg(tmp_path)
+    diff = {
+        "pfs": {"default": 1.0, "calibrated": 0.1, "delta": -0.9, "confidence": 0.2},
+    }
+    build_result = _make_build_result(diff=diff)
+
+    with (
+        patch("drift.config.DriftConfig.load", return_value=cfg),
+        patch(
+            "drift.calibration.feedback.load_feedback_with_stats",
+            return_value=([
+                FeedbackEvent(
+                    signal_type="pattern_fragmentation",
+                    file_path="src/b.py",
+                    verdict="fp",
+                    source="user",
+                )
+            ], 0),
+        ),
+        patch("drift.calibration.profile_builder.build_profile", return_value=build_result),
+    ):
+        result = runner.invoke(calibrate, ["run", "--repo", str(tmp_path), "--format", "json"])
+
+    assert result.exit_code == 0
+    import json
+
+    data = json.loads(result.output)
+    assert "quality" in data
+    assert "score" in data["quality"]
+    assert "warnings" in data["quality"]
+
+
+def test_quality_command_shows_saved_meta_quality(tmp_path: Path) -> None:
+    runner = CliRunner()
+    cfg = _make_cfg(tmp_path)
+    status_dir = tmp_path / ".drift"
+    status_dir.mkdir(parents=True, exist_ok=True)
+    (status_dir / "calibration_status.json").write_text(
+        (
+            "{"
+            '"quality": {'
+            '"score": 0.42, '
+            '"warning_count": 1, '
+            '"warnings": ["example warning"]'
+            "}"
+            "}"
+        ),
+        encoding="utf-8",
+    )
+
+    with patch("drift.config.DriftConfig.load", return_value=cfg):
+        result = runner.invoke(calibrate, ["quality", "--repo", str(tmp_path)])
+
+    assert result.exit_code == 0
+    assert "Calibration Quality" in result.output
+    assert "0.42" in result.output
+    assert "example warning" in result.output
+
+
 # ---------------------------------------------------------------------------
 # calibrate explain — no events
 # ---------------------------------------------------------------------------

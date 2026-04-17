@@ -38,7 +38,7 @@ def run(repo: Path, dry_run: bool, config: Path | None, fmt: str) -> None:
         load_feedback_with_stats,
         resolve_feedback_paths,
     )
-    from drift.calibration.profile_builder import build_profile
+    from drift.calibration.profile_builder import assess_calibration_quality, build_profile
     from drift.calibration.status import write_calibration_status
     from drift.config import DriftConfig, SignalWeights
 
@@ -88,6 +88,7 @@ def run(repo: Path, dry_run: bool, config: Path | None, fmt: str) -> None:
     )
     default_weights = SignalWeights()
     diff = result.weight_diff(default_weights)
+    quality = assess_calibration_quality(result, default_weights)
 
     if fmt == "json":
         click.echo(json.dumps({
@@ -95,6 +96,7 @@ def run(repo: Path, dry_run: bool, config: Path | None, fmt: str) -> None:
             "total_events": result.total_events,
             "signals_with_data": result.signals_with_data,
             "weight_changes": diff,
+            "quality": quality.as_dict(),
             "clamped_signals": result.clamped_signals,
             "skipped_feedback_lines": skipped_feedback_lines,
             "dry_run": dry_run,
@@ -134,6 +136,16 @@ def run(repo: Path, dry_run: bool, config: Path | None, fmt: str) -> None:
                     f" {', '.join(result.clamped_signals)}"
                 )
 
+            if quality.warning_count > 0:
+                console.print("\n[bold yellow]Calibration quality warnings:[/bold yellow]")
+                for warning in quality.warnings:
+                    console.print(f"  - {warning}")
+            console.print(
+                f"\n[dim]Calibration quality score: {quality.score:.2f}"
+                f" (magnitude={quality.magnitude:.2f},"
+                f" min_confidence={quality.min_confidence:.1%})[/dim]"
+            )
+
     if not dry_run:
         signal_counts = _summarize_feedback_counts(events)
         write_calibration_status(
@@ -143,6 +155,7 @@ def run(repo: Path, dry_run: bool, config: Path | None, fmt: str) -> None:
                 "total_events": len(events),
                 "signals": signal_counts,
                 "weight_changes": diff,
+                "quality": quality.as_dict(),
                 "clamped_signals": result.clamped_signals,
             },
         )
@@ -244,6 +257,15 @@ def status(repo: Path, config: Path | None) -> None:
     console.print(f"Auto-recalibrate: {auto}")
 
     status_payload = load_calibration_status(repo)
+    if status_payload and isinstance(status_payload.get("quality"), dict):
+        quality_payload = status_payload["quality"]
+        score = float(quality_payload.get("score", 0.0))
+        warning_count = int(quality_payload.get("warning_count", 0))
+        console.print(
+            f"Calibration quality score: {score:.2f}"
+            f" (warnings: {warning_count})"
+        )
+
     if status_payload and isinstance(status_payload.get("clamped_signals"), list):
         clamped = [str(item) for item in status_payload["clamped_signals"] if item]
         if clamped:
@@ -251,6 +273,61 @@ def status(repo: Path, config: Path | None) -> None:
                 "Signals at minimum floor (0.001):"
                 f" {', '.join(sorted(clamped))}"
             )
+
+
+@calibrate.command()
+@click.option(
+    "--repo",
+    "-r",
+    type=click.Path(exists=True, file_okay=False, path_type=Path),
+    default=".",
+    help="Path to the repository root.",
+)
+@click.option("--format", "fmt", type=click.Choice(["text", "json"]), default="text")
+def quality(repo: Path, fmt: str) -> None:
+    """Show meta-calibration health from calibration status metadata."""
+    from drift.calibration.status import load_calibration_status
+
+    payload = load_calibration_status(repo) or {}
+    quality_payload = payload.get("quality")
+
+    if not isinstance(quality_payload, dict):
+        if fmt == "json":
+            click.echo(json.dumps({"status": "no_data", "message": "No calibration quality data."}))
+        else:
+            console.print(
+                "[dim]No calibration quality data found. "
+                "Run 'drift calibrate run' first.[/dim]"
+            )
+        return
+
+    score = float(quality_payload.get("score", 0.0))
+    magnitude = float(quality_payload.get("magnitude", 0.0))
+    min_confidence = float(quality_payload.get("min_confidence", 0.0))
+    warning_count = int(quality_payload.get("warning_count", 0))
+    warnings = quality_payload.get("warnings", [])
+    warnings_list = [str(item) for item in warnings] if isinstance(warnings, list) else []
+
+    if fmt == "json":
+        click.echo(json.dumps({
+            "status": "ok",
+            "score": score,
+            "magnitude": magnitude,
+            "min_confidence": min_confidence,
+            "warning_count": warning_count,
+            "warnings": warnings_list,
+        }, indent=2))
+        return
+
+    console.print("[bold]Calibration Quality[/bold]")
+    console.print(f"  Score: {score:.2f}")
+    console.print(f"  Magnitude: {magnitude:.2f}")
+    console.print(f"  Min confidence: {min_confidence:.1%}")
+    console.print(f"  Warnings: {warning_count}")
+    if warnings_list:
+        console.print("  Details:")
+        for warning in warnings_list:
+            console.print(f"    - {warning}")
 
 
 @calibrate.command()

@@ -368,6 +368,54 @@ class TestProfileBuilder:
             for rec in caplog.records
         )
 
+    def test_meta_quality_warns_on_high_divergence_with_low_confidence(self) -> None:
+        from drift.calibration.profile_builder import CalibrationResult, assess_calibration_quality
+        from drift.config import SignalWeights
+
+        defaults = SignalWeights()
+        default_w = defaults.as_dict()["pattern_fragmentation"]
+        calibrated = defaults.model_copy(update={"pattern_fragmentation": round(default_w * 0.1, 6)})
+
+        result = CalibrationResult(
+            calibrated_weights=calibrated,
+            confidence_per_signal={"pattern_fragmentation": 0.2},
+            total_events=8,
+            signals_with_data=1,
+        )
+
+        quality = assess_calibration_quality(result, defaults)
+
+        assert quality.warning_count >= 1
+        assert any("pattern_fragmentation" in warning for warning in quality.warnings)
+        assert quality.min_confidence == pytest.approx(0.2)
+
+    def test_meta_quality_warns_on_large_total_shift_with_low_evidence(self) -> None:
+        from drift.calibration.profile_builder import CalibrationResult, assess_calibration_quality
+        from drift.config import SignalWeights
+
+        defaults = SignalWeights()
+        calibrated = defaults.model_copy(
+            update={
+                "pattern_fragmentation": 0.001,
+                "architecture_violation": 0.001,
+            }
+        )
+
+        result = CalibrationResult(
+            calibrated_weights=calibrated,
+            confidence_per_signal={
+                "pattern_fragmentation": 0.4,
+                "architecture_violation": 0.3,
+            },
+            total_events=6,
+            signals_with_data=2,
+        )
+
+        quality = assess_calibration_quality(result, defaults)
+
+        assert quality.warning_count >= 1
+        assert any("total calibration magnitude" in warning.lower() for warning in quality.warnings)
+
 
 # ---------------------------------------------------------------------------
 # Scan history tests
