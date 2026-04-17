@@ -176,6 +176,7 @@ def scan(
             warnings.append(
                 "Bare drift:ignore suppressed security findings; review " + 
                 "broad_security_suppressions for file/line/signal details"
+            )
         if warnings:
             result["warnings"] = warnings
         _emit_api_telemetry(
@@ -205,11 +206,13 @@ def scan(
 def _diverse_findings(findings: list, max_findings: int) -> list:
     """Select findings with signal diversity.
 
-    Algorithm:
-    1. Reserve a minimum share of highest-impact findings
-       (preserves analyze/scan priority alignment).
-    2. Add one top finding per yet-unseen signal with score >= 0.5.
-    3. Fill remaining slots with highest-impact remaining findings.
+     Algorithm:
+     0. Reserve one slot per signal for active zero-impact findings
+         (score >= 0.5 and impact == 0.0) to avoid silent omission.
+     1. Reserve a minimum share of highest-impact findings
+         (preserves analyze/scan priority alignment).
+     2. Add one top finding per yet-unseen signal with score >= 0.5.
+     3. Fill remaining slots with highest-impact remaining findings.
     """
     if max_findings <= 0:
         return []
@@ -227,11 +230,44 @@ def _diverse_findings(findings: list, max_findings: int) -> list:
     if len(by_score) <= max_findings:
         return by_score
 
-    # Phase 1: guaranteed top-impact floor.
-    top_impact_quota = _diverse_top_impact_quota(max_findings)
-    result: list = by_score[:top_impact_quota]
-    selected_ids: set[int] = {id(f) for f in result}
-    seen_signals: set[str] = {f.signal_type for f in result}
+    result: list = []
+    selected_ids: set[int] = set()
+    seen_signals: set[str] = set()
+
+    # Phase 0: guarantee visibility of active zero-impact signals.
+    for finding in sorted(
+        by_score,
+        key=lambda f: (
+            -f.score,
+            f.signal_type,
+            f.file_path.as_posix() if f.file_path else "",
+            f.start_line or 0,
+        ),
+    ):
+        if len(result) >= max_findings:
+            break
+        if finding.impact != 0.0 or finding.score < 0.5:
+            continue
+        if finding.signal_type in seen_signals:
+            continue
+        result.append(finding)
+        selected_ids.add(id(finding))
+        seen_signals.add(finding.signal_type)
+
+    remaining_slots = max_findings - len(result)
+
+    # Phase 1: guaranteed top-impact floor for remaining budget.
+    if remaining_slots > 0:
+        top_impact_quota = _diverse_top_impact_quota(remaining_slots)
+        for finding in by_score:
+            if top_impact_quota <= 0 or len(result) >= max_findings:
+                break
+            if id(finding) in selected_ids:
+                continue
+            result.append(finding)
+            selected_ids.add(id(finding))
+            seen_signals.add(finding.signal_type)
+            top_impact_quota -= 1
 
     # Phase 2: one representative per yet-unseen signal.
     for f in by_score:

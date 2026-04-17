@@ -99,6 +99,38 @@ class TestDiverseFindings:
 
         assert preserved_share >= _DIVERSE_MIN_TOP_IMPACT_SHARE
 
+    def test_diverse_keeps_zero_impact_signal_visible_under_cap(self):
+        """Issue #517: active 0.0-impact signals must not disappear under cap."""
+        max_findings = 20
+        non_zero_signals = [
+            signal
+            for signal in SignalType
+            if signal is not SignalType.CIRCULAR_IMPORT
+        ][:max_findings]
+        findings = [
+            _make_finding(
+                signal,
+                0.9,
+                1.0 - (idx * 0.01),
+                file=f"src/f{idx}.py",
+                line=idx + 1,
+            )
+            for idx, signal in enumerate(non_zero_signals)
+        ]
+        findings.append(
+            _make_finding(
+                SignalType.CIRCULAR_IMPORT,
+                0.9,
+                0.0,
+                file="src/cir.py",
+                line=999,
+            )
+        )
+
+        result = _diverse_findings(findings, max_findings)
+
+        assert any(f.signal_type is SignalType.CIRCULAR_IMPORT for f in result)
+
     def test_top_severity_preserves_old_behavior(self, monkeypatch):
         """top-severity returns pure score-sorted findings."""
 
