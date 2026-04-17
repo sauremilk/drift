@@ -94,6 +94,10 @@ def test_precision_recall_report(tmp_path: Path) -> None:
         SignalType.GUARD_CLAUSE_DEFICIT: 0.60,
         SignalType.NAMING_CONTRACT_VIOLATION: 0.60,
         SignalType.BYPASS_ACCUMULATION: 0.60,
+        SignalType.HARDCODED_SECRET: 0.50,
+        SignalType.MISSING_AUTHORIZATION: 0.50,
+        SignalType.INSECURE_DEFAULT: 0.50,
+        SignalType.PHANTOM_REFERENCE: 0.50,
         SignalType.TEST_POLARITY_DEFICIT: 0.50,
         SignalType.ARCHITECTURE_VIOLATION: 0.50,
         SignalType.DOC_IMPL_DRIFT: 0.50,
@@ -108,4 +112,22 @@ def test_precision_recall_report(tmp_path: Path) -> None:
             assert actual >= min_prec, (
                 f"Per-signal precision gate failed for {sig.value}: "
                 f"{actual:.2f} < {min_prec:.2f}\n" + report.summary()
+            )
+
+    # ── Per-signal recall gates ───────────────────────────────────────
+    # Recall gates prevent silent regressions where a signal stops detecting
+    # known-positive fixtures while aggregate F1 still stays above threshold.
+    per_signal_recall: dict[SignalType, float] = {
+        SignalType.HARDCODED_SECRET: 0.50,
+        SignalType.MISSING_AUTHORIZATION: 0.50,
+        SignalType.INSECURE_DEFAULT: 0.50,
+        SignalType.PHANTOM_REFERENCE: 0.40,
+    }
+    for sig, min_recall in per_signal_recall.items():
+        # Only enforce if the signal has any TP+FN observations
+        if report.tp[sig] + report.fn[sig] > 0:
+            actual = report.recall(sig)
+            assert actual >= min_recall, (
+                f"Per-signal recall gate failed for {sig.value}: "
+                f"{actual:.2f} < {min_recall:.2f}\n" + report.summary()
             )
