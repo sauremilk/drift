@@ -97,7 +97,7 @@ def analysis_to_markdown(
         lines.append("")
 
     # Preflight
-    pf = getattr(analysis, "preflight", None)
+    pf = analysis.preflight
     if include_preflight and pf is not None:
         lines.append("## Preflight Diagnostics")
         lines.append("")

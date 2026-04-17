@@ -23,6 +23,7 @@ if TYPE_CHECKING:
     from drift.models._enums import PatternCategory
     from drift.models._git import Attribution, CommitInfo, FileHistory
     from drift.models._parse import PatternInstance
+    from drift.preflight import PreflightResult
 
 
 # ---------------------------------------------------------------------------
@@ -177,7 +178,7 @@ class RepoAnalysis:
     ai_tools_detected: list[str] = field(default_factory=list)
     skipped_files: int = 0
     skipped_languages: dict[str, int] = field(default_factory=dict)
-    preflight: Any | None = None
+    preflight: PreflightResult | None = None
     analyzer_warnings: list[AnalyzerWarning] = field(default_factory=list)
 
     @property

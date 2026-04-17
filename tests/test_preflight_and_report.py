@@ -142,6 +142,10 @@ def _make_analysis(
 
 
 class TestMarkdownReport:
+    def test_repo_analysis_preflight_annotation_is_concrete(self) -> None:
+        """RepoAnalysis.preflight should expose a concrete type contract."""
+        assert RepoAnalysis.__annotations__["preflight"] == "PreflightResult | None"
+
     def test_basic_report_structure(self, tmp_path: Path) -> None:
         """Report should contain header, summary table, and interpretation."""
         analysis = _make_analysis(tmp_path)
