@@ -325,15 +325,22 @@ def init(
         ci = hooks = mcp = claude = True
 
     if not json_output and not dry_run:
+        _ascii_only = bool(getattr(console, "_drift_ascii_only", False))
         _prof = get_profile(profile)
-        console.print(
-            Panel(
-                f"[bold]Setting up drift[/bold] for [cyan]{repo.name}[/cyan]\n"
-                f"[dim]Profile: {_prof.name} — {_prof.description}[/dim]",
-                border_style="rgb(13,148,136)",
-                padding=(0, 2),
+        if _ascii_only:
+            console.print(
+                f"Setting up drift for {repo.name}\n"
+                f"Profile: {_prof.name} -- {_prof.description}"
             )
-        )
+        else:
+            console.print(
+                Panel(
+                    f"[bold]Setting up drift[/bold] for [cyan]{repo.name}[/cyan]\n"
+                    f"[dim]Profile: {_prof.name} — {_prof.description}[/dim]",
+                    border_style="rgb(13,148,136)",
+                    padding=(0, 2),
+                )
+            )
         console.print()
 
     _no_config = not (repo / "drift.yaml").exists()
