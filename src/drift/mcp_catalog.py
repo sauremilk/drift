@@ -10,8 +10,12 @@ from __future__ import annotations
 
 import functools
 import inspect
+import logging
 import re as _re
 from typing import Any
+
+_LAST_TOOL_CATALOG_ERROR: str | None = None
+_LOGGER = logging.getLogger("drift")
 
 
 def _extract_param_descriptions(doc: str) -> dict[str, str]:
@@ -110,7 +114,19 @@ def get_tool_catalog() -> list[dict[str, Any]]:
     """Return MCP tool metadata for local inspection via CLI."""
     import typing
 
-    from drift.mcp_server import _EXPORTED_MCP_TOOLS
+    global _LAST_TOOL_CATALOG_ERROR
+
+    try:
+        from drift.mcp_server import _EXPORTED_MCP_TOOLS
+    except ImportError as exc:
+        _LAST_TOOL_CATALOG_ERROR = str(exc)
+        _LOGGER.warning(
+            "MCP tool catalog unavailable; returning empty catalog (%s)",
+            _LAST_TOOL_CATALOG_ERROR,
+        )
+        return []
+
+    _LAST_TOOL_CATALOG_ERROR = None
 
     catalog: list[dict[str, Any]] = []
 
@@ -168,3 +184,8 @@ def get_tool_catalog() -> list[dict[str, Any]]:
             entry["cost_metadata"] = metadata_as_dict(meta)
 
     return catalog
+
+
+def get_tool_catalog_error() -> str | None:
+    """Return the last catalog-build error, if one occurred."""
+    return _LAST_TOOL_CATALOG_ERROR
