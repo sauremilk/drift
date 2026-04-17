@@ -67,6 +67,37 @@ def test_log_tool_event_uses_explicit_run_id(monkeypatch, tmp_path: Path) -> Non
     assert row["run_id"] == "agent-run-123"
 
 
+def test_log_tool_event_sanitizes_home_directory_paths(monkeypatch, tmp_path: Path) -> None:
+    out = tmp_path / "events.jsonl"
+    fake_home = tmp_path / "home" / "testuser"
+    fake_home.mkdir(parents=True)
+
+    monkeypatch.setenv("DRIFT_TELEMETRY_ENABLED", "1")
+    monkeypatch.setenv("DRIFT_TELEMETRY_FILE", str(out))
+    monkeypatch.setattr("drift.telemetry.Path.home", classmethod(lambda cls: fake_home))
+
+    log_tool_event(
+        tool_name="api.validate",
+        params={
+            "path": str(fake_home / "repo"),
+            "config_file": str(fake_home / "config" / "drift.yaml"),
+            "baseline_file": str(fake_home),
+        },
+        status="ok",
+        duration_ms=7,
+        result={"ok": True},
+        repo_root=tmp_path,
+    )
+
+    row = _read_jsonl(out)[0]
+    params = row["params"]
+
+    assert params["path"].startswith("~/")
+    assert params["config_file"].startswith("~/")
+    assert params["baseline_file"].startswith("~")
+    assert "testuser" not in json.dumps(params)
+
+
 def test_log_tool_event_disabled_writes_nothing(
     monkeypatch,
     tmp_path: Path,

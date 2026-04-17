@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import time
 import uuid
 from collections.abc import Callable
@@ -24,6 +25,47 @@ from typing import Any
 _EVENT_SCHEMA_VERSION = "1.0"
 _REDACT_KEYS = {"token", "password", "secret", "apikey", "api_key", "auth"}
 _SESSION_RUN_ID: str | None = None
+
+
+def _home_prefix_candidates() -> list[str]:
+    """Return possible home-directory prefixes for path sanitization."""
+    candidates = {str(Path.home())}
+
+    for env_name in ("HOME", "USERPROFILE"):
+        value = os.getenv(env_name, "").strip()
+        if value:
+            candidates.add(str(Path(value).expanduser()))
+
+    home_drive = os.getenv("HOMEDRIVE", "").strip()
+    home_path = os.getenv("HOMEPATH", "").strip()
+    if home_drive and home_path:
+        candidates.add(str(Path(f"{home_drive}{home_path}").expanduser()))
+
+    out: list[str] = []
+    for candidate in candidates:
+        trimmed = candidate.rstrip("\\/")
+        if trimmed:
+            out.append(trimmed)
+    return out
+
+
+def _mask_home_prefix(value: str) -> str:
+    """Replace an absolute home-directory prefix with '~' for privacy."""
+    for prefix in _home_prefix_candidates():
+        parts = [p for p in re.split(r"[\\/]", prefix) if p]
+        if not parts:
+            continue
+        pattern = r"^" + r"[\\/]+".join(re.escape(part) for part in parts) + r"(?=$|[\\/])"
+        match = re.match(pattern, value, flags=re.IGNORECASE)
+        if not match:
+            continue
+
+        suffix = value[match.end() :].lstrip("\\/")
+        if not suffix:
+            return "~"
+        return "~/" + suffix.replace("\\", "/")
+
+    return value
 
 
 def _env_truthy(name: str) -> bool:
@@ -83,6 +125,7 @@ def _sanitize(value: Any) -> Any:
     if isinstance(value, list):
         return [_sanitize(v) for v in value]
     if isinstance(value, str):
+        value = _mask_home_prefix(value)
         return value if len(value) <= 240 else value[:237] + "..."
     return value
 

@@ -1,5 +1,9 @@
 ## [Unreleased]
 
+### Fixed
+
+- **Telemetry path sanitization strips home-directory usernames (#464)**: `telemetry._sanitize()` now masks home-directory path prefixes to `~` for string values, preventing OS username leakage via `params.path`, `config_file`, and `baseline_file` in `.drift/agent_usage.jsonl` while preserving relative diagnostic context.
+
 ## [2.11.2] - 2026-04-17
 
 Short version: Fix configuration error messages, golden snapshot alignment, lint/type cleanup, and onboarding doc improvements.
