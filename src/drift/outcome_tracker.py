@@ -14,7 +14,7 @@ from dataclasses import asdict, dataclass
 from datetime import UTC, datetime
 from pathlib import Path
 
-from drift.calibration._atomic_io import atomic_write_text
+from drift.calibration._atomic_io import atomic_write_text, interprocess_lock
 from drift.models import Finding, FindingStatus
 
 logger = logging.getLogger(__name__)
@@ -79,21 +79,22 @@ class OutcomeTracker:
             return
         self._session_fingerprints.add(fp)
 
-        # Check whether this fingerprint already has an *active* entry.
-        existing = self.load()
-        for outcome in existing:
-            if outcome.fingerprint == fp and outcome.resolved_at is None:
-                return  # still tracked, nothing to do
+        with interprocess_lock(self._path):
+            # Check whether this fingerprint already has an *active* entry.
+            existing = self._load_unlocked()
+            for outcome in existing:
+                if outcome.fingerprint == fp and outcome.resolved_at is None:
+                    return  # still tracked, nothing to do
 
-        outcome = Outcome(
-            fingerprint=fp,
-            signal_type=finding.signal_type,
-            recommendation_title=finding.title,
-            reported_at=datetime.now(UTC).isoformat(),
-            was_suppressed=finding.status == FindingStatus.SUPPRESSED,
-            effort_estimate=effort_estimate,
-        )
-        self._append(outcome)
+            outcome = Outcome(
+                fingerprint=fp,
+                signal_type=finding.signal_type,
+                recommendation_title=finding.title,
+                reported_at=datetime.now(UTC).isoformat(),
+                was_suppressed=finding.status == FindingStatus.SUPPRESSED,
+                effort_estimate=effort_estimate,
+            )
+            self._append_unlocked(outcome)
 
     def resolve(
         self,
@@ -113,54 +114,98 @@ class OutcomeTracker:
 
         Returns the list of newly resolved outcomes.
         """
-        outcomes = self.load()
-        now = datetime.now(UTC)
-        to_resolve: set[tuple[str, str, str]] = set()
+        with interprocess_lock(self._path):
+            outcomes = self._load_unlocked()
+            now = datetime.now(UTC)
+            resolved: list[Outcome] = []
 
-        for outcome in outcomes:
-            if outcome.resolved_at is not None:
-                continue
+            for outcome in outcomes:
+                if outcome.resolved_at is not None:
+                    continue
 
-            signal_inactive = (
-                active_signal_types is not None
-                and outcome.signal_type not in active_signal_types
-            )
-            if outcome.fingerprint in current_fingerprints and not signal_inactive:
-                continue
+                signal_inactive = (
+                    active_signal_types is not None
+                    and outcome.signal_type not in active_signal_types
+                )
+                if outcome.fingerprint in current_fingerprints and not signal_inactive:
+                    continue
 
-            to_resolve.add((outcome.fingerprint, outcome.reported_at, outcome.signal_type))
+                outcome.resolved_at = now.isoformat()
+                reported = datetime.fromisoformat(outcome.reported_at)
+                outcome.days_to_fix = (now - reported).total_seconds() / 86400.0
+                resolved.append(outcome)
 
-        if not to_resolve:
-            return []
+            if resolved:
+                self._rewrite_unlocked(outcomes)
 
-        # Re-load right before rewriting so entries appended by another
-        # tracker instance between the first load and rewrite are preserved.
-        merged_outcomes = self.load()
-        resolved: list[Outcome] = []
-
-        for outcome in merged_outcomes:
-            if outcome.resolved_at is not None:
-                continue
-
-            identity = (outcome.fingerprint, outcome.reported_at, outcome.signal_type)
-            if identity not in to_resolve:
-                continue
-
-            outcome.resolved_at = now.isoformat()
-            reported = datetime.fromisoformat(outcome.reported_at)
-            outcome.days_to_fix = (now - reported).total_seconds() / 86400.0
-            resolved.append(outcome)
-
-        if resolved:
-            self._rewrite(merged_outcomes)
-
-        return resolved
+            return resolved
 
     def load(self) -> list[Outcome]:
         """Load all outcomes from the JSONL file.
 
         Returns an empty list when the file does not exist (F-05).
         """
+        with interprocess_lock(self._path):
+            return self._load_unlocked()
+
+    def archive(self, max_age_days: int = 180) -> int:
+        """Move outcomes older than *max_age_days* to an archive file.
+
+        Returns the number of archived entries.
+        """
+        with interprocess_lock(self._path):
+            # Finalize any previously interrupted archive operation first.
+            pending = self._load_pending_archive()
+            if pending:
+                self._merge_into_archive(pending)
+                self._clear_pending_archive()
+
+            outcomes = self._load_unlocked()
+            now = datetime.now(UTC)
+            keep: list[Outcome] = []
+            archived: list[Outcome] = []
+
+            for outcome in outcomes:
+                reported = datetime.fromisoformat(outcome.reported_at)
+                age_days = (now - reported).total_seconds() / 86400.0
+                if age_days > max_age_days and outcome.resolved_at is not None:
+                    archived.append(outcome)
+                else:
+                    keep.append(outcome)
+
+            if not archived:
+                return 0
+
+            # Store pending archive payload first, then atomically rewrite active file,
+            # then merge into archive. If a crash happens in-between, next archive()
+            # run can finalize from the pending file without duplicate archive entries.
+            self._write_pending_archive(archived)
+            self._rewrite_unlocked(keep)
+            self._merge_into_archive(archived)
+            self._clear_pending_archive()
+            return len(archived)
+
+    # ------------------------------------------------------------------
+    # Internal helpers
+    # ------------------------------------------------------------------
+
+    def _append(self, outcome: Outcome) -> None:
+        with interprocess_lock(self._path):
+            self._append_unlocked(outcome)
+
+    def _append_unlocked(self, outcome: Outcome) -> None:
+        self._path.parent.mkdir(parents=True, exist_ok=True)
+        with self._path.open("a", encoding="utf-8") as f:
+            f.write(json.dumps(asdict(outcome), ensure_ascii=False) + "\n")
+
+    def _rewrite(self, outcomes: list[Outcome]) -> None:
+        with interprocess_lock(self._path):
+            self._rewrite_unlocked(outcomes)
+
+    def _rewrite_unlocked(self, outcomes: list[Outcome]) -> None:
+        self._write_outcomes_atomically(self._path, outcomes)
+
+    def _load_unlocked(self) -> list[Outcome]:
         if not self._path.exists():
             return []
 
@@ -189,54 +234,6 @@ class OutcomeTracker:
                 self._path,
             )
         return outcomes
-
-    def archive(self, max_age_days: int = 180) -> int:
-        """Move outcomes older than *max_age_days* to an archive file.
-
-        Returns the number of archived entries.
-        """
-        # Finalize any previously interrupted archive operation first.
-        pending = self._load_pending_archive()
-        if pending:
-            self._merge_into_archive(pending)
-            self._clear_pending_archive()
-
-        outcomes = self.load()
-        now = datetime.now(UTC)
-        keep: list[Outcome] = []
-        archived: list[Outcome] = []
-
-        for outcome in outcomes:
-            reported = datetime.fromisoformat(outcome.reported_at)
-            age_days = (now - reported).total_seconds() / 86400.0
-            if age_days > max_age_days and outcome.resolved_at is not None:
-                archived.append(outcome)
-            else:
-                keep.append(outcome)
-
-        if not archived:
-            return 0
-
-        # Store pending archive payload first, then atomically rewrite active file,
-        # then merge into archive. If a crash happens in-between, next archive()
-        # run can finalize from the pending file without duplicate archive entries.
-        self._write_pending_archive(archived)
-        self._rewrite(keep)
-        self._merge_into_archive(archived)
-        self._clear_pending_archive()
-        return len(archived)
-
-    # ------------------------------------------------------------------
-    # Internal helpers
-    # ------------------------------------------------------------------
-
-    def _append(self, outcome: Outcome) -> None:
-        self._path.parent.mkdir(parents=True, exist_ok=True)
-        with self._path.open("a", encoding="utf-8") as f:
-            f.write(json.dumps(asdict(outcome), ensure_ascii=False) + "\n")
-
-    def _rewrite(self, outcomes: list[Outcome]) -> None:
-        self._write_outcomes_atomically(self._path, outcomes)
 
     def _archive_path(self) -> Path:
         return self._path.with_suffix(".archive.jsonl")

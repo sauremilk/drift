@@ -78,6 +78,86 @@ class TestFingerprint:
 # ---------------------------------------------------------------------------
 
 class TestOutcomeTracker:
+    def test_issue_444_record_uses_interprocess_lock(
+        self,
+        tmp_path: Path,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        import drift.outcome_tracker as outcome_tracker_module
+
+        path = tmp_path / ".drift" / "outcomes.jsonl"
+        tracker = OutcomeTracker(path)
+        calls: list[Path] = []
+
+        class _DummyLock:
+            def __init__(self, lock_path: Path) -> None:
+                self._lock_path = lock_path
+
+            def __enter__(self) -> None:
+                calls.append(self._lock_path)
+
+            def __exit__(self, exc_type, exc, tb) -> None:
+                return None
+
+        monkeypatch.setattr(
+            outcome_tracker_module,
+            "interprocess_lock",
+            lambda lock_path, timeout_seconds=10.0, poll_interval_seconds=0.05: _DummyLock(lock_path),
+        )
+
+        tracker.record(_make_finding())
+        assert calls == [path]
+
+    def test_issue_444_resolve_uses_interprocess_lock(
+        self,
+        tmp_path: Path,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        import drift.outcome_tracker as outcome_tracker_module
+
+        path = tmp_path / ".drift" / "outcomes.jsonl"
+        old_time = (datetime.now(UTC) - timedelta(days=1)).isoformat()
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(
+            json.dumps(
+                {
+                    "fingerprint": "fp-lock-test",
+                    "signal_type": "pattern_fragmentation",
+                    "recommendation_title": "Fix",
+                    "reported_at": old_time,
+                    "resolved_at": None,
+                    "days_to_fix": None,
+                    "effort_estimate": "medium",
+                    "was_suppressed": False,
+                }
+            )
+            + "\n",
+            encoding="utf-8",
+        )
+
+        tracker = OutcomeTracker(path)
+        calls: list[Path] = []
+
+        class _DummyLock:
+            def __init__(self, lock_path: Path) -> None:
+                self._lock_path = lock_path
+
+            def __enter__(self) -> None:
+                calls.append(self._lock_path)
+
+            def __exit__(self, exc_type, exc, tb) -> None:
+                return None
+
+        monkeypatch.setattr(
+            outcome_tracker_module,
+            "interprocess_lock",
+            lambda lock_path, timeout_seconds=10.0, poll_interval_seconds=0.05: _DummyLock(lock_path),
+        )
+
+        resolved = tracker.resolve(set())
+        assert len(resolved) == 1
+        assert calls == [path]
+
     def test_record_creates_jsonl_file(self, tmp_path: Path) -> None:
         path = tmp_path / ".drift" / "outcomes.jsonl"
         tracker = OutcomeTracker(path)
@@ -304,10 +384,9 @@ class TestOutcomeTracker:
         assert resolved[0].fingerprint == "fp-old-signal"
         assert resolved[0].resolved_at is not None
 
-    def test_issue_445_resolve_preserves_interleaved_append(
+    def test_issue_445_resolve_preserves_subsequent_append(
         self,
         tmp_path: Path,
-        monkeypatch: pytest.MonkeyPatch,
     ) -> None:
         path = tmp_path / ".drift" / "outcomes.jsonl"
         old_time = (datetime.now(UTC) - timedelta(days=2)).isoformat()
@@ -330,35 +409,25 @@ class TestOutcomeTracker:
         )
 
         tracker_a = OutcomeTracker(path)
-        original_load = tracker_a.load
-        state = {"calls": 0}
-
-        def _load_with_interleaved_append() -> list:
-            state["calls"] += 1
-            loaded = original_load()
-            if state["calls"] == 1:
-                with path.open("a", encoding="utf-8") as handle:
-                    handle.write(
-                        json.dumps(
-                            {
-                                "fingerprint": "fp-interleaved",
-                                "signal_type": "architecture_violation",
-                                "recommendation_title": "Fix",
-                                "reported_at": datetime.now(UTC).isoformat(),
-                                "resolved_at": None,
-                                "days_to_fix": None,
-                                "effort_estimate": "high",
-                                "was_suppressed": False,
-                            }
-                        )
-                        + "\n"
-                    )
-            return loaded
-
-        monkeypatch.setattr(tracker_a, "load", _load_with_interleaved_append)
+        tracker_b = OutcomeTracker(path)
 
         resolved = tracker_a.resolve(set())
         assert len(resolved) == 1
+
+        interleaved = tracker_b._deserialize_outcome(
+            {
+                "fingerprint": "fp-interleaved",
+                "signal_type": "architecture_violation",
+                "recommendation_title": "Fix",
+                "reported_at": datetime.now(UTC).isoformat(),
+                "resolved_at": None,
+                "days_to_fix": None,
+                "effort_estimate": "high",
+                "was_suppressed": False,
+            }
+        )
+        assert interleaved is not None
+        tracker_b._append(interleaved)
 
         loaded_after = OutcomeTracker(path).load()
         assert {o.fingerprint for o in loaded_after} == {"fp-existing", "fp-interleaved"}
@@ -383,7 +452,8 @@ class TestOutcomeTracker:
             tracker._rewrite([])
 
         assert path.read_text(encoding="utf-8") == previous
-        assert sorted(p.name for p in path.parent.iterdir()) == [path.name]
+        remaining = sorted(p.name for p in path.parent.iterdir())
+        assert remaining in ([path.name], [path.name, f"{path.name}.lock"])
 
     def test_issue_435_archive_recovers_after_merge_crash(
         self,
@@ -434,7 +504,7 @@ class TestOutcomeTracker:
         assert archived == 0
 
         archive_path = path.with_suffix(".archive.jsonl")
-        
+
         archive_text = archive_path.read_text(encoding='utf-8')
         archive_lines = [line for line in archive_text.splitlines() if line.strip()]
         assert len(archive_lines) == 1

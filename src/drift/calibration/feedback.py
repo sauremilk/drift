@@ -10,6 +10,8 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any, Literal
 
+from drift.calibration._atomic_io import interprocess_lock
+
 logger = logging.getLogger(__name__)
 
 _SOURCE_PRIORITY: dict[str, int] = {
@@ -77,8 +79,9 @@ def record_feedback(
     """
     feedback_path.parent.mkdir(parents=True, exist_ok=True)
     line = json.dumps(asdict(event), ensure_ascii=False, sort_keys=True)
-    with feedback_path.open("a", encoding="utf-8") as f:
-        f.write(line + "\n")
+    with interprocess_lock(feedback_path):
+        with feedback_path.open("a", encoding="utf-8") as f:
+            f.write(line + "\n")
 
 
 def load_feedback(feedback_path: Path) -> list[FeedbackEvent]:

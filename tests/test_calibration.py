@@ -65,6 +65,37 @@ class TestFeedbackEvent:
 
 
 class TestFeedbackPersistence:
+    def test_issue_444_record_feedback_uses_interprocess_lock(
+        self,
+        tmp_path: Path,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        import drift.calibration.feedback as feedback_module
+        from drift.calibration.feedback import record_feedback
+
+        fp = tmp_path / ".drift" / "feedback.jsonl"
+        event = _fe(signal="pattern_fragmentation", file="src/locked.py")
+        calls: list[Path] = []
+
+        class _DummyLock:
+            def __init__(self, lock_path: Path) -> None:
+                self._lock_path = lock_path
+
+            def __enter__(self) -> None:
+                calls.append(self._lock_path)
+
+            def __exit__(self, exc_type, exc, tb) -> None:
+                return None
+
+        monkeypatch.setattr(
+            feedback_module,
+            "interprocess_lock",
+            lambda lock_path, timeout_seconds=10.0, poll_interval_seconds=0.05: _DummyLock(lock_path),
+        )
+
+        record_feedback(fp, event)  # type: ignore[arg-type]
+        assert calls == [fp]
+
     def test_roundtrip(self, tmp_path: Path) -> None:
         from drift.calibration.feedback import load_feedback, record_feedback
 
