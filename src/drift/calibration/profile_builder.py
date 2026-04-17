@@ -7,10 +7,13 @@ formula that gracefully degrades to defaults on insufficient data.
 
 from __future__ import annotations
 
+import logging
 from dataclasses import dataclass, field
 
 from drift.calibration.feedback import FeedbackEvent, feedback_summary
 from drift.config import SignalWeights
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -50,6 +53,7 @@ class CalibrationResult:
     calibrated_weights: SignalWeights
     evidence: dict[str, SignalEvidence] = field(default_factory=dict)
     confidence_per_signal: dict[str, float] = field(default_factory=dict)
+    clamped_signals: list[str] = field(default_factory=list)
     total_events: int = 0
     signals_with_data: int = 0
 
@@ -169,9 +173,17 @@ def build_profile(
 
     # Don't let any active signal go below a minimum threshold
     # (prevents total suppression from noisy feedback)
+    min_floor = 0.001
+    clamped_signals: list[str] = []
     for key, w in calibrated.items():
-        if default_dict.get(key, 0.0) > 0 and w < 0.001:
-            calibrated[key] = 0.001
+        if default_dict.get(key, 0.0) > 0 and w < min_floor:
+            calibrated[key] = min_floor
+            clamped_signals.append(key)
+            logger.warning(
+                "Signal %s calibrated to minimum floor (%s) - review feedback quality",
+                key,
+                min_floor,
+            )
 
     calibrated_weights = default_weights.model_copy(update=calibrated)
 
@@ -182,6 +194,7 @@ def build_profile(
         calibrated_weights=calibrated_weights,
         evidence=evidence,
         confidence_per_signal=confidence_map,
+        clamped_signals=sorted(clamped_signals),
         total_events=total_events,
         signals_with_data=signals_with_data,
     )

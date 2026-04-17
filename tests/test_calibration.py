@@ -2,8 +2,11 @@
 
 from __future__ import annotations
 
+import logging
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
+
+import pytest
 
 
 def _fe(
@@ -95,6 +98,25 @@ class TestFeedbackPersistence:
 
         loaded = load_feedback(fp)
         assert len(loaded) == 2  # skipped the bad line
+
+    def test_load_feedback_with_stats_counts_and_warns_on_skipped_lines(
+        self, tmp_path: Path, caplog
+    ) -> None:
+        from drift.calibration.feedback import load_feedback_with_stats, record_feedback
+
+        fp = tmp_path / "f.jsonl"
+        record_feedback(fp, _fe(signal="a", file="b"))  # type: ignore[arg-type]
+        with fp.open("a", encoding="utf-8") as f:
+            f.write("NOT-JSON\n")
+            f.write('{"signal_type":"pfs"}\n')
+        record_feedback(fp, _fe(signal="c", file="d", verdict="fp"))  # type: ignore[arg-type]
+
+        with caplog.at_level(logging.WARNING):
+            loaded, skipped = load_feedback_with_stats(fp)
+
+        assert len(loaded) == 2
+        assert skipped == 2
+        assert "skipped 2 malformed" in caplog.text
 
 
 class TestFeedbackSummary:
@@ -263,6 +285,26 @@ class TestProfileBuilder:
         w_with = result_with_unattributed.calibrated_weights.as_dict()[sig]
         w_without = result_without_unattributed.calibrated_weights.as_dict()[sig]
         assert w_with > w_without
+
+    def test_floor_clamp_is_reported_and_warned(self, caplog: pytest.LogCaptureFixture) -> None:
+        """Signals clamped to floor are recorded and emit a warning."""
+        import logging
+
+        from drift.calibration.profile_builder import build_profile
+        from drift.config import SignalWeights
+
+        sig = "pattern_fragmentation"
+        events = [_fe(signal=sig, file=f"fp{i}.py", verdict="fp") for i in range(25)]
+        defaults = SignalWeights()
+
+        with caplog.at_level(logging.WARNING):
+            result = build_profile(events, defaults, min_samples=20)
+
+        assert sig in result.clamped_signals
+        assert any(
+            f"Signal {sig} calibrated to minimum floor" in rec.getMessage()
+            for rec in caplog.records
+        )
 
 
 # ---------------------------------------------------------------------------

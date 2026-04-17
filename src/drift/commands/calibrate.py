@@ -35,7 +35,7 @@ def run(repo: Path, dry_run: bool, config: Path | None, fmt: str) -> None:
     """Compute calibrated weights from all evidence sources."""
     from drift.calibration.feedback import (
         dedupe_feedback_events,
-        load_feedback,
+        load_feedback_with_stats,
         resolve_feedback_paths,
     )
     from drift.calibration.profile_builder import build_profile
@@ -46,7 +46,7 @@ def run(repo: Path, dry_run: bool, config: Path | None, fmt: str) -> None:
 
     # Collect explicit feedback
     feedback_path, _local_feedback_path, _shared_feedback_path = resolve_feedback_paths(repo, cfg)
-    events = load_feedback(feedback_path)
+    events, skipped_feedback_lines = load_feedback_with_stats(feedback_path)
 
     # Collect git-correlation evidence if history exists
     history_dir = repo / cfg.calibration.history_dir
@@ -63,12 +63,21 @@ def run(repo: Path, dry_run: bool, config: Path | None, fmt: str) -> None:
 
     if not events:
         if fmt == "json":
-            click.echo(json.dumps({"status": "no_data", "message": "No feedback evidence found."}))
+            click.echo(json.dumps({
+                "status": "no_data",
+                "message": "No feedback evidence found.",
+                "skipped_feedback_lines": skipped_feedback_lines,
+            }))
         else:
             console.print(
                 "[dim]No feedback evidence found."
                 " Use 'drift feedback mark' to record evidence.[/dim]"
             )
+            if skipped_feedback_lines:
+                console.print(
+                    "[yellow]Skipped malformed feedback lines:"
+                    f" {skipped_feedback_lines}[/yellow]"
+                )
         return
 
     result = build_profile(
@@ -86,9 +95,16 @@ def run(repo: Path, dry_run: bool, config: Path | None, fmt: str) -> None:
             "total_events": result.total_events,
             "signals_with_data": result.signals_with_data,
             "weight_changes": diff,
+            "clamped_signals": result.clamped_signals,
+            "skipped_feedback_lines": skipped_feedback_lines,
             "dry_run": dry_run,
         }, indent=2))
     else:
+        if skipped_feedback_lines:
+            console.print(
+                "[yellow]Skipped malformed feedback lines:"
+                f" {skipped_feedback_lines}[/yellow]"
+            )
         if not diff:
             console.print(
                 "[dim]No weight changes computed"
@@ -112,6 +128,12 @@ def run(repo: Path, dry_run: bool, config: Path | None, fmt: str) -> None:
                     f" {delta_str:>8} {info['confidence']:>5.1%}"
                 )
 
+            if result.clamped_signals:
+                console.print(
+                    "\n[yellow]Signals at minimum floor (0.001):[/yellow]"
+                    f" {', '.join(result.clamped_signals)}"
+                )
+
     if not dry_run:
         signal_counts = _summarize_feedback_counts(events)
         write_calibration_status(
@@ -121,6 +143,7 @@ def run(repo: Path, dry_run: bool, config: Path | None, fmt: str) -> None:
                 "total_events": len(events),
                 "signals": signal_counts,
                 "weight_changes": diff,
+                "clamped_signals": result.clamped_signals,
             },
         )
 
@@ -167,6 +190,12 @@ def explain(repo: Path, config: Path | None) -> None:
             f"  Precision={ev.precision:.2%}  Confidence={conf:.1%}"
         )
 
+    if result.clamped_signals:
+        console.print(
+            "\n[yellow]Signals at minimum floor (0.001):[/yellow]"
+            f" {', '.join(result.clamped_signals)}"
+        )
+
 
 @calibrate.command()
 @click.option(
@@ -179,7 +208,8 @@ def explain(repo: Path, config: Path | None) -> None:
 @click.option("--config", "-c", type=click.Path(path_type=Path), default=None)
 def status(repo: Path, config: Path | None) -> None:
     """Show calibration profile status and freshness."""
-    from drift.calibration.feedback import load_feedback, resolve_feedback_paths
+    from drift.calibration.feedback import load_feedback_with_stats, resolve_feedback_paths
+    from drift.calibration.status import load_calibration_status
     from drift.config import DriftConfig
 
     cfg = DriftConfig.load(repo, config)
@@ -192,8 +222,10 @@ def status(repo: Path, config: Path | None) -> None:
         return
 
     feedback_path, local_feedback_path, shared_feedback_path = resolve_feedback_paths(repo, cfg)
-    events = load_feedback(feedback_path)
+    events, skipped_feedback_lines = load_feedback_with_stats(feedback_path)
     console.print(f"Feedback events: {len(events)}")
+    if skipped_feedback_lines:
+        console.print(f"Skipped malformed feedback lines: {skipped_feedback_lines}")
     console.print(f"Feedback path: {feedback_path}")
     if shared_feedback_path is not None:
         console.print(f"Local feedback path: {local_feedback_path}")
@@ -210,6 +242,15 @@ def status(repo: Path, config: Path | None) -> None:
     console.print(f"Min samples for full confidence: {cfg.calibration.min_samples}")
     auto = "enabled" if cfg.calibration.auto_recalibrate else "disabled"
     console.print(f"Auto-recalibrate: {auto}")
+
+    status_payload = load_calibration_status(repo)
+    if status_payload and isinstance(status_payload.get("clamped_signals"), list):
+        clamped = [str(item) for item in status_payload["clamped_signals"] if item]
+        if clamped:
+            console.print(
+                "Signals at minimum floor (0.001):"
+                f" {', '.join(sorted(clamped))}"
+            )
 
 
 @calibrate.command()

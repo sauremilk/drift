@@ -31,6 +31,7 @@ class _FakeCalibrationResult:
             )
         }
         self.confidence_per_signal = {"pattern_fragmentation": 0.8}
+        self.clamped_signals = ["pattern_fragmentation"]
         self._diff = diff or {
             "pattern_fragmentation": {
                 "default": 0.1,
@@ -77,9 +78,30 @@ def test_calibrate_run_json_no_data(
     assert payload["status"] == "no_data"
 
 
+def test_calibrate_run_json_surfaces_skipped_feedback_lines(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path, fake_cfg: SimpleNamespace
+) -> None:
+    from drift.commands.calibrate import calibrate
+
+    runner = CliRunner()
+
+    monkeypatch.setattr("drift.config.DriftConfig.load", lambda *_args, **_kwargs: fake_cfg)
+    monkeypatch.setattr(
+        "drift.calibration.feedback.load_feedback_with_stats",
+        lambda _p: ([], 3),
+    )
+
+    result = runner.invoke(calibrate, ["run", "--repo", str(tmp_path), "--format", "json"])
+    assert result.exit_code == 0
+    payload = json.loads(result.output)
+    assert payload["status"] == "no_data"
+    assert payload["skipped_feedback_lines"] == 3
+
+
 def test_calibrate_run_text_and_write(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path, fake_cfg: SimpleNamespace
 ) -> None:
+    from drift.calibration.feedback import FeedbackEvent
     from drift.commands.calibrate import calibrate
 
     runner = CliRunner()
@@ -87,7 +109,17 @@ def test_calibrate_run_text_and_write(
     written: dict[str, object] = {}
 
     monkeypatch.setattr("drift.config.DriftConfig.load", lambda *_args, **_kwargs: fake_cfg)
-    monkeypatch.setattr("drift.calibration.feedback.load_feedback", lambda _p: [SimpleNamespace()])
+    monkeypatch.setattr(
+        "drift.calibration.feedback.load_feedback_with_stats",
+        lambda _p: ([
+            FeedbackEvent(
+                signal_type="pattern_fragmentation",
+                file_path="src/a.py",
+                verdict="tp",
+                source="user",
+            )
+        ], 0),
+    )
     monkeypatch.setattr(
         "drift.calibration.profile_builder.build_profile",
         lambda *_args, **_kwargs: _FakeCalibrationResult(),
@@ -122,14 +154,43 @@ def test_calibrate_explain_and_status(
 
     history_dir = tmp_path / fake_cfg.calibration.history_dir
     history_dir.mkdir(parents=True)
+    status_path = tmp_path / ".drift" / "calibration_status.json"
+    status_path.parent.mkdir(parents=True)
+    status_path.write_text(
+        json.dumps({"clamped_signals": ["pattern_fragmentation"]}),
+        encoding="utf-8",
+    )
 
     explain_res = runner.invoke(calibrate, ["explain", "--repo", str(tmp_path)])
     assert explain_res.exit_code == 0
     assert "Evidence Detail" in explain_res.output
+    assert "Signals at minimum floor" in explain_res.output
+    assert "pattern_fragmentation" in explain_res.output
 
     status_res = runner.invoke(calibrate, ["status", "--repo", str(tmp_path)])
     assert status_res.exit_code == 0
     assert "Feedback events:" in status_res.output
+    assert "Signals at minimum floor" in status_res.output
+    assert "pattern_fragmentation" in status_res.output
+
+
+def test_calibrate_status_shows_skipped_feedback_lines(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path, fake_cfg: SimpleNamespace
+) -> None:
+    from drift.commands.calibrate import calibrate
+
+    runner = CliRunner()
+
+    monkeypatch.setattr("drift.config.DriftConfig.load", lambda *_args, **_kwargs: fake_cfg)
+    monkeypatch.setattr(
+        "drift.calibration.feedback.load_feedback_with_stats",
+        lambda _p: ([SimpleNamespace()], 2),
+    )
+
+    result = runner.invoke(calibrate, ["status", "--repo", str(tmp_path)])
+    assert result.exit_code == 0
+    assert "Feedback events: 1" in result.output
+    assert "Skipped malformed feedback lines: 2" in result.output
 
 
 def test_calibrate_reset_paths(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
