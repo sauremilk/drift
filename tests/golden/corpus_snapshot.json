@@ -4584,9 +4584,11 @@
     "top_findings": [
       {
         "detection_method": null,
+        "end_line": null,
         "expected_benefit": "high",
         "file": "src/myapp/service_a.py",
         "finding_context": "production",
+        "finding_id": "3a69d86a362eb5db",
         "fingerprint": "3a69d86a362eb5db",
         "line": 4,
         "next_step": "Extract process_order() into src/myapp/shared.py. 2 identical copies (similarity: 1.00). Effort: S.",
@@ -4598,13 +4600,16 @@
         "signal_abbrev": "MDS",
         "signal_id": "MDS",
         "signal_type": "mutant_duplicate",
+        "start_line": 4,
         "title": "Exact duplicates (2×): process_order"
       },
       {
         "detection_method": null,
+        "end_line": null,
         "expected_benefit": "high",
         "file": "src/myapp/connectors/db.py",
         "finding_context": "production",
+        "finding_id": "086fb7cb5f9ca3db",
         "fingerprint": "086fb7cb5f9ca3db",
         "line": 8,
         "next_step": "Extract connect_postgres() into src/myapp/connectors/shared.py. Similarity: 90%. Effort: S.",
@@ -4616,13 +4621,16 @@
         "signal_abbrev": "MDS",
         "signal_id": "MDS",
         "signal_type": "mutant_duplicate",
+        "start_line": 8,
         "title": "Near-duplicate (90%): connect_postgres ↔ connect_redis"
       },
       {
         "detection_method": null,
+        "end_line": 52,
         "expected_benefit": "high",
         "file": "src/myapp/processors/pricing.py",
         "finding_context": "production",
+        "finding_id": "9d57ec3f1df88531",
         "fingerprint": "9d57ec3f1df88531",
         "line": 4,
         "next_step": "Reduce cognitive complexity of 'calculate_pricing' (currently 52, threshold 15): extract nested logic into helper functions, replace nested conditionals with guard clauses, simplify boolean expressions.",
@@ -4634,6 +4642,7 @@
         "signal_abbrev": "CXS",
         "signal_id": "CXS",
         "signal_type": "cognitive_complexity",
+        "start_line": 4,
         "title": "High cognitive complexity in calculate_pricing()"
       }
     ],

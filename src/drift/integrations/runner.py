@@ -68,6 +68,7 @@ def run_command(
             expanded,
             capture_output=True,
             text=True,
+            stdin=subprocess.DEVNULL,
             timeout=timeout_seconds,
             check=False,
         )
