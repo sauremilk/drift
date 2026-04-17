@@ -362,6 +362,37 @@ class TestFirstRunSummary:
         assert summary["top_findings"] == []
         assert "drift check --fail-on none" in summary["next_step"]
 
+    def test_select_priority_findings_keeps_distinct_lines_same_signal(self) -> None:
+        from drift.finding_rendering import select_priority_findings
+
+        finding_line_12 = _FakeFinding(
+            signal_type="hardcoded_secret",
+            file_path=Path("src/secrets.py"),
+            start_line=12,
+            end_line=12,
+            title="API_KEY hardcoded",
+            score=0.9,
+            impact=0.9,
+        )
+        finding_line_44 = _FakeFinding(
+            signal_type="hardcoded_secret",
+            file_path=Path("src/secrets.py"),
+            start_line=44,
+            end_line=44,
+            title="DB_PASSWORD hardcoded",
+            score=0.85,
+            impact=0.85,
+        )
+        analysis = _FakeAnalysis(
+            drift_score=0.6,
+            findings=[finding_line_12, finding_line_44],
+        )
+
+        result = select_priority_findings(analysis, max_items=3)
+
+        assert len(result) == 2
+        assert {finding.start_line for finding in result} == {12, 44}
+
 
 # ===========================================================================
 # Status command (Click CliRunner)
