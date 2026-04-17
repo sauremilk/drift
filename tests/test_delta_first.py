@@ -130,6 +130,24 @@ class TestHistoryPersistence:
         assert len(loaded) == 100
         assert loaded[0]["drift_score"] == pytest.approx(0.05)
 
+    def test_save_keeps_repo_history_when_diff_is_high_volume(self, tmp_path: Path):
+        """Issue #440: diff snapshots must not crowd out repo-scoped history."""
+        from drift.analyzer import _load_history, _save_history
+
+        hfile = tmp_path / "history.json"
+        data = [{"drift_score": 0.2, "scope": "repo"}] + [
+            {"drift_score": i * 0.001, "scope": "diff"} for i in range(150)
+        ]
+
+        _save_history(hfile, data)
+        loaded = _load_history(hfile)
+
+        repo_entries = [s for s in loaded if s.get("scope") != "diff"]
+        diff_entries = [s for s in loaded if s.get("scope") == "diff"]
+
+        assert len(repo_entries) == 1
+        assert len(diff_entries) == 100
+
 
 class TestAnalyzeDiffHistory:
     def _run_git(self, repo: Path, *args: str) -> None:

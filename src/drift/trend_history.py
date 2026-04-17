@@ -46,9 +46,23 @@ def load_history(history_file: Path) -> list[dict]:
 
 
 def save_history(history_file: Path, snapshots: list[dict]) -> None:
-    """Persist snapshots (last 100) to the history JSON file."""
+    """Persist snapshots with independent per-scope retention.
+
+    Keeps up to the last 100 snapshots per scope ("repo" and "diff") so
+    high-volume diff runs cannot evict repo-scoped history (Issue #440).
+    """
     history_file.parent.mkdir(parents=True, exist_ok=True)
-    content = json.dumps(snapshots[-100:], indent=2)
+    remaining = {"repo": 100, "diff": 100}
+    retained_reversed: list[dict] = []
+    for snapshot in reversed(snapshots):
+        scope = snapshot_scope(snapshot)
+        if remaining[scope] <= 0:
+            continue
+        retained_reversed.append(snapshot)
+        remaining[scope] -= 1
+
+    retained = list(reversed(retained_reversed))
+    content = json.dumps(retained, indent=2)
     fd, tmp_name = tempfile.mkstemp(
         dir=str(history_file.parent),
         prefix=f".{history_file.name}.",
