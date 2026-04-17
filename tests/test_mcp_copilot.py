@@ -446,6 +446,45 @@ class TestMcpServerHelpers:
         assert result["cache"]["hit"] is True
         assert result["cache"]["source"] == "session.fix_plan_queue"
 
+    def test_drift_fix_plan_uses_session_queue_fast_path_for_coder_profile(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+        tmp_path: Path,
+    ) -> None:
+        """response_profile='coder' remains eligible for session fast-path cache."""
+        from drift import mcp_server
+        from drift.session import SessionManager
+
+        SessionManager.reset_instance()
+        start = json.loads(_run_tool(mcp_server.drift_session_start(path=str(tmp_path))))
+        sid = start["session_id"]
+        session = SessionManager.instance().get(sid)
+        assert session is not None
+        session.selected_tasks = [
+            {
+                "id": "T-1",
+                "signal": "PFS",
+                "title": "Queued task",
+                "action": "Apply queued fix",
+            }
+        ]
+
+        def _should_not_run_fix_plan(*_args: object, **_kwargs: object) -> dict[str, object]:
+            msg = "drift.api.fix_plan should not run for coder session fast-path"
+            raise AssertionError(msg)
+
+        monkeypatch.setattr("drift.api.fix_plan", _should_not_run_fix_plan)
+
+        result = json.loads(
+            _run_tool(
+                mcp_server.drift_fix_plan(session_id=sid, max_tasks=1, response_profile="coder")
+            )
+        )
+        assert result["task_count"] == 1
+        assert result["tasks"][0]["id"] == "T-1"
+        assert result["cache"]["hit"] is True
+        assert result["cache"]["source"] == "session.fix_plan_queue"
+
     def test_drift_fix_plan_falls_back_to_api_when_filtered(
         self,
         monkeypatch: pytest.MonkeyPatch,
@@ -479,6 +518,45 @@ class TestMcpServerHelpers:
 
         assert called["value"] is True
         assert result["status"] == "ok"
+        assert "cache" not in result
+
+    def test_drift_fix_plan_falls_back_to_api_for_verifier_profile(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+        tmp_path: Path,
+    ) -> None:
+        """response_profile='verifier' disables fast-path and uses API response shaping."""
+        from drift import mcp_server
+        from drift.session import SessionManager
+
+        SessionManager.reset_instance()
+        start = json.loads(_run_tool(mcp_server.drift_session_start(path=str(tmp_path))))
+        sid = start["session_id"]
+        session = SessionManager.instance().get(sid)
+        assert session is not None
+        session.selected_tasks = [{"id": "T-1", "signal": "PFS", "title": "Queued"}]
+
+        called = {"value": False}
+
+        def _fake_fix_plan(*_args: object, **_kwargs: object) -> dict[str, object]:
+            called["value"] = True
+            return {
+                "status": "ok",
+                "tasks": [],
+                "task_count": 0,
+                "total_available": 0,
+                "response_profile": "verifier",
+            }
+
+        monkeypatch.setattr("drift.api.fix_plan", _fake_fix_plan)
+
+        result = json.loads(
+            _run_tool(mcp_server.drift_fix_plan(session_id=sid, response_profile="verifier"))
+        )
+
+        assert called["value"] is True
+        assert result["status"] == "ok"
+        assert result.get("response_profile") == "verifier"
         assert "cache" not in result
 
     def test_drift_explain_returns_json(self) -> None:

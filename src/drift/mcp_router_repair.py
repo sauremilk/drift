@@ -28,6 +28,13 @@ def _can_use_session_fix_plan_fast_path(
     include_non_operational: bool,
     response_profile: str | None,
 ) -> bool:
+    """Return whether fix_plan can reuse the session queue without re-analysis.
+
+    Eligible response profiles for the cache fast-path are ``None``, ``planner``,
+    and ``coder``. Other profiles (for example ``verifier`` and
+    ``merge_readiness``) require the full API call so their shaped payload stays
+    consistent with profile-specific contracts.
+    """
     if session is None or not session.selected_tasks:
         return False
     if path not in ("", "."):
