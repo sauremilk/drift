@@ -9,12 +9,15 @@ from __future__ import annotations
 
 import hashlib
 import json
+import logging
 from dataclasses import asdict, dataclass
 from datetime import UTC, datetime
 from pathlib import Path
 
 from drift.calibration._atomic_io import atomic_write_text
 from drift.models import Finding, FindingStatus
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -124,15 +127,29 @@ class OutcomeTracker:
             return []
 
         outcomes: list[Outcome] = []
+        skipped = 0
         for line in self._path.read_text(encoding="utf-8").splitlines():
             line = line.strip()
             if not line:
                 continue
             try:
                 data = json.loads(line)
-                outcomes.append(Outcome(**data))
-            except (json.JSONDecodeError, TypeError):
-                continue  # skip corrupted lines
+            except json.JSONDecodeError:
+                skipped += 1
+                continue
+
+            outcome = self._deserialize_outcome(data)
+            if outcome is None:
+                skipped += 1
+                continue
+            outcomes.append(outcome)
+
+        if skipped:
+            logger.warning(
+                "OutcomeTracker: skipped %d unreadable entries in %s",
+                skipped,
+                self._path,
+            )
         return outcomes
 
     def archive(self, max_age_days: int = 180) -> int:
@@ -196,6 +213,18 @@ class OutcomeTracker:
             outcome.resolved_at,
             outcome.signal_type,
         )
+
+    def _deserialize_outcome(self, data: object) -> Outcome | None:
+        if not isinstance(data, dict):
+            return None
+
+        # Ignore unknown keys so older/newer schema variants remain readable.
+        known_fields = Outcome.__dataclass_fields__
+        filtered = {key: value for key, value in data.items() if key in known_fields}
+        try:
+            return Outcome(**filtered)
+        except TypeError:
+            return None
 
     def _write_outcomes_atomically(self, path: Path, outcomes: list[Outcome]) -> None:
         content = "".join(

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import logging
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
@@ -140,6 +141,72 @@ class TestOutcomeTracker:
         path = tmp_path / ".drift" / "outcomes.jsonl"
         tracker = OutcomeTracker(path)
         assert tracker.load() == []
+
+    def test_issue_443_load_warns_on_skipped_unreadable_entries(
+        self,
+        tmp_path: Path,
+        caplog: pytest.LogCaptureFixture,
+    ) -> None:
+        path = tmp_path / ".drift" / "outcomes.jsonl"
+        path.parent.mkdir(parents=True, exist_ok=True)
+        valid = {
+            "fingerprint": "ok1",
+            "signal_type": "pfs",
+            "recommendation_title": "Fix",
+            "reported_at": datetime.now(UTC).isoformat(),
+            "resolved_at": None,
+            "days_to_fix": None,
+            "effort_estimate": "medium",
+            "was_suppressed": False,
+        }
+        missing_required = {
+            "signal_type": "pfs",
+            "recommendation_title": "Fix",
+            "reported_at": datetime.now(UTC).isoformat(),
+        }
+        path.write_text(
+            "\n".join(
+                [
+                    json.dumps(valid),
+                    "{not-valid-json}",
+                    json.dumps(missing_required),
+                ]
+            )
+            + "\n",
+            encoding="utf-8",
+        )
+
+        tracker = OutcomeTracker(path)
+        with caplog.at_level(logging.WARNING):
+            loaded = tracker.load()
+
+        assert len(loaded) == 1
+        assert loaded[0].fingerprint == "ok1"
+        assert (
+            "OutcomeTracker: skipped 2 unreadable entries" in caplog.text
+        )
+
+    def test_issue_443_load_accepts_entries_with_unknown_fields(self, tmp_path: Path) -> None:
+        path = tmp_path / ".drift" / "outcomes.jsonl"
+        path.parent.mkdir(parents=True, exist_ok=True)
+        with_unknown = {
+            "fingerprint": "fp-legacy",
+            "signal_type": "pattern_fragmentation",
+            "recommendation_title": "Fix",
+            "reported_at": datetime.now(UTC).isoformat(),
+            "resolved_at": None,
+            "days_to_fix": None,
+            "effort_estimate": "medium",
+            "was_suppressed": False,
+            "legacy_extra_field": "ignored",
+        }
+        path.write_text(json.dumps(with_unknown) + "\n", encoding="utf-8")
+
+        tracker = OutcomeTracker(path)
+        loaded = tracker.load()
+
+        assert len(loaded) == 1
+        assert loaded[0].fingerprint == "fp-legacy"
 
     def test_archive_moves_old_entries(self, tmp_path: Path) -> None:
         path = tmp_path / ".drift" / "outcomes.jsonl"
