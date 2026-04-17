@@ -74,7 +74,9 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           TAG: ${{ github.ref_name }}
         run: |
-          gh release view "$env:TAG" --repo "$env:GITHUB_REPOSITORY" *> $null
+          # Capture all output (stdout+stderr) to avoid NativeCommandError in PS5.1
+          # when $ErrorActionPreference interacts with non-zero native exit codes.
+          $null = & gh release view "$env:TAG" --repo "$env:GITHUB_REPOSITORY" 2>&1
           if ($LASTEXITCODE -eq 0) {
             Write-Output "Release for $env:TAG already exists - skipping creation"
             exit 0

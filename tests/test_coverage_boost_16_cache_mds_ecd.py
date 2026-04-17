@@ -255,7 +255,7 @@ def test_mds_analyze_returns_empty_for_dunder_method(tmp_path: Path) -> None:
 def test_mds_exact_duplicate_finding_same_dir(tmp_path: Path) -> None:
     """Lines 343-423: exact duplicate (same body_hash) generates finding."""
     signal = MutantDuplicateSignal()
-    body_hash = "abcdef1234567890"
+    body_hash = "abcdef1234567890"  # pragma: allowlist secret
     fn1 = _make_mut_fn("process_data", "src/a.py", loc=10, complexity=3, body_hash=body_hash)
     fn2 = _make_mut_fn("process_data_copy", "src/b.py", loc=10, complexity=3, body_hash=body_hash)
     pr1 = ParseResult(file_path=Path("src/a.py"), language="python", functions=[fn1])
@@ -267,7 +267,7 @@ def test_mds_exact_duplicate_finding_same_dir(tmp_path: Path) -> None:
 def test_mds_exact_duplicate_cross_dir_finding(tmp_path: Path) -> None:
     """Lines 357-362: exact dups in different parent dirs → common_parent fallback."""
     signal = MutantDuplicateSignal()
-    body_hash = "deadbeef12345678"
+    body_hash = "deadbeef12345678"  # pragma: allowlist secret
     fn1 = _make_mut_fn("helper", "src/module_a/utils.py", loc=10, complexity=3, body_hash=body_hash)
     fn2 = _make_mut_fn(
         "helper_copy", "src/module_b/tools.py", loc=10, complexity=3, body_hash=body_hash

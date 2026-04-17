@@ -97,7 +97,7 @@ class TestIsEndpointUrlLiteral:
         assert _is_endpoint_url_literal("https://api.example.com") is True
 
     def test_url_with_userinfo(self):
-        assert _is_endpoint_url_literal("https://user:pass@host.com") is False
+        assert _is_endpoint_url_literal("https://user:pass@host.com") is False  # noqa: E501  # pragma: allowlist secret
 
     def test_not_http(self):
         assert _is_endpoint_url_literal("ftp://server/file") is False

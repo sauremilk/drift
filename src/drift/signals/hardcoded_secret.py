@@ -498,7 +498,7 @@ class HardcodedSecretSignal(BaseSignal):
             return findings
 
         # Regex-based line-level scan (language-neutral heuristics).
-        # Matches: const SECRET = "value", let apiKey = 'value', export const TOKEN = `value`
+        # Matches: const SECRET = "value", let apiKey = 'value', export const TOKEN = `value`  # noqa: E501  # pragma: allowlist secret
         var_assign_re = re.compile(
             r"""^[ \t]*(?:export\s+)?(?:const|let|var)\s+"""
             r"""([A-Za-z_$][A-Za-z0-9_$]*)\s*"""
@@ -785,7 +785,7 @@ class HardcodedSecretSignal(BaseSignal):
         if _is_endpoint_template_literal(var_name, string_val):
             return None
 
-        # Constants such as API_KEY_ENV = "OPENAI_API_KEY" describe env-var
+        # Constants such as API_KEY_ENV = "OPENAI_API_KEY" describe env-var  # noqa: E501  # pragma: allowlist secret
         # names, not hardcoded credential material.
         if _is_env_var_name_literal(var_name, string_val):
             return None

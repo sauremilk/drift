@@ -426,7 +426,7 @@ def cmd_run_llm(args: argparse.Namespace) -> None:
             "Use --base-url for local backend (e.g. http://localhost:11434/v1)"
         )
     if not api_key:
-        api_key = "local"
+        api_key = "local"  # pragma: allowlist secret
 
     model = args.model
     client = OpenAI(api_key=api_key, base_url=base_url)

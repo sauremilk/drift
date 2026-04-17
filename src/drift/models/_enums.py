@@ -66,7 +66,7 @@ class SignalType(StrEnum):
     DEAD_CODE_ACCUMULATION = "dead_code_accumulation"
     MISSING_AUTHORIZATION = "missing_authorization"
     INSECURE_DEFAULT = "insecure_default"
-    HARDCODED_SECRET = "hardcoded_secret"
+    HARDCODED_SECRET = "hardcoded_secret"  # pragma: allowlist secret
     PHANTOM_REFERENCE = "phantom_reference"
     TYPE_SAFETY_BYPASS = "type_safety_bypass"
 

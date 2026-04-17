@@ -718,7 +718,7 @@ def cmd_run_llm(args: argparse.Namespace) -> None:
         )
     # Local backends (Ollama etc.) don't need a real key; use placeholder.
     if not api_key:
-        api_key = "local"
+        api_key = "local"  # pragma: allowlist secret
 
     model = os.environ.get("DRIFT_STUDY_MODEL", args.model)
     client = OpenAI(api_key=api_key, base_url=base_url)

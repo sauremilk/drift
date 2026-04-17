@@ -12,7 +12,7 @@ supersedes:
 ## Problemklasse
 
 Das HSC-Signal meldet in TypeScript- und Python-Code vermehrt False Positives, wenn String-Literale keine Geheimnisse enthalten, sondern nur Namen oder Marker fuer Konfiguration:
-- Env-Var-Namenskonstanten (z. B. `AWS_SECRET_KEY_ENV = "AWS_SECRET_ACCESS_KEY"`)
+- Env-Var-Namenskonstanten (z. B. `AWS_SECRET_KEY_ENV = "AWS_SECRET_ACCESS_KEY"`) <!-- pragma: allowlist secret -->
 - Sentinel/Marker-Konstanten (z. B. `*_MARKER`, `*_TOKEN_PREFIX`, `*_ERROR_CODE`)
 - Endpoint-URL-Literale ohne Credentials
 

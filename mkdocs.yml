@@ -156,7 +156,7 @@ nav:
       - ECM — Exception Contract Drift: reference/signals/ecm.md
       - COD — Cohesion Deficit: reference/signals/cod.md
       - CCC — Co-Change Coupling: reference/signals/ccc.md
-      - HSC — Hardcoded Secret: reference/signals/hsc.md
+      - HSC — Hardcoded Secret: reference/signals/hsc.md  # pragma: allowlist secret
       - FOE — Fan-Out Explosion: reference/signals/foe.md
       - PHR — Phantom Reference: reference/signals/phr.md
       - MAZ — Missing Authorization: reference/signals/maz.md

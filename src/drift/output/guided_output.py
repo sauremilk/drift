@@ -178,7 +178,7 @@ SIGNAL_PLAIN_TEXT_EN: dict[str, str] = {
     "cohesion_deficit": "A file or class handles too many unrelated responsibilities.",
     "co_change_coupling": "Files that always change together hide an implicit shared dependency.",
     "fan_out_explosion": "A module imports too many others, creating fragile coupling.",
-    "hardcoded_secret": "Credentials or secrets are hardcoded in source files.",
+    "hardcoded_secret": "Credentials or secrets are hardcoded in source files.",  # noqa: E501  # pragma: allowlist secret
     "phantom_reference": "Code references functions or modules that no longer exist.",
     "temporal_volatility": "Certain files change unusually often.",
     "ts_architecture": "TypeScript code has structural problems.",
