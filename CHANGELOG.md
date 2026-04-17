@@ -2,6 +2,8 @@
 
 ## [2.11.2] - 2026-04-17
 
+Short version: Fix configuration error messages, golden snapshot alignment, lint/type cleanup, and onboarding doc improvements.
+
 ### Fixed
 
 - **Error action messages now reference `drift config validate`**: `DRIFT-1001` and `DRIFT-1002` error actions now point users to `drift config validate` for diagnosing configuration issues instead of the less useful `drift config show`.
