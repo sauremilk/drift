@@ -342,7 +342,7 @@ async def run_brief(
     if session:
         with contextlib.suppress(json.JSONDecodeError, TypeError):
             _update_session_from_brief(session, json.loads(payload))
-    return _enrich_response_with_session(payload, session)
+    return _enrich_response_with_session(payload, session, "drift_brief")
 
 
 async def run_shadow_verify(

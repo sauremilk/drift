@@ -701,6 +701,43 @@ class TestMcpServerHelpers:
         assert result["error_code"] == "DRIFT-5010"
         assert result["tool"] == "drift_brief"
 
+    def test_drift_brief_records_session_trace_entry(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+        tmp_path: Path,
+    ) -> None:
+        """drift_brief should append a drift_brief trace entry for session workflows."""
+        import json as _json
+
+        from drift import mcp_server
+        from drift.session import SessionManager
+
+        fake_result = {
+            "type": "brief",
+            "task": "test",
+            "scope": {"resolved_paths": []},
+            "risk": {"level": "LOW"},
+            "guardrails": [],
+            "guardrails_prompt_block": "",
+        }
+
+        monkeypatch.setattr("drift.api.brief", lambda *a, **kw: fake_result)
+
+        SessionManager.reset_instance()
+        session_manager = SessionManager.instance()
+        sid = session_manager.create(str(tmp_path))
+
+        result = _json.loads(
+            _run_tool(mcp_server.drift_brief(path=".", task="test", session_id=sid))
+        )
+
+        assert result["type"] == "brief"
+        assert result["session"]["session_id"] == sid
+
+        session = session_manager.get(sid)
+        assert session is not None
+        assert any(entry.get("tool") == "drift_brief" for entry in session.trace)
+
     def test_drift_brief_in_exported_tools(self) -> None:
         """drift_brief is included in the exported MCP tools list."""
         from drift.mcp_server import _EXPORTED_MCP_TOOLS, drift_brief
