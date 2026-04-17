@@ -98,6 +98,33 @@ def test_log_tool_event_sanitizes_home_directory_paths(monkeypatch, tmp_path: Pa
     assert "testuser" not in json.dumps(params)
 
 
+def test_log_tool_event_sanitizes_error_message_paths(monkeypatch, tmp_path: Path) -> None:
+    out = tmp_path / "events.jsonl"
+    fake_home = tmp_path / "home" / "testuser"
+    fake_home.mkdir(parents=True)
+
+    monkeypatch.setenv("DRIFT_TELEMETRY_ENABLED", "1")
+    monkeypatch.setenv("DRIFT_TELEMETRY_FILE", str(out))
+    monkeypatch.setattr("drift.telemetry.Path.home", classmethod(lambda cls: fake_home))
+
+    log_tool_event(
+        tool_name="api.validate",
+        params={"path": "."},
+        status="error",
+        duration_ms=9,
+        result={"ok": False},
+        error=f"FileNotFoundError: {fake_home / 'config' / 'drift.yaml'}",
+        repo_root=tmp_path,
+    )
+
+    row = _read_jsonl(out)[0]
+    err = row["error"]
+
+    assert isinstance(err, str)
+    assert err.startswith("FileNotFoundError: ~/")
+    assert "testuser" not in err
+
+
 def test_log_tool_event_disabled_writes_nothing(
     monkeypatch,
     tmp_path: Path,

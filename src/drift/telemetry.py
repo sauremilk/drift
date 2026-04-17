@@ -52,22 +52,20 @@ def _home_prefix_candidates() -> list[str]:
 
 
 def _mask_home_prefix(value: str) -> str:
-    """Replace an absolute home-directory prefix with '~' for privacy."""
+    """Replace absolute home-directory prefixes with '~' for privacy."""
+    masked = value
     for prefix in _home_prefix_candidates():
         parts = [p for p in re.split(r"[\\/]", prefix) if p]
         if not parts:
             continue
-        pattern = r"^" + r"[\\/]+".join(re.escape(part) for part in parts) + r"(?=$|[\\/])"
-        match = re.match(pattern, value, flags=re.IGNORECASE)
-        if not match:
-            continue
+        pattern = (
+            r"(?<![A-Za-z0-9_])"
+            + r"[\\/]+".join(re.escape(part) for part in parts)
+            + r"(?=$|[\\/])"
+        )
+        masked = re.sub(pattern, "~", masked, flags=re.IGNORECASE)
 
-        suffix = value[match.end() :].lstrip("\\/")
-        if not suffix:
-            return "~"
-        return "~/" + suffix.replace("\\", "/")
-
-    return value
+    return masked.replace("~\\", "~/")
 
 
 def _env_truthy(name: str) -> bool:
@@ -154,6 +152,7 @@ def log_tool_event(
         ts = datetime.now(UTC).isoformat().replace("+00:00", "Z")
         safe_params = _sanitize(params)
         safe_result = _sanitize(result) if result is not None else None
+        safe_error = _sanitize(error) if error is not None else None
 
         event = {
             "schema_version": _EVENT_SCHEMA_VERSION,
@@ -173,7 +172,7 @@ def log_tool_event(
                     isinstance(safe_result, dict) and safe_result.get("type") == "error"
                 ),
             },
-            "error": error,
+            "error": safe_error,
         }
 
         out_file = telemetry_file(repo_root)
