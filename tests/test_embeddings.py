@@ -51,6 +51,17 @@ class TestEmbeddingServiceDegraded:
         z = np.array([0.0, 0.0], dtype=np.float32)
         assert svc.cosine_similarity(a, z) == 0.0
 
+    def test_cosine_similarity_clamps_floating_point_overflow(self, monkeypatch):
+        svc = EmbeddingService()
+        a = np.array([1.0, 0.0], dtype=np.float64)
+        b = np.array([1.0, 0.0], dtype=np.float64)
+
+        monkeypatch.setattr(np, "dot", lambda _a, _b: np.float64(1.0000000000000002))
+        assert svc.cosine_similarity(a, b) == 1.0
+
+        monkeypatch.setattr(np, "dot", lambda _a, _b: np.float64(-1.0000000000000002))
+        assert svc.cosine_similarity(a, b) == -1.0
+
     def test_build_index_returns_none_without_vectors(self):
         svc = EmbeddingService()
         assert svc.build_index([]) is None

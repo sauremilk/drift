@@ -310,3 +310,58 @@ def test_get_embedding_service_cache_dir_key_none(mock_st_cls: MagicMock) -> Non
     mock_st_cls.return_value = MagicMock()
     svc = get_embedding_service(cache_dir=None)
     assert svc is not None
+
+
+@patch("drift.embeddings._EMBEDDINGS_AVAILABLE", True)
+@patch("drift.embeddings.SentenceTransformer", create=True)
+def test_ensure_model_returns_none_and_logs_warning_on_load_error(
+    mock_st_cls: MagicMock, caplog: pytest.LogCaptureFixture
+) -> None:
+    """Model load errors should degrade gracefully instead of bubbling up."""
+    import logging
+
+    mock_st_cls.side_effect = OSError("network down")
+    svc = EmbeddingService(model_name="mock-model")
+
+    with caplog.at_level(logging.WARNING, logger="drift.embeddings"):
+        result = svc.embed_text("hello")
+
+    assert result is None
+    assert "Failed to load embedding model" in caplog.text
+
+
+@patch("drift.embeddings._EMBEDDINGS_AVAILABLE", True)
+def test_ensure_model_timeout_returns_none_and_logs_warning(
+    monkeypatch: pytest.MonkeyPatch,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    """Timed out model load should return None and not block callers indefinitely."""
+    import drift.embeddings as emb_mod
+    import logging
+
+    class _ThreadStub:
+        def __init__(self, target, daemon):
+            self._target = target
+            self.daemon = daemon
+            self._alive = True
+
+        def start(self):
+            # Do not run target: simulate a still-running load.
+            return None
+
+        def join(self, timeout=None):
+            return None
+
+        def is_alive(self):
+            return self._alive
+
+    monkeypatch.setattr(emb_mod.threading, "Thread", _ThreadStub)
+    monkeypatch.setattr(emb_mod, "SentenceTransformer", MagicMock(), raising=False)
+    monkeypatch.setenv("DRIFT_EMBEDDING_MODEL_LOAD_TIMEOUT", "0.01")
+
+    svc = EmbeddingService(model_name="mock-model")
+    with caplog.at_level(logging.WARNING, logger="drift.embeddings"):
+        result = svc.embed_text("hello")
+
+    assert result is None
+    assert "timed out" in caplog.text

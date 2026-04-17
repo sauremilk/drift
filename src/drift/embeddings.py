@@ -289,7 +289,8 @@ class EmbeddingService:
         norm_b = float(np.linalg.norm(b))
         if norm_a == 0.0 or norm_b == 0.0:
             return 0.0
-        return float(np.dot(a, b) / (norm_a * norm_b))
+        sim = float(np.dot(a, b) / (norm_a * norm_b))
+        return float(np.clip(sim, -1.0, 1.0))
 
     @staticmethod
     def cosine_similarity_matrix(a: np.ndarray, b: np.ndarray) -> np.ndarray:
