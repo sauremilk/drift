@@ -8,6 +8,7 @@ import click
 
 from drift.api import to_json
 from drift.api import validate as api_validate
+from drift.errors import EXIT_CONFIG_ERROR
 
 
 @click.command("validate")
@@ -52,9 +53,12 @@ def validate(
         config_file=str(config_file) if config_file else None,
         baseline_file=str(baseline_file) if baseline_file else None,
     )
+    is_valid = bool(result.get("valid", False))
     text = to_json(result)
     if output is not None:
         output.write_text(text + "\n", encoding="utf-8")
         click.echo(f"Output written to {output}", err=True)
     else:
         click.echo(text)
+    if not is_valid:
+        raise click.exceptions.Exit(EXIT_CONFIG_ERROR)
