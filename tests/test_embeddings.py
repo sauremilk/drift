@@ -294,6 +294,45 @@ class TestEmbedTextsDegraded:
         assert result == [None, None]
 
 
+class TestEmbeddingInputSanitization:
+    def test_embed_text_returns_none_for_empty_sanitized_input(self, monkeypatch, caplog):
+        svc = EmbeddingService()
+
+        def _unexpected_model_call() -> object:
+            raise AssertionError("_ensure_model must not be called for empty sanitized input")
+
+        monkeypatch.setattr(svc, "_ensure_model", _unexpected_model_call)
+
+        with caplog.at_level("DEBUG", logger="drift.embeddings"):
+            result = svc.embed_text(" \t\n\x00 ")
+
+        assert result is None
+        assert "Skipping embedding for empty or invalid input" in caplog.text
+
+    def test_embed_texts_skips_invalid_items_and_preserves_order(self, monkeypatch):
+        svc = EmbeddingService()
+
+        class _FakeModel:
+            def encode(self, texts, **_kwargs):
+                return np.array(
+                    [[float(len(texts[0]))], [float(len(texts[1]))]],
+                    dtype=np.float32,
+                )
+
+        monkeypatch.setattr(svc, "_ensure_model", lambda: _FakeModel())
+
+        result = svc.embed_texts(["\x00   ", "  hello\x00  ", "\n\t", "world"])
+
+        assert result[0] is None
+        assert result[1] is not None
+        assert result[2] is None
+        assert result[3] is not None
+        assert result[1].shape == (1,)
+        assert result[3].shape == (1,)
+        assert result[1][0] == pytest.approx(5.0)
+        assert result[3][0] == pytest.approx(5.0)
+
+
 # ---------------------------------------------------------------------------
 # get_embedding_service / embeddings_available
 # ---------------------------------------------------------------------------
