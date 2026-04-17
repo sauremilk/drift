@@ -71,9 +71,14 @@ class TestMatchesAny:
     ("suffix", "expected"),
     [
         (".py", "python"),
+        (".pyi", "python"),
         (".ts", "typescript"),
+        (".mts", "typescript"),
+        (".cts", "typescript"),
         (".tsx", "tsx"),
         (".js", "javascript"),
+        (".mjs", "javascript"),
+        (".cjs", "javascript"),
         (".jsx", "jsx"),
         (".rs", None),
         (".go", None),
@@ -249,6 +254,26 @@ class TestDiscoverFiles:
         paths = {f.path.as_posix() for f in files}
         assert "app.py" in paths
         assert "app.ts" in paths
+
+    def test_default_include_adds_modern_module_extensions(self, tmp_path, monkeypatch):
+        (tmp_path / "app.pyi").write_text("def f() -> int: ...")
+        (tmp_path / "app.mjs").write_text("export const x = 1;")
+        (tmp_path / "app.cjs").write_text("module.exports = { x: 1 };")
+        (tmp_path / "app.mts").write_text("export const x: number = 1;")
+        (tmp_path / "app.cts").write_text("export const x: number = 1;")
+
+        monkeypatch.setattr(
+            "drift.ingestion.file_discovery._detect_supported_languages",
+            lambda: {"python", "typescript", "tsx", "javascript", "jsx"},
+        )
+
+        files = discover_files(tmp_path)
+        paths = {f.path.as_posix() for f in files}
+        assert "app.pyi" in paths
+        assert "app.mjs" in paths
+        assert "app.cjs" in paths
+        assert "app.mts" in paths
+        assert "app.cts" in paths
 
     def test_default_include_counts_unsupported_typescript(self, tmp_path, monkeypatch):
         (tmp_path / "app.py").write_text("x = 1")

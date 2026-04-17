@@ -33,9 +33,14 @@ logger = logging.getLogger("drift")
 
 LANGUAGE_MAP: dict[str, str] = {
     ".py": "python",
+    ".pyi": "python",
     ".ts": "typescript",
+    ".mts": "typescript",
+    ".cts": "typescript",
     ".tsx": "tsx",
     ".js": "javascript",
+    ".mjs": "javascript",
+    ".cjs": "javascript",
     ".jsx": "jsx",
 }
 
@@ -313,9 +318,20 @@ def discover_files(
         supported.difference_update(_TYPESCRIPT_FAMILY_LANGUAGES)
 
     if include is None:
-        include = ["**/*.py"]
+        include = ["**/*.py", "**/*.pyi"]
         if ts_enabled:
-            include.extend(["**/*.ts", "**/*.tsx", "**/*.js", "**/*.jsx"])
+            include.extend(
+                [
+                    "**/*.ts",
+                    "**/*.mts",
+                    "**/*.cts",
+                    "**/*.tsx",
+                    "**/*.js",
+                    "**/*.mjs",
+                    "**/*.cjs",
+                    "**/*.jsx",
+                ]
+            )
     if exclude is None:
         exclude = [
             "**/node_modules/**",
