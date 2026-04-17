@@ -9,6 +9,7 @@ proposes new ``ArchDecision`` rules that can be reviewed by maintainers.
 from __future__ import annotations
 
 from collections import defaultdict
+from typing import Literal
 
 from drift.arch_graph._models import (
     ArchDecision,
@@ -202,7 +203,7 @@ def _pick_enforcement(
     total: int,
     is_degrading: bool,
     is_boundary: bool,
-) -> str:
+) -> Literal["info", "warn", "block"]:
     """Choose enforcement level based on severity signals."""
     if is_boundary and (total >= 5 or is_degrading):
         return "block"
