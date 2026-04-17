@@ -89,6 +89,7 @@ class TestJsonOutputGolden:
             "baseline",
             "negative_context",
             "signal_abbrev_map",
+            "broad_security_suppressions",
         }
         assert set(data.keys()) == expected_keys
 
