@@ -907,6 +907,9 @@ class DriftSession:
             "effectiveness_thresholds": self.effectiveness_thresholds,
             "diagnostic_hypotheses": self.diagnostic_hypotheses,
             "git_head_at_plan": self.git_head_at_plan,
+            "seen_verification_payload_hashes": sorted(
+                self._seen_verification_payload_hashes
+            ),
         }
 
     @classmethod
@@ -918,7 +921,7 @@ class DriftSession:
             if isinstance(metrics_data, dict)
             else OrchestrationMetrics()
         )
-        return cls(
+        session = cls(
             session_id=data["session_id"],
             repo_path=data["repo_path"],
             created_at=data.get("created_at", time.time()),
@@ -952,6 +955,12 @@ class DriftSession:
             diagnostic_hypotheses=data.get("diagnostic_hypotheses", {}),
             git_head_at_plan=data.get("git_head_at_plan"),
         )
+        seen_hashes = data.get("seen_verification_payload_hashes", [])
+        if isinstance(seen_hashes, list):
+            session._seen_verification_payload_hashes = {
+                str(item) for item in seen_hashes if isinstance(item, str)
+            }
+        return session
 
 
 class SessionManager:

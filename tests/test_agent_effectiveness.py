@@ -166,6 +166,24 @@ class TestSessionSerialisation:
         assert len(restored.trace) == 1
         assert len(restored.run_history) == 1
 
+    def test_persists_seen_verification_payload_hashes_on_disk_round_trip(self, tmp_path):
+        mgr = SessionManager.instance()
+        sid = mgr.create(str(tmp_path))
+        session = mgr.get(sid)
+        assert session is not None
+        session._seen_verification_payload_hashes.update({"hash-a", "hash-b"})
+
+        saved = mgr.save_to_disk(sid, directory=tmp_path)
+        assert saved is not None
+
+        _ = mgr.destroy(sid)
+        restored_sid = mgr.load_from_disk(saved)
+        assert restored_sid is not None
+
+        restored = mgr.get(restored_sid)
+        assert restored is not None
+        assert restored._seen_verification_payload_hashes == {"hash-a", "hash-b"}
+
 
 # ---------------------------------------------------------------------------
 # OrchestrationMetrics quality proxies
