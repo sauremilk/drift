@@ -1031,7 +1031,7 @@ class TestTargetPathWarning:
         assert any(
             "Bare drift:ignore suppressed security findings" in w for w in result["warnings"]
         )
-        
+
 class TestUnmatchedActiveSignalsWarning:
     def test_scan_includes_warning_when_no_active_signal_matches(self, monkeypatch):
         """Issue #522: scan should expose unmatched active signal filters."""

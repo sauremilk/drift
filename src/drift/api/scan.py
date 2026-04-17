@@ -174,7 +174,7 @@ def scan(
         if broad_security_suppressions:
             result["broad_security_suppressions"] = broad_security_suppressions
             warnings.append(
-                "Bare drift:ignore suppressed security findings; review " + 
+                "Bare drift:ignore suppressed security findings; review "
                 "broad_security_suppressions for file/line/signal details"
             )
         for event in getattr(analysis, "degradation_events", []) or []:

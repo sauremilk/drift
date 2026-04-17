@@ -13,8 +13,7 @@ import logging
 from pathlib import Path
 from typing import Any
 
-from drift.mcp_orchestration import _pre_call_advisory
-
+from drift.mcp_orchestration import _pre_call_advisory  # noqa: E402
 
 logger = logging.getLogger(__name__)
 

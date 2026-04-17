@@ -25,9 +25,9 @@ async def run_session_start(
     autopilot_payload: str,
     response_profile: str | None,
 ) -> str:
+    from drift.api_helpers import _error_response
     from drift.mcp_enrichment import _enrich_response_with_session
     from drift.session import SessionManager
-    from drift.api_helpers import _error_response
 
     payload_mode = str(autopilot_payload).strip().lower()
     if payload_mode not in AUTOPILOT_PAYLOAD_MODES:

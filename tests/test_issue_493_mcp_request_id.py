@@ -56,7 +56,8 @@ class TestIssue493McpRequestCorrelation:
         uuid.UUID(request_id)
 
         assert any(
-            "DRIFT-5001 from drift_scan" in record.getMessage() and request_id in record.getMessage()
+            "DRIFT-5001 from drift_scan" in record.getMessage()
+            and request_id in record.getMessage()
             for record in caplog.records
         )
 
