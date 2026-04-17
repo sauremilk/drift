@@ -7,6 +7,7 @@
 
 ### Fixed
 
+- **`drift_fix_plan` Router-Fast-Path pending-Filter korrigiert (#486)**: `_session_fix_plan_fast_response()` in `mcp_router_repair` nutzt jetzt `session.queue_status()`-Semantik, sodass `claimed`- und `failed`-Tasks nicht mehr fälschlich als `pending` ausgeliefert werden; die vollständigen Task-Payloads aus `selected_tasks` bleiben dabei erhalten.
 - **`drift_fix_plan` Fast-Path Profile-Konsistenz (#485)**: Die zulässigen Profile für den Session-Queue-Fast-Path sind nun explizit dokumentiert (`None`, `planner`, `coder`) und per Regressionstest abgesichert; `verifier` bleibt korrekt im API-Fallback-Pfad statt Cache-Hit.
 - **Kanonisches `finding_id` über Scan/Status-Surfaces (#479)**: `finding_rendering._finding_concise()` und `finding_rendering._finding_detailed()` emittieren jetzt zusätzlich `finding_id` als kanonischen stabilen Identifier; `fingerprint` bleibt als Rueckwaertskompatibilitaets-Alias erhalten. Dadurch funktionieren cross-surface Deduplizierung und Agent-Pipelines (`scan -> diff -> status`) ohne feldspezifische Sonderbehandlung.
 - **`drift ci --format junit|llm` missing deprecation warnings (#477)**: `ci._emit_output()` now emits the same `DeprecationWarning` and stderr migration guidance as `analyze`/`check` when deprecated `junit` or `llm` formats are used.

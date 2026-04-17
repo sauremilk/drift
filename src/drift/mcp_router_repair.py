@@ -56,12 +56,32 @@ def _can_use_session_fix_plan_fast_path(
 
 def _session_fix_plan_fast_response(session: Any, *, max_tasks: int) -> dict[str, Any]:
     selected_tasks = list(session.selected_tasks or [])
-    completed_ids = set(session.completed_task_ids or [])
+    selected_by_id = {
+        str(task.get("id", task.get("task_id", ""))): task
+        for task in selected_tasks
+    }
 
-    pending_tasks = [
-        task for task in selected_tasks
-        if str(task.get("id", "")) not in completed_ids
-    ]
+    pending_tasks: list[dict[str, Any]]
+    queue_status = getattr(session, "queue_status", None)
+    if callable(queue_status):
+        queue = queue_status() or {}
+        pending_entries = list(queue.get("pending_tasks") or [])
+        pending_tasks = []
+        for entry in pending_entries:
+            task_id = str(entry.get("id", entry.get("task_id", "")))
+            if task_id in selected_by_id:
+                pending_tasks.append(selected_by_id[task_id])
+            else:
+                pending_tasks.append(entry)
+    else:
+        completed_ids = {
+            str(task_id)
+            for task_id in (session.completed_task_ids or [])
+        }
+        pending_tasks = [
+            task for task in selected_tasks
+            if str(task.get("id", task.get("task_id", ""))) not in completed_ids
+        ]
 
     limit = max(0, int(max_tasks))
     limited = pending_tasks[:limit] if limit else []

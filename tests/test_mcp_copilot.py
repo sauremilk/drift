@@ -485,6 +485,54 @@ class TestMcpServerHelpers:
         assert result["cache"]["hit"] is True
         assert result["cache"]["source"] == "session.fix_plan_queue"
 
+    def test_drift_fix_plan_fast_path_excludes_claimed_and_failed_tasks(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+        tmp_path: Path,
+    ) -> None:
+        """Fast-path pending queue must omit claimed and failed tasks (Issue #486)."""
+        import time
+
+        from drift import mcp_server
+        from drift.session import SessionManager
+
+        SessionManager.reset_instance()
+        start = json.loads(_run_tool(mcp_server.drift_session_start(path=str(tmp_path))))
+        sid = start["session_id"]
+        session = SessionManager.instance().get(sid)
+        assert session is not None
+
+        session.selected_tasks = [
+            {"id": "T-pending", "signal": "PFS", "title": "Pending task"},
+            {"id": "T-claimed", "signal": "AVS", "title": "Claimed task"},
+            {"id": "T-failed", "signal": "MDS", "title": "Failed task"},
+        ]
+        session.active_leases = {
+            "T-claimed": {
+                "agent_id": "agent-a",
+                "acquired_at": time.time(),
+                "expires_at": time.time() + 120,
+                "lease_ttl_seconds": 120,
+                "renew_count": 0,
+            }
+        }
+        session.failed_task_ids = ["T-failed"]
+
+        def _should_not_run_fix_plan(*_args: object, **_kwargs: object) -> dict[str, object]:
+            msg = "drift.api.fix_plan should not run for session fast-path"
+            raise AssertionError(msg)
+
+        monkeypatch.setattr("drift.api.fix_plan", _should_not_run_fix_plan)
+
+        result = json.loads(_run_tool(mcp_server.drift_fix_plan(session_id=sid, max_tasks=5)))
+
+        assert result["status"] == "ok"
+        assert result["task_count"] == 1
+        assert result["total_available"] == 1
+        assert [task["id"] for task in result["tasks"]] == ["T-pending"]
+        assert result["remaining_by_signal"] == {"PFS": 1}
+        assert result["cache"]["hit"] is True
+
     def test_drift_fix_plan_falls_back_to_api_when_filtered(
         self,
         monkeypatch: pytest.MonkeyPatch,
