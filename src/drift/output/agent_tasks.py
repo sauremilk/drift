@@ -14,7 +14,20 @@ from drift.fix_intent import (
     _refine_edit_kind,
     is_cross_file_risky,
 )
-from drift.models import AgentTask, Finding, RegressionPattern, RepoAnalysis, Severity, SignalType
+from drift.models import (
+    AgentTask,
+    AutomationFit,
+    ChangeScope,
+    Finding,
+    RegressionPattern,
+    RepairMaturity,
+    RepoAnalysis,
+    ReviewRisk,
+    Severity,
+    SignalType,
+    TaskComplexity,
+    VerificationStrength,
+)
 from drift.negative_context import findings_to_negative_context, negative_context_to_dict
 from drift.recommendations import Recommendation, generate_recommendations
 from drift.repair_template_registry import get_registry
@@ -302,10 +315,10 @@ def _classify_task(finding: Finding, task: AgentTask) -> None:
         if meta.get("file_a") and meta.get("file_b") and meta["file_a"] != meta["file_b"]:
             scope = "module"
 
-    task.automation_fit = _clamp(fit, _FIT_LEVELS)
-    task.review_risk = _clamp(risk, _RISK_LEVELS)
-    task.change_scope = _clamp(scope, _SCOPE_LEVELS)
-    task.verification_strength = _clamp(verif, _VERIF_LEVELS)
+    task.automation_fit = AutomationFit(_clamp(fit, _FIT_LEVELS))
+    task.review_risk = ReviewRisk(_clamp(risk, _RISK_LEVELS))
+    task.change_scope = ChangeScope(_clamp(scope, _SCOPE_LEVELS))
+    task.verification_strength = VerificationStrength(_clamp(verif, _VERIF_LEVELS))
 
 
 # ---------------------------------------------------------------------------
@@ -1395,7 +1408,7 @@ def _finding_to_task(
         end_line=finding.end_line,
         symbol=finding.symbol,
         related_files=list(dict.fromkeys(rf.as_posix() for rf in finding.related_files)),
-        complexity=complexity,
+        complexity=TaskComplexity(complexity),
         expected_effect=_expected_effect_for(finding),
         success_criteria=_success_criteria_for(finding),
         verify_plan=[],  # populated in second pass with shadow_verify_scope
@@ -1406,7 +1419,7 @@ def _finding_to_task(
             if k not in ("ast_fingerprint", "body_hash")
         } | {"repair_level": repair_level},
         constraints=_generate_constraints(finding),
-        repair_maturity=maturity,
+        repair_maturity=RepairMaturity(maturity),
         negative_context=findings_to_negative_context(
             [finding], max_items=5,
         ),
@@ -1504,7 +1517,7 @@ def analysis_to_agent_tasks(analysis: RepoAnalysis) -> list[AgentTask]:
     for t in tasks:
         if t.depends_on:
             risk_idx = _RISK_LEVELS.index(t.review_risk) if t.review_risk in _RISK_LEVELS else 1
-            t.review_risk = _RISK_LEVELS[min(risk_idx + 1, len(_RISK_LEVELS) - 1)]
+            t.review_risk = ReviewRisk(_RISK_LEVELS[min(risk_idx + 1, len(_RISK_LEVELS) - 1)])
 
     # Second pass: compute shadow_verify_scope and final verify_plan for risky tasks.
     # Must run after _compute_dependencies so that depends_on/blocks are populated.
