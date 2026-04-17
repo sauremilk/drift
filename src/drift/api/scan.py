@@ -177,6 +177,24 @@ def scan(
                 "Bare drift:ignore suppressed security findings; review " + 
                 "broad_security_suppressions for file/line/signal details"
             )
+        for event in getattr(analysis, "degradation_events", []) or []:
+            if not isinstance(event, dict) or event.get("cause") != "no_signals_matched":
+                continue
+            details = event.get("details")
+            requested_signals = ""
+            if isinstance(details, dict):
+                requested_signals = str(details.get("requested_signals", "")).strip()
+            if requested_signals:
+                warnings.append(
+                    "Unknown or unmatched signal ID(s): "
+                    f"{requested_signals} — requested signals were not executed."
+                )
+            else:
+                warnings.append(
+                    "Requested signal filter matched no registered signals; "
+                    "requested signals were not executed."
+                )
+            break
         if warnings:
             result["warnings"] = warnings
         _emit_api_telemetry(

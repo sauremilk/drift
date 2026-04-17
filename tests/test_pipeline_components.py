@@ -821,6 +821,37 @@ def test_analysis_pipeline_exposes_phase_timings() -> None:
     assert analysis.phase_timings["total_seconds"] == 0.75
 
 
+def test_signal_phase_records_degradation_when_active_signals_match_none(tmp_path: Path) -> None:
+    """Issue #522: unmatched active_signals must not fail silently."""
+    cfg = _config()
+    phase = SignalPhase(signal_factory=lambda _ctx, active_signals=None: [])
+
+    parsed = ParsedInputs(
+        parse_results=[],
+        commits=[],
+        file_histories={},
+    )
+    degradation = DegradationInfo(causes=set(), components=set(), events=[])
+
+    out = phase.run(
+        tmp_path,
+        cfg,
+        parsed,
+        degradation=degradation,
+        active_signals={"hardcoded_secret", "TYPO_ID"},
+    )
+
+    assert out.findings == []
+    assert "no_signals_matched" in degradation.causes
+    assert "signals" in degradation.components
+    assert any(
+        event.get("cause") == "no_signals_matched"
+        and "hardcoded_secret" in str(event.get("details", {}).get("requested_signals", ""))
+        and "TYPO_ID" in str(event.get("details", {}).get("requested_signals", ""))
+        for event in degradation.events
+    )
+
+
 def test_ingestion_phase_continues_in_degraded_mode_on_parser_exception(
     tmp_path: Path,
 ) -> None:

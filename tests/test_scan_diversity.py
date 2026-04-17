@@ -1031,6 +1031,66 @@ class TestTargetPathWarning:
         assert any(
             "Bare drift:ignore suppressed security findings" in w for w in result["warnings"]
         )
+        
+class TestUnmatchedActiveSignalsWarning:
+    def test_scan_includes_warning_when_no_active_signal_matches(self, monkeypatch):
+        """Issue #522: scan should expose unmatched active signal filters."""
+        import drift.analyzer as analyzer_module
+        import drift.api as api_module
+        from drift.config import DriftConfig
+
+        analysis = SimpleNamespace(
+            findings=[],
+            drift_score=0.0,
+            severity=Severity.LOW,
+            total_files=1,
+            total_functions=1,
+            ai_attributed_ratio=0.0,
+            trend=None,
+            degradation_events=[
+                {
+                    "cause": "no_signals_matched",
+                    "component": "signals",
+                    "message": "Requested active_signals matched no registered signals.",
+                    "details": {"requested_signals": "hardcoded_secret, TYPO_ID"},
+                }
+            ],
+        )
+
+        monkeypatch.setattr(
+            DriftConfig,
+            "load",
+            staticmethod(lambda *a, **kw: object()),
+        )
+        monkeypatch.setattr(
+            analyzer_module,
+            "analyze_repo",
+            lambda *a, **kw: analysis,
+        )
+        monkeypatch.setattr(
+            api_module,
+            "_emit_api_telemetry",
+            lambda **kw: None,
+        )
+        monkeypatch.setattr(
+            "drift.config.apply_signal_filter",
+            lambda *a, **kw: None,
+        )
+        monkeypatch.setattr(
+            "drift.config.resolve_signal_names",
+            lambda *_args, **_kwargs: ["TYPO_ID"],
+        )
+        monkeypatch.setattr(
+            _scan_mod,
+            "_fix_first_concise",
+            lambda analysis, max_items=5: [],
+        )
+
+        result = scan(Path("."), signals=["TYPO_ID"])
+
+        assert "warnings" in result
+        assert any("not executed" in w.lower() for w in result["warnings"])
+        assert any("TYPO_ID" in w for w in result["warnings"])
 
 # --- Task 5: top_signals respects --select filter ---
 

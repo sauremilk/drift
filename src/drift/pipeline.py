@@ -786,6 +786,21 @@ class SignalPhase:
         total_signals = len(signals)
 
         if total_signals == 0:
+            if active_signals is not None:
+                requested_signals = ", ".join(sorted(active_signals))
+                degradation.causes.add("no_signals_matched")
+                degradation.components.add("signals")
+                degradation.events.append(
+                    make_degradation_event(
+                        cause="no_signals_matched",
+                        component="signals",
+                        message=(
+                            "Requested active_signals matched no registered signals; "
+                            "no signals were executed."
+                        ),
+                        details={"requested_signals": requested_signals},
+                    ),
+                )
             return SignalOutput(
                 findings=[],
                 phase_timings={"signals_seconds": 0.0},
