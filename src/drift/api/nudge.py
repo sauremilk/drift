@@ -189,6 +189,21 @@ def _cross_file_blind_spot_warning(
     }
 
 
+def _removed_file_prune_warning(pruned_count: int) -> dict[str, Any] | None:
+    """Return a warning payload when stale findings were pruned for removed files."""
+    if pruned_count <= 0:
+        return None
+    noun = "finding" if pruned_count == 1 else "findings"
+    return {
+        "code": "removed_file_findings_pruned",
+        "count": pruned_count,
+        "message": (
+            f"{pruned_count} {noun} from removed files were pruned from "
+            "cross-file signal results."
+        ),
+    }
+
+
 def nudge(
     path: str | Path = ".",
     *,
@@ -562,6 +577,11 @@ def nudge(
         )
         if blind_spot_warning is not None:
             warnings.append(blind_spot_warning)
+        prune_warning = _removed_file_prune_warning(
+            inc_result.pruned_removed_cross_file_findings
+        )
+        if prune_warning is not None:
+            warnings.append(prune_warning)
 
         # -- Build response -------------------------------------------------
         # Apply signal filtering to new/resolved findings if requested

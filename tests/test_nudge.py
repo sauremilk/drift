@@ -185,6 +185,21 @@ class TestNudgeAPI:
             },
         )
 
+        BaselineManager.instance().store(
+            tmp_path.resolve(),
+            BaselineSnapshot(
+                file_hashes={changed_rel.as_posix(): "stale-hash"},
+                score=0.3,
+            ),
+            [],
+            {
+                changed_rel.as_posix(): ParseResult(
+                    file_path=changed_rel,
+                    language="python",
+                )
+            },
+        )
+
         monkeypatch.setattr(
             "drift.ingestion.file_discovery.discover_files",
             lambda *a, **kw: [
@@ -212,6 +227,7 @@ class TestNudgeAPI:
                 file_local_signals_run=[],
                 cross_file_signals_estimated=["architecture_violation"],
                 baseline_valid=True,
+                pruned_removed_cross_file_findings=0,
             )
 
         monkeypatch.setattr("drift.incremental.IncrementalSignalRunner.run", _fake_run)
@@ -328,21 +344,28 @@ class TestNudgeAPI:
         monkeypatch: pytest.MonkeyPatch,
         tmp_path: Path,
     ) -> None:
-        """nudge() returns error_response on exception (not raised)."""
-        # Force a fast deterministic failure path instead of relying on FS/git behavior.
-        from drift.config import DriftConfig
+        """Exceptions in nudge flow return structured error payload."""
 
-        def _raise_load_error(*a, **kw):
-            raise RuntimeError("forced config load failure")
+        def _boom(*args, **kwargs):
+            raise RuntimeError("simulated failure")
 
-        monkeypatch.setattr(DriftConfig, "load", staticmethod(_raise_load_error))
+        monkeypatch.setattr("drift.config.DriftConfig.load", staticmethod(_boom))
 
-        # Non-existent path still exercises error response contract.
         broken = tmp_path / "nonexistent_repo_xyz"
         result = nudge(broken, changed_files=[])
-
-        # Should not crash, returns error dict
         assert "schema_version" in result or "error" in result
+
+    def test_nudge_warns_when_removed_file_findings_were_pruned(
+        self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+    ) -> None:
+        """Removed-file prune warning payload is explicit and machine-readable."""
+        from drift.api.nudge import _removed_file_prune_warning
+
+        warning = _removed_file_prune_warning(2)
+        assert warning is not None
+        assert warning["code"] == "removed_file_findings_pruned"
+        assert warning["count"] == 2
+        assert "were pruned" in warning["message"]
 
     def test_nudge_skips_parse_for_hash_unchanged_changed_file(
         self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
@@ -470,6 +493,7 @@ class TestNudgeAPI:
                 file_local_signals_run=[],
                 cross_file_signals_estimated=[],
                 baseline_valid=True,
+                pruned_removed_cross_file_findings=0,
             )
 
         monkeypatch.setattr("drift.incremental.IncrementalSignalRunner.run", _fake_run)

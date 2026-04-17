@@ -123,6 +123,9 @@ class IncrementalResult:
         Signal types whose findings were carried from the baseline.
     baseline_valid:
         Whether the baseline TTL had not expired when the run started.
+    pruned_removed_cross_file_findings:
+        Number of carried cross-file baseline findings dropped because
+        their file path no longer exists in the current parse set.
     """
 
     score: float
@@ -134,6 +137,7 @@ class IncrementalResult:
     file_local_signals_run: list[str]
     cross_file_signals_estimated: list[str]
     baseline_valid: bool
+    pruned_removed_cross_file_findings: int = 0
 
 
 # ---------------------------------------------------------------------------
@@ -721,6 +725,7 @@ class IncrementalSignalRunner:
 
         # 3. Run file-local signals on changed-file parse results only
         changed_prs = [pr for path, pr in merged.items() if path in changed_files]
+        removed_files = {path for path in changed_files if path not in current_parse_results}
         file_local_findings: list[Finding] = []
         file_local_signal_names: list[str] = []
 
@@ -757,6 +762,7 @@ class IncrementalSignalRunner:
         file_local_st_values = set(file_local_signal_names)
 
         carried_findings: list[Finding] = []
+        pruned_removed_cross_file_findings = 0
         for f in self._baseline_findings:
             if f.signal_type in file_local_st_values:
                 # File-local findings for unchanged files — keep them
@@ -764,7 +770,12 @@ class IncrementalSignalRunner:
                 if fp not in changed_files:
                     carried_findings.append(f)
             else:
-                # Cross-file / git findings — carry all forward
+                # Cross-file / git findings remain estimated, but findings for
+                # removed files must not survive the incremental merge.
+                fp = f.file_path.as_posix() if f.file_path else ""
+                if fp in removed_files:
+                    pruned_removed_cross_file_findings += 1
+                    continue
                 carried_findings.append(f)
 
         cross_file_signal_names: list[str] = sorted(
@@ -804,4 +815,5 @@ class IncrementalSignalRunner:
             file_local_signals_run=sorted(file_local_signal_names),
             cross_file_signals_estimated=cross_file_signal_names,
             baseline_valid=self._baseline.is_valid(),
+            pruned_removed_cross_file_findings=pruned_removed_cross_file_findings,
         )

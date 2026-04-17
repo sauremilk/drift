@@ -491,6 +491,43 @@ class TestIncrementalSignalRunner:
         assert "architecture_violation" in result.confidence
         assert result.confidence["architecture_violation"] == "estimated"
 
+    def test_cross_file_finding_on_removed_file_is_pruned(
+        self,
+        config: DriftConfig,
+    ) -> None:
+        """Cross-file baseline findings for deleted files must not be carried forward."""
+        stale_cross_finding = Finding(
+            signal_type=SignalType.ARCHITECTURE_VIOLATION,
+            severity=Severity.HIGH,
+            score=0.6,
+            title="stale layer breach",
+            description="desc",
+            file_path=Path("src/deleted.py"),
+            start_line=5,
+        )
+        old_pr = ParseResult(file_path=Path("src/deleted.py"), language="python", line_count=10)
+        baseline = BaselineSnapshot(
+            file_hashes={"src/deleted.py": "old"},
+            score=0.4,
+        )
+
+        runner = IncrementalSignalRunner(
+            baseline=baseline,
+            config=config,
+            baseline_findings=[stale_cross_finding],
+            baseline_parse_results={"src/deleted.py": old_pr},
+        )
+        result = runner.run(
+            changed_files={"src/deleted.py"},
+            current_parse_results={},
+        )
+
+        current_keys = {_finding_key(f) for f in result.new_findings}
+        current_keys.update(_finding_key(f) for f in result.resolved_findings)
+        assert _finding_key(stale_cross_finding) in current_keys
+        resolved_keys = {_finding_key(f) for f in result.resolved_findings}
+        assert _finding_key(stale_cross_finding) in resolved_keys
+
     def test_new_finding_detected(
         self,
         config: DriftConfig,
