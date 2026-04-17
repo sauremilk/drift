@@ -14,6 +14,7 @@ from pathlib import Path
 
 import click
 import yaml  # type: ignore[import-untyped]
+from rich.panel import Panel
 
 from drift.commands import console
 from drift.profiles import PROFILES, get_profile
@@ -323,6 +324,23 @@ def init(
     if full:
         ci = hooks = mcp = claude = True
 
+    if not json_output and not dry_run:
+        _prof = get_profile(profile)
+        console.print(
+            Panel(
+                f"[bold]Setting up drift[/bold] for [cyan]{repo.name}[/cyan]\n"
+                f"[dim]Profile: {_prof.name} — {_prof.description}[/dim]",
+                border_style="rgb(13,148,136)",
+                padding=(0, 2),
+            )
+        )
+        console.print()
+
+    if not (repo / "drift.yaml").exists() and not json_output and not dry_run:
+        interactive = True
+        console.print("[dim]No drift.yaml found — running interactive setup.[/dim]")
+        console.print()
+
     # --interactive: use setup questions to derive best-fit profile
     if interactive and not json_output:
         from drift.commands.setup import (
@@ -491,16 +509,13 @@ def init(
     ascii_only = bool(getattr(console, "_drift_ascii_only", False))
     ok_marker = "OK" if ascii_only else "✓"
     arrow = "->" if ascii_only else "→"
-    dash = " - " if ascii_only else " — "
 
     if created:
-        from rich.panel import Panel
-
         console.print(f"[bold green]{ok_marker} {created} file(s) created.[/bold green]")
         steps = [
-            f"  1. [bold]drift status[/bold]        {arrow} health overview (quick sanity check)",
-            f"  2. [bold]drift analyze[/bold]       {arrow} full findings report",
-            f"  3. [bold]drift baseline save[/bold] {arrow} lock current state as reference",
+            f"  1. [bold]drift analyze[/bold]       {arrow} get your first score",
+            f"  2. [bold]drift baseline save[/bold] {arrow} lock this state as your reference",
+            f"  3. [bold]drift status[/bold]        {arrow} health overview on any future run",
         ]
         if profile == "vibe-coding":
             steps.append(
@@ -519,4 +534,17 @@ def init(
                 )
             )
     else:
-        console.print(f"[yellow]No files created{dash}all targets already exist.[/yellow]")
+        if ascii_only:
+            console.print("\n[bold green]Already initialised[/bold green]")
+            console.print("[dim]All config files are up to date.[/dim]")
+            console.print("Run [bold]drift analyze[/bold] to check your current score.")
+        else:
+            console.print(
+                Panel(
+                    "[bold green]✓ Already initialised[/bold green]\n"
+                    "[dim]All config files are up to date.[/dim]\n"
+                    "Run [bold]drift analyze[/bold] to check your current score.",
+                    border_style="rgb(13,148,136)",
+                    padding=(0, 2),
+                )
+            )

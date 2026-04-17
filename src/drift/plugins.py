@@ -37,6 +37,7 @@ logger = logging.getLogger(__name__)
 SIGNAL_GROUP: str = "drift.signals"
 OUTPUT_GROUP: str = "drift.output"
 COMMAND_GROUP: str = "drift.commands"
+INTEGRATION_GROUP: str = "drift.integrations"
 
 
 def _load_entry_points(group: str) -> list[EntryPoint]:

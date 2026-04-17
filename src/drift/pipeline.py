@@ -1226,6 +1226,31 @@ class AnalysisPipeline:
             max(0.0, time.monotonic() - output_started_at),
             3,
         )
+
+        # Integration hook — runs after assembly, contributes zero score impact.
+        integrations_started = time.monotonic()
+        if getattr(config, "integrations", None) is not None and getattr(
+            config.integrations, "enabled", False
+        ):
+            try:
+                from drift.integrations.runner import run_integrations
+
+                integration_results = run_integrations(
+                    repo_path,
+                    analysis.findings,
+                    config,
+                )
+                for result in integration_results:
+                    analysis.integration_findings.extend(result.findings)
+            except Exception:  # noqa: BLE001
+                logging.getLogger("drift").warning(
+                    "Integration hook failed; continuing without integration results.",
+                    exc_info=True,
+                )
+        phase_timings["integration_seconds"] = round(
+            max(0.0, time.monotonic() - integrations_started), 3
+        )
+
         phase_timings["total_seconds"] = round(
             max(
                 0.0, analysis.analysis_duration_seconds + phase_timings.get("discover_seconds", 0.0)

@@ -213,11 +213,6 @@ def setup(
             DeprecationWarning,
             stacklevel=1,
         )
-        click.echo(
-            "DEPRECATION: drift setup will be removed in v3.0. "
-            "Use 'drift init --interactive' instead.",
-            err=True,
-        )
     repo = repo.resolve()
     config_path = repo / "drift.yaml"
     lang = _detect_language()
@@ -293,6 +288,10 @@ def setup(
         console.print("    drift status")
         console.print()
         console.print("  [dim]This shows the current structural health of your project.[/dim]")
+    console.print(
+        "[dim]Note: 'drift setup' will be removed in v3.0. "
+        "Use 'drift init --interactive' going forward.[/dim]"
+    )
     console.print()
 
     sys.exit(0)

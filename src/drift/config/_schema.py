@@ -6,6 +6,92 @@ from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
+# ---------------------------------------------------------------------------
+# Integrations
+# ---------------------------------------------------------------------------
+
+
+class IntegrationSeverityMap(BaseModel):
+    """Maps external tool severity levels to Drift Severity values."""
+
+    model_config = ConfigDict(extra="allow")
+
+    error: str = "high"
+    warning: str = "medium"
+    info: str = "info"
+    note: str = "info"
+
+
+class IntegrationConfig(BaseModel):
+    """Configuration for a single external tool integration.
+
+    Example drift.yaml::
+
+        integrations:
+          - name: superpowers
+            tier: run
+            trigger_signals:
+              - pattern_fragmentation
+            command: ["superpowers", "check", "--format", "json", "{repo_path}"]
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    name: str = Field(description="Unique identifier for this integration.")
+    tier: Literal["hint", "run", "plugin"] = Field(
+        description="Integration tier: hint (report only), run (subprocess), plugin (YAML)."
+    )
+    enabled: bool = Field(default=True)
+    trigger_signals: list[str] = Field(
+        default_factory=lambda: ["*"],
+        description=(
+            "List of signal types that activate this integration. "
+            "Use '*' to trigger on any finding."
+        ),
+    )
+    command: list[str] = Field(
+        default_factory=list,
+        description=(
+            "Command to invoke (run/plugin tiers). "
+            "Use {repo_path} as placeholder for the repository root."
+        ),
+    )
+    timeout_seconds: int = Field(default=30, ge=1)
+    output_format: Literal["json", "text"] = Field(default="json")
+    hint_text: str | None = Field(
+        default=None,
+        description="Static hint text to render in reports (hint tier).",
+    )
+    severity_map: IntegrationSeverityMap = Field(
+        default_factory=IntegrationSeverityMap,
+        description="Mapping of external tool severity levels to Drift severity values.",
+    )
+
+
+class IntegrationsGlobalConfig(BaseModel):
+    """Global integrations section in drift.yaml.
+
+    Example::
+
+        integrations:
+          enabled: false   # opt-in: set to true to activate
+          adapters:
+            - name: superpowers
+              tier: run
+              ...
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    enabled: bool = Field(
+        default=False,
+        description=(
+            "Global switch. Must be set to true to run any integration. "
+            "Default false — explicit opt-in required."
+        ),
+    )
+    adapters: list[IntegrationConfig] = Field(default_factory=list)
+
 
 class LayerBoundary(BaseModel):
     """A single layer boundary rule."""

@@ -66,7 +66,7 @@ def test_safe_main_generic_exception_shows_hint(
     captured = capsys.readouterr()
     assert "boom" in captured.err
     assert "DRIFT-3002" in captured.err
-    assert "Hint: run with -v for the full traceback." in captured.err
+    assert "Hint: run with -v for the full traceback" in captured.err
 
 
 def test_safe_main_generic_exception_prints_traceback_in_debug(

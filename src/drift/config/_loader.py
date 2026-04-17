@@ -18,6 +18,7 @@ from drift.config._schema import (
     DocImplDriftConfig,
     FindingContextPolicy,
     GuidedThresholds,
+    IntegrationsGlobalConfig,
     LanguagesConfig,
     PathOverride,
     PerformanceConfig,
@@ -153,6 +154,13 @@ class DriftConfig(BaseModel):
     attribution: AttributionConfig = Field(default_factory=AttributionConfig)
     languages: LanguagesConfig = Field(default_factory=LanguagesConfig)
     performance: PerformanceConfig = Field(default_factory=PerformanceConfig)
+    integrations: IntegrationsGlobalConfig = Field(
+        default_factory=IntegrationsGlobalConfig,
+        description=(
+            "External tool integrations (hint / run / plugin tiers). "
+            "Set enabled: true to activate. Default: disabled."
+        ),
+    )
     agent: AgentObjective | None = Field(
         default=None,
         description=(
