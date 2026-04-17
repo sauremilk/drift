@@ -8,6 +8,7 @@ from unittest.mock import MagicMock, patch
 
 from click.testing import CliRunner
 
+from drift.calibration.feedback import FeedbackEvent
 from drift.commands.calibrate import calibrate
 
 # ---------------------------------------------------------------------------
@@ -57,6 +58,7 @@ def _make_build_result(
     result.signals_with_data = signals_with_data
     result.evidence = {}
     result.confidence_per_signal = {}
+    result.clamped_signals = []
 
     if diff is None:
         diff = {}
@@ -79,7 +81,7 @@ def test_run_no_events_text_format(tmp_path: Path) -> None:
 
     with (
         patch("drift.config.DriftConfig.load", return_value=cfg),
-        patch("drift.calibration.feedback.load_feedback", return_value=[]),
+        patch("drift.calibration.feedback.load_feedback_with_stats", return_value=([], 0)),
     ):
         result = runner.invoke(calibrate, ["run", "--repo", str(tmp_path)])
 
@@ -93,7 +95,7 @@ def test_run_no_events_json_format(tmp_path: Path) -> None:
 
     with (
         patch("drift.config.DriftConfig.load", return_value=cfg),
-        patch("drift.calibration.feedback.load_feedback", return_value=[]),
+        patch("drift.calibration.feedback.load_feedback_with_stats", return_value=([], 0)),
     ):
         result = runner.invoke(calibrate, ["run", "--repo", str(tmp_path), "--format", "json"])
 
@@ -116,7 +118,17 @@ def test_run_with_events_no_diff_text(tmp_path: Path) -> None:
 
     with (
         patch("drift.config.DriftConfig.load", return_value=cfg),
-        patch("drift.calibration.feedback.load_feedback", return_value=[MagicMock()]),
+        patch(
+            "drift.calibration.feedback.load_feedback_with_stats",
+            return_value=([
+                FeedbackEvent(
+                    signal_type="pattern_fragmentation",
+                    file_path="src/a.py",
+                    verdict="tp",
+                    source="user",
+                )
+            ], 0),
+        ),
         patch("drift.calibration.profile_builder.build_profile", return_value=build_result),
     ):
         result = runner.invoke(calibrate, ["run", "--repo", str(tmp_path)])
@@ -140,7 +152,17 @@ def test_run_with_diff_dry_run(tmp_path: Path) -> None:
 
     with (
         patch("drift.config.DriftConfig.load", return_value=cfg),
-        patch("drift.calibration.feedback.load_feedback", return_value=[MagicMock()]),
+        patch(
+            "drift.calibration.feedback.load_feedback_with_stats",
+            return_value=([
+                FeedbackEvent(
+                    signal_type="pattern_fragmentation",
+                    file_path="src/a.py",
+                    verdict="tp",
+                    source="user",
+                )
+            ], 0),
+        ),
         patch("drift.calibration.profile_builder.build_profile", return_value=build_result),
     ):
         result = runner.invoke(calibrate, ["run", "--repo", str(tmp_path), "--dry-run"])
@@ -163,11 +185,18 @@ def test_run_with_history_dir(tmp_path: Path) -> None:
 
     with (
         patch("drift.config.DriftConfig.load", return_value=cfg),
-        patch("drift.calibration.feedback.load_feedback", return_value=[]),
+        patch("drift.calibration.feedback.load_feedback_with_stats", return_value=([], 0)),
         patch("drift.calibration.history.load_snapshots", return_value=[fake_snapshot]),
         patch(
             "drift.commands.calibrate._collect_git_correlation",
-            return_value=[MagicMock()],
+            return_value=[
+                FeedbackEvent(
+                    signal_type="pattern_fragmentation",
+                    file_path="src/git.py",
+                    verdict="tp",
+                    source="git_correlation",
+                )
+            ],
         ),
         patch("drift.calibration.profile_builder.build_profile", return_value=build_result),
     ):
@@ -208,7 +237,10 @@ def test_run_dedupes_cross_source_and_prefers_explicit_feedback(tmp_path: Path) 
 
     with (
         patch("drift.config.DriftConfig.load", return_value=cfg),
-        patch("drift.calibration.feedback.load_feedback", return_value=[user_event]),
+        patch(
+            "drift.calibration.feedback.load_feedback_with_stats",
+            return_value=([user_event], 0),
+        ),
         patch("drift.calibration.history.load_snapshots", return_value=[fake_snapshot]),
         patch("drift.commands.calibrate._collect_git_correlation", return_value=[git_event]),
         patch(
@@ -237,7 +269,17 @@ def test_run_json_format_with_diff(tmp_path: Path) -> None:
 
     with (
         patch("drift.config.DriftConfig.load", return_value=cfg),
-        patch("drift.calibration.feedback.load_feedback", return_value=[MagicMock()]),
+        patch(
+            "drift.calibration.feedback.load_feedback_with_stats",
+            return_value=([
+                FeedbackEvent(
+                    signal_type="architecture_violation",
+                    file_path="src/b.py",
+                    verdict="fp",
+                    source="user",
+                )
+            ], 0),
+        ),
         patch("drift.calibration.profile_builder.build_profile", return_value=build_result),
     ):
         result = runner.invoke(calibrate, ["run", "--repo", str(tmp_path), "--format", "json"])
@@ -326,7 +368,10 @@ def test_status_enabled_no_history(tmp_path: Path) -> None:
 
     with (
         patch("drift.config.DriftConfig.load", return_value=cfg),
-        patch("drift.calibration.feedback.load_feedback", return_value=[MagicMock()]),
+        patch(
+            "drift.calibration.feedback.load_feedback_with_stats",
+            return_value=([MagicMock()], 0),
+        ),
     ):
         result = runner.invoke(calibrate, ["status", "--repo", str(tmp_path)])
 
@@ -340,7 +385,7 @@ def test_status_enabled_with_history(tmp_path: Path) -> None:
 
     with (
         patch("drift.config.DriftConfig.load", return_value=cfg),
-        patch("drift.calibration.feedback.load_feedback", return_value=[]),
+        patch("drift.calibration.feedback.load_feedback_with_stats", return_value=([], 0)),
         patch("drift.calibration.history.load_snapshots", return_value=[MagicMock(), MagicMock()]),
     ):
         result = runner.invoke(calibrate, ["status", "--repo", str(tmp_path)])

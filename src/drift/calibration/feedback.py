@@ -4,10 +4,13 @@ from __future__ import annotations
 
 import hashlib
 import json
+import logging
 from dataclasses import asdict, dataclass, field
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any, Literal
+
+logger = logging.getLogger(__name__)
 
 _SOURCE_PRIORITY: dict[str, int] = {
     # Explicit/user-confirmed evidence outranks inferred evidence.
@@ -84,10 +87,17 @@ def load_feedback(feedback_path: Path) -> list[FeedbackEvent]:
     Returns an empty list if the file does not exist.
     Silently skips malformed lines.
     """
+    events, _skipped = load_feedback_with_stats(feedback_path)
+    return events
+
+
+def load_feedback_with_stats(feedback_path: Path) -> tuple[list[FeedbackEvent], int]:
+    """Load feedback events and return (events, skipped_malformed_lines)."""
     if not feedback_path.exists():
-        return []
+        return [], 0
 
     events: list[FeedbackEvent] = []
+    skipped_malformed_lines = 0
     for line in feedback_path.read_text(encoding="utf-8").splitlines():
         line = line.strip()
         if not line:
@@ -96,8 +106,15 @@ def load_feedback(feedback_path: Path) -> list[FeedbackEvent]:
             data = json.loads(line)
             events.append(FeedbackEvent(**data))
         except (json.JSONDecodeError, TypeError):
+            skipped_malformed_lines += 1
             continue
-    return events
+    if skipped_malformed_lines:
+        logger.warning(
+            "load_feedback: skipped %d malformed lines in %s",
+            skipped_malformed_lines,
+            feedback_path,
+        )
+    return events, skipped_malformed_lines
 
 
 def dedupe_feedback_events(events: list[FeedbackEvent]) -> list[FeedbackEvent]:
