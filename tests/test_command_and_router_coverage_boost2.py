@@ -5,6 +5,7 @@ import json
 from pathlib import Path
 from types import SimpleNamespace
 
+import pytest
 from click.testing import CliRunner
 
 from drift.models import Finding, ModuleScore, RepoAnalysis, Severity
@@ -35,15 +36,15 @@ def _analysis(repo: Path) -> RepoAnalysis:
     )
 
 
-def test_diff_cmd_variants(tmp_path: Path) -> None:
+def test_diff_cmd_variants(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     from drift.commands.diff_cmd import diff
 
     runner = CliRunner()
 
     import drift.commands.diff_cmd as mod
 
-    mod.api_diff = lambda *args, **kwargs: {"ok": True, "kwargs": kwargs}
-    mod.to_json = lambda result: json.dumps(result)
+    monkeypatch.setattr(mod, "api_diff", lambda *args, **kwargs: {"ok": True, "kwargs": kwargs})
+    monkeypatch.setattr(mod, "to_json", lambda result: json.dumps(result))
 
     out_file = tmp_path / "diff.json"
     res = runner.invoke(

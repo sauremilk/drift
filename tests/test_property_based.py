@@ -129,6 +129,7 @@ def test_matches_any_empty_patterns_always_false(path_str: str, patterns: list[s
 )
 @settings(
     max_examples=30,
+    deadline=None,
     suppress_health_check=[
         HealthCheck.too_slow,
         HealthCheck.function_scoped_fixture,
