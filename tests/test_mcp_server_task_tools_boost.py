@@ -269,7 +269,10 @@ def test_feedback_and_calibrate(monkeypatch: pytest.MonkeyPatch, tmp_path: Path)
             path=str(tmp_path),
         )
     )
-    assert "error" in fb_bad
+    assert fb_bad["type"] == "error"
+    assert fb_bad["error_code"] == "DRIFT-1003"
+    assert fb_bad["recoverable"] is True
+    assert "verdict" in fb_bad["message"]
 
     monkeypatch.setattr("drift.calibration.feedback.load_feedback", lambda _p: [])
     no_data = _run(mcp_server.drift_calibrate(path=str(tmp_path), dry_run=True))

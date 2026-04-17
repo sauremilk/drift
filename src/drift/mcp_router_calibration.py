@@ -26,6 +26,7 @@ async def run_feedback(
     """Record TP/FP/FN feedback for a finding to improve signal calibration."""
     from pathlib import Path as _Path
 
+    from drift.api_helpers import _error_response
     from drift.calibration.feedback import FeedbackEvent, record_feedback, resolve_feedback_paths
     from drift.config import SIGNAL_ABBREV, DriftConfig
 
@@ -37,7 +38,24 @@ async def run_feedback(
         resolved = SIGNAL_ABBREV.get(signal.upper(), signal)
         v = verdict.lower().strip()
         if v not in ("tp", "fp", "fn"):
-            return json.dumps({"error": f"Invalid verdict '{verdict}'. Use tp, fp, or fn."})
+            error = _error_response(
+                "DRIFT-1003",
+                f"Invalid verdict '{verdict}'. Use tp, fp, or fn.",
+                invalid_fields=[
+                    {
+                        "field": "verdict",
+                        "value": verdict,
+                        "expected": ["tp", "fp", "fn"],
+                    }
+                ],
+                suggested_fix={
+                    "verdict": "tp",
+                    "valid_values": ["tp", "fp", "fn"],
+                },
+                recoverable=True,
+            )
+            error["tool"] = "drift_feedback"
+            return json.dumps(error)
         event = FeedbackEvent(
             signal_type=resolved,
             file_path=file_path,
