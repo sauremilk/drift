@@ -383,6 +383,33 @@ class TestMcpSessionIntegration:
         assert "fix_plan" in result["autopilot"]
         assert calls["count"] == 1
 
+    def test_session_start_autopilot_uses_running_loop(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+        tmp_path: Path,
+    ) -> None:
+        """Autopilot must resolve the currently running loop in async context."""
+        from drift import mcp_server
+
+        (tmp_path / "module.py").write_text("def ping() -> int:\n    return 1\n", encoding="utf-8")
+
+        monkeypatch.setattr(
+            asyncio,
+            "get_event_loop",
+            lambda: (_ for _ in ()).throw(AssertionError("get_event_loop must not be used")),
+        )
+
+        raw = _run_tool(
+            mcp_server.drift_session_start(
+                path=str(tmp_path),
+                autopilot=True,
+                autopilot_payload="summary",
+            )
+        )
+        result = json.loads(raw)
+
+        assert result["status"] == "ok"
+
     def test_session_start_autopilot_defaults_to_summary_payload(
         self,
         tmp_path: Path,

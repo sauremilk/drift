@@ -105,7 +105,7 @@ async def run_session_start(
         )
         from drift.config import apply_signal_filter, resolve_signal_names
 
-        loop = asyncio.get_event_loop()
+        loop = asyncio.get_running_loop()
         resolved = str(Path(path).resolve())
         sig_list = _parse_csv_ids(signals) or None
         excl_sig_list = _parse_csv_ids(exclude_signals) or None
