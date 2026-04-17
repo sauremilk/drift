@@ -338,6 +338,8 @@ Recommended branch protection setup:
 
 ## Pre-Merge Checklist
 
+> **First-time contributor?** Focus on: ☐ Tests pass · ☐ New tests added for your change. The maintainer will guide you through the rest during review.
+
 Every PR should pass these checks before merge:
 
 ### Tests

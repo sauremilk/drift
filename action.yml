@@ -1,3 +1,23 @@
+# ─── Quick start ────────────────────────────────────────────────────
+#
+#   jobs:
+#     drift:
+#       runs-on: ubuntu-latest
+#       permissions:
+#         pull-requests: write    # needed for 'comment: true'
+#         security-events: write  # needed for 'upload-sarif: true'
+#       steps:
+#         - uses: actions/checkout@v4
+#           with:
+#             fetch-depth: 0       # full history for temporal signals
+#         - uses: mick-gsk/drift@main
+#           with:
+#             fail-on: high
+#             comment: true
+#
+# Docs: https://mick-gsk.github.io/drift/getting-started/team-rollout/
+# ─────────────────────────────────────────────────────────────────────
+
 name: "Drift — AI Code Coherence Monitor"
 description: "Catches what CodeQL and Semgrep don't cover: pattern fragmentation, architecture erosion, mutant duplicates, temporal volatility. Deterministic quality control layer for AI-assisted Python development."
 

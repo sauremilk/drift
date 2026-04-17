@@ -78,21 +78,26 @@ Releases = "https://github.com/mick-gsk/drift/releases"
 CI = "https://github.com/mick-gsk/drift/actions/workflows/ci.yml"
 
 [project.optional-dependencies]
+# Analyze TypeScript, TSX, JavaScript, JSX files via tree-sitter
 typescript = [
     "tree-sitter>=0.22",
     "tree-sitter-typescript>=0.22",
 ]
+# Semantic similarity matching for pattern fragmentation detection
 embeddings = [
     "sentence-transformers>=3.0",
     "faiss-cpu>=1.7",
     "numpy>=1.26",
 ]
+# Parse Markdown files for documentation-level analysis
 markdown = [
     "mistune>=3.0",
 ]
+# Enable MCP server mode for AI agent orchestration (Copilot, Cursor, Claude)
 mcp = [
     "mcp[cli]>=1.2.0,<2.0",
 ]
+# Live file-watching for `drift watch` (re-analyzes on save)
 watch = [
     "watchfiles>=1.0",
 ]

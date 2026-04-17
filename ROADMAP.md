@@ -17,12 +17,12 @@ Exceptions: bugfixes that block installation or first-run experience.
 
 ### Distribution Milestones
 
-| Meilenstein | Bedingung | Frühester Termin | Status |
+| Milestone | Condition | Earliest date | Status |
 |---|---|---|---|
-| **pre-commit Discoverability** | `.pre-commit-hooks.yaml` im Repo vorhanden | ✅ erledigt | Automatisch via GitHub-Suche + Sourcegraph indexiert |
-| **awesome-static-analysis PR** | >20 Stars, ≥3 Monate alt, >1 Kontributor | ~18.06.2026 | ⏳ Gate nicht erfüllt (7 Stars, 19 Tage) |
-| **awesome-python PR** | ≥100 Stars, ≥3 Monate alt | ~18.06.2026 + Stars-Wachstum | ⏳ Gate nicht erfüllt (hard auto-reject davor) |
-| **pre-commit.com Featured** | >500 Stars | offen | ⏳ langfristig |
+| **pre-commit Discoverability** | `.pre-commit-hooks.yaml` in repo | ✅ done | Indexed via GitHub search + Sourcegraph |
+| **awesome-static-analysis PR** | >20 Stars, ≥3 months old, >1 contributor | ~18.06.2026 | ⏳ Gate not met (7 Stars, 19 days) |
+| **awesome-python PR** | ≥100 Stars, ≥3 months old | ~18.06.2026 + star growth | ⏳ Gate not met (hard auto-reject before) |
+| **pre-commit.com Featured** | >500 Stars | open | ⏳ long-term |
 
 Vollständige Gate-Kriterien und vorbereitete PR-Texte: [`docs/distribution/awesome-submissions.md`](docs/distribution/awesome-submissions.md)
 

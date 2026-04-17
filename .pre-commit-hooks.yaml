@@ -1,3 +1,19 @@
+# Drift — pre-commit hooks
+#
+# Two hooks are available:
+#   drift-report  → report findings without blocking (recommended first)
+#   drift-check   → fail the commit if findings meet severity threshold
+#
+# Start with drift-report to understand findings, then graduate to
+# drift-check once you have tuned your drift.yaml.
+#
+# Example .pre-commit-config.yaml:
+#   repos:
+#     - repo: https://github.com/mick-gsk/drift
+#       rev: v2.11.0   # use latest tag
+#       hooks:
+#         - id: drift-report  # or drift-check once calibrated
+
 - id: drift-check
   name: Drift — Architectural Erosion Check
   description: >
@@ -7,7 +23,7 @@
   entry: drift check
   args: [--fail-on, high]
   types: [python]
-  pass_filenames: false
+  pass_filenames: false  # Drift analyzes the entire repo, not individual files
   always_run: true
   additional_dependencies: [drift-analyzer]
 
@@ -20,7 +36,7 @@
   entry: drift check
   args: [--fail-on, none]
   types: [python]
-  pass_filenames: false
+  pass_filenames: false  # Drift analyzes the entire repo, not individual files
   always_run: true
   verbose: true
   additional_dependencies: [drift-analyzer]

@@ -42,6 +42,9 @@ uvx drift-analyzer analyze --repo .
 
 > One command. No pre-install. Results in ~30 seconds.
 > No config? Run `drift setup` after install — or: `drift init --profile vibe-coding` for an AI-optimised first run.
+>
+> **What does `drift setup` do?** Asks 3 questions (project type, AI usage, strictness) and writes a tuned `drift.yaml`.
+> The `vibe-coding` profile raises tolerance for missing tests and anti-pattern fixtures — common in AI-prototyped code.
 
 🌐 **No install at all?** [Analyze any public repo in your browser →](https://mick-gsk.github.io/drift/prove-it/)
 
