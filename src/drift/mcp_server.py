@@ -544,7 +544,22 @@ async def drift_nudge(
         ),
     ] = None,
 ) -> str:
-    """Get directional feedback after a file change (experimental)."""
+    """Get directional feedback after a file change (experimental).
+
+    Args:
+        task_signal: Optional signal ID for the repaired finding (for example
+            `mutant_duplicate`). Accepts known signal names used by fix-plan tasks.
+            Combined with `task_edit_kind`, this enables template outcome recording
+            used to refine nudge template-confidence scoring.
+        task_edit_kind: Optional edit pattern label (for example
+            `merge_function_body`). Accepts registry edit-kind identifiers.
+            Must be paired with `task_signal`; together they map this nudge result
+            to the matching repair template confidence bucket.
+        task_context_class: Optional context bucket (`production` or `test`).
+            Accepts registry context classes and defaults to `production` when
+            outcome recording is active. This scopes confidence updates to the
+            correct context during nudge scoring feedback.
+    """
     from drift.mcp_router_analysis import run_nudge
 
     return await run_nudge(
