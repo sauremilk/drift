@@ -7,6 +7,7 @@ from pathlib import Path
 import click
 
 from drift.commands import console
+from drift.signal_mapping import signal_abbrev
 
 
 @click.command("watch")
@@ -149,6 +150,7 @@ def _print_nudge_summary(result: dict, *, initial: bool = False) -> None:
     safe = result.get("safe_to_commit", False)
     new_findings = result.get("new_findings", [])
     resolved = result.get("resolved_findings", [])
+    estimated_signals = _estimated_signal_labels(result)
 
     # Direction indicator
     if direction == "improving":
@@ -186,7 +188,42 @@ def _print_nudge_summary(result: dict, *, initial: bool = False) -> None:
             f"  [green]-{len(resolved)} resolved[/] finding(s)", highlight=False
         )
 
+    if estimated_signals:
+        plural = "s" if len(estimated_signals) != 1 else ""
+        console.print(
+            f"  [yellow]⚠ {len(estimated_signals)} cross-file signal{plural} estimated[/]: "
+            f"{', '.join(estimated_signals)}",
+            highlight=False,
+        )
+        console.print(
+            "  [dim]Estimated findings come from the last baseline; "
+            "run [bold]drift analyze[/] to refresh.[/]",
+            highlight=False,
+        )
+
     if safe:
         console.print("  [green]✓ safe to commit[/]", highlight=False)
     elif not initial:
         console.print("  [yellow]⚠ not safe to commit[/]", highlight=False)
+
+
+def _estimated_signal_labels(result: dict) -> list[str]:
+    """Return stable signal labels for estimated cross-file findings."""
+    estimated_raw: list[str] = []
+
+    direct = result.get("cross_file_signals_estimated")
+    if isinstance(direct, list):
+        estimated_raw.extend(str(item) for item in direct if item)
+
+    confidence = result.get("confidence")
+    if isinstance(confidence, dict):
+        for signal, level in confidence.items():
+            if str(level).lower() == "estimated":
+                estimated_raw.append(str(signal))
+
+    labels = {
+        signal_abbrev(signal).upper()
+        for signal in estimated_raw
+        if signal
+    }
+    return sorted(labels)
