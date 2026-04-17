@@ -337,7 +337,6 @@ def test_ensure_model_timeout_returns_none_and_logs_warning(
 ) -> None:
     """Timed out model load should return None and not block callers indefinitely."""
     import drift.embeddings as emb_mod
-    import logging
 
     class _ThreadStub:
         def __init__(self, target, daemon):
@@ -360,7 +359,7 @@ def test_ensure_model_timeout_returns_none_and_logs_warning(
     monkeypatch.setenv("DRIFT_EMBEDDING_MODEL_LOAD_TIMEOUT", "0.01")
 
     svc = EmbeddingService(model_name="mock-model")
-    with caplog.at_level(logging.WARNING, logger="drift.embeddings"):
+    with caplog.at_level("WARNING", logger="drift.embeddings"):
         result = svc.embed_text("hello")
 
     assert result is None
