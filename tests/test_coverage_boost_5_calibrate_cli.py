@@ -553,3 +553,159 @@ def test_reset_keeps_original_on_replace_error(tmp_path: Path) -> None:
     assert result.exit_code != 0
     remaining = yaml.safe_load(config_file.read_text(encoding="utf-8"))
     assert remaining == original_data
+
+
+def test_reset_warns_when_feedback_is_retained(tmp_path: Path) -> None:
+    runner = CliRunner()
+    import json
+
+    import yaml
+
+    config_file = tmp_path / "drift.yaml"
+    config_file.write_text(yaml.dump({"weights": {"pfs": 1.2}}), encoding="utf-8")
+
+    feedback_path = tmp_path / ".drift" / "feedback.jsonl"
+    feedback_path.parent.mkdir(parents=True, exist_ok=True)
+    feedback_path.write_text(
+        json.dumps(
+            {
+                "signal_type": "pattern_fragmentation",
+                "file_path": "src/a.py",
+                "verdict": "fp",
+                "source": "user",
+            }
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+
+    cfg = _make_cfg(tmp_path)
+    cfg.calibration.shared_feedback_path = None
+    with (
+        patch("drift.config.DriftConfig._find_config_file", return_value=config_file),
+        patch("drift.config.DriftConfig.load", return_value=cfg),
+    ):
+        result = runner.invoke(calibrate, ["reset", "--repo", str(tmp_path)])
+
+    assert result.exit_code == 0
+    assert "feedback evidence" in result.output.lower()
+    assert "--clear-feedback" in result.output
+
+
+def test_reset_clear_feedback_archives_feedback_file(tmp_path: Path) -> None:
+    runner = CliRunner()
+    import json
+
+    import yaml
+
+    config_file = tmp_path / "drift.yaml"
+    config_file.write_text(yaml.dump({"weights": {"pfs": 1.2}}), encoding="utf-8")
+
+    feedback_path = tmp_path / ".drift" / "feedback.jsonl"
+    feedback_path.parent.mkdir(parents=True, exist_ok=True)
+    feedback_path.write_text(
+        json.dumps(
+            {
+                "signal_type": "pattern_fragmentation",
+                "file_path": "src/a.py",
+                "verdict": "fp",
+                "source": "user",
+            }
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+
+    cfg = _make_cfg(tmp_path)
+    cfg.calibration.shared_feedback_path = None
+    with (
+        patch("drift.config.DriftConfig._find_config_file", return_value=config_file),
+        patch("drift.config.DriftConfig.load", return_value=cfg),
+    ):
+        result = runner.invoke(
+            calibrate,
+            ["reset", "--repo", str(tmp_path), "--clear-feedback"],
+        )
+
+    assert result.exit_code == 0
+    assert not feedback_path.exists()
+    backups = sorted((tmp_path / ".drift").glob("feedback.jsonl.bak-*"))
+    assert backups
+    assert "archived" in result.output.lower()
+
+
+def test_reset_signal_removes_only_target_signal_events(tmp_path: Path) -> None:
+    runner = CliRunner()
+    import json
+
+    import yaml
+
+    config_file = tmp_path / "drift.yaml"
+    config_file.write_text(yaml.dump({"weights": {"pfs": 1.2}}), encoding="utf-8")
+
+    feedback_path = tmp_path / ".drift" / "feedback.jsonl"
+    feedback_path.parent.mkdir(parents=True, exist_ok=True)
+    lines = [
+        {
+            "signal_type": "pattern_fragmentation",
+            "file_path": "src/a.py",
+            "verdict": "fp",
+            "source": "user",
+        },
+        {
+            "signal_type": "architecture_violation",
+            "file_path": "src/b.py",
+            "verdict": "tp",
+            "source": "user",
+        },
+        {
+            "signal_type": "pattern_fragmentation",
+            "file_path": "src/c.py",
+            "verdict": "fn",
+            "source": "user",
+        },
+    ]
+    feedback_path.write_text(
+        "\n".join(json.dumps(line) for line in lines) + "\n",
+        encoding="utf-8",
+    )
+
+    cfg = _make_cfg(tmp_path)
+    cfg.calibration.shared_feedback_path = None
+    with (
+        patch("drift.config.DriftConfig._find_config_file", return_value=config_file),
+        patch("drift.config.DriftConfig.load", return_value=cfg),
+    ):
+        result = runner.invoke(
+            calibrate,
+            ["reset", "--repo", str(tmp_path), "--signal", "pattern_fragmentation"],
+        )
+
+    assert result.exit_code == 0
+    remaining = [
+        json.loads(line)
+        for line in feedback_path.read_text(encoding="utf-8").splitlines()
+        if line.strip()
+    ]
+    assert len(remaining) == 1
+    assert remaining[0]["signal_type"] == "architecture_violation"
+    assert "removed 2" in result.output.lower()
+
+
+def test_reset_rejects_clear_feedback_with_signal(tmp_path: Path) -> None:
+    runner = CliRunner()
+
+    result = runner.invoke(
+        calibrate,
+        [
+            "reset",
+            "--repo",
+            str(tmp_path),
+            "--clear-feedback",
+            "--signal",
+            "pattern_fragmentation",
+        ],
+    )
+
+    assert result.exit_code != 0
+    assert "mutually exclusive" in result.output.lower()

@@ -339,11 +339,45 @@ def quality(repo: Path, fmt: str) -> None:
     help="Path to the repository root.",
 )
 @click.option("--config", "-c", type=click.Path(path_type=Path), default=None)
-def reset(repo: Path, config: Path | None) -> None:
+@click.option(
+    "--clear-feedback",
+    is_flag=True,
+    default=False,
+    help="Archive all feedback evidence after removing calibrated weights.",
+)
+@click.option(
+    "--signal",
+    "signal_type",
+    type=str,
+    default=None,
+    help="Remove feedback evidence only for the specified signal type.",
+)
+def reset(
+    repo: Path,
+    config: Path | None,
+    clear_feedback: bool,
+    signal_type: str | None,
+) -> None:
     """Remove calibrated weights and revert to defaults."""
     import yaml  # type: ignore[import-untyped]
 
+    from drift.calibration.feedback import load_feedback_with_stats, resolve_feedback_paths
     from drift.config import DriftConfig
+
+    if clear_feedback and signal_type:
+        raise click.ClickException(
+            "--clear-feedback and --signal are mutually exclusive."
+        )
+
+    feedback_path = repo / ".drift" / "feedback.jsonl"
+    try:
+        cfg = DriftConfig.load(repo, config)
+        feedback_path, _, _ = resolve_feedback_paths(repo, cfg)
+    except Exception:
+        # Keep reset usable even when config contains non-calibration schema issues.
+        feedback_path = repo / ".drift" / "feedback.jsonl"
+
+    feedback_events, _skipped_feedback_lines = load_feedback_with_stats(feedback_path)
 
     config_path = config or DriftConfig._find_config_file(repo)
 
@@ -363,6 +397,82 @@ def reset(repo: Path, config: Path | None) -> None:
         console.print("[green]Calibrated weights removed. Defaults will be used.[/green]")
     else:
         console.print("[dim]No custom weights found in config.[/dim]")
+
+    if clear_feedback:
+        archived_path = _archive_feedback_file(feedback_path)
+        if archived_path is None:
+            console.print("[dim]No feedback file found to archive.[/dim]")
+        else:
+            console.print(
+                "[green]Feedback evidence archived:[/green]"
+                f" {archived_path}"
+            )
+        return
+
+    if signal_type:
+        removed_count = _remove_feedback_events_for_signal(feedback_path, signal_type)
+        if removed_count:
+            console.print(
+                f"[green]Removed {removed_count} feedback events"
+                f" for signal '{signal_type}'.[/green]"
+            )
+        else:
+            console.print(
+                f"[dim]No feedback events found for signal '{signal_type}'.[/dim]"
+            )
+        return
+
+    if feedback_events:
+        console.print(
+            "[yellow]Feedback evidence was not cleared"
+            f" ({len(feedback_events)} events at {feedback_path}).[/yellow]"
+        )
+        console.print(
+            "[yellow]Running 'drift calibrate run' will re-apply calibration."
+            " Use '--clear-feedback' to archive evidence.[/yellow]"
+        )
+
+
+def _archive_feedback_file(feedback_path: Path) -> Path | None:
+    """Archive feedback evidence by moving JSONL to a timestamped backup."""
+    if not feedback_path.exists():
+        return None
+
+    timestamp = datetime.now(UTC).strftime("%Y%m%dT%H%M%SZ")
+    backup_path = feedback_path.with_name(f"{feedback_path.name}.bak-{timestamp}")
+    os.replace(feedback_path, backup_path)
+    return backup_path
+
+
+def _remove_feedback_events_for_signal(feedback_path: Path, signal_type: str) -> int:
+    """Remove feedback JSONL entries for one signal while preserving other lines."""
+    if not feedback_path.exists():
+        return 0
+
+    kept_lines: list[str] = []
+    removed_count = 0
+    for raw_line in feedback_path.read_text(encoding="utf-8").splitlines():
+        line = raw_line.strip()
+        if not line:
+            continue
+        try:
+            payload = json.loads(line)
+        except json.JSONDecodeError:
+            # Keep malformed lines untouched to avoid accidental data loss.
+            kept_lines.append(raw_line)
+            continue
+
+        if isinstance(payload, dict) and payload.get("signal_type") == signal_type:
+            removed_count += 1
+            continue
+        kept_lines.append(raw_line)
+
+    if removed_count:
+        _atomic_write_text(
+            feedback_path,
+            ("\n".join(kept_lines) + "\n") if kept_lines else "",
+        )
+    return removed_count
 
 
 def _atomic_write_text(path: Path, content: str, *, encoding: str = "utf-8") -> None:
