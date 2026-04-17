@@ -12,6 +12,15 @@ Short version: generate_skills API for agent-driven SKILL.md briefings, configur
 - **LLM format findings cap**: `llm` output format now respects `--max-findings` to avoid token overflow.
 - **`BaselineManager` singleton thread safety**: double-checked locking replaced with `threading.Lock` guard to prevent race conditions under concurrent access.
 
+## [2.12.1] - 2026-04-17
+
+Short version: Patch — detect-secrets false positive suppression and validate-release PowerShell fix.
+
+### Fixed
+
+- **detect-secrets false positives**: added `# pragma: allowlist secret` to intentional secret-like test fixtures to suppress security-hygiene CI failures.
+- **validate-release PowerShell**: fixed error handling in the validate-release script for Windows PowerShell compatibility.
+
 ## [2.12.0] - 2026-04-17
 
 Short version: Arch-graph API, remediation memory (ADR-072), consolidation opportunity detector (ADR-073), and enriched repair outcome tracking.
