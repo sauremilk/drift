@@ -2,6 +2,7 @@
 
 ### Fixed
 
+- **Negative-context registry coverage gate (#472)**: Added a registry-based policy assertion so every signal registered in [src/drift/signal_registry.py](src/drift/signal_registry.py) must be covered by a dedicated negative-context generator or explicitly listed in fallback-only policy; `type_safety_bypass` is now explicitly declared fallback-only to avoid silent policy drift.
 - **Telemetry path sanitization strips home-directory usernames (#464)**: `telemetry._sanitize()` now masks home-directory path prefixes to `~` for string values, preventing OS username leakage via `params.path`, `config_file`, and `baseline_file` in `.drift/agent_usage.jsonl` while preserving relative diagnostic context.
 - **Error action messages now reference `drift config validate`**: `DRIFT-1001` and `DRIFT-1002` error actions now point users to `drift config validate` for diagnosing configuration issues.
 - **Test fixture alignment**: updated JSON golden snapshot and `_FakeAnalysis` stubs for `broad_security_suppressions` and expired-suppression attributes.

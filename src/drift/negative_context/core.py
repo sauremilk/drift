@@ -24,6 +24,7 @@ __all__ = [
     "_affected",
     "_neg_id",
     "_policy_covered_signal_types",
+    "_policy_uncovered_registered_signal_ids",
     "_policy_uncovered_signal_types",
     "_register",
     "_sanitize",
@@ -85,7 +86,11 @@ GeneratorFn = Callable[[Finding], list[NegativeContext]]
 _GENERATORS: dict[str, GeneratorFn] = {}
 
 # Signals that intentionally have no dedicated generator (fallback only)
-_FALLBACK_ONLY_SIGNALS: frozenset[str] = frozenset()
+_FALLBACK_ONLY_SIGNALS: frozenset[str] = frozenset(
+    {
+        SignalType.TYPE_SAFETY_BYPASS,
+    }
+)
 
 
 def _policy_covered_signal_types() -> frozenset[str]:
@@ -96,6 +101,14 @@ def _policy_covered_signal_types() -> frozenset[str]:
 def _policy_uncovered_signal_types() -> frozenset[str]:
     """Signal types in the category map but without a generator or policy."""
     return frozenset(_SIGNAL_CATEGORY.keys()) - _policy_covered_signal_types()
+
+
+def _policy_uncovered_registered_signal_ids() -> frozenset[str]:
+    """Signal IDs in signal_registry without generator or explicit fallback policy."""
+    from drift.signal_registry import get_all_meta
+
+    registered_signal_ids = {meta.signal_id for meta in get_all_meta()}
+    return frozenset(registered_signal_ids) - _policy_covered_signal_types()
 
 
 def _register(signal_type: str) -> Callable[[GeneratorFn], GeneratorFn]:

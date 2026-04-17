@@ -19,6 +19,7 @@ from drift.negative_context import (
     _FALLBACK_ONLY_SIGNALS,
     _GENERATORS,
     _neg_id,
+    _policy_uncovered_registered_signal_ids,
     _policy_uncovered_signal_types,
     findings_to_negative_context,
     negative_context_to_dict,
@@ -241,6 +242,13 @@ class TestGenerators:
         assert not missing, (
             "NegativeContext policy is incomplete. Missing SignalType entries: "
             f"{sorted(signal.value for signal in missing)}"
+        )
+
+    def test_signal_registry_policy_coverage_is_complete(self) -> None:
+        missing = _policy_uncovered_registered_signal_ids()
+        assert not missing, (
+            "NegativeContext policy is incomplete for signal_registry entries. "
+            f"Missing signal IDs: {sorted(missing)}"
         )
 
     def test_fallback_only_policy_is_explicit(self) -> None:

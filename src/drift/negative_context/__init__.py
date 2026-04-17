@@ -28,6 +28,7 @@ from drift.negative_context.core import (
     _SEVERITY_SCORE,
     _neg_id,
     _policy_covered_signal_types,
+    _policy_uncovered_registered_signal_ids,
     _policy_uncovered_signal_types,
     _scope_from_finding,
 )
@@ -43,6 +44,7 @@ __all__ = [
     "_GENERATORS",
     "_neg_id",
     "_policy_covered_signal_types",
+    "_policy_uncovered_registered_signal_ids",
     "_scope_from_finding",
     "_policy_uncovered_signal_types",
 ]
