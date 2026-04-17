@@ -6,6 +6,8 @@ import json
 from pathlib import Path
 from typing import Any
 
+from drift.calibration._atomic_io import atomic_write_text
+
 CALIBRATION_STATUS_REL_PATH = ".drift/calibration_status.json"
 
 
@@ -34,6 +36,9 @@ def load_calibration_status(repo: Path) -> dict[str, Any] | None:
 def write_calibration_status(repo: Path, payload: dict[str, Any]) -> Path:
     """Write calibration status metadata as UTF-8 JSON."""
     status_path = calibration_status_path(repo)
-    status_path.parent.mkdir(parents=True, exist_ok=True)
-    status_path.write_text(json.dumps(payload, indent=2, sort_keys=True), encoding="utf-8")
+    atomic_write_text(
+        status_path,
+        json.dumps(payload, indent=2, sort_keys=True),
+        encoding="utf-8",
+    )
     return status_path

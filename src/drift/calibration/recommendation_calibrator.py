@@ -13,6 +13,7 @@ from dataclasses import asdict, dataclass
 from datetime import UTC, datetime
 from pathlib import Path
 
+from drift.calibration._atomic_io import atomic_write_text
 from drift.outcome_tracker import Outcome
 
 
@@ -79,9 +80,9 @@ def calibrate_efforts(
 
 def save_calibration(calibrations: list[EffortCalibration], path: Path) -> None:
     """Persist calibrations to a JSON file (F-20)."""
-    path.parent.mkdir(parents=True, exist_ok=True)
     data = [asdict(c) for c in calibrations]
-    path.write_text(
+    atomic_write_text(
+        path,
         json.dumps(data, indent=2, ensure_ascii=False) + "\n",
         encoding="utf-8",
     )

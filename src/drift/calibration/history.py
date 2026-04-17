@@ -8,6 +8,8 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
+from drift.calibration._atomic_io import atomic_write_text
+
 
 @dataclass
 class FindingSnapshot:
@@ -57,7 +59,7 @@ def save_snapshot(
         "finding_count": snapshot.finding_count,
         "findings": [asdict(f) for f in snapshot.findings],
     }
-    path.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
+    atomic_write_text(path, json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
 
     # Prune old snapshots
     existing = sorted(history_dir.glob("scan_*.json"))
