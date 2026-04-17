@@ -41,12 +41,14 @@ def _home_prefix_candidates() -> list[str]:
     if home_drive and home_path:
         candidates.add(str(Path(f"{home_drive}{home_path}").expanduser()))
 
-    out: list[str] = []
+    out_set: set[str] = set()
     for candidate in candidates:
         trimmed = candidate.rstrip("\\/")
         if trimmed:
-            out.append(trimmed)
-    return out
+            out_set.add(trimmed)
+
+    # Match the most specific home path first to avoid leaking deeper suffixes.
+    return sorted(out_set, key=len, reverse=True)
 
 
 def _mask_home_prefix(value: str) -> str:
