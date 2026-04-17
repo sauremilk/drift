@@ -33,6 +33,7 @@ ROADMAP.md
 SECURITY.md
 SUPPORT.md
 action.yml
+arch_graph.json
 audit_results
 benchmark_results
 benchmarks
