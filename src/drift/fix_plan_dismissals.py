@@ -3,6 +3,9 @@
 from __future__ import annotations
 
 import json
+import os
+import tempfile
+from contextlib import suppress
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
@@ -83,7 +86,24 @@ def _write_entries(
         "version": 1,
         "dismissed": entries,
     }
-    path.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    content = json.dumps(payload, indent=2, sort_keys=True) + "\n"
+
+    fd, tmp_name = tempfile.mkstemp(
+        dir=path.parent,
+        prefix=f".{path.name}.",
+        suffix=".tmp",
+    )
+    tmp_path = Path(tmp_name)
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8") as handle:
+            handle.write(content)
+        tmp_path.replace(path)
+    except Exception:
+        with suppress(OSError):
+            os.close(fd)
+        with suppress(OSError):
+            tmp_path.unlink(missing_ok=True)
+        raise
 
 
 def get_active_dismissals(

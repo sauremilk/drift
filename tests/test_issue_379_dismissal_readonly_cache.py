@@ -10,6 +10,7 @@ Verifies that:
 from __future__ import annotations
 
 import json
+import os
 import stat
 import sys
 from datetime import UTC, datetime, timedelta
@@ -17,7 +18,9 @@ from pathlib import Path
 
 import pytest
 
+import drift.fix_plan_dismissals as fix_plan_dismissals
 from drift.fix_plan_dismissals import (
+    _write_entries,
     dismiss_task,
     get_active_dismissal_ids,
     get_active_dismissals,
@@ -146,3 +149,27 @@ class TestReadOnlyCacheNoPermissionError:
 
         ids = get_active_dismissal_ids(tmp_path)
         assert ids == {"task-x", "task-y"}
+
+
+class TestAtomicWriteSafety:
+    """Failed writes must never corrupt an existing cache file."""
+
+    def test_failed_write_preserves_previous_cache(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        original_entries = [{"task_id": "keep-me", "expires_at": _future(4)}]
+        _write_raw(tmp_path, original_entries)
+        cache = _cache_path(tmp_path)
+
+        def _crash_fdopen(fd: int, *args: object, **kwargs: object) -> object:
+            os.close(fd)
+            raise OSError("simulated write interruption")
+
+        monkeypatch.setattr(fix_plan_dismissals.os, "fdopen", _crash_fdopen)
+
+        with pytest.raises(OSError):
+            _write_entries(tmp_path, [{"task_id": "new-task", "expires_at": _future(10)}])
+
+        payload = json.loads(cache.read_text(encoding="utf-8"))
+        task_ids = [entry["task_id"] for entry in payload["dismissed"]]
+        assert task_ids == ["keep-me"]
