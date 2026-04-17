@@ -8,6 +8,7 @@
 
 ### Fixed
 
+- **`Attribution.ai_confidence` and `CommitInfo.ai_confidence` accepted out-of-range values (#456)**: added constructor-time `[0.0, 1.0]` bounds validation in `src/drift/models/_git.py` so invalid confidence values fail fast and remain consistent with `drift.output.schema.json`.
 - **Top-level `first_run` JSON field undocumented in output schema (#455)**: added `first_run` to `drift.output.schema.json` with core onboarding fields (`headline`, `why_this_matters`, `next_step`, `top_findings`) so schema-driven consumers can discover and validate the emitted first-run payload.
 - **`drift calibrate reset` rollback could silently re-apply stale calibration evidence (#452)**: added `drift calibrate reset --clear-feedback` to archive feedback evidence, `drift calibrate reset --signal <signal_type>` to remove evidence for one signal, explicit warning when evidence is retained, and mutual-exclusion validation between both reset modes.
 - **Non-deterministic metadata serialization in JSON outputs (#453)**: added a shared JSON-safe normalizer for output payloads and applied it to `Finding.metadata` plus agent-task `metadata`/`verify_plan`. `Path` values now serialize as POSIX strings, datetimes as ISO-8601, and set-like values as deterministic sorted arrays.

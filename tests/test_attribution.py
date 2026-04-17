@@ -15,6 +15,8 @@ import json
 from pathlib import Path
 from unittest.mock import patch
 
+import pytest
+
 from drift.config import AttributionConfig
 from drift.ingestion.git_blame import (
     BlameCache,
@@ -503,3 +505,24 @@ class TestAttributionModel:
             description="desc",
         )
         assert f.attribution is None
+
+    def test_attribution_ai_confidence_out_of_range_raises(self) -> None:
+        with pytest.raises(ValueError, match=r"Attribution\.ai_confidence must be in \[0, 1\]"):
+            Attribution(
+                commit_hash="abc",
+                author="Test",
+                email="t@t.com",
+                date=datetime.date.today(),
+                ai_confidence=1.5,
+            )
+
+    def test_commit_info_ai_confidence_out_of_range_raises(self) -> None:
+        with pytest.raises(ValueError, match=r"CommitInfo\.ai_confidence must be in \[0, 1\]"):
+            CommitInfo(
+                hash="abc",
+                author="Test",
+                email="t@t.com",
+                timestamp=datetime.datetime.now(datetime.timezone.utc),
+                message="feat: test",
+                ai_confidence=-0.1,
+            )

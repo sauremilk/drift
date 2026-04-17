@@ -24,6 +24,12 @@ class CommitInfo:
     ai_confidence: float = 0.0
     coauthors: list[str] = field(default_factory=list)
 
+    def __post_init__(self) -> None:
+        if not (0.0 <= self.ai_confidence <= 1.0):
+            raise ValueError(
+                f"CommitInfo.ai_confidence must be in [0, 1], got {self.ai_confidence}"
+            )
+
 
 @dataclass
 class FileHistory:
@@ -72,3 +78,9 @@ class Attribution:
     ai_attributed: bool = False
     ai_confidence: float = 0.0
     commit_message: str = ""
+
+    def __post_init__(self) -> None:
+        if not (0.0 <= self.ai_confidence <= 1.0):
+            raise ValueError(
+                f"Attribution.ai_confidence must be in [0, 1], got {self.ai_confidence}"
+            )
