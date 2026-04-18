@@ -312,13 +312,22 @@ def _draw_line(buf: np.ndarray, x0: int, y0: int, x1: int, y1: int,
     buf[yi, xi] = np.clip(buf[yi, xi] + c, 0.0, 1.0)
 
 
+# Pre-computed Gaussian weights for anamorphic streak (7 pixels, σ≈1.4)
+_STREAK_WEIGHTS = np.array(
+    [0.05, 0.20, 0.60, 1.00, 0.60, 0.20, 0.05], dtype=np.float32
+)
+
+
 def _anamorphic_streak(buf: np.ndarray, cy: float,
                        alpha: float, color: np.ndarray) -> None:
+    """Anamorphic lens flare streak — 7-pixel Gaussian profile over y."""
     if alpha < 0.01:
         return
-    row = max(0, min(H - 1, int(cy)))
-    buf[max(0, row - 1):min(H, row + 2), :] = np.clip(
-        buf[max(0, row - 1):min(H, row + 2), :] + color * alpha, 0.0, 1.0)
+    center = int(cy)
+    for dy, w in enumerate(_STREAK_WEIGHTS):
+        row = center - 3 + dy
+        if 0 <= row < H:
+            buf[row, :] = np.clip(buf[row, :] + color * (alpha * w), 0.0, 1.0)
 
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -780,9 +789,9 @@ def _shot_c_risk_indicator(buf: np.ndarray, p: float, t: float) -> None:
                        fill=(*RISK_AMBER_PIL, int(215 * ease_out(p))))
 
     # Signal name
-    sig_a = int(150 * ease_out_expo(clamp01((p - 0.38) / 0.28)))
-    draw.text((bar_x, py + 250), "AVS  ·  arch_vector_similarity",
-              font=_font("consola", 18), fill=(72, 84, 108, sig_a))
+    sig_a = int(195 * ease_out_expo(clamp01((p - 0.38) / 0.28)))
+    draw.text((bar_x, py + 250), "AVS  \u00b7  arch_vector_similarity",
+              font=_font("consola", 18), fill=(102, 118, 148, sig_a))
 
     arr   = np.array(img, dtype=np.float32) / 255.0
     a_ch  = arr[:, :, 3:4]
@@ -812,11 +821,13 @@ def _s_transform(buf: np.ndarray, p: float, t: float) -> None:
     """19–24 s — Chaos resolves into order. Confidence replaces ambiguity.
     On-screen: 'Aus Gefühl wird Signal.'
     """
-    bg = lerp_c(GRAPHITE_BG, BLACK, p * 0.55)
+    # Entry fade: Szene startet von BLACK (Interface-Ausgang), kein Hard-Jump
+    entry = ease_out(clamp01(p / 0.14))
+    bg = lerp_c(BLACK, lerp_c(GRAPHITE_BG, BLACK, p * 0.55), entry)
     _fill(buf, bg)
 
     order   = ease_out_expo(clamp01((p - 0.26) / 0.52))
-    chaos   = max(0.0, 1.0 - p * 2.4)
+    chaos   = ease_out(clamp01(1.0 - p * 2.4))
 
     if _CONN_NODES is not None:
         n     = len(_CONN_NODES)
