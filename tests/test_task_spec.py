@@ -89,6 +89,17 @@ class TestTaskSpecModel:
         )
         assert spec.commit_type == ""
 
+    def test_post_construction_mutation_is_rejected(self):
+        spec = TaskSpec(
+            goal="Add new code clone detection signal",
+            affected_layers=[ArchitectureLayer.SIGNALS],
+            acceptance_criteria=["Signal detects clones with >80% precision"],
+            depends_on=["ADR-042"],
+        )
+
+        with pytest.raises((TypeError, ValueError)):
+            spec.requires_adr = False
+
     def test_invalid_commit_type_raises_validation_error(self):
         from pydantic import ValidationError
 

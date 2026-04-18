@@ -83,7 +83,7 @@ class TaskSpec(BaseModel):
         depends_on: Other tasks or ADRs this task depends on.
     """
 
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", frozen=True)
     CURRENT_SCHEMA_VERSION: ClassVar[int] = 1
 
     schema_version: int = Field(
@@ -156,31 +156,46 @@ class TaskSpec(BaseModel):
         description="Other tasks or ADR identifiers this task depends on.",
     )
 
-    @model_validator(mode="after")
-    def _infer_gate_requirements(self) -> TaskSpec:
-        """Auto-detect gate requirements from affected layers."""
-        affected_set = set(self.affected_layers)
+    @model_validator(mode="before")
+    @classmethod
+    def _infer_gate_requirements(cls, data: object) -> object:
+        """Auto-detect gate requirements from affected layers before model creation."""
+        if not isinstance(data, dict):
+            return data
+
+        candidate = dict(data)
+        raw_layers = candidate.get("affected_layers", [])
+        affected_set: set[ArchitectureLayer] = set()
+        for layer in raw_layers if isinstance(raw_layers, list) else []:
+            if isinstance(layer, ArchitectureLayer):
+                affected_set.add(layer)
+                continue
+            if isinstance(layer, str):
+                try:
+                    affected_set.add(ArchitectureLayer(layer))
+                except ValueError:
+                    # Let pydantic surface invalid layer values in field validation.
+                    pass
+
         signal_layers = {
             ArchitectureLayer.SIGNALS,
             ArchitectureLayer.INGESTION,
             ArchitectureLayer.OUTPUT,
         }
         # Signal/ingestion/output changes require audit updates (Policy §18).
-        if signal_layers & affected_set and self.requires_audit_update is None:
-            self.requires_audit_update = True
-        if self.requires_audit_update is None:
-            self.requires_audit_update = False
+        if candidate.get("requires_audit_update") is None:
+            candidate["requires_audit_update"] = bool(signal_layers & affected_set)
+
         adr_layers = {
             ArchitectureLayer.SIGNALS,
             ArchitectureLayer.SCORING,
             ArchitectureLayer.OUTPUT,
         }
         # Signal/scoring/output changes require ADR.
-        if adr_layers & affected_set and self.requires_adr is None:
-            self.requires_adr = True
-        if self.requires_adr is None:
-            self.requires_adr = False
-        return self
+        if candidate.get("requires_adr") is None:
+            candidate["requires_adr"] = bool(adr_layers & affected_set)
+
+        return candidate
 
     @model_validator(mode="after")
     def _validate_blocking_semantics(self) -> TaskSpec:
