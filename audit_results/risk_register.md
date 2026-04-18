@@ -1,5 +1,19 @@
 # Risk Register
 
+## 2026-04-18 - Per-signal phase timing in JSON and Rich output
+
+- Risk ID: RISK-OUTPUT-2026-04-18-PER-SIGNAL-TIMING
+- Component: `src/drift/output/json_output.py`, `src/drift/output/rich_output.py`, `src/drift/pipeline.py`
+- Type: Output field addition (additive, backward-compatible)
+- Description: `SignalPhase` now records per-signal wall-clock durations in `phase_timings.per_signal` (dict keyed by signal type). JSON output exposes the nested map alongside the existing `signals_seconds` aggregate; Rich output renders slow-signal hints at high verbosity. No existing output fields were removed or renamed.
+- Trigger: Any `drift scan` or `drift analyze` run.
+- Impact: Neutral to positive. Consumers that parse `phase_timings` JSON may observe a new `per_signal` key; all prior keys remain. Rich consumers see additional timing hints only when verbosity is elevated.
+- Mitigation:
+  - Additive change only; no field removals or renames.
+  - Timing values coerced to float via `_safe_float()` to prevent type errors on mixed inputs.
+  - Tests added in `test_pipeline_components.py` and `test_json_output.py`.
+- Residual risk: Low. New JSON key is optional and additive; no precision/recall impact.
+
 ## 2026-04-17 - LLM output max-findings cap
 
 - Risk ID: RISK-OUTPUT-2026-04-17-LLM-MAX-FINDINGS-CAP
