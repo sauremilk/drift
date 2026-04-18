@@ -432,6 +432,21 @@ class TestApiDict:
         # Should be rounded to 4 decimal places
         assert d["total_estimated_delta"] == round(-0.00001234, 4)
 
+    def test_api_dict_roundtrip_reconstructs_task_graph(self) -> None:
+        a = _task("a")
+        b = _task("b", depends_on=["a"])
+        original = build_task_graph([b, a])
+
+        payload = original.to_api_dict()
+        restored = TaskGraph.from_api_dict(payload)
+
+        assert [t.id for t in restored.tasks] == ["a", "b"]
+        assert restored.tasks[1].depends_on == ["a"]
+        assert restored.batch_groups == original.batch_groups
+        assert restored.execution_phases == original.execution_phases
+        assert restored.critical_path == original.critical_path
+        assert restored.total_estimated_delta == original.total_estimated_delta
+
 
 # ---------------------------------------------------------------------------
 # Response profile shaping (ADR-025 Phase B)
