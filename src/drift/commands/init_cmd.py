@@ -91,6 +91,113 @@ _PRE_PUSH_HOOK = textwrap.dedent("""\
     fi
 """)
 
+_CURSORRULES_SNIPPET = """\
+# Drift — Architectural Drift Guard
+
+## After every file edit
+
+Run drift nudge to get fast directional feedback (< 200 ms):
+
+```bash
+drift nudge
+# or, for targeted feedback on a specific file:
+drift nudge --changed-files <path/to/file.py>
+```
+
+Interpret the result:
+- `safe_to_commit: true` — no new structural violations, proceed
+- `safe_to_commit: false` — new findings detected, review before committing
+- `direction: improving` — the change reduces drift
+- `direction: degrading` — the change introduces drift, consider revising
+
+## Key commands
+
+| Command | When to use |
+|---------|-------------|
+| `drift nudge` | After every file edit — fast inner-loop check |
+| `drift brief --task "..."` | Before starting a task — get guardrails |
+| `drift analyze` | Full scan for overview or CI |
+| `drift status` | Health overview |
+
+## Install
+
+```bash
+pip install drift-analyzer
+```
+"""
+
+_WINDSURFRULES_SNIPPET = """\
+# Drift — Architectural Drift Guard
+
+## After every file edit
+
+Run drift nudge to get fast directional feedback (< 200 ms):
+
+```bash
+drift nudge
+# or, for targeted feedback on a specific file:
+drift nudge --changed-files <path/to/file.py>
+```
+
+Interpret the result:
+- `safe_to_commit: true` — no new structural violations, proceed
+- `safe_to_commit: false` — new findings detected, review before committing
+- `direction: improving` — the change reduces drift
+- `direction: degrading` — the change introduces drift, consider revising
+
+## Key commands
+
+| Command | When to use |
+|---------|-------------|
+| `drift nudge` | After every file edit — fast inner-loop check |
+| `drift brief --task "..."` | Before starting a task — get guardrails |
+| `drift analyze` | Full scan for overview or CI |
+| `drift status` | Health overview |
+
+## Install
+
+```bash
+pip install drift-analyzer
+```
+"""
+
+_CLAUDE_MD_SNIPPET = """\
+# Drift Analyzer
+
+Drift is a static architectural coherence analyzer. It detects structural drift
+patterns like duplicate logic, fragmented patterns, and layer violations.
+
+Docs: https://drift-analyzer.readthedocs.io
+
+## After editing files
+
+Always run drift nudge after modifying source files to check for new violations:
+
+```bash
+drift nudge
+# targeted:
+drift nudge --changed-files path/to/file.py
+```
+
+Key response fields:
+
+| Field | Meaning |
+|-------|---------|
+| `safe_to_commit` | `true` = no new violations; `false` = review required |
+| `direction` | `improving` / `degrading` / `neutral` |
+| `new_findings` | List of newly introduced findings |
+| `resolved_findings` | List of findings resolved by this change |
+
+## Common commands
+
+```bash
+drift brief --task "description"   # get guardrails before a task
+drift analyze                      # full scan
+drift status                       # health overview
+drift nudge                        # fast check after edits
+```
+"""
+
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -275,6 +382,25 @@ def _plan_file(
     help="Output dry-run preview as JSON (implies --dry-run).",
 )
 @click.option(
+    "--cursor",
+    is_flag=True,
+    default=False,
+    help="Generate .cursorrules snippet instructing Cursor AI to run drift nudge after edits.",
+)
+@click.option(
+    "--windsurf",
+    is_flag=True,
+    default=False,
+    help="Generate .windsurfrules snippet instructing Windsurf to run drift nudge after edits.",
+)
+@click.option(
+    "--claude-code",
+    "claude_code",
+    is_flag=True,
+    default=False,
+    help="Generate CLAUDE.md project context for Claude Code to run drift nudge after edits.",
+)
+@click.option(
     "--interactive",
     "-i",
     is_flag=True,
@@ -294,6 +420,9 @@ def init(
     hooks: bool,
     mcp: bool,
     claude: bool,
+    cursor: bool,
+    windsurf: bool,
+    claude_code: bool,
     full: bool,
     dry_run: bool,
     json_output: bool,
@@ -312,6 +441,10 @@ def init(
             drift init --full                   # config + CI + hooks + MCP + Claude
       drift init -p vibe-coding --ci      # vibe-coding config + CI workflow
             drift init --mcp --claude           # scaffold VS Code + Claude MCP configs
+      drift init --cursor                 # .cursorrules snippet for Cursor AI
+      drift init --windsurf               # .windsurfrules snippet for Windsurf
+      drift init --claude-code            # CLAUDE.md snippet for Claude Code
+      drift init --cursor --windsurf --claude-code  # all AI-editor snippets
       drift init --full --dry-run         # preview without writing
       drift init --full --json            # JSON preview for agents
       drift init --interactive --full     # guided profile + full scaffolding
@@ -426,6 +559,18 @@ def init(
             ),
             repo,
         )
+
+    # 6. Cursor AI rules snippet
+    if cursor:
+        _plan_file(plan, repo / ".cursorrules", _CURSORRULES_SNIPPET, repo)
+
+    # 7. Windsurf rules snippet
+    if windsurf:
+        _plan_file(plan, repo / ".windsurfrules", _WINDSURFRULES_SNIPPET, repo)
+
+    # 8. Claude Code project context
+    if claude_code:
+        _plan_file(plan, repo / "CLAUDE.md", _CLAUDE_MD_SNIPPET, repo)
 
     # --dry-run / --json: preview only, no file writes
     if dry_run:
