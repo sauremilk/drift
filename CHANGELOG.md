@@ -1,3 +1,12 @@
+## [2.17.2] – 2026-04-19
+
+Short version: Docs-only — update drift score badge and self-analysis result to 0.36.
+
+### Changed
+
+- README: drift score badge updated from 0.44 to 0.36 (Grade B).
+- `benchmark_results/drift_self.json`: refreshed self-analysis at v2.17.1.
+
 ## [2.17.1] – 2026-04-19
 
 Short version: CI stabilization — ruff, detect-secrets, and test-fixture fixes.

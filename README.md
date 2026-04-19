@@ -23,7 +23,7 @@ drift status         # traffic-light health check — your daily entry point
 <img src="https://raw.githubusercontent.com/mick-gsk/drift/main/demos/demo.gif" alt="drift analyze — Rich terminal output showing structural findings" width="720">
 
 [![CI](https://github.com/mick-gsk/drift/actions/workflows/ci.yml/badge.svg)](https://github.com/mick-gsk/drift/actions/workflows/ci.yml)
-[![Drift Score](https://img.shields.io/badge/drift%20score-0.44-yellow?style=flat)](benchmark_results/drift_self.json)
+[![Drift Score](https://img.shields.io/badge/drift%20score-0.36-brightgreen?style=flat)](benchmark_results/drift_self.json)
 [![codecov](https://codecov.io/gh/mick-gsk/drift/branch/main/graph/badge.svg)](https://codecov.io/gh/mick-gsk/drift)
 [![PyPI](https://img.shields.io/pypi/v/drift-analyzer?cacheSeconds=300)](https://pypi.org/project/drift-analyzer/)
 [![PyPI Downloads](https://static.pepy.tech/badge/drift-analyzer/month)](https://pepy.tech/project/drift-analyzer)
@@ -65,7 +65,7 @@ uvx drift-analyzer analyze --repo .
 | Mutation recall | 100 % (25/25 injected) | [mutation benchmark](benchmark_results/mutation_benchmark.json) |
 
 > [!NOTE]
-> **Drift eats its own dog food.** Every release runs `drift self` on its own source — same pipeline, same rules, no exceptions. Results: [drift_self.json](benchmark_results/drift_self.json) · Score 0.50 — driven by explainability findings in internal functions and anti-pattern fixtures; [target ≤ 0.30 via 30-day rollout](examples/vibe-coding/README.md).
+> **Drift eats its own dog food.** Every release runs `drift self` on its own source — same pipeline, same rules, no exceptions. Results: [drift_self.json](benchmark_results/drift_self.json) · Score 0.36 (Grade B) — driven by explainability and architecture findings; [target ≤ 0.30 via 30-day rollout](examples/vibe-coding/README.md).
 
 ---
 
@@ -529,7 +529,7 @@ Drift's pipeline is deterministic and benchmark artifacts are published in the r
 - **Small-repo noise:** repositories with few files can produce noisy scores. Calibration mitigates but does not eliminate this.
 - **Temporal signals** depend on clone depth and git history quality.
 - **The composite score is orientation, not a verdict.** Interpret deltas via `drift trend`, not isolated snapshots.
-- **Own score context (0.50):** Drift's self-score is driven primarily by explainability deficit (undocumented internal functions) and findings in intentional anti-pattern fixtures under `data/negative-patterns/`. The score is neither aspirational nor concerning — it reflects a codebase that grows fast and prioritizes signal correctness over internal documentation. See [drift_self.json](benchmark_results/drift_self.json) for the full breakdown.
+- **Own score context (0.36):** Drift's self-score is driven primarily by architecture violations and explainability deficit (undocumented internal functions). Pattern fragmentation in modules with intentionally diverse error-handling contracts (signals, API, calibration, integrations) is suppressed via `path_overrides` — those variations are architectural, not accidental. The score reflects a fast-moving codebase that prioritises signal correctness over internal documentation. See [drift_self.json](benchmark_results/drift_self.json) for the full breakdown.
 - **Signal overlap:** Some signals measure related phenomena (e.g., MDS and PFS both detect code similarity; CCC and TVS both use git history). A formal inter-signal correlation analysis has not been conducted. Overlap does not produce double-counting in the composite score (each signal contributes independently), but it means some findings may describe the same underlying issue from different angles.
 - **Weight derivation:** Default signal weights for the 6 original signals were derived via rank-correlation (Kendall's τ) against manual architectural assessments on 5 open-source repos (single rater). Weights for the 18 newer signals are conservative heuristic assignments pending broader validation. Full methodology: [STUDY.md §1](docs/STUDY.md), [ADR-003](decisions/ADR-003-composite-scoring-model.md).
 

@@ -2,7 +2,7 @@
 
 > Catches what AI coding tools break silently — structural erosion across files that passes all your tests. Drift is a quality control layer for AI-generated Python code: pattern fragmentation, architecture violations, mutant duplicates, and 21 more structural signals. No LLM in the detection pipeline.
 
-Release status: v2.17.1
+Release status: v2.17.2
 
 Package: drift-analyzer
 Install: pip install -q drift-analyzer  (add -q for quiet output, hiding verbose dependency chains)

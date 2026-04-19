@@ -1,6 +1,100 @@
 {
   "name": "drift_self",
-  "drift_score": 0.441,
-  "severity": "medium",
-  "findings": 694
+  "repo_sha": "cb4d399d61b07e2fc9efd896b37824da6c2ac41f",
+  "drift_version": "2.9.14",
+  "analyzed_at": "2026-04-19T12:20:09.800489+00:00",
+  "drift_score": 0.362,
+  "severity": "low",
+  "files": 581,
+  "functions": 7751,
+  "ai_ratio": 0.817,
+  "analysis_s": 5.38,
+  "wall_s": 0.0,
+  "findings": 831,
+  "signals": {
+    "pattern_fragmentation": {
+      "score": 0.601,
+      "count": 12
+    },
+    "architecture_violation": {
+      "score": 0.273,
+      "count": 65
+    },
+    "explainability_deficit": {
+      "score": 0.373,
+      "count": 106
+    },
+    "test_polarity_deficit": {
+      "score": 0.903,
+      "count": 1
+    },
+    "bypass_accumulation": {
+      "score": 1.0,
+      "count": 2
+    },
+    "guard_clause_deficit": {
+      "score": 0.532,
+      "count": 13
+    },
+    "naming_contract_violation": {
+      "score": 0.6,
+      "count": 1
+    },
+    "doc_impl_drift": {
+      "score": 0.393,
+      "count": 15
+    },
+    "cohesion_deficit": {
+      "score": 0.519,
+      "count": 87
+    },
+    "co_change_coupling": {
+      "score": 0.767,
+      "count": 10
+    },
+    "cognitive_complexity": {
+      "score": 0.726,
+      "count": 97
+    },
+    "dead_code_accumulation": {
+      "score": 0.476,
+      "count": 381
+    },
+    "temporal_volatility": {
+      "score": 0.77,
+      "count": 41
+    }
+  },
+  "top5": [
+    {
+      "sig": "pattern_fragmentation",
+      "sev": "high",
+      "score": 1.0,
+      "title": "return_pattern: 6 variants in src/drift/"
+    },
+    {
+      "sig": "bypass_accumulation",
+      "sev": "medium",
+      "score": 1.0,
+      "title": "High bypass marker density in serve.py"
+    },
+    {
+      "sig": "bypass_accumulation",
+      "sev": "medium",
+      "score": 1.0,
+      "title": "High bypass marker density in precision.py"
+    },
+    {
+      "sig": "cognitive_complexity",
+      "sev": "high",
+      "score": 1.0,
+      "title": "High cognitive complexity in has_negative_assertion()"
+    },
+    {
+      "sig": "cognitive_complexity",
+      "sev": "high",
+      "score": 1.0,
+      "title": "High cognitive complexity in diff()"
+    }
+  ]
 }
