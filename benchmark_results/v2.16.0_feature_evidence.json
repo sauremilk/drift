@@ -31,5 +31,22 @@
   ],
   "self_analysis": {
     "note": "Tests pass (tests/test_agent_native_cli.py, tests/test_guided_mode.py, full suite); ADR-075 present at decisions/"
+  },
+  "patch_writer": {
+    "id": "patch_writer_auto_apply",
+    "adr": "ADR-076",
+    "description": "PatchWriter ABC + auto-apply for add_docstring and add_guard_clause via libcst. Auto-apply requires automation_fit=HIGH + change_scope=LOCAL + review_risk=LOW.",
+    "tests": [
+      "tests/test_fix_apply_integration.py",
+      "tests/test_patch_writer_gcd.py"
+    ]
+  },
+  "eds_dampening": {
+    "id": "eds_micro_helper_dampening",
+    "adr": "ADR-077",
+    "description": "EDS raised threshold for private micro-helpers (<5 lines, <3 params, single-underscore prefix) to reduce false positives.",
+    "tests": [
+      "tests/test_patch_writer_eds.py"
+    ]
   }
 }
