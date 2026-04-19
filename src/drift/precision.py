@@ -57,6 +57,13 @@ def ensure_signals_registered() -> None:
     import drift.signals.test_polarity_deficit  # noqa: F401
     import drift.signals.ts_architecture  # noqa: F401
     import drift.signals.type_safety_bypass  # noqa: F401
+    from drift.signal_registry import get_all_meta as _get_all_meta
+
+    if not _get_all_meta():  # pragma: no cover
+        raise RuntimeError(
+            "ensure_signals_registered completed but no signals were loaded. "
+            "Check signal module imports and @register_signal decorators."
+        )
 
 
 __all__ = [

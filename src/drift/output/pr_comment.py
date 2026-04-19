@@ -57,7 +57,7 @@ def _signal_long_name(signal_type: str) -> str:
         meta = get_meta(signal_type)
         if meta:
             return cast(str, meta.signal_name)
-    except Exception:
+    except (ImportError, AttributeError, KeyError, TypeError):
         pass
     return signal_type
 
@@ -70,7 +70,7 @@ def _action_text(finding: Finding) -> str:
         rec = generate_recommendation(finding)
         if rec:
             return cast(str, rec.title)[:90]
-    except Exception:
+    except (ImportError, AttributeError, KeyError, TypeError):
         pass
     if finding.fix:
         return cast(str, finding.fix)[:90]

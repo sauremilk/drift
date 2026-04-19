@@ -53,6 +53,7 @@ class TestFMEAContentValidation:
         fmea.write_text("# FMEA Matrix\n\nNothing here yet.\n", encoding="utf-8")
         issues = check_risk_audit._validate_fmea_content(str(fmea))
         assert len(issues) == 2  # No table header, no data rows
+        assert not any(i is None for i in issues)
 
     def test_header_only_fmea(self, tmp_path: Path):
         fmea = tmp_path / "fmea.md"
@@ -98,6 +99,7 @@ class TestRiskRegisterContentValidation:
         rr.write_text("# Risk Register\n\n(empty)\n", encoding="utf-8")
         issues = check_risk_audit._validate_risk_register_content(str(rr))
         assert len(issues) == 2  # No Risk ID, no Mitigation
+        assert not any(i is None for i in issues)
 
 
 class TestFaultTreesContentValidation:
@@ -127,6 +129,7 @@ class TestFaultTreesContentValidation:
         ft.write_text("# Fault Trees\n\nTBD\n", encoding="utf-8")
         issues = check_risk_audit._validate_fault_trees_content(str(ft))
         assert len(issues) == 2  # No Top Event, no structure
+        assert not any(i is None for i in issues)
 
 
 class TestSTRIDEContentValidation:
@@ -156,6 +159,7 @@ class TestSTRIDEContentValidation:
         stride.write_text("# STRIDE Model\n\nPending.\n", encoding="utf-8")
         issues = check_risk_audit._validate_stride_content(str(stride))
         assert len(issues) == 2  # No review section, no items
+        assert not any(i is None for i in issues)
 
 
 class TestValidateAuditContent:

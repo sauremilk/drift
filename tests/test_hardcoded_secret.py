@@ -918,3 +918,81 @@ class TestMultilineSecrets:
         signal = HardcodedSecretSignal(repo_path=tmp_path)
         findings = signal.analyze([_make_pr()], {}, DriftConfig())
         assert len(findings) == 0
+
+
+# ---------------------------------------------------------------------------
+# Negative property checks
+# ---------------------------------------------------------------------------
+
+
+class TestHSCNegativeProperties:
+    """Verify that HSC signal outputs never contain None or invalid states."""
+
+    def test_tp_findings_not_none(self, tmp_path: Path) -> None:
+        _write_source(tmp_path, "cfg.py", 'API_KEY = "sk-abcdefghijklmnopqrstuvwxyz123456"\n')
+        signal = HardcodedSecretSignal(repo_path=tmp_path)
+        findings = signal.analyze([_make_pr("cfg.py")], {}, DriftConfig())
+        assert not any(f is None for f in findings)
+        assert not any(f.rule_id is None for f in findings)
+
+    def test_tn_no_findings_for_env_var(self, tmp_path: Path) -> None:
+        _write_source(tmp_path, "safe.py", "import os\nKEY = os.environ.get('KEY')\n")
+        signal = HardcodedSecretSignal(repo_path=tmp_path)
+        findings = signal.analyze([_make_pr("safe.py")], {}, DriftConfig())
+        assert not findings
+        assert not any(f is None for f in findings)
+
+    def test_tn_no_findings_for_safe_name(self, tmp_path: Path) -> None:
+        _write_source(tmp_path, "safe.py", 'APP_NAME = "my-application"\n')
+        signal = HardcodedSecretSignal(repo_path=tmp_path)
+        findings = signal.analyze([_make_pr("safe.py")], {}, DriftConfig())
+        assert not findings
+        assert not any(f is None for f in findings)
+
+    def test_findings_severity_not_none(self, tmp_path: Path) -> None:
+        _write_source(tmp_path, "cfg.py", 'TOKEN = "ghp_ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefgh"\n')
+        signal = HardcodedSecretSignal(repo_path=tmp_path)
+        findings = signal.analyze([_make_pr("cfg.py")], {}, DriftConfig())
+        assert not any(f.severity is None for f in findings)
+        assert not any(f.signal_type is None for f in findings)
+
+    def test_findings_score_not_none(self, tmp_path: Path) -> None:
+        _write_source(tmp_path, "cfg.py", 'SECRET_KEY = "s3cr3t-k3y-th4t-1s-v3ry-l0ng"\n')
+        signal = HardcodedSecretSignal(repo_path=tmp_path)
+        findings = signal.analyze([_make_pr("cfg.py")], {}, DriftConfig())
+        assert not any(f.score is None for f in findings)
+        assert not any(f.score <= 0 for f in findings)
+
+    def test_empty_list_for_empty_input(self, tmp_path: Path) -> None:
+        signal = HardcodedSecretSignal(repo_path=tmp_path)
+        findings = signal.analyze([], {}, DriftConfig())
+        assert not findings
+        assert not any(f is None for f in findings)
+
+    def test_github_token_findings_not_none(self, tmp_path: Path) -> None:
+        _write_source(tmp_path, "cfg.py", 'GH_TOKEN = "ghp_ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefgh"\n')
+        signal = HardcodedSecretSignal(repo_path=tmp_path)
+        findings = signal.analyze([_make_pr("cfg.py")], {}, DriftConfig())
+        assert not any(f is None for f in findings)
+        assert not any(f.file_path is None for f in findings)
+
+    def test_aws_key_findings_not_none(self, tmp_path: Path) -> None:
+        _write_source(tmp_path, "cfg.py", 'ACCESS_KEY = "AKIAIOSFODNN7EXAMPLE"\n')
+        signal = HardcodedSecretSignal(repo_path=tmp_path)
+        findings = signal.analyze([_make_pr("cfg.py")], {}, DriftConfig())
+        assert not any(f is None for f in findings)
+        assert not any(f.description is None for f in findings)
+
+    def test_metadata_not_none_in_findings(self, tmp_path: Path) -> None:
+        _write_source(tmp_path, "cfg.py", 'DB_PASSWORD = "SuperSecretPassword123!"\n')
+        signal = HardcodedSecretSignal(repo_path=tmp_path)
+        findings = signal.analyze([_make_pr("cfg.py")], {}, DriftConfig())
+        assert not any(f is None for f in findings)
+        assert not any(f.metadata is None for f in findings)
+
+    def test_title_not_none_in_findings(self, tmp_path: Path) -> None:
+        _write_source(tmp_path, "cfg.py", 'API_TOKEN = "sk-abcdefghijklmnopqrstuvwxyz123456"\n')
+        signal = HardcodedSecretSignal(repo_path=tmp_path)
+        findings = signal.analyze([_make_pr("cfg.py")], {}, DriftConfig())
+        assert not any(f is None for f in findings)
+        assert not any(f.title is None for f in findings)

@@ -117,6 +117,7 @@ class TestVerifyApi:
         assert result["type"] == "verify"
         assert result["blocking_reasons"] == []
         assert result["direction"] == "stable"
+        assert result.get("error_code") is None
 
     @patch("drift.api.verify._emit_api_telemetry")
     @patch("drift.api.verify.shadow_verify")
@@ -192,6 +193,7 @@ class TestVerifyApi:
         assert any(
             r["type"] == "score_degradation" for r in result["blocking_reasons"]
         )
+        assert result["pass"] is False
 
     @patch("drift.api.verify._emit_api_telemetry")
     @patch("drift.api.verify.shadow_verify")
@@ -205,6 +207,7 @@ class TestVerifyApi:
         assert result["pass"] is True
         assert result["direction"] == "improving"
         assert result["score_delta"] == -0.02
+        assert result.get("error_code") is None
 
     @patch("drift.api.verify._emit_api_telemetry")
     @patch("drift.api.verify.shadow_verify")
@@ -239,6 +242,7 @@ class TestVerifyApi:
         }
         result = verify(path=".")
         assert result["type"] == "error"
+        assert result.get("pass") is None
 
     @patch("drift.api.verify._emit_api_telemetry")
     @patch("drift.api.verify.shadow_verify")
@@ -297,18 +301,21 @@ class TestVerifyApi:
         result = verify(path=".", staged_only=True, uncommitted=True)
         assert result["type"] == "error"
         assert result["error_code"] == "DRIFT-1012"
+        assert result.get("pass") is None
 
     @patch("drift.api.verify._emit_api_telemetry")
     def test_invalid_ref_with_uncommitted_returns_error(self, mock_telem: Any) -> None:
         result = verify(path=".", ref="main", uncommitted=True)
         assert result["type"] == "error"
         assert result["error_code"] == "DRIFT-1012"
+        assert result.get("pass") is None
 
     @patch("drift.api.verify._emit_api_telemetry")
     def test_invalid_ref_with_baseline_returns_error(self, mock_telem: Any) -> None:
         result = verify(path=".", ref="main", baseline=".drift-baseline.json", uncommitted=False)
         assert result["type"] == "error"
         assert result["error_code"] == "DRIFT-1012"
+        assert result.get("pass") is None
 
     @patch("drift.api.verify._emit_api_telemetry")
     @patch("drift.api.verify.shadow_verify")
@@ -318,6 +325,7 @@ class TestVerifyApi:
         mock_sv.side_effect = RuntimeError("boom")
         result = verify(path=".")
         assert result["type"] == "error"
+        assert result.get("pass") is None
         assert "boom" in result["message"]
 
 

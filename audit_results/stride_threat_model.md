@@ -1,6 +1,21 @@
 # STRIDE Threat Model
 
-## 2025-07-27 - ADR-074: Patch Engine — transactional protocol for agent-driven code changes
+## 2026-07-XX - ADR-076: PatchWriter Auto-Apply (drift fix-plan --apply)
+
+- Scope: New subpackage `src/drift/patch_writer/` (`_base.py`, `_registry.py`, `_add_docstring.py`, `_add_guard_clause.py`). New API endpoint `src/drift/api/fix_apply.py`. CLI flags `--apply`, `--dry-run`, `--yes` on `drift fix-plan`. libcst ≥ 1.0 added as optional dep (`drift[autopatch]`).
+- Input path changes: New: `guard_params` list in `finding.metadata` for GCD patches. `source` string from `file.read_text()` passed to libcst parser.
+- Output path changes: New: `patches` list and `summary` dict in `fix_apply` response. `patched_source` written to disk on `--apply`.
+- External interface changes: Additive. New `drift fix-plan --apply` / `--dry-run` flags; new `fix_apply` API function. Existing `fix_plan` output unchanged.
+- Trust boundary: File-Write Path — new trust boundary. `fix_apply` reads and writes files in the repository working tree. Git-clean-state gate enforced before any write.
+- STRIDE review:
+	- S (Spoofing): No new identity boundary. `fix_apply` uses same repo-root resolution as other API endpoints.
+	- T (Tampering): **Primary risk.** libcst transforms modify source files on disk. Mitigations: (1) git-clean-state gate — aborts if `git status --porcelain` non-empty; (2) `--dry-run` default (no writes without explicit `--apply`); (3) only HIGH/LOCAL/LOW tasks pass the filter; (4) libcst round-trips through parse→transform→`module.code` which preserves formatting; (5) rollback is `git checkout <file>`.
+	- R (Repudiation): Each patch entry records `task_id`, `edit_kind`, `file`, `status`, `diff`. Git history provides audit trail after `--apply`.
+	- I (Information Disclosure): Low risk. Source read from disk — no external network call. `patched_source` returned in API response (stays local).
+	- D (Denial of Service): Low risk. libcst parse on large files is bounded by file size. max_tasks defaults to 10. No recursive or unbounded loops.
+	- E (Elevation of Privilege): No privilege change. `write_text` operates as the process owner on files already owned by the user.
+
+
 
 - Scope: New API endpoints `patch_begin`, `patch_check`, `patch_commit` in [src/drift/api/patch.py](src/drift/api/patch.py). Three new MCP tools in [src/drift/mcp_server.py](src/drift/mcp_server.py). New CLI group `drift patch` in [src/drift/commands/patch_cmd.py](src/drift/commands/patch_cmd.py). New A2A skills in [src/drift/serve/a2a_router.py](src/drift/serve/a2a_router.py). Session extensions in [src/drift/session.py](src/drift/session.py).
 - Input path changes: New: `task_id`, `declared_files`, `expected_outcome`, `blast_radius`, `forbidden_paths`, `max_diff_lines` as inputs. `declared_files` is a comma-separated file list from the agent.

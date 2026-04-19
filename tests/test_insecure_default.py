@@ -623,3 +623,81 @@ class TestFrameworkSpecificDefaults:
         findings = signal.analyze([pr], {}, DriftConfig())
         assert len(findings) == 1
         assert findings[0].rule_id == "insecure_debug_mode"
+
+
+# ---------------------------------------------------------------------------
+# Negative property checks
+# ---------------------------------------------------------------------------
+
+
+class TestISDNegativeProperties:
+    """Verify that ISD signal outputs never contain None or invalid states."""
+
+    def test_tp_findings_not_none(self, tmp_path: Path) -> None:
+        _write_source(tmp_path, "settings.py", "DEBUG = True\n")
+        signal = InsecureDefaultSignal(repo_path=tmp_path)
+        findings = signal.analyze([_make_pr()], {}, DriftConfig())
+        assert not any(f is None for f in findings)
+        assert not any(f.rule_id is None for f in findings)
+
+    def test_tn_no_findings_for_debug_false(self, tmp_path: Path) -> None:
+        _write_source(tmp_path, "settings.py", "DEBUG = False\n")
+        signal = InsecureDefaultSignal(repo_path=tmp_path)
+        findings = signal.analyze([_make_pr()], {}, DriftConfig())
+        assert not findings
+        assert not any(f is None for f in findings)
+
+    def test_tn_no_findings_for_empty_file(self, tmp_path: Path) -> None:
+        _write_source(tmp_path, "settings.py", "# no settings here\n")
+        signal = InsecureDefaultSignal(repo_path=tmp_path)
+        findings = signal.analyze([_make_pr()], {}, DriftConfig())
+        assert not findings
+        assert not any(f is None for f in findings)
+
+    def test_findings_severity_not_none(self, tmp_path: Path) -> None:
+        _write_source(tmp_path, "settings.py", 'ALLOWED_HOSTS = ["*"]\n')
+        signal = InsecureDefaultSignal(repo_path=tmp_path)
+        findings = signal.analyze([_make_pr()], {}, DriftConfig())
+        assert not any(f.severity is None for f in findings)
+        assert not any(f.signal_type is None for f in findings)
+
+    def test_findings_score_not_none(self, tmp_path: Path) -> None:
+        _write_source(tmp_path, "settings.py", "DEBUG = True\nALLOWED_HOSTS = ['*']\n")
+        signal = InsecureDefaultSignal(repo_path=tmp_path)
+        findings = signal.analyze([_make_pr()], {}, DriftConfig())
+        assert not any(f.score is None for f in findings)
+        assert not any(f.score <= 0 for f in findings)
+
+    def test_empty_list_for_empty_input(self, tmp_path: Path) -> None:
+        signal = InsecureDefaultSignal(repo_path=tmp_path)
+        findings = signal.analyze([], {}, DriftConfig())
+        assert not findings
+        assert not any(f is None for f in findings)
+
+    def test_findings_file_path_not_none(self, tmp_path: Path) -> None:
+        _write_source(tmp_path, "settings.py", "CORS_ALLOW_ALL = True\n")
+        signal = InsecureDefaultSignal(repo_path=tmp_path)
+        findings = signal.analyze([_make_pr()], {}, DriftConfig())
+        assert not any(f is None for f in findings)
+        assert not any(f.file_path is None for f in findings)
+
+    def test_findings_title_not_none(self, tmp_path: Path) -> None:
+        _write_source(tmp_path, "settings.py", "SESSION_COOKIE_SECURE = False\n")
+        signal = InsecureDefaultSignal(repo_path=tmp_path)
+        findings = signal.analyze([_make_pr()], {}, DriftConfig())
+        assert not any(f is None for f in findings)
+        assert not any(f.title is None for f in findings)
+
+    def test_metadata_not_none(self, tmp_path: Path) -> None:
+        _write_source(tmp_path, "settings.py", "DEBUG = True\n")
+        signal = InsecureDefaultSignal(repo_path=tmp_path)
+        findings = signal.analyze([_make_pr()], {}, DriftConfig())
+        assert not any(f is None for f in findings)
+        assert not any(f.metadata is None for f in findings)
+
+    def test_description_not_none(self, tmp_path: Path) -> None:
+        _write_source(tmp_path, "settings.py", 'SECRET_KEY = ""\n')
+        signal = InsecureDefaultSignal(repo_path=tmp_path)
+        findings = signal.analyze([_make_pr()], {}, DriftConfig())
+        assert not any(f is None for f in findings)
+        assert not any(f.description is None for f in findings)

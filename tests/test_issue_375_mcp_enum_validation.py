@@ -37,6 +37,7 @@ class TestDriftScanEnumValidation:
         assert result["tool"] == "drift_scan"
         assert result["invalid_fields"][0]["field"] == "response_detail"
         assert "valid_values" in result["suggested_fix"]
+        assert result.get("pass") is None
 
     def test_invalid_response_profile_returns_1003(self) -> None:
         from drift import mcp_server
@@ -48,6 +49,7 @@ class TestDriftScanEnumValidation:
         assert result["error_code"] == "DRIFT-1003"
         assert result["tool"] == "drift_scan"
         assert result["invalid_fields"][0]["field"] == "response_profile"
+        assert result.get("pass") is None
 
     def test_valid_response_detail_does_not_return_1003(
         self, monkeypatch: pytest.MonkeyPatch
@@ -64,6 +66,7 @@ class TestDriftScanEnumValidation:
         result = json.loads(raw)
 
         assert result.get("error_code") != "DRIFT-1003"
+        assert result.get("pass") is None
 
     def test_valid_response_detail_detailed_passes(
         self, monkeypatch: pytest.MonkeyPatch
@@ -78,6 +81,7 @@ class TestDriftScanEnumValidation:
         result = json.loads(raw)
 
         assert result.get("error_code") != "DRIFT-1003"
+        assert result.get("pass") is None
 
 
 class TestDriftDiffEnumValidation:
@@ -93,6 +97,7 @@ class TestDriftDiffEnumValidation:
         assert result["error_code"] == "DRIFT-1003"
         assert result["tool"] == "drift_diff"
         assert result["invalid_fields"][0]["field"] == "response_detail"
+        assert result.get("pass") is None
 
     def test_invalid_response_profile_returns_1003(self) -> None:
         from drift import mcp_server
@@ -104,6 +109,7 @@ class TestDriftDiffEnumValidation:
         assert result["error_code"] == "DRIFT-1003"
         assert result["tool"] == "drift_diff"
         assert result["invalid_fields"][0]["field"] == "response_profile"
+        assert result.get("pass") is None
 
 
 class TestDriftVerifyEnumValidation:
@@ -120,6 +126,7 @@ class TestDriftVerifyEnumValidation:
         assert result["tool"] == "drift_verify"
         assert result["invalid_fields"][0]["field"] == "fail_on"
         assert "valid_values" in result["suggested_fix"]
+        assert result.get("pass") is None
 
     def test_invalid_response_profile_returns_1003(self) -> None:
         from drift import mcp_server
@@ -131,6 +138,7 @@ class TestDriftVerifyEnumValidation:
         assert result["error_code"] == "DRIFT-1003"
         assert result["tool"] == "drift_verify"
         assert result["invalid_fields"][0]["field"] == "response_profile"
+        assert result.get("pass") is None
 
     def test_valid_fail_on_values_do_not_trigger_1003(self) -> None:
         """All documented fail_on enum values must pass _validate_enum_param."""
@@ -154,6 +162,7 @@ class TestDriftFixPlanEnumValidation:
         assert result["error_code"] == "DRIFT-1003"
         assert result["tool"] == "drift_fix_plan"
         assert result["invalid_fields"][0]["field"] == "automation_fit_min"
+        assert result.get("pass") is None
 
     def test_invalid_response_profile_returns_1003(self) -> None:
         from drift import mcp_server
@@ -165,6 +174,7 @@ class TestDriftFixPlanEnumValidation:
         assert result["error_code"] == "DRIFT-1003"
         assert result["tool"] == "drift_fix_plan"
         assert result["invalid_fields"][0]["field"] == "response_profile"
+        assert result.get("pass") is None
 
     def test_none_automation_fit_min_is_allowed(
         self, monkeypatch: pytest.MonkeyPatch
@@ -180,6 +190,7 @@ class TestDriftFixPlanEnumValidation:
         result = json.loads(raw)
 
         assert result.get("error_code") != "DRIFT-1003"
+        assert result.get("pass") is None
 
 
 class TestValidateEnumParamHelper:
@@ -203,6 +214,7 @@ class TestValidateEnumParamHelper:
         assert err["error_code"] == "DRIFT-1003"
         assert err["invalid_fields"][0]["field"] == "x"
         assert err["invalid_fields"][0]["value"] == "bad"
+        assert err.get("pass") is None
 
     def test_returns_error_for_none_when_required(self) -> None:
         from drift.mcp_server import _validate_enum_param
@@ -211,6 +223,7 @@ class TestValidateEnumParamHelper:
         assert err is not None
         assert err["error_code"] == "DRIFT-1003"
         assert err["invalid_fields"][0]["field"] == "x"
+        assert err.get("pass") is None
 
     def test_case_insensitive_normalisation(self) -> None:
         """Values like 'High' or 'CONCISE' must be accepted."""

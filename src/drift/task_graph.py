@@ -970,6 +970,8 @@ def validate_plan(
     Compares the stored ``depended_on_repo_state`` against the live repo.
     Returns a ``PlanValidationResult`` with recommendation.
     """
+    if not repo_path:
+        raise ValueError("repo_path cannot be empty")
     if plan.invalidated:
         return PlanValidationResult(
             valid=False,

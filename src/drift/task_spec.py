@@ -295,6 +295,8 @@ def validate_task_spec(spec: TaskSpec) -> TaskSpecValidationResult:
     Args:
         spec: The task specification to validate.
     """
+    if not isinstance(spec, TaskSpec):
+        raise TypeError(f"Expected TaskSpec, got {type(spec).__name__}")
     errors: list[str] = []
     warnings: list[str] = []
 

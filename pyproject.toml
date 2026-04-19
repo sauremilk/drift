@@ -97,6 +97,10 @@ markdown = [
 mcp = [
     "mcp[cli]>=1.2.0,<2.0",
 ]
+# Auto-apply patches for high-confidence findings (add_docstring, add_guard_clause)
+autopatch = [
+    "libcst>=1.0",
+]
 # Live file-watching for `drift watch` (re-analyzes on save)
 watch = [
     "watchfiles>=1.0",

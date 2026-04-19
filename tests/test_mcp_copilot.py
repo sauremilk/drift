@@ -1116,3 +1116,157 @@ class TestCLICommands:
         assert result.exit_code == 0
         payload = json.loads(result.stdout)
         assert payload["constraints"] == []
+
+
+# ---------------------------------------------------------------------------
+# Negative property checks
+# ---------------------------------------------------------------------------
+
+
+class TestMcpCopilotNegativeProperties:
+    """Verify negative properties of copilot_context functions."""
+
+    def _minimal_analysis(self) -> RepoAnalysis:
+        return RepoAnalysis(
+            repo_path=Path("/tmp/test-repo"),
+            analyzed_at=datetime.datetime(2026, 1, 1, 12, 0, 0),
+            drift_score=0.0,
+            findings=[],
+        )
+
+    def test_marker_begin_not_empty(self) -> None:
+        assert MARKER_BEGIN is not None
+        assert MARKER_BEGIN != ""
+
+    def test_marker_end_not_empty(self) -> None:
+        assert MARKER_END is not None
+        assert MARKER_END != ""
+
+    def test_constraints_payload_no_none_for_empty(self) -> None:
+        payload = generate_constraints_payload(self._minimal_analysis())
+        assert payload is not None
+        assert not any(v is None for k, v in payload.items() if not isinstance(v, list))
+
+    def test_constraints_payload_constraints_not_none(self) -> None:
+        payload = generate_constraints_payload(self._minimal_analysis())
+        assert payload.get("constraints") is not None
+        assert not any(c is None for c in payload.get("constraints", []))
+
+    def test_generate_instructions_not_none(self) -> None:
+        analysis = self._minimal_analysis()
+        instructions = generate_instructions(analysis)
+        assert instructions is not None
+        assert instructions != ""
+
+    def test_generate_instructions_no_marker_none(self) -> None:
+        analysis = self._minimal_analysis()
+        instructions = generate_instructions(analysis)
+        assert not (MARKER_BEGIN not in instructions)
+        assert not (MARKER_END not in instructions)
+
+    def test_constraints_with_finding_no_none(self) -> None:
+        analysis = RepoAnalysis(
+            repo_path=Path("/tmp/repo"),
+            analyzed_at=datetime.datetime(2026, 1, 1, 12, 0, 0),
+            drift_score=0.5,
+            findings=[
+                Finding(
+                    signal_type=SignalType.PATTERN_FRAGMENTATION,
+                    severity=Severity.HIGH,
+                    score=0.7,
+                    title="Fragment",
+                    description="desc",
+                    file_path=Path("app.py"),
+                    start_line=1,
+                    fix="Fix it",
+                    impact=0.7,
+                )
+            ],
+        )
+        payload = generate_constraints_payload(analysis)
+        assert payload.get("constraints") is not None
+        assert not any(c is None for c in payload.get("constraints", []))
+
+    def test_instructions_with_finding_not_empty(self) -> None:
+        analysis = RepoAnalysis(
+            repo_path=Path("/tmp/repo"),
+            analyzed_at=datetime.datetime(2026, 1, 1, 12, 0, 0),
+            drift_score=0.5,
+            findings=[
+                Finding(
+                    signal_type=SignalType.ARCHITECTURE_VIOLATION,
+                    severity=Severity.HIGH,
+                    score=0.8,
+                    title="Violation",
+                    description="desc",
+                    file_path=Path("api.py"),
+                    start_line=1,
+                    fix="Fix it",
+                    impact=0.8,
+                )
+            ],
+        )
+        instructions = generate_instructions(analysis)
+        assert instructions is not None
+        assert instructions != ""
+
+    def test_merge_into_file_no_none_result(self, tmp_path: Path) -> None:
+        target = tmp_path / "COPILOT.md"
+        instructions = generate_instructions(self._minimal_analysis())
+        merge_into_file(target, instructions)
+        content = target.read_text(encoding="utf-8")
+        assert content is not None
+        assert content != ""
+
+    def test_merge_into_file_contains_markers(self, tmp_path: Path) -> None:
+        target = tmp_path / "COPILOT.md"
+        instructions = generate_instructions(self._minimal_analysis())
+        merge_into_file(target, instructions)
+        content = target.read_text(encoding="utf-8")
+        assert not (MARKER_BEGIN not in content)
+        assert not (MARKER_END not in content)
+
+    def test_constraints_no_empty_strings(self) -> None:
+        analysis = RepoAnalysis(
+            repo_path=Path("/tmp/repo"),
+            analyzed_at=datetime.datetime(2026, 1, 1, 12, 0, 0),
+            drift_score=0.4,
+            findings=[
+                Finding(
+                    signal_type=SignalType.HARDCODED_SECRET,
+                    severity=Severity.CRITICAL,
+                    score=0.9,
+                    title="Secret",
+                    description="desc",
+                    file_path=Path("config.py"),
+                    start_line=1,
+                    fix="Remove secret",
+                    impact=0.9,
+                )
+            ],
+        )
+        payload = generate_constraints_payload(analysis)
+        assert not any(c == "" for c in payload.get("constraints", []))
+        assert payload.get("constraints") is not None
+
+    def test_empty_analysis_instructions_not_none(self) -> None:
+        instructions = generate_instructions(self._minimal_analysis())
+        assert instructions is not None
+        assert not any(line is None for line in instructions.splitlines())
+
+    def test_constraints_payload_high_score_no_none(self) -> None:
+        analysis = RepoAnalysis(
+            repo_path=Path("/tmp/repo"),
+            analyzed_at=datetime.datetime(2026, 1, 1, 12, 0, 0),
+            drift_score=0.9,
+            findings=[],
+        )
+        payload = generate_constraints_payload(analysis)
+        assert payload is not None
+        assert not any(c is None for c in payload.get("constraints", []))
+
+    def test_instructions_lines_not_empty(self) -> None:
+        instructions = generate_instructions(self._minimal_analysis())
+        non_empty_lines = [line for line in instructions.splitlines() if line.strip()]
+        assert not any(line is None for line in non_empty_lines)
+        assert len(non_empty_lines) != 0

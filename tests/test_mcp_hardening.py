@@ -27,6 +27,7 @@ class TestApiInputValidation:
         assert result["type"] == "error"
         assert result["error_code"] == "DRIFT-1003"
         assert result["invalid_fields"][0]["field"] == "diff_ref"
+        assert result.get("pass") is None
 
     def test_fix_plan_rejects_unknown_automation_fit(self) -> None:
         from drift.api import fix_plan
@@ -36,6 +37,7 @@ class TestApiInputValidation:
         assert result["type"] == "error"
         assert result["error_code"] == "DRIFT-1003"
         assert result["invalid_fields"][0]["field"] == "automation_fit_min"
+        assert result.get("pass") is None
 
 
 class TestMcpErrorEnvelope:
@@ -52,6 +54,7 @@ class TestMcpErrorEnvelope:
         assert result["type"] == "error"
         assert result["error_code"] == "DRIFT-5001"
         assert result["tool"] == "drift_scan"
+        assert result.get("pass") is None
 
 
 class TestMcpRouterScanGuardrails:
@@ -170,6 +173,7 @@ class TestMcpToolErrorEnvelopes:
         assert result["type"] == "error", f"{tool_name} did not return error envelope"
         assert result["error_code"] == "DRIFT-5001"
         assert result["tool"] == tool_name
+        assert result.get("pass") is None
 
 
 class TestMcpStdioTransportSafety:
@@ -312,6 +316,7 @@ class TestMcpSessionIntegration:
         # Session should be gone
         status = json.loads(_run_tool(mcp_server.drift_session_status(session_id=sid)))
         assert status["type"] == "error"
+        assert status.get("pass") is None
 
     def test_invalid_session_id_returns_error(self) -> None:
         from drift import mcp_server
@@ -320,6 +325,7 @@ class TestMcpSessionIntegration:
         result = json.loads(raw)
         assert result["type"] == "error"
         assert result["error_code"] == "DRIFT-6001"
+        assert result.get("pass") is None
 
     def test_session_tools_are_in_exported_list(self) -> None:
         from drift.mcp_server import _EXPORTED_MCP_TOOLS
@@ -512,6 +518,7 @@ class TestMcpSessionIntegration:
         assert result["type"] == "error"
         assert result["error_code"] == "DRIFT-1003"
         assert result["invalid_fields"][0]["field"] == "autopilot_payload"
+        assert result.get("pass") is None
 
     def test_session_start_returns_structured_error_when_capacity_reached(self) -> None:
         from drift import mcp_server
@@ -528,6 +535,7 @@ class TestMcpSessionIntegration:
         result = json.loads(raw)
         assert result["type"] == "error"
         assert result["error_code"] == "DRIFT-4000"
+        assert result.get("pass") is None
 
 
 class TestMcpStrictGuardrails:
@@ -619,6 +627,7 @@ class TestMcpStrictGuardrails:
 
         assert result.get("error_code") != "DRIFT-6002"
         assert result.get("status") == "ok"
+        assert result.get("pass") is None
 
     def test_strict_mode_config_change_is_applied_during_active_session(
         self,
@@ -640,6 +649,7 @@ class TestMcpStrictGuardrails:
         first = json.loads(_run_tool(mcp_server.drift_diff(session_id=sid)))
         assert first.get("status") == "ok"
         assert first.get("error_code") != "DRIFT-6002"
+        assert first.get("pass") is None
 
         self._write_agent_config(tmp_path, strict=True)
 
@@ -668,3 +678,4 @@ class TestMcpStrictGuardrails:
         assert result["blocked_tool"] == "drift_session_end"
         assert any(r["reason"] == "open_tasks_remaining" for r in result["block_reasons"])
         assert result["recovery_tool_call"]["tool"] == "drift_task_status"
+        assert result.get("pass") is None

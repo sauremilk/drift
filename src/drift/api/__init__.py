@@ -30,6 +30,7 @@ from drift.api.compile_policy import compile_policy
 from drift.api.diff import _diff_next_actions, diff
 from drift.api.drift_map_api import drift_map
 from drift.api.explain import _repo_examples_for_signal, explain
+from drift.api.fix_apply import fix_apply
 from drift.api.fix_plan import _fix_plan_agent_instruction, fix_plan
 from drift.api.generate_skills import generate_skills
 from drift.api.neg_context import negative_context
@@ -89,6 +90,7 @@ STABLE_API = [
     "drift_map",
     "explain",
     "fix_plan",
+    "fix_apply",
     "negative_context",
     "nudge",
     "invalidate_nudge_baseline",

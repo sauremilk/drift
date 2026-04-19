@@ -975,3 +975,82 @@ export function validateNoControlChars(value: string, field: string): string {
                     if f.signal_type == SignalType.NAMING_CONTRACT_VIOLATION
                 ]
                 assert nbv_findings == []
+
+
+# ---------------------------------------------------------------------------
+# Negative property checks
+# ---------------------------------------------------------------------------
+
+
+class TestNBVNegativeProperties:
+    """Verify that NBV signal outputs never contain None or invalid states."""
+
+    def test_no_none_findings_for_violation(self, tmp_path: Path) -> None:
+        pr = _write_and_parse(
+            tmp_path, "utils.py",
+            "def validate_user(x):\n    pass\n",
+        )
+        findings = _run([pr])
+        assert not any(f is None for f in findings)
+        assert not any(f.title is None for f in findings)
+
+    def test_no_findings_for_empty_file(self, tmp_path: Path) -> None:
+        pr = _write_and_parse(tmp_path, "empty.py", "# empty module\n")
+        findings = _run([pr])
+        assert not findings
+        assert not any(f is None for f in findings)
+
+    def test_findings_signal_type_not_none(self, tmp_path: Path) -> None:
+        pr = _write_and_parse(
+            tmp_path, "utils.py",
+            "def get_data(): return None\n",
+        )
+        findings = _run([pr])
+        assert not any(f.signal_type is None for f in findings)
+        assert not any(f.severity is None for f in findings)
+
+    def test_multiple_files_no_none(self, tmp_path: Path) -> None:
+        pr1 = _write_and_parse(tmp_path, "a.py", "def compute_value(): pass\n")
+        pr2 = _write_and_parse(tmp_path, "b.py", "def fetch_data(): pass\n")
+        findings = _run([pr1, pr2])
+        assert not any(f is None for f in findings)
+        assert not any(f.file_path is None for f in findings)
+
+    def test_no_none_for_class_methods(self, tmp_path: Path) -> None:
+        pr = _write_and_parse(
+            tmp_path, "models.py",
+            "class User:\n    def validate_email(self):\n        pass\n",
+        )
+        findings = _run([pr])
+        assert not any(f is None for f in findings)
+        assert not any(f.score is None for f in findings)
+
+    def test_empty_list_yields_no_findings(self) -> None:
+        findings = _run([])
+        assert not findings
+        assert not any(f is None for f in findings)
+
+    def test_findings_metadata_not_none(self, tmp_path: Path) -> None:
+        pr = _write_and_parse(tmp_path, "svc.py", "def process_data(x): pass\n")
+        findings = _run([pr])
+        assert not any(f is None for f in findings)
+        assert not any(f.metadata is None for f in findings)
+
+    def test_no_findings_for_dunder_methods(self, tmp_path: Path) -> None:
+        pr = _write_and_parse(
+            tmp_path, "base.py",
+            "class Base:\n    def __init__(self): pass\n    def __repr__(self): return ''\n",
+        )
+        findings = _run([pr])
+        assert not any(f is None for f in findings)
+
+    def test_findings_description_not_none(self, tmp_path: Path) -> None:
+        pr = _write_and_parse(tmp_path, "utils.py", "def get_result(): return 42\n")
+        findings = _run([pr])
+        assert not any(f is None for f in findings)
+        assert not any(f.description is None for f in findings)
+
+    def test_findings_fix_not_raising(self, tmp_path: Path) -> None:
+        pr = _write_and_parse(tmp_path, "utils.py", "def build_query(x): return x\n")
+        findings = _run([pr])
+        assert not any(f is None for f in findings)

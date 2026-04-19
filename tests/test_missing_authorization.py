@@ -914,3 +914,128 @@ class TestMAZEdgeCases:
         signal = MissingAuthorizationSignal()
         findings = signal.analyze([pr], {}, DriftConfig())
         assert findings == []
+
+
+# ---------------------------------------------------------------------------
+# Negative property checks
+# ---------------------------------------------------------------------------
+
+
+class TestMAZNegativeProperties:
+    """Verify that MAZ signal outputs never contain None or invalid states."""
+
+    def test_unauthed_findings_not_none(self) -> None:
+        pr = ParseResult(
+            file_path=Path("api/routes.py"),
+            language="python",
+            functions=[_func("get_users", "api/routes.py", 10)],
+            imports=[_imp("api/routes.py", "fastapi")],
+            patterns=[_endpoint_pattern("get_users", "api/routes.py", 10)],
+        )
+        signal = MissingAuthorizationSignal()
+        findings = signal.analyze([pr], {}, DriftConfig())
+        assert not any(f is None for f in findings)
+        assert not any(f.rule_id is None for f in findings)
+
+    def test_authed_endpoint_no_findings(self) -> None:
+        pr = ParseResult(
+            file_path=Path("api/safe.py"),
+            language="python",
+            functions=[_func("get_users", "api/safe.py", 10)],
+            imports=[_imp("api/safe.py", "fastapi")],
+            patterns=[_endpoint_pattern(  # noqa: E501
+                "get_users", "api/safe.py", 10, has_auth=True, auth_mechanism="bearer")],
+        )
+        signal = MissingAuthorizationSignal()
+        findings = signal.analyze([pr], {}, DriftConfig())
+        assert not findings
+        assert not any(f is None for f in findings)
+
+    def test_empty_pr_no_findings(self) -> None:
+        pr = ParseResult(file_path=Path("empty.py"), language="python")
+        signal = MissingAuthorizationSignal()
+        findings = signal.analyze([pr], {}, DriftConfig())
+        assert not findings
+        assert not any(f is None for f in findings)
+
+    def test_findings_severity_not_none(self) -> None:
+        pr = ParseResult(
+            file_path=Path("api.py"),
+            language="python",
+            functions=[_func("delete_user", "api.py", 5)],
+            imports=[_imp("api.py", "fastapi")],
+            patterns=[_endpoint_pattern("delete_user", "api.py", 5)],
+        )
+        signal = MissingAuthorizationSignal()
+        findings = signal.analyze([pr], {}, DriftConfig())
+        assert not any(f.severity is None for f in findings)
+        assert not any(f.signal_type is None for f in findings)
+
+    def test_findings_title_not_none(self) -> None:
+        pr = ParseResult(
+            file_path=Path("api.py"),
+            language="python",
+            functions=[_func("list_items", "api.py", 1)],
+            imports=[_imp("api.py", "fastapi")],
+            patterns=[_endpoint_pattern("list_items", "api.py", 1)],
+        )
+        signal = MissingAuthorizationSignal()
+        findings = signal.analyze([pr], {}, DriftConfig())
+        assert not any(f is None for f in findings)
+        assert not any(f.title is None for f in findings)
+
+    def test_no_findings_for_non_endpoint(self) -> None:
+        pr = ParseResult(
+            file_path=Path("utils.py"),
+            language="python",
+            functions=[_func("helper_func", "utils.py", 1)],
+        )
+        signal = MissingAuthorizationSignal()
+        findings = signal.analyze([pr], {}, DriftConfig())
+        assert not findings
+        assert not any(f is None for f in findings)
+
+    def test_findings_file_path_not_none(self) -> None:
+        pr = ParseResult(
+            file_path=Path("views.py"),
+            language="python",
+            functions=[_func("user_profile", "views.py", 5)],
+            imports=[_imp("views.py", "django.http")],
+            patterns=[_endpoint_pattern("user_profile", "views.py", 5)],
+        )
+        signal = MissingAuthorizationSignal()
+        findings = signal.analyze([pr], {}, DriftConfig())
+        assert not any(f is None for f in findings)
+        assert not any(f.file_path is None for f in findings)
+
+    def test_findings_score_not_none(self) -> None:
+        pr = ParseResult(
+            file_path=Path("api.py"),
+            language="python",
+            functions=[_func("create_item", "api.py", 10)],
+            imports=[_imp("api.py", "fastapi")],
+            patterns=[_endpoint_pattern("create_item", "api.py", 10)],
+        )
+        signal = MissingAuthorizationSignal()
+        findings = signal.analyze([pr], {}, DriftConfig())
+        assert not any(f is None for f in findings)
+        assert not any(f.score is None for f in findings)
+
+    def test_findings_metadata_not_none(self) -> None:
+        pr = ParseResult(
+            file_path=Path("api.py"),
+            language="python",
+            functions=[_func("update_user", "api.py", 15)],
+            imports=[_imp("api.py", "fastapi")],
+            patterns=[_endpoint_pattern("update_user", "api.py", 15)],
+        )
+        signal = MissingAuthorizationSignal()
+        findings = signal.analyze([pr], {}, DriftConfig())
+        assert not any(f is None for f in findings)
+        assert not any(f.metadata is None for f in findings)
+
+    def test_empty_signal_list_no_findings(self) -> None:
+        signal = MissingAuthorizationSignal()
+        findings = signal.analyze([], {}, DriftConfig())
+        assert not findings
+        assert not any(f is None for f in findings)

@@ -11,6 +11,7 @@ import click
 
 from drift.api import fix_plan as api_fix_plan
 from drift.api import to_json
+from drift.api.fix_apply import fix_apply as api_fix_apply
 from drift.commands._io import _is_non_tty_stdout
 from drift.config import DriftConfig
 from drift.fix_plan_dismissals import (
@@ -131,6 +132,30 @@ def _json_progress_callback(phase: str, current: int, total: int) -> None:
         "rich (always rich), json (always JSON, default for --output)."
     ),
 )
+@click.option(
+    "--apply",
+    "do_apply",
+    is_flag=True,
+    default=False,
+    help=(
+        "Apply high-confidence patches automatically. "
+        "Requires a clean git state. "
+        "Use --dry-run to preview without writing files."
+    ),
+)
+@click.option(
+    "--dry-run",
+    is_flag=True,
+    default=False,
+    help="Preview patches that would be applied without writing any files.",
+)
+@click.option(
+    "--yes",
+    "-y",
+    is_flag=True,
+    default=False,
+    help="Skip the clean-git confirmation prompt when using --apply.",
+)
 def fix_plan(
     path: Path,
     finding_id: str | None,
@@ -147,6 +172,9 @@ def fix_plan(
     progress: str,
     output: Path | None,
     output_format: str,
+    do_apply: bool,
+    dry_run: bool,
+    yes: bool,
 ) -> None:
     """Generate a prioritized, agent-friendly repair plan.
 
@@ -167,9 +195,20 @@ def fix_plan(
         bool(dismiss_task_id),
         show_dismissed,
         reset_dismissed,
+        do_apply,
+        dry_run,
     ]
     if sum(1 for enabled in special_ops if enabled) > 1:
-        raise click.UsageError("Use only one of --dismiss, --show-dismissed, or --reset at a time")
+        # Allow --apply + --dry-run combo (preview mode)
+        mutually_exclusive = [
+            bool(dismiss_task_id),
+            show_dismissed,
+            reset_dismissed,
+        ]
+        if sum(1 for e in mutually_exclusive if e) > 1:
+            raise click.UsageError(
+                "Use only one of --dismiss, --show-dismissed, or --reset at a time"
+            )
 
     repo_path = path.resolve()
     cfg = DriftConfig.load(repo_path)
@@ -210,18 +249,29 @@ def fix_plan(
             "cache_file": f"{cache_dir}/fix-plan-dismissed.json",
         }
     else:
-        result = api_fix_plan(
-            path,
-            finding_id=finding_id,
-            signal=signal,
-            max_tasks=max_tasks,
-            automation_fit_min=automation_fit_min,
-            target_path=target_path,
-            exclude_paths=list(exclude_paths) or None,
-            include_deferred=include_deferred,
-            include_non_operational=include_non_operational,
-            on_progress=progress_cb,
-        )
+        if do_apply or dry_run:
+            # --- Auto-patch mode (ADR-076) ------------------------------------
+            result = api_fix_apply(
+                path,
+                signal=signal,
+                max_tasks=max_tasks,
+                dry_run=dry_run or not do_apply,
+                target_path=target_path,
+                exclude_paths=list(exclude_paths) or None,
+            )
+        else:
+            result = api_fix_plan(
+                path,
+                finding_id=finding_id,
+                signal=signal,
+                max_tasks=max_tasks,
+                automation_fit_min=automation_fit_min,
+                target_path=target_path,
+                exclude_paths=list(exclude_paths) or None,
+                include_deferred=include_deferred,
+                include_non_operational=include_non_operational,
+                on_progress=progress_cb,
+            )
 
     # API-level validation errors (e.g. unknown signal) must surface as
     # CLI failures so machine-mode callers receive a non-zero exit code.

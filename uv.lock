@@ -514,7 +514,7 @@ wheels = [
 
 [[package]]
 name = "drift-analyzer"
-version = "2.11.1"
+version = "2.15.1"
 source = { editable = "." }
 dependencies = [
     { name = "click" },
@@ -547,6 +547,9 @@ all = [
     { name = "tree-sitter" },
     { name = "tree-sitter-typescript" },
     { name = "vulture" },
+]
+autopatch = [
+    { name = "libcst" },
 ]
 dev = [
     { name = "hypothesis" },
@@ -592,6 +595,7 @@ requires-dist = [
     { name = "gitpython", specifier = ">=3.1" },
     { name = "hypothesis", marker = "extra == 'dev'", specifier = ">=6.100" },
     { name = "jsonschema", marker = "extra == 'dev'", specifier = ">=4.0" },
+    { name = "libcst", marker = "extra == 'autopatch'", specifier = ">=1.0" },
     { name = "mcp", extras = ["cli"], marker = "extra == 'mcp'", specifier = ">=1.2.0,<2.0" },
     { name = "mistune", marker = "extra == 'dev'", specifier = ">=3.0" },
     { name = "mistune", marker = "extra == 'markdown'", specifier = ">=3.0" },
@@ -617,7 +621,7 @@ requires-dist = [
     { name = "vulture", marker = "extra == 'dev'", specifier = ">=2.11" },
     { name = "watchfiles", marker = "extra == 'watch'", specifier = ">=1.0" },
 ]
-provides-extras = ["typescript", "embeddings", "markdown", "mcp", "watch", "dev", "all"]
+provides-extras = ["typescript", "embeddings", "markdown", "mcp", "autopatch", "watch", "dev", "all"]
 
 [[package]]
 name = "execnet"

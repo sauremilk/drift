@@ -752,3 +752,95 @@ class TestPhantomReferenceGenerator:
         nc = result[0]
         assert "auth.py" in nc.forbidden_pattern
         assert "ANTI-PATTERN" in nc.forbidden_pattern
+
+
+# ---------------------------------------------------------------------------
+# Negative property checks
+# ---------------------------------------------------------------------------
+
+
+class TestNegativeContextNegativeProperties:
+    """Verify negative properties of negative_context generation."""
+
+    def test_empty_findings_returns_empty(self) -> None:
+        result = findings_to_negative_context([])
+        assert not result
+        assert not any(nc is None for nc in result)
+
+    def test_single_pfs_no_none_fields(self) -> None:
+        result = findings_to_negative_context(
+            [_finding(signal_type=SignalType.PATTERN_FRAGMENTATION)]
+        )
+        assert not any(nc is None for nc in result)
+        assert not any(nc.anti_pattern_id is None for nc in result)
+
+    def test_avs_finding_no_none_scope(self) -> None:
+        result = findings_to_negative_context(
+            [_finding(signal_type=SignalType.ARCHITECTURE_VIOLATION)]
+        )
+        assert not any(nc is None for nc in result)
+        assert not any(nc.scope is None for nc in result)
+
+    def test_hsc_finding_no_none_category(self) -> None:
+        result = findings_to_negative_context([_finding(signal_type=SignalType.HARDCODED_SECRET)])
+        assert not any(nc is None for nc in result)
+        assert not any(nc.category is None for nc in result)
+
+    def test_maz_finding_no_none_source_signal(self) -> None:
+        result = findings_to_negative_context(
+            [_finding(signal_type=SignalType.MISSING_AUTHORIZATION)]
+        )
+        assert not any(nc is None for nc in result)
+        assert not any(nc.source_signal is None for nc in result)
+
+    def test_multiple_findings_no_none(self) -> None:
+        findings = [_finding(), _finding(signal_type=SignalType.ARCHITECTURE_VIOLATION)]
+        result = findings_to_negative_context(findings)
+        assert not any(nc is None for nc in result)
+        assert not any(nc.anti_pattern_id is None for nc in result)
+
+    def test_neg_id_not_empty(self) -> None:
+        f = _finding()
+        nid = _neg_id(SignalType.PATTERN_FRAGMENTATION, f)
+        assert nid is not None
+        assert nid != ""
+
+    def test_generators_map_no_none_keys(self) -> None:
+        assert not any(k is None for k in _GENERATORS)
+        assert not any(v is None for v in _GENERATORS.values())
+
+    def test_fallback_only_signals_no_none(self) -> None:
+        assert not any(s is None for s in _FALLBACK_ONLY_SIGNALS)
+
+    def test_uncovered_registered_no_none(self) -> None:
+        result = _policy_uncovered_registered_signal_ids()
+        assert not any(s is None for s in result)
+        assert not any(s == "" for s in result)
+
+    def test_uncovered_signal_types_no_none(self) -> None:
+        result = _policy_uncovered_signal_types()
+        assert not any(st is None for st in result)
+
+    def test_high_severity_no_none_confidence(self) -> None:
+        findings = [_finding(severity=Severity.HIGH, impact=0.9)]
+        result = findings_to_negative_context(findings)
+        assert not any(nc is None for nc in result)
+        assert not any(nc.confidence is None for nc in result)
+
+    def test_critical_severity_no_none_rationale(self) -> None:
+        findings = [_finding(severity=Severity.CRITICAL, impact=0.95)]
+        result = findings_to_negative_context(findings)
+        assert not any(nc is None for nc in result)
+        assert not any(nc.rationale is None for nc in result)
+
+    def test_negative_context_to_dict_no_none_id(self) -> None:
+        result = findings_to_negative_context([_finding()])
+        for nc in result:
+            d = negative_context_to_dict(nc)
+            assert d.get("anti_pattern_id") is not None
+            assert d.get("category") is not None
+
+    def test_isd_finding_no_none_forbidden(self) -> None:
+        result = findings_to_negative_context([_finding(signal_type=SignalType.INSECURE_DEFAULT)])
+        assert not any(nc is None for nc in result)
+        assert not any(nc.forbidden_pattern is None for nc in result)

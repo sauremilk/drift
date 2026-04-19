@@ -585,3 +585,102 @@ class TestIntegration:
         forbidden = payload["fix_intent"]["forbidden_changes"]
         assert FORBIDDEN_STYLE_CHANGE in forbidden
         assert FORBIDDEN_UNRELATED_REFACTOR in forbidden
+
+
+# ---------------------------------------------------------------------------
+# Negative property checks
+# ---------------------------------------------------------------------------
+
+
+class TestFixIntentNegativeProperties:
+    """Verify negative properties of fix_intent module."""
+
+    def test_edit_kind_map_no_none_values(self) -> None:
+        assert not any(v is None for v in _EDIT_KIND_FOR_SIGNAL.values())
+        assert not any(v == "" for v in _EDIT_KIND_FOR_SIGNAL.values())
+
+    def test_derive_mds_no_none_edit_kind(self) -> None:
+        fi = derive_fix_intent(
+            _FakeTask(signal_type=SignalType.MUTANT_DUPLICATE), _make_task_dict()
+        )
+        assert fi["edit_kind"] is not None
+        assert fi["edit_kind"] != ""
+
+    def test_derive_pfs_no_none_forbidden(self) -> None:
+        fi = derive_fix_intent(
+            _FakeTask(signal_type=SignalType.PATTERN_FRAGMENTATION), _make_task_dict()
+        )
+        assert not any(f is None for f in fi["forbidden_changes"])
+        assert fi["edit_kind"] is not None
+
+    def test_derive_avs_no_none_allowed(self) -> None:
+        fi = derive_fix_intent(
+            _FakeTask(signal_type=SignalType.ARCHITECTURE_VIOLATION), _make_task_dict()
+        )
+        assert not any(f is None for f in fi["allowed_files"])
+        assert fi["edit_kind"] is not None
+
+    def test_derive_hsc_no_none_fields(self) -> None:
+        fi = derive_fix_intent(
+            _FakeTask(signal_type=SignalType.HARDCODED_SECRET), _make_task_dict()
+        )
+        assert fi["edit_kind"] is not None
+        assert not any(f is None for f in fi["forbidden_changes"])
+
+    def test_derive_isd_no_none_fields(self) -> None:
+        fi = derive_fix_intent(
+            _FakeTask(signal_type=SignalType.INSECURE_DEFAULT), _make_task_dict()
+        )
+        assert fi["edit_kind"] is not None
+        assert not any(f is None for f in fi["allowed_files"])
+
+    def test_derive_maz_no_none_fields(self) -> None:
+        fi = derive_fix_intent(
+            _FakeTask(signal_type=SignalType.MISSING_AUTHORIZATION), _make_task_dict()
+        )
+        assert fi["edit_kind"] is not None
+        assert not any(f is None for f in fi["forbidden_changes"])
+
+    def test_derive_gcd_no_none_fields(self) -> None:
+        fi = derive_fix_intent(
+            _FakeTask(signal_type=SignalType.GUARD_CLAUSE_DEFICIT), _make_task_dict()
+        )
+        assert fi["edit_kind"] is not None
+        assert not any(f is None for f in fi["forbidden_changes"])
+
+    def test_ast_delta_map_no_none_keys(self) -> None:
+        assert not any(k is None for k in _EXPECTED_AST_DELTA_FOR_EDIT_KIND)
+        assert not any(v is None for v in _EXPECTED_AST_DELTA_FOR_EDIT_KIND.values())
+
+    def test_forbidden_style_change_not_empty(self) -> None:
+        assert FORBIDDEN_STYLE_CHANGE is not None
+        assert FORBIDDEN_STYLE_CHANGE != ""
+
+    def test_forbidden_unrelated_refactor_not_empty(self) -> None:
+        assert FORBIDDEN_UNRELATED_REFACTOR is not None
+        assert FORBIDDEN_UNRELATED_REFACTOR != ""
+
+    def test_all_signal_types_edit_kind_not_none(self) -> None:
+        for st in SignalType:
+            fi = derive_fix_intent(_FakeTask(signal_type=st), _make_task_dict())
+            assert fi["edit_kind"] is not None
+            assert fi["edit_kind"] != ""
+
+    def test_forbidden_changes_no_empty_strings(self) -> None:
+        fi = derive_fix_intent(
+            _FakeTask(signal_type=SignalType.MUTANT_DUPLICATE), _make_task_dict()
+        )
+        assert not any(f == "" for f in fi["forbidden_changes"])
+        assert fi["forbidden_changes"] is not None
+
+    def test_allowed_files_no_empty_strings_pfs(self) -> None:
+        fi = derive_fix_intent(
+            _FakeTask(signal_type=SignalType.PATTERN_FRAGMENTATION), _make_task_dict()
+        )
+        assert not any(f == "" for f in fi["allowed_files"])
+        assert fi["allowed_files"] is not None
+
+    def test_edit_kind_constants_not_empty(self) -> None:
+        kinds = [EDIT_KIND_ADD_TEST, EDIT_KIND_EXTRACT_FUNCTION, EDIT_KIND_DELETE_SYMBOL]
+        assert not any(k is None for k in kinds)
+        assert not any(k == "" for k in kinds)

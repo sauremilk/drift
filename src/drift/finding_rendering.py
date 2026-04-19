@@ -273,8 +273,15 @@ def _top_signals(
     *,
     signal_filter: set[str] | None = None,
     config: Any = None,
+    exclude_report_only: bool = True,
 ) -> list[dict[str, Any]]:
-    """Aggregate signal scores and finding counts."""
+    """Aggregate signal scores and finding counts.
+
+    By default, report-only signals (weight 0.0) are excluded so that the
+    returned list only contains actionable, scored signals.  Pass
+    ``exclude_report_only=False`` to include them (e.g. for full-detail
+    contexts where all signals should be visible).
+    """
     from collections import Counter
 
     counts: Counter[str] = Counter()
@@ -289,12 +296,15 @@ def _top_signals(
     result = []
     for sig in counts:
         w = _signal_weight(sig, config) if config else 1.0
+        is_report_only = w == 0.0
+        if exclude_report_only and is_report_only:
+            continue
         result.append({
             "signal": sig,
             "score": round(score_sums[sig], 3),
             "finding_count": counts[sig],
             "weight": round(w, 4),
-            "report_only": w == 0.0,
+            "report_only": is_report_only,
         })
 
     return sorted(

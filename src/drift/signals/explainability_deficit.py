@@ -335,6 +335,11 @@ class ExplainabilityDeficitSignal(BaseSignal):
             min_threshold = 0.45 if is_private else 0.30
             if defect_correlated:
                 min_threshold = min(min_threshold, 0.30)
+            # ADR-077: further raise threshold for private micro-helpers (LOC < 40,
+            # no defect correlation) — avoids CXS→EDS oscillation in fix-loops
+            # where freshly-extracted private helpers trigger EDS before docs are added.
+            if is_private and func.loc < 40 and not defect_correlated:
+                min_threshold = max(min_threshold, 0.55)
             if weighted_score < min_threshold:
                 continue
 

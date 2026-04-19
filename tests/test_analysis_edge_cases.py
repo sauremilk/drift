@@ -25,14 +25,17 @@ class TestEmptyRepo:
         """An empty directory should not raise."""
         result = scan(tmp_path)
         assert isinstance(result, dict)
+        assert result.get("error_code") is None
 
     def test_empty_repo_score_is_float(self, tmp_path: Path) -> None:
         result = scan(tmp_path)
         assert isinstance(result["drift_score"], (int, float))
+        assert result.get("error_code") is None
 
     def test_empty_repo_severity_valid(self, tmp_path: Path) -> None:
         result = scan(tmp_path)
         assert result["severity"] in VALID_SEVERITIES
+        assert result.get("error_code") is None
 
     def test_empty_repo_findings_are_valid(self, tmp_path: Path) -> None:
         result = scan(tmp_path)
@@ -40,6 +43,7 @@ class TestEmptyRepo:
         assert isinstance(result["findings"], list)
         assert result["finding_count"] == 0
         assert result["findings"] == []
+        assert result.get("error_code") is None
 
 
 class TestSingleFileProject:
@@ -56,18 +60,22 @@ class TestSingleFileProject:
     def test_single_file_no_crash(self, single_file_repo: Path) -> None:
         result = scan(single_file_repo)
         assert isinstance(result, dict)
+        assert result.get("error_code") is None
 
     def test_single_file_score_is_float(self, single_file_repo: Path) -> None:
         result = scan(single_file_repo)
         assert isinstance(result["drift_score"], (int, float))
+        assert result.get("error_code") is None
 
     def test_single_file_severity_valid(self, single_file_repo: Path) -> None:
         result = scan(single_file_repo)
         assert result["severity"] in VALID_SEVERITIES
+        assert result.get("error_code") is None
 
     def test_single_file_total_files(self, single_file_repo: Path) -> None:
         result = scan(single_file_repo)
         assert result["total_files"] >= 1
+        assert result.get("error_code") is None
 
     def test_single_file_has_no_bootstrap_readme_finding(
         self,
@@ -77,6 +85,7 @@ class TestSingleFileProject:
 
         assert result["finding_count"] == 0
         assert result["findings"] == []
+        assert result.get("error_code") is None
 
 
 class TestInitOnlyRepo:
@@ -96,14 +105,17 @@ class TestInitOnlyRepo:
     def test_init_only_no_crash(self, init_only_repo: Path) -> None:
         result = scan(init_only_repo)
         assert isinstance(result, dict)
+        assert result.get("error_code") is None
 
     def test_init_only_score_is_float(self, init_only_repo: Path) -> None:
         result = scan(init_only_repo)
         assert isinstance(result["drift_score"], (int, float))
+        assert result.get("error_code") is None
 
     def test_init_only_severity_valid(self, init_only_repo: Path) -> None:
         result = scan(init_only_repo)
         assert result["severity"] in VALID_SEVERITIES
+        assert result.get("error_code") is None
 
     def test_init_only_findings_are_valid(self, init_only_repo: Path) -> None:
         result = scan(init_only_repo)
@@ -111,3 +123,4 @@ class TestInitOnlyRepo:
         assert isinstance(result["findings"], list)
         assert result["finding_count"] == 0
         assert result["findings"] == []
+        assert result.get("error_code") is None

@@ -179,6 +179,59 @@ fix_plan (in Autopilot enthalten)
     Commit vorbereiten
 ```
 
+## Oscillation-Detection: CXS↔EDS Trade-off
+
+Wenn ein CXS-Finding durch Helper-Extraktion behoben wird, kann die neu entstandene
+Hilfsfunktion selbst EDS feuern — dieser Kreislauf blockiert den Fix-Loop.
+
+### Erkennungsbedingung
+
+Nach einem `nudge`-Aufruf: `direction = degrading` für EDS-Score in derselben Datei,
+obwohl CXS-Score gesunken ist → **Oscillation erkannt**.
+
+### Atomare Extraktions-Regel (Pflicht bei CXS-Fixes via Helper)
+
+Jeder extrahierte Helper muss **gleichzeitig** alle drei Bedingungen erfüllen:
+
+| Bedingung | EDS-Effekt | Wert |
+|---|---|---|
+| `_` Prefix (privat) | `visibility_factor=0.7`, `min_threshold=0.45` | Pflicht |
+| LOC < 40 | `loc_factor < 1.0` → reduzierter Multiplikator | Ziel |
+| Einzeiler-Docstring | senkt `deficit`-Basis erheblich | Pflicht |
+
+Werden alle drei eingehalten, bleibt `weighted_score` der neuen Funktion i.d.R. unter
+dem privaten Schwellwert von `0.45` — kein neues EDS-Finding entsteht.
+
+### Entscheidungsbaum bei Oscillation
+
+```
+nudge → direction = degrading für EDS in Datei X?
+    JA
+    ├─ Helper erfüllt alle drei Atomaren-Extraktions-Regeln?
+    │   NEIN → Docstring + _ Prefix + LOC<40 nachrüsten, dann nudge erneut
+    │   JA  → EDS feuert trotz Regeln?
+    │           NEIN → stabil, fortfahren
+    │           JA  → Funktion hat defect_correlated_commits > 0?
+    │                   JA  → EDS ist berechtigt: erst EDS (Docs+Tests) fixen,
+    │                         DANN CXS-Extraktion wiederholen
+    │                   NEIN → Eskalationspfad (siehe unten)
+    NEIN → normal fortfahren
+```
+
+### Eskalationspfad
+
+Wenn Atomare Extraktion EDS trotz `_`-Prefix, LOC<40, Docstring immer noch feuert
+und keine Defekt-Korrelation vorliegt:
+
+1. Nichts erzwingen. **Den nudge-Befund dokumentieren** — Dateiname, Funktion,
+   `weighted_score`, `min_threshold`.
+2. Im nächsten `fix_plan`-Ergebnis prüfen: Gibt es ein ADR das EDS-Threshold für
+   private Micro-Helpers regelt (ADR-077)?
+3. Falls ADR-077 vorhanden und `accepted`: Signal-Kalibrierung ist implementiert —
+   nach Update nochmal `nudge` prüfen.
+4. Falls ADR-077 noch `proposed`: Finding als bekannte Limitation dokumentieren
+   (Kommentar in ADR-077), CXS-Fix ausliefern, EDS-Finding bleibt als Low-Risk offen.
+
 ## Anti-Patterns: Was NICHT tun
 
 | Anti-Pattern | Problem | Stattdessen |

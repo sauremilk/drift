@@ -1642,7 +1642,7 @@ def _enrich_task_from_registry(
         if entry is not None:
             task.template_confidence = registry.confidence(entry)
             task.regression_guidance = list(entry.regression_patterns)
-    except Exception:  # pragma: no cover
+    except (ImportError, AttributeError, KeyError, TypeError):  # pragma: no cover
         pass  # registry failure must never block task generation
 
 

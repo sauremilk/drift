@@ -520,3 +520,89 @@ class TestGCD:
             )
         pr = _write_module(tmp_path, "test_something.py", funcs)
         assert self._run([pr]) == []
+
+
+# ---------------------------------------------------------------------------
+# Negative property checks (cross-signal)
+# ---------------------------------------------------------------------------
+
+
+class TestConsistencyProxiesNegativeProperties:
+    """Cross-signal negative sanity checks for BEM, GCD, TPD."""
+
+    def test_bem_no_none_for_safe_code(self, tmp_path: Path) -> None:
+        pr = _write_module(tmp_path, "safe.py", "def foo(): pass\n")
+        sig = BroadExceptionMonocultureSignal()
+        findings = sig.analyze([pr], {}, _cfg())
+        assert not findings
+        assert not any(f is None for f in findings)
+
+    def test_bem_empty_input_no_findings(self) -> None:
+        sig = BroadExceptionMonocultureSignal()
+        findings = sig.analyze([], {}, _cfg())
+        assert not findings
+        assert not any(f is None for f in findings)
+
+    def test_gcd_no_none_for_simple_code(self, tmp_path: Path) -> None:
+        pr = _write_module(tmp_path, "simple.py", "def add(a, b): return a + b\n")
+        sig = GuardClauseDeficitSignal()
+        findings = sig.analyze([pr], {}, _cfg())
+        assert not any(f is None for f in findings)
+        assert not any(f.severity is None for f in findings)
+
+    def test_gcd_empty_input_no_findings(self) -> None:
+        sig = GuardClauseDeficitSignal()
+        findings = sig.analyze([], {}, _cfg())
+        assert not findings
+        assert not any(f is None for f in findings)
+
+    def test_tpd_no_none_fields(self, tmp_path: Path) -> None:
+        pr = _write_module(
+            tmp_path, "test_basic.py",
+            "def test_foo():\n    x = 1\n    assert x == 1\n",
+        )
+        sig = TestPolarityDeficitSignal()
+        findings = sig.analyze([pr], {}, _cfg())
+        assert not any(f is None for f in findings)
+        assert not any(f.signal_type is None for f in findings)
+
+    def test_bem_findings_fields_not_none(self) -> None:
+        handlers = [_handler("Exception"), _handler("Exception"), _handler("Exception")]
+        pr = _parse_result(
+            Path("app.py"),
+            [_pattern(Path("app.py"), handlers)],
+        )
+        sig = BroadExceptionMonocultureSignal()
+        findings = sig.analyze([pr], {}, _cfg())
+        assert not any(f is None for f in findings)
+        assert not any(f.metadata is None for f in findings)
+
+    def test_gcd_findings_fields_not_none(self, tmp_path: Path) -> None:
+        source = "def process(x):\n    if x:\n        pass\n    return x\n"
+        pr = _write_module(tmp_path, "deep.py", source)
+        sig = GuardClauseDeficitSignal()
+        findings = sig.analyze([pr], {}, _cfg())
+        assert not any(f is None for f in findings)
+        assert not any(f.title is None for f in findings)
+
+    def test_tpd_empty_input_no_findings(self) -> None:
+        sig = TestPolarityDeficitSignal()
+        findings = sig.analyze([], {}, _cfg())
+        assert not findings
+        assert not any(f is None for f in findings)
+
+    def test_bem_safe_exception_no_none(self) -> None:
+        pr = _parse_result(
+            Path("safe.py"),
+            [_pattern(Path("safe.py"), [_handler("ValueError"), _handler("TypeError")])],
+        )
+        sig = BroadExceptionMonocultureSignal()
+        findings = sig.analyze([pr], {}, _cfg())
+        assert not any(f is None for f in findings)
+
+    def test_gcd_score_not_none(self, tmp_path: Path) -> None:
+        pr = _write_module(tmp_path, "app.py", "def compute(a): return a * 2\n")
+        sig = GuardClauseDeficitSignal()
+        findings = sig.analyze([pr], {}, _cfg())
+        assert not any(f is None for f in findings)
+        assert not any(f.score is None for f in findings)

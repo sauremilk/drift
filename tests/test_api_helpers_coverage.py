@@ -6,6 +6,7 @@ from __future__ import annotations
 import datetime
 from dataclasses import dataclass, field
 from pathlib import Path
+from types import SimpleNamespace
 from typing import Any
 from unittest.mock import patch
 
@@ -148,6 +149,45 @@ class TestTopSignals:
         result = _top_signals(a, signal_filter={"AVS"})
         assert len(result) == 1
         assert result[0]["signal"] == "AVS"
+
+    def test_exclude_report_only_default(self):
+        """Report-only signals (weight=0.0) are excluded by default."""
+
+        class _Weights:
+            architecture_violation = 0.8
+            cognitive_complexity = 0.0  # report-only
+
+        cfg = SimpleNamespace(weights=_Weights())
+        findings = [
+            _finding(signal=SignalType.ARCHITECTURE_VIOLATION, score=0.7),
+            _finding(signal=SignalType.COGNITIVE_COMPLEXITY, score=0.9),
+        ]
+        a = _analysis(findings=findings)
+        result = _top_signals(a, config=cfg)
+        signal_ids = {s["signal"] for s in result}
+        assert "CXS" not in signal_ids, "report-only signal must be excluded by default"
+        assert "AVS" in signal_ids
+
+    def test_exclude_report_only_false_includes_all(self):
+        """With exclude_report_only=False, report-only signals are included."""
+
+        class _Weights:
+            architecture_violation = 0.8
+            cognitive_complexity = 0.0  # report-only
+
+        cfg = SimpleNamespace(weights=_Weights())
+        findings = [
+            _finding(signal=SignalType.ARCHITECTURE_VIOLATION, score=0.7),
+            _finding(signal=SignalType.COGNITIVE_COMPLEXITY, score=0.9),
+        ]
+        a = _analysis(findings=findings)
+        result = _top_signals(a, config=cfg, exclude_report_only=False)
+        signal_ids = {s["signal"] for s in result}
+        assert "CXS" in signal_ids
+        assert "AVS" in signal_ids
+        # report_only flag must be set correctly
+        cxs_entry = next(s for s in result if s["signal"] == "CXS")
+        assert cxs_entry["report_only"] is True
 
 
 # ---------------------------------------------------------------------------

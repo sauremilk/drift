@@ -1489,3 +1489,95 @@ class TestVerifyPlan:
         data = json.loads(raw)
         step1 = data["tasks"][0]["verify_plan"][0]
         assert set(step1.keys()) >= _REQUIRED_STEP_KEYS
+
+
+# ---------------------------------------------------------------------------
+# Negative property checks
+# ---------------------------------------------------------------------------
+
+
+class TestAgentTasksNegativeProperties:
+    """Verify that agent task outputs never contain None or invalid states."""
+
+    def test_task_list_no_none_items(self) -> None:
+        f = _make_finding()
+        analysis = _make_analysis(findings=[f])
+        tasks = analysis_to_agent_tasks(analysis)
+        assert not any(t is None for t in tasks)
+        assert not any(t.id is None for t in tasks)
+
+    def test_empty_analysis_empty_tasks(self) -> None:
+        analysis = _make_analysis(findings=[])
+        tasks = analysis_to_agent_tasks(analysis)
+        assert not tasks
+        assert not any(t is None for t in tasks)
+
+    def test_task_title_not_none(self) -> None:
+        f = _make_finding()
+        analysis = _make_analysis(findings=[f])
+        tasks = analysis_to_agent_tasks(analysis)
+        assert not any(t.title is None for t in tasks)
+        assert not any(t.description is None for t in tasks)
+
+    def test_task_action_not_none(self) -> None:
+        f = _make_finding()
+        analysis = _make_analysis(findings=[f])
+        tasks = analysis_to_agent_tasks(analysis)
+        assert not any(t.action is None for t in tasks)
+        assert not any(t.success_criteria is None for t in tasks)
+
+    def test_task_constraints_not_none(self) -> None:
+        f = _make_finding()
+        analysis = _make_analysis(findings=[f])
+        tasks = analysis_to_agent_tasks(analysis)
+        assert not any(t.constraints is None for t in tasks)
+        assert not any(t.verify_plan is None for t in tasks)
+
+    def test_json_tasks_no_none_ids(self) -> None:
+        f = _make_finding()
+        analysis = _make_analysis(findings=[f])
+        raw = analysis_to_agent_tasks_json(analysis)
+        data = json.loads(raw)
+        assert not any(t is None for t in data["tasks"])
+        assert not any(t.get("id") is None for t in data["tasks"])
+
+    def test_multiple_findings_no_none_tasks(self) -> None:
+        findings = [_make_finding(title=f"Finding {i}") for i in range(5)]
+        analysis = _make_analysis(findings=findings)
+        tasks = analysis_to_agent_tasks(analysis)
+        assert not any(t is None for t in tasks)
+        assert not any(t.file_path is None for t in tasks)
+
+    def test_avs_task_fields_not_none(self) -> None:
+        f = _make_finding(
+            signal_type=SignalType.ARCHITECTURE_VIOLATION,
+            title="Circular dep",
+            metadata={"cycle": ["a.py", "b.py"]},
+        )
+        analysis = _make_analysis(findings=[f])
+        tasks = analysis_to_agent_tasks(analysis)
+        assert not any(t is None for t in tasks)
+        assert not any(t.action is None for t in tasks)
+
+    def test_mds_task_not_none(self) -> None:
+        f = _make_finding(
+            signal_type=SignalType.MUTANT_DUPLICATE,
+            title="Near-duplicate",
+            metadata={"function_a": "foo", "function_b": "bar", "similarity": 0.95},
+        )
+        analysis = _make_analysis(findings=[f])
+        tasks = analysis_to_agent_tasks(analysis)
+        assert not any(t is None for t in tasks)
+        assert not any(t.id is None for t in tasks)
+
+    def test_unactionable_yields_no_none_tasks(self) -> None:
+        f = _make_finding(
+            signal_type=SignalType.BROAD_EXCEPTION_MONOCULTURE,
+            title="Broad exceptions",
+            fix=None,
+            metadata={},
+        )
+        analysis = _make_analysis(findings=[f])
+        tasks = analysis_to_agent_tasks(analysis)
+        assert not tasks
+        assert not any(t is None for t in tasks)

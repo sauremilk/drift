@@ -1131,6 +1131,63 @@ EDS_INIT_TN = GroundTruthFixture(
 )
 
 
+# ADR-077: TN for private micro-helper (LOC<40, no defect correlation)
+EDS_PRIVATE_MICRO_HELPER_TN = GroundTruthFixture(
+    name="eds_private_micro_helper_tn",
+    description=(
+        "Private helper extracted from complex function: LOC<40, no docstring, "
+        "no defect correlation → should NOT fire EDS (ADR-077 threshold)"
+    ),
+    files={
+        "core/__init__.py": "",
+        "core/processor.py": """\
+            def process_items(items, config):
+                \"\"\"Process a list of items according to config.\"\"\"
+                results = []
+                for item in items:
+                    result = _apply_rule(item, config)
+                    if result is not None:
+                        results.append(result)
+                return results
+
+            def _apply_rule(item, config):
+                if item.get("type") == "A":
+                    if item.get("priority") > 5:
+                        return _handle_high(item)
+                    return _handle_default(item)
+                elif item.get("type") == "B":
+                    if config.get("fast_mode"):
+                        return _handle_fast(item)
+                    return _handle_slow(item)
+                return None
+
+            def _handle_high(item):
+                return {"status": "high", "id": item.get("id")}
+
+            def _handle_default(item):
+                return {"status": "default", "id": item.get("id")}
+
+            def _handle_fast(item):
+                return {"status": "fast", "id": item.get("id")}
+
+            def _handle_slow(item):
+                return {"status": "slow", "id": item.get("id")}
+        """,
+    },
+    expected=[
+        ExpectedFinding(
+            signal_type=SignalType.EXPLAINABILITY_DEFICIT,
+            file_path="core/processor.py",
+            should_detect=False,
+            description=(
+                "Private helpers _apply_rule, _handle_* are LOC<40 with no "
+                "defect correlation — ADR-077 raised threshold suppresses EDS"
+            ),
+        ),
+    ],
+)
+
+
 # ── Additional AVS fixtures ──────────────────────────────────────────────
 
 AVS_SKIP_LAYER_TP = GroundTruthFixture(
@@ -2186,6 +2243,7 @@ ALL_FIXTURES: list[GroundTruthFixture] = [
     EDS_STATE_MACHINE_TP,
     EDS_NESTED_LOOPS_TP,
     EDS_INIT_TN,
+    EDS_PRIVATE_MICRO_HELPER_TN,
     TVS_TRUE_POSITIVE,
     TVS_TRUE_NEGATIVE,
     SMS_TRUE_POSITIVE,
