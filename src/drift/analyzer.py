@@ -415,3 +415,98 @@ def analyze_diff(
     )
 
     return analysis
+
+
+def get_head_fingerprints_for_diff(
+    repo_path: Path,
+    changed_files: list[str],
+    config: DriftConfig | None = None,
+) -> frozenset[str]:
+    """Return finding fingerprints from the HEAD-committed state of changed files.
+
+    Used by uncommitted/staged diff modes to identify pre-existing findings
+    that should not be reported as newly introduced by working-tree changes.
+    Compares the HEAD version of each changed file against the current version
+    so that findings present in HEAD are not counted as new.
+
+    Returns an empty frozenset on any failure (safe degradation).
+    """
+    import tempfile
+
+    if not changed_files:
+        return frozenset()
+
+    logger = logging.getLogger("drift")
+
+    if config is None:
+        try:
+            config = DriftConfig.load(repo_path)
+        except Exception:
+            return frozenset()
+
+    from drift.baseline import finding_fingerprint
+
+    # Get HEAD content for each changed file.  Files not in HEAD (new files)
+    # are skipped — their findings are legitimately new.
+    head_contents: dict[str, str] = {}
+    for rel_path in changed_files:
+        try:
+            result = subprocess.run(
+                ["git", "show", f"HEAD:{rel_path}"],
+                capture_output=True,
+                text=True,
+                encoding="utf-8",
+                errors="replace",
+                cwd=repo_path,
+                check=True,
+                stdin=subprocess.DEVNULL,
+            )
+            head_contents[rel_path] = result.stdout
+        except Exception:
+            pass  # New file or git error → findings are truly new
+
+    if not head_contents:
+        return frozenset()
+
+    try:
+        with tempfile.TemporaryDirectory(prefix="drift_head_") as tmp_dir:
+            tmp_path = Path(tmp_dir)
+            for rel_path, content in head_contents.items():
+                file_path = tmp_path / rel_path
+                file_path.parent.mkdir(parents=True, exist_ok=True)
+                try:
+                    file_path.write_text(content, encoding="utf-8")
+                except Exception:
+                    pass
+
+            all_files = discover_files(
+                tmp_path,
+                include=config.include,
+                exclude=config.exclude,
+                max_files=config.thresholds.max_discovery_files,
+                ts_enabled=config.languages.typescript,
+            )
+            if not all_files:
+                return frozenset()
+
+            effective_workers = resolve_worker_count(
+                config=config,
+                files=all_files,
+                requested_workers=None,
+            )
+            head_analysis = _run_pipeline(
+                tmp_path,
+                all_files,
+                config,
+                since_days=90,
+                on_progress=None,
+                workers=effective_workers,
+            )
+            return frozenset(finding_fingerprint(f) for f in head_analysis.findings)
+    except Exception:
+        logger.debug(
+            "Could not compute HEAD fingerprints for diff comparison; "
+            "falling back to reporting all findings as new.",
+            exc_info=True,
+        )
+        return frozenset()

@@ -942,6 +942,137 @@ class TestDiffUncommittedScope:
         assert result["new_finding_count"] == 1
         assert result["diff_mode"] == "uncommitted"
 
+    def test_uncommitted_excludes_preexisting_head_findings(
+        self,
+        monkeypatch,
+    ):
+        """Pre-existing HEAD findings must not be counted as new (#525).
+
+        When a changed file already had findings in HEAD, drift_diff should
+        subtract them so that accept_change is not incorrectly set to False.
+        """
+        import subprocess
+
+        import drift.analyzer as analyzer_module
+        import drift.api as api_module
+        from drift.api import diff
+        from drift.baseline import finding_fingerprint
+        from drift.config import DriftConfig
+
+        preexisting_finding = _make_finding(
+            PFS,
+            0.8,
+            0.8,
+            file="src/changed.py",
+            line=5,
+        )
+        head_fp = finding_fingerprint(preexisting_finding)
+
+        analysis = SimpleNamespace(
+            findings=[preexisting_finding],
+            drift_score=0.3,
+            severity=Severity.MEDIUM,
+            trend=SimpleNamespace(previous_score=0.3),
+            is_degraded=False,
+            total_files=1,
+        )
+
+        def _fake_analyze_diff(*args, **kwargs):
+            return analysis
+
+        monkeypatch.setattr(
+            DriftConfig,
+            "load",
+            staticmethod(lambda *a, **kw: object()),
+        )
+        monkeypatch.setattr(
+            analyzer_module,
+            "analyze_diff",
+            _fake_analyze_diff,
+        )
+        monkeypatch.setattr(
+            api_module,
+            "_emit_api_telemetry",
+            lambda **kw: None,
+        )
+        monkeypatch.setattr(
+            _scan_mod,
+            "_finding_concise",
+            lambda f: {"title": f.title, "file": f.file_path.as_posix()},
+        )
+
+        # Stub git subprocess to report one changed file
+        original_run = subprocess.run
+
+        def _fake_subprocess_run(cmd, **kwargs):
+            if isinstance(cmd, list) and "diff" in cmd and "--name-only" in cmd:
+                ns = SimpleNamespace(stdout="src/changed.py\n", returncode=0)
+                return ns
+            return original_run(cmd, **kwargs)
+
+        monkeypatch.setattr(subprocess, "run", _fake_subprocess_run)
+
+        # Stub get_head_fingerprints_for_diff to return the pre-existing fp
+        monkeypatch.setattr(
+            analyzer_module,
+            "get_head_fingerprints_for_diff",
+            lambda repo_path, changed_files, config=None: frozenset({head_fp}),
+        )
+
+        result = diff(Path("."), uncommitted=True)
+
+        assert result["new_finding_count"] == 0, (
+            "Pre-existing HEAD finding must not be counted as new"
+        )
+        assert result["accept_change"] is True, (
+            "accept_change must be True when all findings were pre-existing in HEAD"
+        )
+        assert result["noise_context"]["pre_existing_head_count"] == 1
+
+    def test_uncommitted_empty_diff_returns_accept_change_true(
+        self,
+        monkeypatch,
+    ):
+        """Empty working-tree (no changed files) must always yield accept_change=True (#525)."""
+        import drift.analyzer as analyzer_module
+        import drift.api as api_module
+        from drift.api import diff
+        from drift.config import DriftConfig
+
+        # analyze_diff returns empty RepoAnalysis when changed_files is empty
+        empty_analysis = SimpleNamespace(
+            findings=[],
+            drift_score=0.0,
+            severity=Severity.LOW,
+            trend=None,
+            is_degraded=False,
+            total_files=0,
+        )
+
+        def _fake_analyze_diff(*args, **kwargs):
+            return empty_analysis
+
+        monkeypatch.setattr(
+            DriftConfig,
+            "load",
+            staticmethod(lambda *a, **kw: object()),
+        )
+        monkeypatch.setattr(
+            analyzer_module,
+            "analyze_diff",
+            _fake_analyze_diff,
+        )
+        monkeypatch.setattr(
+            api_module,
+            "_emit_api_telemetry",
+            lambda **kw: None,
+        )
+
+        result = diff(Path("."), uncommitted=True)
+
+        assert result["new_finding_count"] == 0
+        assert result["accept_change"] is True
+
 
 # --- Task 4: Warning for invalid target_path ---
 
@@ -1870,3 +2001,83 @@ class TestNextStepContract:
 
         resp = _error_response("DRIFT-5001", "oops", recoverable=True)
         assert "recovery_tool_call" not in resp
+
+
+# ---------------------------------------------------------------------------
+# Negative property checks
+# ---------------------------------------------------------------------------
+
+
+class TestScanDiversityNegativeProperties:
+    """Verify negative properties of diversity functions and responses."""
+
+    def test_empty_diverse_is_empty(self) -> None:
+        diverse = _diverse_findings([], 5)
+        assert not diverse
+        assert not any(f is None for f in diverse)
+
+    def test_diverse_findings_no_none(self) -> None:
+        findings = [
+            _make_finding(PFS, 0.8, 0.7),
+            _make_finding(AVS, 0.9, 0.8),
+        ]
+        diverse = _diverse_findings(findings, 5)
+        assert not any(f is None for f in diverse)
+        assert not any(f.signal_type is None for f in diverse)
+
+    def test_diverse_single_signal_no_none(self) -> None:
+        findings = [_make_finding(PFS, 0.9, 0.9 - i * 0.01) for i in range(10)]
+        diverse = _diverse_findings(findings, 5)
+        assert not any(f is None for f in diverse)
+        assert not any(f.score is None for f in diverse)
+
+    def test_diverse_multi_signal_no_none(self) -> None:
+        findings = (
+            [_make_finding(PFS, 0.9, 0.9)] +
+            [_make_finding(AVS, 0.8, 0.8)] +
+            [_make_finding(MDS, 0.7, 0.7)]
+        )
+        diverse = _diverse_findings(findings, 10)
+        assert not any(f is None for f in diverse)
+        assert not any(f.title is None for f in diverse)
+
+    def test_diverse_respects_max_no_none(self) -> None:
+        findings = [_make_finding(PFS, 0.9, 0.9 - i * 0.01) for i in range(20)]
+        diverse = _diverse_findings(findings, 5)
+        assert not any(f is None for f in diverse)
+        assert not any(f.file_path is None for f in diverse)
+
+    def test_diverse_preserves_no_none_metadata(self) -> None:
+        findings = [_make_finding(PFS, 0.8, 0.7), _make_finding(COD, 0.6, 0.5)]
+        diverse = _diverse_findings(findings, 3)
+        assert not any(f is None for f in diverse)
+        assert not any(f.metadata is None for f in diverse)
+
+    def test_diverse_all_signals_no_none(self) -> None:
+        findings = (
+            [_make_finding(PFS, 0.9, 0.9)] +
+            [_make_finding(AVS, 0.85, 0.85)] +
+            [_make_finding(MDS, 0.8, 0.8)] +
+            [_make_finding(COD, 0.75, 0.75)]
+        )
+        diverse = _diverse_findings(findings, 10)
+        assert not any(f is None for f in diverse)
+        assert not any(f.description is None for f in diverse)
+
+    def test_diverse_one_finding_no_none(self) -> None:
+        findings = [_make_finding(PFS, 0.9, 0.9)]
+        diverse = _diverse_findings(findings, 5)
+        assert not any(f is None for f in diverse)
+        assert not any(f.rule_id is None for f in diverse)
+
+    def test_diverse_with_max_zero_empty(self) -> None:
+        findings = [_make_finding(PFS, 0.9, 0.9)]
+        diverse = _diverse_findings(findings, 0)
+        assert not diverse
+        assert not any(f is None for f in diverse)
+
+    def test_diverse_result_no_none_end_line(self) -> None:
+        findings = [_make_finding(PFS, 0.8, 0.7), _make_finding(AVS, 0.9, 0.8)]
+        diverse = _diverse_findings(findings, 5)
+        assert not any(f is None for f in diverse)
+        assert not any(f.end_line is None for f in diverse)

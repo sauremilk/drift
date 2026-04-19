@@ -641,6 +641,50 @@ def diff(
             new = diff_analysis.findings
             resolved = []
 
+        # For uncommitted/staged diff modes without a baseline, subtract
+        # findings that already exist in HEAD so that pre-existing findings
+        # in changed files are not incorrectly reported as newly introduced
+        # by the working-tree changes.  This is a best-effort comparison that
+        # degrades safely: on any error the full finding list is kept. (#525)
+        pre_existing_head_count = 0
+        if diff_mode in ("uncommitted", "staged") and not baseline_file and new:
+            try:
+                import subprocess as _sp
+
+                from drift.analyzer import get_head_fingerprints_for_diff as _head_fps
+                from drift.baseline import finding_fingerprint as _fp
+
+                _git_cmd = (
+                    ["git", "diff", "--cached", "--name-only"]
+                    if diff_mode == "staged"
+                    else ["git", "diff", "--name-only", "HEAD"]
+                )
+                _git_result = _sp.run(
+                    _git_cmd,
+                    capture_output=True,
+                    text=True,
+                    encoding="utf-8",
+                    errors="replace",
+                    cwd=repo_path,
+                    check=True,
+                    stdin=_sp.DEVNULL,
+                )
+                _changed_files = [
+                    line
+                    for line in _git_result.stdout.strip().splitlines()
+                    if line
+                ]
+                if _changed_files:
+                    _head_fingerprints = _head_fps(repo_path, _changed_files, cfg)
+                    if _head_fingerprints:
+                        _pre_existing = [
+                            f for f in new if _fp(f) in _head_fingerprints
+                        ]
+                        new = [f for f in new if _fp(f) not in _head_fingerprints]
+                        pre_existing_head_count = len(_pre_existing)
+            except Exception:
+                pass  # Safe fallback: report all findings as new
+
         # Signal filter: include/exclude by signal abbreviation
         if signals:
             _incl = {s.upper() for s in signals}
@@ -719,6 +763,8 @@ def diff(
             summary_parts.append(f"{high_count} high/critical")
         if out_of_scope_new:
             summary_parts.append(f"{len(out_of_scope_new)} out-of-scope")
+        if pre_existing_head_count > 0:
+            summary_parts.append(f"{pre_existing_head_count} pre-existing-in-head")
         summary_parts.append(f"drift score {'+' if delta >= 0 else ''}{delta:.3f}")
 
         decision_state = _build_diff_decision_state(
@@ -738,7 +784,13 @@ def diff(
         # change-caused findings when drift_detected=false but counts > 0.
         pre_existing_count = len(out_of_scope_new)
         noise_explanation = None
-        if not baseline_file and pre_existing_count > 0:
+        if pre_existing_head_count > 0 and not baseline_file:
+            noise_explanation = (
+                f"{pre_existing_head_count} finding(s) already existed in HEAD and "
+                f"were excluded from new_findings. They are pre-existing and not "
+                f"caused by the current working-tree change."
+            )
+        elif not baseline_file and pre_existing_count > 0:
             noise_explanation = (
                 f"{pre_existing_count} finding(s) are pre-existing out-of-scope noise, "
                 f"not caused by this change. Use 'drift baseline save' then "
@@ -747,7 +799,8 @@ def diff(
         elif not scoped_new and not out_of_scope_new:
             noise_explanation = "No new findings detected."
         noise_context = {
-            "pre_existing_count": pre_existing_count,
+            "pre_existing_count": pre_existing_count + pre_existing_head_count,
+            "pre_existing_head_count": pre_existing_head_count,
             "explanation": noise_explanation,
         }
 
