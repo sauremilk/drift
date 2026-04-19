@@ -277,7 +277,6 @@ def test_finding_rendering_helpers(monkeypatch: pytest.MonkeyPatch) -> None:
         "drift.output.json_output._dedupe_findings", lambda findings: (findings, {})
     )
     monkeypatch.setattr("drift.output.json_output._priority_class", lambda f: "core")
-    monkeypatch.setattr("drift.output.json_output._priority_rank", lambda c: 0)
     selected = fr.select_priority_findings(analysis, max_items=1)
     assert len(selected) == 1
 
