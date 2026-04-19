@@ -8,7 +8,7 @@ import pytest
 
 from drift.fix_intent import EDIT_KIND_ADD_DOCSTRING
 from drift.models import Finding, Severity
-from drift.patch_writer import PatchResult, PatchResultStatus, get_writer
+from drift.patch_writer import PatchResultStatus, get_writer
 from tests.fixtures.patch_writer import (
     EDS_ALREADY_HAS_DOCSTRING,
     EDS_ASYNC_EXPECTED_WITH_DOCSTRING,

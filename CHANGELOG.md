@@ -11,6 +11,7 @@ Short version: PatchWriter auto-apply for add_docstring + add_guard_clause (ADR-
 
 - `contextlib.suppress` replaces bare `try/except/pass` in `analyzer.py` (SIM105).
 - Stale `_priority_rank` monkeypatch removed from test after unused import cleanup.
+- Workflow stability: ruff unused-import / import-order issues in test files resolved; detect-secrets false positive suppressed via pragma; `release.yml` guards against amending an existing HEAD tag causing non-fast-forward; `validate-release.yml` PS5.1 `NativeCommandError` on `gh release view` resolved.
 
 ## [2.15.1] – 2026-04-18
 

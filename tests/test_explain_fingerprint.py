@@ -21,7 +21,7 @@ from drift.commands.explain import _print_finding_detail, explain
 
 class TestFingerprintRegex:
     def test_accepts_16_char_hex(self) -> None:
-        assert _FINGERPRINT_RE.match("abcd1234abcd1234")
+        assert _FINGERPRINT_RE.match("abcd1234abcd1234")  # pragma: allowlist secret
 
     def test_accepts_8_char_hex(self) -> None:
         assert _FINGERPRINT_RE.match("abcd1234")

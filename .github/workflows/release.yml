@@ -48,13 +48,19 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PYTHONUTF8: "1"
         run: |
+          # Capture HEAD before PSR so we can detect whether a new commit was made.
+          $headBefore = git rev-parse HEAD
+
           # Run version detection and local commit+tag (no push yet)
           semantic-release -v version --no-push --no-vcs-release --skip-build
+
+          $headAfter = git rev-parse HEAD
+          $newCommitCreated = $headBefore -ne $headAfter
 
           # Check if a new tag was created on HEAD.
           # `git tag --points-at` is stable in PowerShell even when no tag exists.
           $tag = (git tag --points-at HEAD | Select-Object -First 1)
-          if ([string]::IsNullOrWhiteSpace($tag)) {
+          if ([string]::IsNullOrWhiteSpace($tag) -or (-not $newCommitCreated)) {
             Write-Output "No new version - nothing to release."
             "released=false" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
             exit 0

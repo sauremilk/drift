@@ -701,3 +701,9 @@ def init(
                     padding=(0, 2),
                 )
             )
+    if full:
+        console.print(
+            "  Optional: drift watch  ->  pip install drift-analyzer[watch]",
+            style="dim",
+            markup=False,
+        )

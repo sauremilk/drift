@@ -74,10 +74,15 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           TAG: ${{ github.ref_name }}
         run: |
-          # Capture all output (stdout+stderr) to avoid NativeCommandError in PS5.1
-          # when $ErrorActionPreference interacts with non-zero native exit codes.
+          # In PS5.1, $ErrorActionPreference=Stop causes NativeCommandError for
+          # any non-zero native exit code, even with $null= assignment.
+          # Temporarily relax to Continue so we can inspect $LASTEXITCODE.
+          $prevEAP = $ErrorActionPreference
+          $ErrorActionPreference = 'Continue'
           $null = & gh release view "$env:TAG" --repo "$env:GITHUB_REPOSITORY" 2>&1
-          if ($LASTEXITCODE -eq 0) {
+          $viewExitCode = $LASTEXITCODE
+          $ErrorActionPreference = $prevEAP
+          if ($viewExitCode -eq 0) {
             Write-Output "Release for $env:TAG already exists - skipping creation"
             exit 0
           }

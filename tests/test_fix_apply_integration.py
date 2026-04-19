@@ -15,10 +15,9 @@ from pathlib import Path
 from typing import Any
 from unittest.mock import patch
 
-import pytest
 from click.testing import CliRunner
 
-from drift.api.fix_apply import _apply_patches, _is_auto_applicable, fix_apply
+from drift.api.fix_apply import _is_auto_applicable, fix_apply
 from drift.cli import main
 from drift.fix_intent import EDIT_KIND_ADD_DOCSTRING, EDIT_KIND_ADD_GUARD_CLAUSE
 from drift.models._enums import AutomationFit, ChangeScope, ReviewRisk, Severity
@@ -28,7 +27,6 @@ from tests.fixtures.patch_writer import (
     GCD_EXPECTED_WITH_GUARD_ORDER,
     GCD_MISSING_GUARD_SOURCE,
 )
-
 
 # ---------------------------------------------------------------------------
 # Minimal AgentTask stub (avoids full model import noise in tests)
