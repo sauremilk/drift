@@ -1,3 +1,17 @@
+## [2.17.0] – 2026-04-18
+
+Short version: PatchWriter auto-apply for add_docstring + add_guard_clause (ADR-076), EDS micro-helper dampening (ADR-077), contextlib.suppress cleanup, and test fixes.
+
+### Added
+
+- **PatchWriter auto-apply (ADR-076)**: `PatchWriter` ABC + registry; `AddDocstringWriter` and `AddGuardClauseWriter` generate executable libcst-based patches; `drift.api.fix_apply()` applies patches for HIGH/LOCAL/LOW tasks with clean git state.
+- **EDS micro-helper dampening (ADR-077)**: Raised EDS threshold for private micro-helpers (single-underscore prefix, <5 lines, <3 parameters) to reduce false positives on trivial helpers.
+
+### Fixed
+
+- `contextlib.suppress` replaces bare `try/except/pass` in `analyzer.py` (SIM105).
+- Stale `_priority_rank` monkeypatch removed from test after unused import cleanup.
+
 ## [2.15.1] – 2026-04-18
 
 Short version: Patch Engine (ADR-074), ArchGraph layer, root_cause field on Finding (ADR-075), CLI-UX polish, and per-signal timing telemetry.

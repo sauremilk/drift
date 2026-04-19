@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "drift-analyzer"
-version = "2.16.0"
+version = "2.17.0"
 description = "Catches structural erosion from AI-generated code — the bugs that pass all your tests"
 readme = "README.md"
 license = "MIT"
