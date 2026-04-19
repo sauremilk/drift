@@ -11,8 +11,7 @@ Short version: Patch Engine (ADR-074), ArchGraph layer, root_cause field on Find
 
 ### Fixed
 
-- **Validation + CI stability**: `TaskSpec` frozen after validation; executor timeouts enforced; `save_history()` retries on Windows `PermissionError`; dispatch-table cross-test pollution and detect-secrets false positive resolved.
-- **PFS precision — error_handling false positives (Issue #526)**: Three targeted fixes reduce FP rate for error-handling fragmentation: (1) `ast.Continue` in except bodies now maps to `loop_skip` action instead of `other`; (2) exception types (ValueError, OSError, JSONDecodeError, …) are stripped before variant comparison — only the handler-action structure determines the variant; (3) propagation-only patterns (terminal `raise` without preceding `log`) are excluded from the fragmentation variant count since normalising them would change behaviour. `log`-and-rethrow (`["log", "raise"]`) remains a legitimate variant. Finding metadata gains `propagation_excluded_count`.
+- **Validation, CI stability + PFS precision**: `TaskSpec` frozen after validation; executor timeouts enforced; `save_history()` retries on Windows `PermissionError`; detect-secrets false positive resolved. PFS error_handling FP rate reduced: `ast.Continue` maps to `loop_skip`; exception types stripped before variant comparison; propagation-only handlers excluded from fragmentation count. `propagation_excluded_count` added to finding metadata (Issue #526).
 
 ## [2.11.0] - 2026-04-17
 
