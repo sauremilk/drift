@@ -36,6 +36,7 @@ LAST_SUCCESS_SHA_FILE="$GIT_DIR_PATH/.drift-prepush-last-success"
 # DRIFT_SKIP_CHANGELOG, DRIFT_SKIP_VERSION_BUMP,
 # DRIFT_SKIP_LOCKFILE, DRIFT_SKIP_DOCSTRING, DRIFT_SKIP_RISK_AUDIT
 # DRIFT_SKIP_HOOKS=1 skips ALL gates (emergency only)
+# DRIFT_PYTEST_WORKERS=N overrides the parallel worker cap (default: 4)
 
 # Block private/non-tool paths from being pushed.
 blocked_pattern='^(tagesplanung/)'
@@ -522,8 +523,9 @@ echo ">>> [3/6] Running mypy..."
 # 4. Tests with coverage (exclude slow smoke tests that clone external repos)
 echo ">>> [4/6] Running pytest + coverage (excl. smoke tests)..."
 if "$PYTHON_CMD" -m pytest --help 2>/dev/null | grep -Eq -- "--numprocesses|-n[[:space:]]+numprocesses|-n[[:space:]]+NUM"; then
-	echo ">>> [4/6] xdist detected: running tests in parallel mode (-n auto)."
-	"$PYTHON_CMD" -m pytest -q --tb=short -n auto --dist=loadscope --cov --cov-report= --ignore=tests/test_smoke_real_repos.py
+	DRIFT_WORKERS="${DRIFT_PYTEST_WORKERS:-4}"
+	echo ">>> [4/6] xdist detected: running tests in parallel mode (-n ${DRIFT_WORKERS}, capped to avoid OOM)."
+	"$PYTHON_CMD" -m pytest -q --tb=short -n "${DRIFT_WORKERS}" --dist=loadscope --cov --cov-report= --ignore=tests/test_smoke_real_repos.py
 else
 	echo ">>> [4/6] xdist not available: running tests in serial mode."
 	"$PYTHON_CMD" -m pytest -q --tb=short --cov --cov-report= --ignore=tests/test_smoke_real_repos.py

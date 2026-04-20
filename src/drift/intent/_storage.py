@@ -2,7 +2,6 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Optional
 
 from ._models import CapturedIntent
 
@@ -21,7 +20,7 @@ def save_intent(intent: CapturedIntent, *, repo_root: Path = Path(".")) -> None:
 
 def load_intent(
     intent_id: str, *, repo_root: Path = Path(".")
-) -> Optional[CapturedIntent]:
+) -> CapturedIntent | None:
     """Load a previously saved intent, or None if not found."""
     path = intent_store_path(intent_id, repo_root)
     if not path.exists():
