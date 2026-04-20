@@ -429,7 +429,7 @@ class TestStalenessDetection:
         # Now overwrite with a "refactored" — but dangerous — version,
         # keeping the old suppression comment intact
         suppressed_line = src.read_text(encoding="utf-8").splitlines()[0]
-        new_code_part = 'password = "hardcoded_pwd_123"'
+        new_code_part = 'password = "hardcoded_pwd_123"'  # pragma: allowlist secret
         # Replace only the code part before the drift:ignore comment
         import re as _re
         new_line = _re.sub(r"^.*?(?=  # drift:ignore)", new_code_part, suppressed_line)

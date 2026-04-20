@@ -37,7 +37,7 @@ _SIGNAL_ABBREVS: dict[str, str] = {
     "cohesion_deficit": "COD",
     "missing_authorization": "MAZ",
     "insecure_default": "ISD",
-    "hardcoded_secret": "HSC",
+    "hardcoded_secret": "HSC",  # pragma: allowlist secret
     "phantom_reference": "PHR",
     "type_safety_bypass": "TSB",
     "fan_out_explosion": "FOE",

@@ -190,7 +190,7 @@ class TestDiffAutoSuccess:
         cache_dir.mkdir()
         last_scan = cache_dir / "last_scan.json"
         fp_resolved = "aabbccdd11223344"
-        fp_shared = "deadbeef12345678"
+        fp_shared = "deadbeef12345678"  # pragma: allowlist secret
         last_scan.write_text(
             _minimal_scan_json(
                 drift_score=10.0,

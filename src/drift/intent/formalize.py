@@ -30,7 +30,7 @@ _CONTRACT_SIGNAL_MAP: dict[str, str] = {
     "persist-survive-restart": "exception_contract_drift",
     "persist-concurrent-safety": "exception_contract_drift",
     "persist-input-integrity": "guard_clause_deficit",
-    "sec-no-plaintext-secrets": "hardcoded_secret_candidate",
+    "sec-no-plaintext-secrets": "hardcoded_secret_candidate",  # pragma: allowlist secret
     "sec-input-validation": "guard_clause_deficit",
     "sec-external-data-validation": "guard_clause_deficit",
     "err-user-friendly-messages": "broad_exception_monoculture",
