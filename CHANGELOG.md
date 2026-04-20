@@ -6,7 +6,7 @@ Short version: Nudge baseline TTL configurable, drift analyze --no-cache and dri
 
 - `nudge_baseline_ttl_seconds` config field (default 900) to tune baseline snapshot validity; replaces persisted TTL on warm load. Closes #421.
 - `drift analyze --no-cache` and `drift cache clear` (with `--parse-only`/`--signal-only`/`--dry-run`): per-run cache bypass and manual cache invalidation. Closes #424.
-- CI: auto-update drift score badge in `README.md` on main-branch pushes.
+- Auto-update drift score badge in `README.md` on main-branch CI pushes.
 
 ### Fixed
 
