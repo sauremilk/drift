@@ -47,7 +47,7 @@ def load_baselines(
     list[Contract]
         Loaded baseline contracts.
     """
-    import yaml
+    import yaml  # type: ignore[import-untyped]
 
     cache_key = str(repo_path.resolve())
     if not _force_reload and cache_key in _cache:
@@ -63,7 +63,7 @@ def load_baselines(
     raw = baselines_path.read_text(encoding="utf-8")
     data: dict[str, Any] = yaml.safe_load(raw) or {}
 
-    contracts: list[Contract] = []
+    contracts: list[Contract] = []  # type: ignore[no-redef]
     for _cat_name, items in data.items():
         if not isinstance(items, list):
             continue

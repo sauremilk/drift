@@ -29,7 +29,7 @@ def save_contract(contract: IntentContract, project_root: Path) -> Path:
     Path
         Path to the intent file.
     """
-    import yaml
+    import yaml  # type: ignore[import-untyped]
 
     intent_file = project_root / INTENT_FILENAME
 

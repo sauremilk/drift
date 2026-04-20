@@ -60,7 +60,7 @@ def _resolve_signal(contract: Contract) -> str:
 def _load_schema() -> dict[str, Any]:
     """Load the intent JSON schema from package data."""
     schema_path = Path(__file__).parent / "schemas" / "intent.schema.json"
-    return json.loads(schema_path.read_text(encoding="utf-8"))
+    return json.loads(schema_path.read_text(encoding="utf-8"))  # type: ignore[no-any-return]
 
 
 def _validate_against_schema(data: dict[str, Any]) -> list[str]:

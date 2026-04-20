@@ -69,7 +69,7 @@ def translate_finding(
         # Unknown / plugin signal → fallback
         tpl = FALLBACK_TEMPLATES.get(lang, FALLBACK_TEMPLATES["en"])
     else:
-        tpl = signal_templates.get(lang, signal_templates.get("en", {}))
+        tpl = signal_templates.get(lang, signal_templates.get("en", {}))  # type: ignore[typeddict-item]
         if not tpl:
             tpl = FALLBACK_TEMPLATES.get(lang, FALLBACK_TEMPLATES["en"])
 

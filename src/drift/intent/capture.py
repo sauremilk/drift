@@ -209,7 +209,7 @@ def capture(prompt: str, repo_path: object = None) -> dict:
     from pathlib import Path
 
     category = detect_category(prompt)
-    repo = Path(repo_path) if repo_path else Path(".")
+    repo = Path(str(repo_path)) if repo_path else Path(".")
     contracts: list[dict] = []
     try:
         from drift.intent.registry import load_baselines
@@ -249,17 +249,17 @@ def load_intent_json(repo_path: object = None) -> dict:
     import json
     from pathlib import Path
 
-    path = (Path(repo_path) if repo_path else Path(".")) / _INTENT_FILENAME
+    path = (Path(str(repo_path)) if repo_path else Path(".")) / _INTENT_FILENAME
     if not path.exists():
         raise FileNotFoundError(f"Intent file not found: {path}")
-    return json.loads(path.read_text(encoding="utf-8"))
+    return json.loads(path.read_text(encoding="utf-8"))  # type: ignore[no-any-return]
 
 
 def save_intent_json(data: dict, repo_path: object = None) -> Path:
     """Persist the intent dict to drift.intent.json, returns the Path."""
     import json
 
-    path = (Path(repo_path) if repo_path else Path(".")) / _INTENT_FILENAME
+    path = (Path(str(repo_path)) if repo_path else Path(".")) / _INTENT_FILENAME
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(data, indent=2, ensure_ascii=False), encoding="utf-8")
     return path
