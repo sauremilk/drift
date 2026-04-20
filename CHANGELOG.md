@@ -4,17 +4,14 @@ Short version: intent-capture system for structured planning; `lang` module with
 
 ### Added
 
-- `drift intent` command and `drift.intent` module: interactive intent capture with LLM-backed classification (keyword fallback), clarifying questions, YAML contract storage; `IntentContract`, `Requirement`, `Constraint`, `IntentCategory`, and classify/formalize/repair/validate/verify pipeline.
-- `drift.lang` module: multilingual plain-language message catalog; `--audience {developer,plain}` and `--language/--lang` flags on `drift analyze` for non-technical stakeholders.
-- A2A router: `capture_intent`, `verify_intent`, `feedback_for_agent` endpoints; `capture_intent()`, `verify_intent()`, `feedback_for_agent()` exposed via `drift.api`.
-- Optional `[llm]` extra (`litellm>=1.0`) for LLM-backed intent classification with graceful keyword-only fallback.
+- `drift intent` command and `drift.intent` module: intent capture with LLM/keyword classification, YAML contract storage, classify/formalize/repair/validate/verify pipeline. Optional `[llm]` extra (`litellm>=1.0`).
+- `drift.lang` module: multilingual plain-language message catalog; `--audience` and `--language` flags on `drift analyze` for non-technical stakeholders.
+- A2A router: `capture_intent`, `verify_intent`, `feedback_for_agent` endpoints exposed via `drift.api`.
 
 ### Fixed
 
-- `tests/test_diff_auto.py`, `tests/test_suppression.py`, `src/drift/intent/formalize.py`, `src/drift/output/interactive_review.py`: added `# pragma: allowlist secret` to test-fixture strings to prevent false positives in detect-secrets CI gate.
-- `.secrets.baseline`: refreshed to include `skills-lock.json` and `eval-viewer/viewer.html`.
-- `src/drift/intent/`: mypy `no-any-return` / `import-untyped` / `no-redef` type errors resolved.
-- `src/drift/lang/__init__.py`: mypy `typeddict-item` false positive suppressed.
+- Security hygiene: `# pragma: allowlist secret` annotations on test-fixture strings; `.secrets.baseline` refreshed for new files (`skills-lock.json`, `eval-viewer/viewer.html`).
+- mypy: resolved `no-any-return`, `import-untyped`, `no-redef` and `typeddict-item` errors in `drift.intent` and `drift.lang`.
 
 ## [2.20.0] – 2026-04-20
 
