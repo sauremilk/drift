@@ -356,6 +356,119 @@ main.add_command(watch)
 main.add_command(synthesize)
 
 
+def _handle_click_exception(exc: click.ClickException, machine_errors: bool) -> None:
+    """Handle a ClickException: emit JSON error or re-raise for human output."""
+    _handle_click_error(exc)
+    if not machine_errors:
+        raise exc
+    error_code, message = _classify_click_error(exc)
+    exit_code = int(getattr(exc, "exit_code", 2) or 2)
+    if exit_code <= 0:
+        exit_code = 2
+    _emit_error_payload(
+        _build_error_payload(
+            error_code,
+            "user",
+            message,
+            exit_code,
+            detail=message,
+            hint=(
+                "Run 'drift setup' for interactive setup or "
+                "'drift --help' / 'drift <command> --help' for usage."
+            ),
+            suggested_action_override=(
+                "Run 'drift setup' for interactive setup or "
+                "'drift --help' / 'drift <command> --help' for usage."
+            ),
+        ),
+    )
+    sys.exit(exit_code)
+
+
+def _handle_keyboard_interrupt(machine_errors: bool) -> None:
+    """Handle KeyboardInterrupt: emit JSON error or human-readable message."""
+    if machine_errors:
+        _emit_error_payload(
+            _build_error_payload(
+                "DRIFT-0000", "system", "Interrupted.",
+                EXIT_INTERRUPTED,
+            ),
+        )
+    else:
+        click.echo("\nInterrupted.", err=True)
+    sys.exit(EXIT_INTERRUPTED)
+
+
+def _handle_drift_error(exc: DriftError, machine_errors: bool) -> None:
+    """Handle a DriftError: emit JSON error or human-readable message."""
+    info = ERROR_REGISTRY.get(exc.code)
+    if machine_errors:
+        _emit_error_payload(
+            _build_error_payload(
+                exc.code,
+                info.category if info else "analysis",
+                str(exc),
+                exc.exit_code,
+                detail=exc.detail,
+                hint=exc.hint,
+                suggested_action_override=exc.suggested_action,
+            ),
+        )
+    else:
+        click.echo(exc.detail, err=True)
+        if exc.code and exc.code.startswith("DRIFT-"):
+            click.echo(
+                f"  Hint: run 'drift explain {exc.code}' for details and suggested fixes.",
+                err=True,
+            )
+    sys.exit(exc.exit_code)
+
+
+def _handle_file_not_found(exc: FileNotFoundError, machine_errors: bool) -> None:
+    """Handle a FileNotFoundError: emit JSON error or human-readable message."""
+    if machine_errors:
+        _emit_error_payload(
+            _build_error_payload(
+                "DRIFT-2001", "system", str(exc),
+                EXIT_SYSTEM_ERROR,
+                detail=f"[DRIFT-2001] {exc}",
+            ),
+        )
+    else:
+        click.echo(f"[DRIFT-2001] {exc}", err=True)
+        click.echo(
+            "  Hint: run 'drift explain DRIFT-2001' for details and suggested fixes.",
+            err=True,
+        )
+    sys.exit(EXIT_SYSTEM_ERROR)
+
+
+def _handle_unexpected_error(exc: Exception, machine_errors: bool) -> None:
+    """Handle an unexpected exception: emit JSON error or human-readable message."""
+    if machine_errors:
+        _emit_error_payload(
+            _build_error_payload(
+                "DRIFT-3002", "analysis", str(exc),
+                EXIT_ANALYSIS_ERROR,
+                detail=f"[DRIFT-3002] {exc}",
+                hint="Run with -v for the full traceback.",
+            ),
+        )
+    else:
+        click.echo(f"[DRIFT-3002] {exc}", err=True)
+        if logging.getLogger().isEnabledFor(logging.DEBUG):
+            import traceback
+
+            traceback.print_exc()
+        else:
+            click.echo(
+                "  Hint: run with -v for the full traceback, or "
+                "'drift explain DRIFT-3002' for common causes.",
+                err=True,
+            )
+    sys.exit(EXIT_ANALYSIS_ERROR)
+
+
 def safe_main() -> None:
     """Entry point with user-friendly error handling."""
     machine_errors = _machine_error_enabled(sys.argv[1:])
@@ -364,104 +477,15 @@ def safe_main() -> None:
     except click.exceptions.Exit:
         raise
     except click.ClickException as exc:
-        # Enhance "no such option" with did-you-mean suggestions
-        _handle_click_error(exc)
-        if machine_errors:
-            error_code, message = _classify_click_error(exc)
-            exit_code = int(getattr(exc, "exit_code", 2) or 2)
-            if exit_code <= 0:
-                exit_code = 2
-            _emit_error_payload(
-                _build_error_payload(
-                    error_code,
-                    "user",
-                    message,
-                    exit_code,
-                    detail=message,
-                    hint=(
-                        "Run 'drift setup' for interactive setup or "
-                        "'drift --help' / 'drift <command> --help' for usage."
-                    ),
-                    suggested_action_override=(
-                        "Run 'drift setup' for interactive setup or "
-                        "'drift --help' / 'drift <command> --help' for usage."
-                    ),
-                ),
-            )
-            sys.exit(exit_code)
-        raise
+        _handle_click_exception(exc, machine_errors)
     except KeyboardInterrupt:
-        if machine_errors:
-            _emit_error_payload(
-                _build_error_payload(
-                    "DRIFT-0000", "system", "Interrupted.",
-                    EXIT_INTERRUPTED,
-                ),
-            )
-        else:
-            click.echo("\nInterrupted.", err=True)
-        sys.exit(EXIT_INTERRUPTED)
+        _handle_keyboard_interrupt(machine_errors)
     except DriftError as exc:
-        info = ERROR_REGISTRY.get(exc.code)
-        if machine_errors:
-            _emit_error_payload(
-                _build_error_payload(
-                    exc.code,
-                    info.category if info else "analysis",
-                    str(exc),
-                    exc.exit_code,
-                    detail=exc.detail,
-                    hint=exc.hint,
-                    suggested_action_override=exc.suggested_action,
-                ),
-            )
-        else:
-            click.echo(exc.detail, err=True)
-            if exc.code and exc.code.startswith("DRIFT-"):
-                click.echo(
-                    f"  Hint: run 'drift explain {exc.code}' for details and suggested fixes.",
-                    err=True,
-                )
-        sys.exit(exc.exit_code)
+        _handle_drift_error(exc, machine_errors)
     except FileNotFoundError as exc:
-        if machine_errors:
-            _emit_error_payload(
-                _build_error_payload(
-                    "DRIFT-2001", "system", str(exc),
-                    EXIT_SYSTEM_ERROR,
-                    detail=f"[DRIFT-2001] {exc}",
-                ),
-            )
-        else:
-            click.echo(f"[DRIFT-2001] {exc}", err=True)
-            click.echo(
-                "  Hint: run 'drift explain DRIFT-2001' for details and suggested fixes.",
-                err=True,
-            )
-        sys.exit(EXIT_SYSTEM_ERROR)
+        _handle_file_not_found(exc, machine_errors)
     except Exception as exc:
-        if machine_errors:
-            _emit_error_payload(
-                _build_error_payload(
-                    "DRIFT-3002", "analysis", str(exc),
-                    EXIT_ANALYSIS_ERROR,
-                    detail=f"[DRIFT-3002] {exc}",
-                    hint="Run with -v for the full traceback.",
-                ),
-            )
-        else:
-            click.echo(f"[DRIFT-3002] {exc}", err=True)
-            if logging.getLogger().isEnabledFor(logging.DEBUG):
-                import traceback
-
-                traceback.print_exc()
-            else:
-                click.echo(
-                    "  Hint: run with -v for the full traceback, or "
-                    "'drift explain DRIFT-3002' for common causes.",
-                    err=True,
-                )
-        sys.exit(EXIT_ANALYSIS_ERROR)
+        _handle_unexpected_error(exc, machine_errors)
 
 
 def _handle_click_error(exc: click.ClickException) -> None:

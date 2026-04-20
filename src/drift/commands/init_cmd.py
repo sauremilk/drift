@@ -326,6 +326,227 @@ def _plan_file(
 # ---------------------------------------------------------------------------
 
 
+def _run_interactive_profile_setup(profile: str, interactive: bool, json_output: bool) -> str:
+    """Ask 3 setup questions and return derived profile name, or return profile unchanged."""
+    if not interactive or json_output:
+        return profile
+    from drift.commands.setup import (
+        _ask_ai_usage,
+        _ask_project_type,
+        _ask_strictness,
+        _derive_profile,
+        _detect_language,
+    )
+    lang = _detect_language()
+    console.print()
+    if lang.startswith("de"):
+        console.print("  [bold]drift init --interactive[/bold] — Profil in 3 Fragen")
+    else:
+        console.print("  [bold]drift init --interactive[/bold] — choose profile in 3 questions")
+    console.print("  " + "\u2500" * 45)
+    console.print()
+    project_type = _ask_project_type(lang)
+    ai_usage = _ask_ai_usage(lang)
+    strictness = _ask_strictness(lang)
+    return _derive_profile(project_type, ai_usage, strictness)
+
+
+def _build_init_plan(
+    repo: Path,
+    profile: str,
+    ci: bool,
+    hooks: bool,
+    mcp: bool,
+    claude: bool,
+    cursor: bool,
+    windsurf: bool,
+    claude_code: bool,
+    launcher_command: str,
+    launcher_args: list[str],
+) -> list[dict[str, object]]:
+    """Build the ordered list of file-creation entries for this init run."""
+    plan: list[dict[str, object]] = []
+    config_dict = _build_config_dict(profile)
+    config_yaml = _yaml_header(profile) + yaml.dump(
+        config_dict, default_flow_style=False, sort_keys=False, allow_unicode=True,
+    )
+    _plan_file(plan, repo / "drift.yaml", config_yaml, repo)
+    if ci:
+        fail_on = "none" if profile != "strict" else "medium"
+        workflow_content = _GITHUB_WORKFLOW.format(fail_on=fail_on)
+        workflow_path = repo / ".github" / "workflows" / "drift.yml"
+        _plan_file(plan, workflow_path, workflow_content, repo)
+    if hooks:
+        hook_fail = "high" if profile != "strict" else "medium"
+        hook_content = _PRE_PUSH_HOOK.format(fail_on=hook_fail)
+        hook_path = repo / ".githooks" / "drift-pre-push"
+        _plan_file(plan, hook_path, hook_content, repo)
+    if mcp:
+        mcp_path = repo / ".vscode" / "mcp.json"
+        _plan_file(
+            plan,
+            mcp_path,
+            _render_mcp_json(claude=False, command=launcher_command, args=launcher_args),
+            repo,
+        )
+    if claude:
+        claude_path = repo / "claude_desktop_config.json"
+        _plan_file(
+            plan,
+            claude_path,
+            _render_mcp_json(claude=True, command=launcher_command, args=launcher_args),
+            repo,
+        )
+    if cursor:
+        _plan_file(plan, repo / ".cursorrules", _CURSORRULES_SNIPPET, repo)
+    if windsurf:
+        _plan_file(plan, repo / ".windsurfrules", _WINDSURFRULES_SNIPPET, repo)
+    if claude_code:
+        _plan_file(plan, repo / "CLAUDE.md", _CLAUDE_MD_SNIPPET, repo)
+    return plan
+
+
+def _print_dry_run_preview(
+    plan: list[dict[str, object]],
+    prof: object,
+    json_output: bool,
+) -> None:
+    """Output a dry-run preview (JSON or Rich) of the files that would be written."""
+    skip_count = sum(1 for p in plan if p["exists"])
+    new_count = sum(1 for p in plan if not p["exists"])
+    if json_output:
+        click.echo(json.dumps({
+            "would_create": [
+                {
+                    "path": p["path"],
+                    "size_bytes": p["size_bytes"],
+                    "exists": p["exists"],
+                    "action": "skip" if p["exists"] else "create",
+                    "would_skip": p["exists"],
+                    "would_overwrite": False,
+                }
+                for p in plan
+            ],
+            "overwrite_count": 0,
+            "skip_count": skip_count,
+            "new_count": new_count,
+        }, indent=2))
+    else:
+        console.print(
+            f"[bold]Dry run[/bold] — profile "
+            f"[cyan]{getattr(prof, 'name', prof)}[/cyan]: {getattr(prof, 'description', '')}\n"
+        )
+        for p in plan:
+            status = "[yellow]skip[/yellow]" if p["exists"] else "[green]create[/green]"
+            console.print(f"  {status}  {p['path']}  ({p['size_bytes']} bytes)")
+        console.print(f"\n[dim]{new_count} new, {skip_count} would skip[/dim]")
+
+
+def _write_init_plan_files(
+    plan: list[dict[str, object]],
+    repo: Path,
+    launcher_source: str,
+    hooks: bool,
+) -> int:
+    """Write each planned file and print per-file notes. Returns count of created files."""
+    created = 0
+    printed_mcp_note = False
+    for p in plan:
+        target = repo / str(p["path"])
+        if _write_if_absent(target, str(p["content"]), str(p["path"]), root=repo):
+            created += 1
+            if "drift-pre-push" in str(p["path"]):
+                console.print(
+                    "  [dim]Activate with: "
+                    "git config core.hooksPath .githooks[/dim]"
+                )
+            if not printed_mcp_note and str(p["path"]) in {
+                ".vscode/mcp.json",
+                "claude_desktop_config.json",
+            }:
+                console.print(
+                    "  Requires MCP extra: pip install drift-analyzer[mcp]",
+                    style="dim",
+                    markup=False,
+                )
+                if launcher_source == "python-module":
+                    console.print(
+                        "  [dim]No drift executable found on PATH; generated config "
+                        "uses the current Python interpreter.[/dim]"
+                    )
+                    if hooks:
+                        console.print(
+                            "  [dim]The generated pre-push hook still expects "
+                            "`drift` on PATH.[/dim]"
+                        )
+                printed_mcp_note = True
+            if str(p["path"]) == "claude_desktop_config.json":
+                console.print(
+                    "  [dim]Windows merge target: "
+                    "%APPDATA%\\Claude\\claude_desktop_config.json[/dim]"
+                )
+                console.print(
+                    "  [dim]macOS merge target: "
+                    "~/Library/Application Support/Claude/claude_desktop_config.json[/dim]"
+                )
+                console.print(
+                    "  [dim]macOS merge target: "
+                    "~/Library/Application Support/Claude/claude_desktop_config.json[/dim]"
+                )
+    return created
+
+
+def _print_init_summary(created: int, profile: str, full: bool) -> None:
+    """Print the post-init summary (next steps or already-initialised message)."""
+    ascii_only = bool(getattr(console, "_drift_ascii_only", False))
+    ok_marker = "OK" if ascii_only else "✓"
+    arrow = "->" if ascii_only else "→"
+    if created:
+        console.print(f"[bold green]{ok_marker} {created} file(s) created.[/bold green]")
+        steps = [
+            f"  1. [bold]drift analyze[/bold]       {arrow} get your first score",
+            f"  2. [bold]drift baseline save[/bold] {arrow} lock this state as your reference",
+            f"  3. [bold]drift status[/bold]        {arrow} health overview on any future run",
+        ]
+        if profile == "vibe-coding":
+            steps.append(
+                f"  4. Gradually escalate fail_on: none {arrow} high {arrow} medium over 4 weeks"
+            )
+        next_steps_text = "\n".join(steps)
+        if ascii_only:
+            console.print("\nNext steps:\n" + next_steps_text)
+        else:
+            console.print(
+                Panel(
+                    next_steps_text,
+                    title="[bold]Next steps[/bold]",
+                    border_style="rgb(13,148,136)",
+                    padding=(0, 1),
+                )
+            )
+    else:
+        if ascii_only:
+            console.print("\n[bold green]Already initialised[/bold green]")
+            console.print("[dim]All config files are up to date.[/dim]")
+            console.print("Run [bold]drift analyze[/bold] to check your current score.")
+        else:
+            console.print(
+                Panel(
+                    "[bold green]✓ Already initialised[/bold green]\n"
+                    "[dim]All config files are up to date.[/dim]\n"
+                    "Run [bold]drift analyze[/bold] to check your current score.",
+                    border_style="rgb(13,148,136)",
+                    padding=(0, 2),
+                )
+            )
+    if full:
+        console.print(
+            "  Optional: drift watch  ->  pip install drift-analyzer[watch]",
+            style="dim",
+            markup=False,
+        )
+
+
 @click.command("init")
 @click.option(
     "--profile",
@@ -482,128 +703,17 @@ def init(
         console.print("[dim]No drift.yaml found — running interactive setup.[/dim]")
         console.print()
 
-    # --interactive: use setup questions to derive best-fit profile
-    if interactive and not json_output:
-        from drift.commands.setup import (
-            _ask_ai_usage,
-            _ask_project_type,
-            _ask_strictness,
-            _derive_profile,
-            _detect_language,
-        )
-
-        lang = _detect_language()
-        console.print()
-        if lang.startswith("de"):
-            console.print("  [bold]drift init --interactive[/bold] — Profil in 3 Fragen")
-        else:
-            console.print("  [bold]drift init --interactive[/bold] — choose profile in 3 questions")
-        console.print("  " + "\u2500" * 45)
-        console.print()
-        project_type = _ask_project_type(lang)
-        ai_usage = _ask_ai_usage(lang)
-        strictness = _ask_strictness(lang)
-        profile = _derive_profile(project_type, ai_usage, strictness)
-
+    profile = _run_interactive_profile_setup(profile, interactive, json_output)
     prof = get_profile(profile)
     launcher_command, launcher_args, launcher_source = _resolve_mcp_launcher()
 
-    # Collect file plan
-    plan: list[dict[str, object]] = []
-
-    # 1. drift.yaml
-    config_dict = _build_config_dict(profile)
-    config_yaml = _yaml_header(profile) + yaml.dump(
-        config_dict, default_flow_style=False, sort_keys=False, allow_unicode=True,
+    plan = _build_init_plan(
+        repo, profile, ci, hooks, mcp, claude, cursor, windsurf, claude_code,
+        launcher_command, launcher_args,
     )
-    _plan_file(plan, repo / "drift.yaml", config_yaml, repo)
 
-    # 2. GitHub Actions workflow
-    if ci:
-        fail_on = "none" if profile != "strict" else "medium"
-        workflow_content = _GITHUB_WORKFLOW.format(fail_on=fail_on)
-        workflow_path = repo / ".github" / "workflows" / "drift.yml"
-        _plan_file(plan, workflow_path, workflow_content, repo)
-
-    # 3. Git pre-push hook
-    if hooks:
-        hook_fail = "high" if profile != "strict" else "medium"
-        hook_content = _PRE_PUSH_HOOK.format(fail_on=hook_fail)
-        hook_path = repo / ".githooks" / "drift-pre-push"
-        _plan_file(plan, hook_path, hook_content, repo)
-
-    # 4. VS Code MCP config
-    if mcp:
-        mcp_path = repo / ".vscode" / "mcp.json"
-        _plan_file(
-            plan,
-            mcp_path,
-            _render_mcp_json(
-                claude=False,
-                command=launcher_command,
-                args=launcher_args,
-            ),
-            repo,
-        )
-
-    # 5. Claude Desktop MCP snippet
-    if claude:
-        claude_path = repo / "claude_desktop_config.json"
-        _plan_file(
-            plan,
-            claude_path,
-            _render_mcp_json(
-                claude=True,
-                command=launcher_command,
-                args=launcher_args,
-            ),
-            repo,
-        )
-
-    # 6. Cursor AI rules snippet
-    if cursor:
-        _plan_file(plan, repo / ".cursorrules", _CURSORRULES_SNIPPET, repo)
-
-    # 7. Windsurf rules snippet
-    if windsurf:
-        _plan_file(plan, repo / ".windsurfrules", _WINDSURFRULES_SNIPPET, repo)
-
-    # 8. Claude Code project context
-    if claude_code:
-        _plan_file(plan, repo / "CLAUDE.md", _CLAUDE_MD_SNIPPET, repo)
-
-    # --dry-run / --json: preview only, no file writes
     if dry_run:
-        skip_count = sum(1 for p in plan if p["exists"])
-        new_count = sum(1 for p in plan if not p["exists"])
-        if json_output:
-            click.echo(json.dumps({
-                "would_create": [
-                    {
-                        "path": p["path"],
-                        "size_bytes": p["size_bytes"],
-                        "exists": p["exists"],
-                        "action": "skip" if p["exists"] else "create",
-                        "would_skip": p["exists"],
-                        "would_overwrite": False,
-                    }
-                    for p in plan
-                ],
-                "overwrite_count": 0,
-                "skip_count": skip_count,
-                "new_count": new_count,
-            }, indent=2))
-        else:
-            console.print(
-                f"[bold]Dry run[/bold] — profile "
-                f"[cyan]{prof.name}[/cyan]: {prof.description}\n"
-            )
-            for p in plan:
-                status = "[yellow]skip[/yellow]" if p["exists"] else "[green]create[/green]"
-                console.print(f"  {status}  {p['path']}  ({p['size_bytes']} bytes)")
-            console.print(
-                f"\n[dim]{new_count} new, {skip_count} would skip[/dim]"
-            )
+        _print_dry_run_preview(plan, prof, json_output)
         return
 
     # Normal mode: write files
@@ -611,99 +721,7 @@ def init(
         f"[bold]Initialising drift[/bold] with profile "
         f"[cyan]{prof.name}[/cyan]: {prof.description}\n"
     )
+    created = _write_init_plan_files(plan, repo, launcher_source, hooks)
 
-    created = 0
-    printed_mcp_note = False
-    for p in plan:
-        target = repo / str(p["path"])
-        if _write_if_absent(target, str(p["content"]), str(p["path"]), root=repo):
-            created += 1
-            if "drift-pre-push" in str(p["path"]):
-                console.print(
-                    "  [dim]Activate with: "
-                    "git config core.hooksPath .githooks[/dim]"
-                )
-            if not printed_mcp_note and str(p["path"]) in {
-                ".vscode/mcp.json",
-                "claude_desktop_config.json",
-            }:
-                console.print(
-                    "  Requires MCP extra: pip install drift-analyzer[mcp]",
-                    style="dim",
-                    markup=False,
-                )
-                if launcher_source == "python-module":
-                    console.print(
-                        "  [dim]No drift executable found on PATH; generated config "
-                        "uses the current Python interpreter.[/dim]"
-                    )
-                    if hooks:
-                        console.print(
-                            "  [dim]The generated pre-push hook still expects "
-                            "`drift` on PATH.[/dim]"
-                        )
-                printed_mcp_note = True
-            if str(p["path"]) == "claude_desktop_config.json":
-                console.print(
-                    "  [dim]Windows merge target: "
-                    "%APPDATA%\\Claude\\claude_desktop_config.json[/dim]"
-                )
-                console.print(
-                    "  [dim]macOS merge target: "
-                    "~/Library/Application Support/Claude/claude_desktop_config.json[/dim]"
-                )
-                console.print(
-                    "  [dim]macOS merge target: "
-                    "~/Library/Application Support/Claude/claude_desktop_config.json[/dim]"
-                )
-
-    # Summary
     console.print()
-    ascii_only = bool(getattr(console, "_drift_ascii_only", False))
-    ok_marker = "OK" if ascii_only else "✓"
-    arrow = "->" if ascii_only else "→"
-
-    if created:
-        console.print(f"[bold green]{ok_marker} {created} file(s) created.[/bold green]")
-        steps = [
-            f"  1. [bold]drift analyze[/bold]       {arrow} get your first score",
-            f"  2. [bold]drift baseline save[/bold] {arrow} lock this state as your reference",
-            f"  3. [bold]drift status[/bold]        {arrow} health overview on any future run",
-        ]
-        if profile == "vibe-coding":
-            steps.append(
-                f"  4. Gradually escalate fail_on: none {arrow} high {arrow} medium over 4 weeks"
-            )
-        next_steps_text = "\n".join(steps)
-        if ascii_only:
-            console.print("\nNext steps:\n" + next_steps_text)
-        else:
-            console.print(
-                Panel(
-                    next_steps_text,
-                    title="[bold]Next steps[/bold]",
-                    border_style="rgb(13,148,136)",
-                    padding=(0, 1),
-                )
-            )
-    else:
-        if ascii_only:
-            console.print("\n[bold green]Already initialised[/bold green]")
-            console.print("[dim]All config files are up to date.[/dim]")
-            console.print("Run [bold]drift analyze[/bold] to check your current score.")
-        else:
-            console.print(
-                Panel(
-                    "[bold green]✓ Already initialised[/bold green]\n"
-                    "[dim]All config files are up to date.[/dim]\n"
-                    "Run [bold]drift analyze[/bold] to check your current score.",
-                    border_style="rgb(13,148,136)",
-                    padding=(0, 2),
-                )
-            )
-    if full:
-        console.print(
-            "  Optional: drift watch  ->  pip install drift-analyzer[watch]",
-            style="dim",
-            markup=False,
-        )
+    _print_init_summary(created, profile, full)

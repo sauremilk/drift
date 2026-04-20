@@ -11,6 +11,7 @@ from rich.syntax import Syntax
 from rich.table import Table
 
 from drift.commands import console
+from drift.models import Finding
 
 
 def _abbrev_from_signal_map() -> dict[str, str]:
@@ -247,6 +248,92 @@ def _prompt_choice(prompt: str) -> str:
     return raw[:1] if raw else ""
 
 
+def _display_finding(finding: Finding, idx: int, total: int, repo: Path) -> None:
+    """Print panel and optional code snippet for one triage finding."""
+    file_rel = finding.file_path.as_posix() if finding.file_path else "<unknown>"
+    line_info = f":{finding.start_line}" if finding.start_line else ""
+    signal_abbrev = _abbrev_from_signal_map()
+    signal_label = signal_abbrev.get(finding.signal_type, finding.signal_type.upper())
+
+    snippet: str | None = None
+    if finding.file_path:
+        abs_path = (
+            repo / finding.file_path
+            if not finding.file_path.is_absolute()
+            else finding.file_path
+        )
+        snippet = _read_source_lines(abs_path, finding.start_line)
+
+    details = (
+        f"[bold]{signal_label}[/bold]  "
+        f"[dim]{file_rel}{line_info}[/dim]  "
+        f"score=[cyan]{finding.score:.2f}[/cyan]\n"
+        f"{finding.title}"
+    )
+    if finding.description and finding.description != finding.title:
+        details += f"\n[dim]{finding.description}[/dim]"
+
+    console.print(Panel(details, title=f"Finding {idx}/{total}", border_style="blue"))
+
+    if snippet:
+        lang = finding.language or _infer_language(finding.file_path)
+        console.print(
+            Syntax(
+                snippet,
+                lang,
+                line_numbers=True,
+                start_line=max(1, (finding.start_line or 1) - 2),
+            )
+        )
+
+
+def _apply_triage_suppress(
+    finding: Finding,
+    repo: Path,
+    dry_run: bool,
+    choice: str,
+    temporal_days: int,
+) -> tuple[int, int]:
+    """Handle y/a choice: prompt for reason, insert suppression comment.
+
+    Returns (suppressed_delta, skipped_delta).
+    """
+    from drift.suppression import insert_suppression_comment
+
+    signal_abbrev = _abbrev_from_signal_map()
+    signal_label = signal_abbrev.get(finding.signal_type, finding.signal_type.upper())
+
+    reason_raw = click.prompt("  reason (optional, Enter to skip)", default="").strip()
+    reason: str | None = reason_raw if reason_raw else None
+    until: date | None = (
+        date.today() + timedelta(days=temporal_days) if choice == "y" else None
+    )
+    signals: set[str] | None = {str(finding.signal_type)} if finding.signal_type else None
+    language = finding.language or _infer_language(finding.file_path)
+
+    if finding.file_path and finding.start_line is not None:
+        abs_path = (
+            repo / finding.file_path
+            if not finding.file_path.is_absolute()
+            else finding.file_path
+        )
+        if not dry_run:
+            insert_suppression_comment(
+                abs_path,
+                line_number=finding.start_line,
+                signals=signals,
+                until=until,
+                reason=reason,
+                language=language,
+            )
+        label = "until:" + until.isoformat() if until else "permanent"
+        mode = "[dim](dry-run)[/dim] " if dry_run else ""
+        console.print(f"  {mode}[green]Suppressed[/green] [{signal_label}] {label}")
+        return 1, 0
+    console.print("  [yellow]Cannot suppress — no file/line information.[/yellow]")
+    return 0, 1
+
+
 @suppress.command("interactive")
 @click.option(
     "--repo",
@@ -289,7 +376,6 @@ def interactive(repo: Path, config: Path | None, since: int, dry_run: bool) -> N
     """
     from drift.analyzer import analyze_repo
     from drift.config import DriftConfig
-    from drift.suppression import insert_suppression_comment
 
     if dry_run:
         console.print("[bold yellow]Dry-run mode — no files will be modified.[/bold yellow]")
@@ -307,60 +393,13 @@ def interactive(repo: Path, config: Path | None, since: int, dry_run: bool) -> N
         console.print("[green]No active findings to triage.[/green]")
         return
 
-    console.print(
-        f"\n[bold]{total} active finding(s)[/bold] — {_TRIAGE_CHOICES}\n"
-    )
+    console.print(f"\n[bold]{total} active finding(s)[/bold] — {_TRIAGE_CHOICES}\n")
 
     suppressed_count = 0
     skipped_count = 0
 
     for idx, finding in enumerate(active, start=1):
-        file_rel = (
-            finding.file_path.as_posix() if finding.file_path else "<unknown>"
-        )
-        line_info = f":{finding.start_line}" if finding.start_line else ""
-        signal_abbrev = _abbrev_from_signal_map()
-        signal_label = signal_abbrev.get(finding.signal_type, finding.signal_type.upper())
-
-        # Code snippet
-        snippet: str | None = None
-        if finding.file_path:
-            abs_path = (
-                repo / finding.file_path
-                if not finding.file_path.is_absolute()
-                else finding.file_path
-            )
-            snippet = _read_source_lines(abs_path, finding.start_line)
-
-        # Build panel content
-        details = (
-            f"[bold]{signal_label}[/bold]  "
-            f"[dim]{file_rel}{line_info}[/dim]  "
-            f"score=[cyan]{finding.score:.2f}[/cyan]\n"
-            f"{finding.title}"
-        )
-        if finding.description and finding.description != finding.title:
-            details += f"\n[dim]{finding.description}[/dim]"
-
-        console.print(
-            Panel(
-                details,
-                title=f"Finding {idx}/{total}",
-                border_style="blue",
-            )
-        )
-
-        if snippet:
-            lang = finding.language or _infer_language(finding.file_path)
-            console.print(
-                Syntax(
-                    snippet,
-                    lang,
-                    line_numbers=True,
-                    start_line=max(1, (finding.start_line or 1) - 2),
-                )
-            )
-
+        _display_finding(finding, idx, total, repo)
         choice = _prompt_choice(_TRIAGE_CHOICES + " > ")
 
         if choice == "q":
@@ -368,54 +407,22 @@ def interactive(repo: Path, config: Path | None, since: int, dry_run: bool) -> N
             break
 
         if choice in ("y", "a"):
-            # Optional reason
-            reason_raw = click.prompt("  reason (optional, Enter to skip)", default="").strip()
-            reason: str | None = reason_raw if reason_raw else None
-            until: date | None = (
-                date.today() + timedelta(days=_TEMPORAL_DAYS) if choice == "y" else None
+            s_delta, sk_delta = _apply_triage_suppress(
+                finding, repo, dry_run, choice, _TEMPORAL_DAYS
             )
-            signals: set[str] | None = {str(finding.signal_type)} if finding.signal_type else None
-            language = finding.language or _infer_language(finding.file_path)
-
-            if finding.file_path and finding.start_line is not None:
-                abs_path = (
-                    repo / finding.file_path
-                    if not finding.file_path.is_absolute()
-                    else finding.file_path
-                )
-                if not dry_run:
-                    insert_suppression_comment(
-                        abs_path,
-                        line_number=finding.start_line,
-                        signals=signals,
-                        until=until,
-                        reason=reason,
-                        language=language,
-                    )
-                label = "until:" + until.isoformat() if until else "permanent"
-                mode = "[dim](dry-run)[/dim] " if dry_run else ""
-                console.print(
-                    f"  {mode}[green]Suppressed[/green] [{signal_label}] {label}"
-                )
-                suppressed_count += 1
-            else:
-                console.print("  [yellow]Cannot suppress — no file/line information.[/yellow]")
-                skipped_count += 1
-
+            suppressed_count += s_delta
+            skipped_count += sk_delta
         elif choice == "n":
             console.print("  [dim]Kept active.[/dim]")
-
         elif choice == "s":
             console.print("  [dim]Skipped.[/dim]")
             skipped_count += 1
-
         else:
             console.print("  [dim]Unknown choice — skipped.[/dim]")
             skipped_count += 1
 
         console.print()
 
-    # Summary
     dry_label = " (dry-run)" if dry_run else ""
     console.print(
         f"[bold]Done{dry_label}.[/bold] "

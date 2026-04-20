@@ -37,6 +37,122 @@ def _json_progress_callback(phase: str, current: int, total: int) -> None:
     sys.stderr.flush()
 
 
+def _validate_fix_plan_special_ops(
+    dismiss_task_id: str | None,
+    show_dismissed: bool,
+    reset_dismissed: bool,
+    do_apply: bool,
+    dry_run: bool,
+) -> None:
+    """Raise UsageError if mutually exclusive special-op flags are combined."""
+    special_ops = [
+        bool(dismiss_task_id),
+        show_dismissed,
+        reset_dismissed,
+        do_apply,
+        dry_run,
+    ]
+    if sum(1 for enabled in special_ops if enabled) > 1:
+        mutually_exclusive = [bool(dismiss_task_id), show_dismissed, reset_dismissed]
+        if sum(1 for e in mutually_exclusive if e) > 1:
+            raise click.UsageError(
+                "Use only one of --dismiss, --show-dismissed, or --reset at a time"
+            )
+
+
+def _execute_fix_plan_operation(
+    path: Path,
+    repo_path: Path,
+    cache_dir: str,
+    dismiss_task_id: str | None,
+    show_dismissed: bool,
+    reset_dismissed: bool,
+    do_apply: bool,
+    dry_run: bool,
+    finding_id: str | None,
+    signal: str | None,
+    max_tasks: int,
+    target_path: str | None,
+    exclude_paths: tuple[str, ...],
+    automation_fit_min: str | None,
+    include_deferred: bool,
+    include_non_operational: bool,
+    progress_cb: object,
+) -> dict:  # type: ignore[type-arg]
+    """Dispatch to the appropriate fix-plan sub-operation and return the result dict."""
+    if dismiss_task_id:
+        task_id = dismiss_task_id.strip()
+        if not task_id:
+            raise click.UsageError("--dismiss requires a non-empty task id")
+        record = dismiss_task(repo_path, task_id, cache_dir, ttl_days=DEFAULT_TTL_DAYS)
+        return {
+            "schema_version": "2.1",
+            "operation": "dismiss",
+            "task_id": record["task_id"],
+            "dismissed_at": record["dismissed_at"],
+            "expires_at": record["expires_at"],
+            "ttl_days": DEFAULT_TTL_DAYS,
+            "cache_file": f"{cache_dir}/fix-plan-dismissed.json",
+        }
+    if show_dismissed:
+        return {
+            "schema_version": "2.1",
+            "operation": "show-dismissed",
+            "cache_file": f"{cache_dir}/fix-plan-dismissed.json",
+            "dismissed": get_active_dismissals(repo_path, cache_dir),
+        }
+    if reset_dismissed:
+        removed = reset_dismissals(repo_path, cache_dir)
+        return {
+            "schema_version": "2.1",
+            "operation": "reset",
+            "removed": removed,
+            "cache_file": f"{cache_dir}/fix-plan-dismissed.json",
+        }
+    if do_apply or dry_run:
+        return api_fix_apply(
+            path,
+            signal=signal,
+            max_tasks=max_tasks,
+            dry_run=dry_run or not do_apply,
+            target_path=target_path,
+            exclude_paths=list(exclude_paths) or None,
+        )
+    return api_fix_plan(
+        path,
+        finding_id=finding_id,
+        signal=signal,
+        max_tasks=max_tasks,
+        automation_fit_min=automation_fit_min,
+        target_path=target_path,
+        exclude_paths=list(exclude_paths) or None,
+        include_deferred=include_deferred,
+        include_non_operational=include_non_operational,
+        on_progress=progress_cb,
+    )
+
+
+def _emit_fix_plan_result(result: dict, output: Path | None, output_format: str) -> None:  # type: ignore[type-arg]
+    """Validate and emit fix-plan result: file output, JSON, or Rich table."""
+    if bool(result.get("error")):
+        raise click.UsageError(str(result.get("message", "Invalid fix-plan input")))
+    if output is not None:
+        text = to_json(result)
+        output.write_text(text + "\n", encoding="utf-8")
+        click.echo(f"Output written to {output}", err=True)
+        return
+    use_json = output_format == "json" or (
+        output_format == "auto" and _is_non_tty_stdout()
+    )
+    if use_json:
+        click.echo(to_json(result))
+    else:
+        from drift.commands import console
+        from drift.output.fix_plan_rich import render_fix_plan
+
+        render_fix_plan(result, console)
+
+
 @click.command("fix-plan")
 @click.option(
     "--repo",
@@ -191,110 +307,19 @@ def fix_plan(
         _progress_start = time.monotonic()
         progress_cb = _json_progress_callback
 
-    special_ops = [
-        bool(dismiss_task_id),
-        show_dismissed,
-        reset_dismissed,
-        do_apply,
-        dry_run,
-    ]
-    if sum(1 for enabled in special_ops if enabled) > 1:
-        # Allow --apply + --dry-run combo (preview mode)
-        mutually_exclusive = [
-            bool(dismiss_task_id),
-            show_dismissed,
-            reset_dismissed,
-        ]
-        if sum(1 for e in mutually_exclusive if e) > 1:
-            raise click.UsageError(
-                "Use only one of --dismiss, --show-dismissed, or --reset at a time"
-            )
+    _validate_fix_plan_special_ops(
+        dismiss_task_id, show_dismissed, reset_dismissed, do_apply, dry_run
+    )
 
     repo_path = path.resolve()
     cfg = DriftConfig.load(repo_path)
     cache_dir = getattr(cfg, "cache_dir", ".drift-cache")
 
-    if dismiss_task_id:
-        task_id = dismiss_task_id.strip()
-        if not task_id:
-            raise click.UsageError("--dismiss requires a non-empty task id")
-        record = dismiss_task(
-            repo_path,
-            task_id,
-            cache_dir,
-            ttl_days=DEFAULT_TTL_DAYS,
-        )
-        result = {
-            "schema_version": "2.1",
-            "operation": "dismiss",
-            "task_id": record["task_id"],
-            "dismissed_at": record["dismissed_at"],
-            "expires_at": record["expires_at"],
-            "ttl_days": DEFAULT_TTL_DAYS,
-            "cache_file": f"{cache_dir}/fix-plan-dismissed.json",
-        }
-    elif show_dismissed:
-        result = {
-            "schema_version": "2.1",
-            "operation": "show-dismissed",
-            "cache_file": f"{cache_dir}/fix-plan-dismissed.json",
-            "dismissed": get_active_dismissals(repo_path, cache_dir),
-        }
-    elif reset_dismissed:
-        removed = reset_dismissals(repo_path, cache_dir)
-        result = {
-            "schema_version": "2.1",
-            "operation": "reset",
-            "removed": removed,
-            "cache_file": f"{cache_dir}/fix-plan-dismissed.json",
-        }
-    else:
-        if do_apply or dry_run:
-            # --- Auto-patch mode (ADR-076) ------------------------------------
-            result = api_fix_apply(
-                path,
-                signal=signal,
-                max_tasks=max_tasks,
-                dry_run=dry_run or not do_apply,
-                target_path=target_path,
-                exclude_paths=list(exclude_paths) or None,
-            )
-        else:
-            result = api_fix_plan(
-                path,
-                finding_id=finding_id,
-                signal=signal,
-                max_tasks=max_tasks,
-                automation_fit_min=automation_fit_min,
-                target_path=target_path,
-                exclude_paths=list(exclude_paths) or None,
-                include_deferred=include_deferred,
-                include_non_operational=include_non_operational,
-                on_progress=progress_cb,
-            )
-
-    # API-level validation errors (e.g. unknown signal) must surface as
-    # CLI failures so machine-mode callers receive a non-zero exit code.
-    if bool(result.get("error")):
-        raise click.UsageError(str(result.get("message", "Invalid fix-plan input")))
-
-    # --output always writes JSON regardless of --format
-    if output is not None:
-        text = to_json(result)
-        output.write_text(text + "\n", encoding="utf-8")
-        click.echo(f"Output written to {output}", err=True)
-        return
-
-    # Resolve effective output format
-    use_json = (
-        output_format == "json"
-        or (output_format == "auto" and _is_non_tty_stdout())
+    result = _execute_fix_plan_operation(
+        path, repo_path, cache_dir,
+        dismiss_task_id, show_dismissed, reset_dismissed,
+        do_apply, dry_run,
+        finding_id, signal, max_tasks, target_path, exclude_paths,
+        automation_fit_min, include_deferred, include_non_operational, progress_cb,
     )
-
-    if use_json:
-        click.echo(to_json(result))
-    else:
-        from drift.commands import console
-        from drift.output.fix_plan_rich import render_fix_plan
-
-        render_fix_plan(result, console)
+    _emit_fix_plan_result(result, output, output_format)
