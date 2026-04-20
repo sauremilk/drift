@@ -425,6 +425,288 @@ def _diff_decision_reason(
     )
 
 
+def _execute_snapshot_diff_mode(
+    *,
+    from_file: str,
+    to_file: str,
+    params: dict[str, Any],
+    elapsed_ms: Any,
+    repo_path: Path,
+    cfg: Any,
+    max_findings: int,
+    response_detail: str,
+    response_profile: str | None,
+) -> dict[str, Any]:
+    """Handle from_file/to_file snapshot diff mode and return the result dict."""
+    try:
+        from_path = Path(from_file).resolve()
+        to_path = Path(to_file).resolve()
+        from_findings, snapshot_score_before = _load_snapshot_findings(from_path)
+        to_findings, snapshot_score_after = _load_snapshot_findings(to_path)
+        result = _build_snapshot_diff_response(
+            from_path=from_path,
+            to_path=to_path,
+            from_findings=from_findings,
+            to_findings=to_findings,
+            score_before=snapshot_score_before,
+            score_after=snapshot_score_after,
+            max_findings=max_findings,
+            response_detail=response_detail,
+        )
+        _emit_api_telemetry(
+            tool_name="api.diff",
+            params=params,
+            status="ok",
+            elapsed_ms=elapsed_ms(),
+            result=result,
+            error=None,
+            repo_root=repo_path,
+        )
+        result = apply_output_mode(result, getattr(cfg, "output_mode", "full"))
+        return shape_for_profile(result, response_profile)
+    except (OSError, json.JSONDecodeError, ValueError) as exc:
+        result = _error_response(
+            "DRIFT-1003",
+            f"Failed to read snapshot diff input: {exc}",
+            invalid_fields=[
+                {
+                    "field": "from_file/to_file",
+                    "value": {"from_file": from_file, "to_file": to_file},
+                    "reason": "Files must be valid drift analyze JSON reports",
+                }
+            ],
+        )
+        _emit_api_telemetry(
+            tool_name="api.diff",
+            params=params,
+            status="ok",
+            elapsed_ms=elapsed_ms(),
+            result=result,
+            error=None,
+            repo_root=repo_path,
+        )
+        return result
+
+
+def _resolve_diff_mode(
+    uncommitted: bool,
+    staged_only: bool,
+    diff_ref: str,
+) -> tuple[str, str]:
+    """Return (diff_mode, resolved_diff_ref) based on mode flags."""
+    if staged_only:
+        return "staged", "HEAD"
+    if uncommitted:
+        return "uncommitted", "HEAD"
+    return "ref", diff_ref
+
+
+def _subtract_pre_existing_head(
+    new: list[Any],
+    *,
+    diff_mode: str,
+    baseline_file: str | None,
+    repo_path: Path,
+    cfg: Any,
+) -> tuple[list[Any], int]:
+    """Subtract findings that already exist in HEAD for uncommitted/staged modes.
+
+    Returns (filtered_new_findings, pre_existing_head_count).
+    Degrades safely on any error, returning the full finding list unchanged.
+    """
+    if diff_mode not in ("uncommitted", "staged") or baseline_file or not new:
+        return new, 0
+    try:
+        import subprocess as _sp
+
+        from drift.analyzer import get_head_fingerprints_for_diff as _head_fps
+        from drift.baseline import finding_fingerprint as _fp
+
+        _git_cmd = (
+            ["git", "diff", "--cached", "--name-only"]
+            if diff_mode == "staged"
+            else ["git", "diff", "--name-only", "HEAD"]
+        )
+        _git_result = _sp.run(
+            _git_cmd,
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+            cwd=repo_path,
+            check=True,
+            stdin=_sp.DEVNULL,
+        )
+        _changed_files = [
+            line for line in _git_result.stdout.strip().splitlines() if line
+        ]
+        if _changed_files:
+            _head_fingerprints = _head_fps(repo_path, _changed_files, cfg)
+            if _head_fingerprints:
+                _pre_existing = [f for f in new if _fp(f) in _head_fingerprints]
+                new = [f for f in new if _fp(f) not in _head_fingerprints]
+                return new, len(_pre_existing)
+    except Exception:
+        pass  # Safe fallback: report all findings as new
+    return new, 0
+
+
+def _apply_diff_signal_filters(
+    new: list[Any],
+    resolved: list[Any],
+    *,
+    signals: list[str] | None,
+    exclude_signals: list[str] | None,
+) -> tuple[list[Any], list[Any]]:
+    """Filter finding lists by signal include/exclude lists."""
+    if signals:
+        _incl = {s.upper() for s in signals}
+        new = [f for f in new if signal_abbrev(f.signal_type) in _incl]
+        resolved = [f for f in resolved if signal_abbrev(f.signal_type) in _incl]
+    if exclude_signals:
+        _excl = {s.upper() for s in exclude_signals}
+        new = [f for f in new if signal_abbrev(f.signal_type) not in _excl]
+        resolved = [f for f in resolved if signal_abbrev(f.signal_type) not in _excl]
+    return new, resolved
+
+
+def _determine_diff_status(delta: float, scoped_new: list[Any]) -> str:
+    """Return diff status string based on score delta and new findings."""
+    if delta > 0.01:
+        if any(f.severity.value in ("critical", "high") for f in scoped_new):
+            return "new_critical"
+        return "degraded"
+    if delta < -0.01:
+        return "improved"
+    return "stable"
+
+
+def _determine_diff_confidence(diff_analysis: Any) -> str:
+    """Return diff confidence level based on analysis quality."""
+    if diff_analysis.is_degraded:
+        return "low"
+    if diff_analysis.total_files < 5:
+        return "medium"
+    return "high"
+
+
+def _build_diff_summary(
+    n_new: int,
+    *,
+    high_count: int,
+    out_of_scope_new: list[Any],
+    pre_existing_head_count: int,
+    delta: float,
+) -> str:
+    """Build a short summary string for diff responses."""
+    parts = [f"{n_new} new finding{'s' if n_new != 1 else ''}"]
+    if high_count:
+        parts.append(f"{high_count} high/critical")
+    if out_of_scope_new:
+        parts.append(f"{len(out_of_scope_new)} out-of-scope")
+    if pre_existing_head_count > 0:
+        parts.append(f"{pre_existing_head_count} pre-existing-in-head")
+    parts.append(f"drift score {'+' if delta >= 0 else ''}{delta:.3f}")
+    return ", ".join(parts)
+
+
+def _build_diff_noise_context(
+    *,
+    pre_existing_head_count: int,
+    out_of_scope_new: list[Any],
+    baseline_file: str | None,
+    scoped_new: list[Any],
+) -> dict[str, Any]:
+    """Build noise context dict for diff responses."""
+    pre_existing_count = len(out_of_scope_new)
+    noise_explanation: str | None = None
+    if pre_existing_head_count > 0 and not baseline_file:
+        noise_explanation = (
+            f"{pre_existing_head_count} finding(s) already existed in HEAD and "
+            f"were excluded from new_findings. They are pre-existing and not "
+            f"caused by the current working-tree change."
+        )
+    elif not baseline_file and pre_existing_count > 0:
+        noise_explanation = (
+            f"{pre_existing_count} finding(s) are pre-existing out-of-scope noise, "
+            f"not caused by this change. Use 'drift baseline save' then "
+            f"'drift diff --baseline .drift-baseline.json' to suppress them."
+        )
+    elif not scoped_new and not out_of_scope_new:
+        noise_explanation = "No new findings detected."
+    return {
+        "pre_existing_count": pre_existing_count + pre_existing_head_count,
+        "pre_existing_head_count": pre_existing_head_count,
+        "explanation": noise_explanation,
+    }
+
+
+def _determine_diff_baseline_recommendation(
+    *,
+    diff_analysis: Any,
+    n_new: int,
+    target_path: str | None,
+    out_of_scope_new: list[Any],
+    cfg: Any,
+    baseline_file: str | None,
+) -> tuple[bool, str]:
+    """Determine whether a baseline file is recommended."""
+    thresholds = getattr(cfg, "thresholds", None)
+    max_changed_files = getattr(thresholds, "diff_baseline_recommend_max_changed_files", 50)
+    max_new_findings = getattr(thresholds, "diff_baseline_recommend_max_new_findings", 100)
+    max_out_of_scope = getattr(thresholds, "diff_baseline_recommend_max_out_of_scope_findings", 50)
+
+    baseline_reasons: list[str] = []
+    if not baseline_file:
+        if diff_analysis.total_files >= max_changed_files:
+            baseline_reasons.append("large_working_tree")
+        if n_new >= max_new_findings:
+            baseline_reasons.append("high_new_finding_volume")
+        if target_path and len(out_of_scope_new) >= max_out_of_scope:
+            baseline_reasons.append("out_of_scope_noise")
+    return bool(baseline_reasons), (baseline_reasons[0] if baseline_reasons else "none")
+
+
+def _build_diff_agent_hint(
+    *,
+    accept_change: bool,
+    no_staged_files: bool,
+    status: str,
+    scoped_new: list[Any],
+    decision_reason_code: str,
+) -> str:
+    """Build agent instruction hint for diff responses."""
+    if not accept_change:
+        if decision_reason_code == "rejected_out_of_scope_noise_only":
+            return (
+                "No in-scope blockers detected, but out-of-scope drift noise "
+                "is present. Use in_scope_accept for scoped gating and "
+                "consider creating or refreshing a baseline."
+            )
+        return (
+            "Change rejected due to in-scope drift blockers. Call "
+            "drift_fix_plan and address blockers before proceeding."
+        )
+    if no_staged_files:
+        return (
+            "No staged files were analyzed (staged_file_count=0). "
+            "Stage changes before relying on accept_change."
+        )
+    if status == "improved":
+        return (
+            "Score is improving. Continue with the next batch_eligible "
+            "group or next fix_plan task. Use drift_nudge between edits "
+            "for fast feedback."
+        )
+    if scoped_new:
+        return (
+            "New findings exist but are within acceptance threshold. "
+            "Review the new_findings list before proceeding to ensure "
+            "they are acceptable."
+        )
+    return "No drift change detected. Safe to proceed to the next task."
+
+
 def diff(
     path: str | Path = ".",
     *,
@@ -514,54 +796,17 @@ def diff(
             return result
 
         if from_file and to_file:
-            try:
-                from_path = Path(from_file).resolve()
-                to_path = Path(to_file).resolve()
-                from_findings, snapshot_score_before = _load_snapshot_findings(from_path)
-                to_findings, snapshot_score_after = _load_snapshot_findings(to_path)
-                result = _build_snapshot_diff_response(
-                    from_path=from_path,
-                    to_path=to_path,
-                    from_findings=from_findings,
-                    to_findings=to_findings,
-                    score_before=snapshot_score_before,
-                    score_after=snapshot_score_after,
-                    max_findings=max_findings,
-                    response_detail=response_detail,
-                )
-                _emit_api_telemetry(
-                    tool_name="api.diff",
-                    params=params,
-                    status="ok",
-                    elapsed_ms=elapsed_ms(),
-                    result=result,
-                    error=None,
-                    repo_root=repo_path,
-                )
-                result = apply_output_mode(result, getattr(cfg, "output_mode", "full"))
-                return shape_for_profile(result, response_profile)
-            except (OSError, json.JSONDecodeError, ValueError) as exc:
-                result = _error_response(
-                    "DRIFT-1003",
-                    f"Failed to read snapshot diff input: {exc}",
-                    invalid_fields=[
-                        {
-                            "field": "from_file/to_file",
-                            "value": {"from_file": from_file, "to_file": to_file},
-                            "reason": "Files must be valid drift analyze JSON reports",
-                        }
-                    ],
-                )
-                _emit_api_telemetry(
-                    tool_name="api.diff",
-                    params=params,
-                    status="ok",
-                    elapsed_ms=elapsed_ms(),
-                    result=result,
-                    error=None,
-                    repo_root=repo_path,
-                )
-                return result
+            return _execute_snapshot_diff_mode(
+                from_file=from_file,
+                to_file=to_file,
+                params=params,
+                elapsed_ms=elapsed_ms,
+                repo_path=repo_path,
+                cfg=cfg,
+                max_findings=max_findings,
+                response_detail=response_detail,
+                response_profile=response_profile,
+            )
 
         if not uncommitted and not staged_only and diff_ref.startswith("--"):
             result = _error_response(
@@ -591,13 +836,7 @@ def diff(
             )
             return result
 
-        diff_mode = "ref"
-        if staged_only:
-            diff_mode = "staged"
-            diff_ref = "HEAD"
-        elif uncommitted:
-            diff_mode = "uncommitted"
-            diff_ref = "HEAD"
+        diff_mode, diff_ref = _resolve_diff_mode(uncommitted, staged_only, diff_ref)
 
         # Current analysis (diff scope)
         diff_analysis = _analyze_diff(
@@ -646,54 +885,18 @@ def diff(
         # in changed files are not incorrectly reported as newly introduced
         # by the working-tree changes.  This is a best-effort comparison that
         # degrades safely: on any error the full finding list is kept. (#525)
-        pre_existing_head_count = 0
-        if diff_mode in ("uncommitted", "staged") and not baseline_file and new:
-            try:
-                import subprocess as _sp
-
-                from drift.analyzer import get_head_fingerprints_for_diff as _head_fps
-                from drift.baseline import finding_fingerprint as _fp
-
-                _git_cmd = (
-                    ["git", "diff", "--cached", "--name-only"]
-                    if diff_mode == "staged"
-                    else ["git", "diff", "--name-only", "HEAD"]
-                )
-                _git_result = _sp.run(
-                    _git_cmd,
-                    capture_output=True,
-                    text=True,
-                    encoding="utf-8",
-                    errors="replace",
-                    cwd=repo_path,
-                    check=True,
-                    stdin=_sp.DEVNULL,
-                )
-                _changed_files = [
-                    line
-                    for line in _git_result.stdout.strip().splitlines()
-                    if line
-                ]
-                if _changed_files:
-                    _head_fingerprints = _head_fps(repo_path, _changed_files, cfg)
-                    if _head_fingerprints:
-                        _pre_existing = [
-                            f for f in new if _fp(f) in _head_fingerprints
-                        ]
-                        new = [f for f in new if _fp(f) not in _head_fingerprints]
-                        pre_existing_head_count = len(_pre_existing)
-            except Exception:
-                pass  # Safe fallback: report all findings as new
+        new, pre_existing_head_count = _subtract_pre_existing_head(
+            new,
+            diff_mode=diff_mode,
+            baseline_file=baseline_file,
+            repo_path=repo_path,
+            cfg=cfg,
+        )
 
         # Signal filter: include/exclude by signal abbreviation
-        if signals:
-            _incl = {s.upper() for s in signals}
-            new = [f for f in new if signal_abbrev(f.signal_type) in _incl]
-            resolved = [f for f in resolved if signal_abbrev(f.signal_type) in _incl]
-        if exclude_signals:
-            _excl = {s.upper() for s in exclude_signals}
-            new = [f for f in new if signal_abbrev(f.signal_type) not in _excl]
-            resolved = [f for f in resolved if signal_abbrev(f.signal_type) not in _excl]
+        new, resolved = _apply_diff_signal_filters(
+            new, resolved, signals=signals, exclude_signals=exclude_signals
+        )
 
         scope_state = _scope_findings(
             new=new,
@@ -731,19 +934,8 @@ def diff(
             if f.file_path
         })
 
-        status = "stable"
-        if delta > 0.01:
-            status = "new_critical" if any(
-                f.severity.value in ("critical", "high") for f in scoped_new
-            ) else "degraded"
-        elif delta < -0.01:
-            status = "improved"
-
-        confidence = "high"
-        if diff_analysis.is_degraded:
-            confidence = "low"
-        elif diff_analysis.total_files < 5:
-            confidence = "medium"
+        status = _determine_diff_status(delta, scoped_new)
+        confidence = _determine_diff_confidence(diff_analysis)
 
         if response_detail == "concise":
             ranked_new = sorted(scoped_new, key=lambda f: f.impact, reverse=True)[:max_findings]
@@ -755,17 +947,16 @@ def diff(
             resolved_list = [_finding_detailed(f) for f in scoped_resolved[:max_findings]]
 
         n_new = len(scoped_new)
-        summary_parts = [f"{n_new} new finding{'s' if n_new != 1 else ''}"]
         high_count = sum(
             1 for f in scoped_new if f.severity.value in ("critical", "high")
         )
-        if high_count:
-            summary_parts.append(f"{high_count} high/critical")
-        if out_of_scope_new:
-            summary_parts.append(f"{len(out_of_scope_new)} out-of-scope")
-        if pre_existing_head_count > 0:
-            summary_parts.append(f"{pre_existing_head_count} pre-existing-in-head")
-        summary_parts.append(f"drift score {'+' if delta >= 0 else ''}{delta:.3f}")
+        summary = _build_diff_summary(
+            n_new,
+            high_count=high_count,
+            out_of_scope_new=out_of_scope_new,
+            pre_existing_head_count=pre_existing_head_count,
+            delta=delta,
+        )
 
         decision_state = _build_diff_decision_state(
             scoped_new=scoped_new,
@@ -780,62 +971,21 @@ def diff(
             _rk = signal_abbrev(_rf.signal_type)
             _resolved_by_rule[_rk] = _resolved_by_rule.get(_rk, 0) + 1
 
-        # Noise context: help agents distinguish pre-existing findings from
-        # change-caused findings when drift_detected=false but counts > 0.
-        pre_existing_count = len(out_of_scope_new)
-        noise_explanation = None
-        if pre_existing_head_count > 0 and not baseline_file:
-            noise_explanation = (
-                f"{pre_existing_head_count} finding(s) already existed in HEAD and "
-                f"were excluded from new_findings. They are pre-existing and not "
-                f"caused by the current working-tree change."
-            )
-        elif not baseline_file and pre_existing_count > 0:
-            noise_explanation = (
-                f"{pre_existing_count} finding(s) are pre-existing out-of-scope noise, "
-                f"not caused by this change. Use 'drift baseline save' then "
-                f"'drift diff --baseline .drift-baseline.json' to suppress them."
-            )
-        elif not scoped_new and not out_of_scope_new:
-            noise_explanation = "No new findings detected."
-        noise_context = {
-            "pre_existing_count": pre_existing_count + pre_existing_head_count,
-            "pre_existing_head_count": pre_existing_head_count,
-            "explanation": noise_explanation,
-        }
-
-        thresholds = getattr(cfg, "thresholds", None)
-        max_changed_files = getattr(
-            thresholds,
-            "diff_baseline_recommend_max_changed_files",
-            50,
-        )
-        max_new_findings = getattr(
-            thresholds,
-            "diff_baseline_recommend_max_new_findings",
-            100,
-        )
-        max_out_of_scope_findings = getattr(
-            thresholds,
-            "diff_baseline_recommend_max_out_of_scope_findings",
-            50,
+        noise_context = _build_diff_noise_context(
+            pre_existing_head_count=pre_existing_head_count,
+            out_of_scope_new=out_of_scope_new,
+            baseline_file=baseline_file,
+            scoped_new=scoped_new,
         )
 
-        baseline_reasons: list[str] = []
-        if not baseline_file:
-            if diff_analysis.total_files >= max_changed_files:
-                baseline_reasons.append("large_working_tree")
-            if n_new >= max_new_findings:
-                baseline_reasons.append("high_new_finding_volume")
-            if (
-                target_path
-                and len(out_of_scope_new)
-                >= max_out_of_scope_findings
-            ):
-                baseline_reasons.append("out_of_scope_noise")
-
-        baseline_recommended = bool(baseline_reasons)
-        baseline_reason = baseline_reasons[0] if baseline_reasons else "none"
+        baseline_recommended, baseline_reason = _determine_diff_baseline_recommendation(
+            diff_analysis=diff_analysis,
+            n_new=n_new,
+            target_path=target_path,
+            out_of_scope_new=out_of_scope_new,
+            cfg=cfg,
+            baseline_file=baseline_file,
+        )
 
         accept_change = decision_state.accept_change
         in_scope_accept = decision_state.in_scope_accept
@@ -845,39 +995,13 @@ def diff(
         staged_file_count = diff_analysis.total_files if diff_mode == "staged" else None
         no_staged_files = bool(diff_mode == "staged" and diff_analysis.total_files == 0)
 
-        if not accept_change:
-            if decision_reason_code == "rejected_out_of_scope_noise_only":
-                _agent_hint = (
-                    "No in-scope blockers detected, but out-of-scope drift noise "
-                    "is present. Use in_scope_accept for scoped gating and "
-                    "consider creating or refreshing a baseline."
-                )
-            else:
-                _agent_hint = (
-                    "Change rejected due to in-scope drift blockers. Call "
-                    "drift_fix_plan and address blockers before proceeding."
-                )
-        elif no_staged_files:
-            _agent_hint = (
-                "No staged files were analyzed (staged_file_count=0). "
-                "Stage changes before relying on accept_change."
-            )
-        elif status == "improved":
-            _agent_hint = (
-                "Score is improving. Continue with the next batch_eligible "
-                "group or next fix_plan task. Use drift_nudge between edits "
-                "for fast feedback."
-            )
-        elif len(scoped_new) > 0:
-            _agent_hint = (
-                "New findings exist but are within acceptance threshold. "
-                "Review the new_findings list before proceeding to ensure "
-                "they are acceptable."
-            )
-        else:
-            _agent_hint = (
-                "No drift change detected. Safe to proceed to the next task."
-            )
+        _agent_hint = _build_diff_agent_hint(
+            accept_change=accept_change,
+            no_staged_files=no_staged_files,
+            status=status,
+            scoped_new=scoped_new,
+            decision_reason_code=decision_reason_code,
+        )
         # Suggested next batch targets: signals with remaining new findings
         _new_by_signal: dict[str, int] = {}
         for _nf in scoped_new:
@@ -915,7 +1039,7 @@ def diff(
             baseline_reason=baseline_reason,
             drift_categories=drift_categories,
             affected_components=affected,
-            summary=", ".join(summary_parts),
+            summary=summary,
             accept_change=accept_change,
             in_scope_accept=in_scope_accept,
             blocking_reasons=blocking_reasons,

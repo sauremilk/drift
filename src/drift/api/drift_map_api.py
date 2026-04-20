@@ -7,6 +7,57 @@ from pathlib import Path
 from typing import Any
 
 
+def _process_py_file(
+    file_path: Path,
+    repo_path: Path,
+    module_stats: dict[str, dict[str, Any]],
+    dependencies: set[tuple[str, str]],
+) -> None:
+    """Collect stats and dependency edges for a single Python file."""
+    try:
+        source = file_path.read_text(encoding="utf-8")
+    except UnicodeDecodeError:
+        source = file_path.read_text(encoding="utf-8", errors="replace")
+    except OSError:
+        return
+
+    rel = file_path.relative_to(repo_path)
+    module = rel.parent.as_posix() if rel.parent.as_posix() != "." else "<root>"
+    stats = module_stats.setdefault(
+        module,
+        {
+            "path": module,
+            "files": 0,
+            "functions": 0,
+            "classes": 0,
+            "lines": 0,
+            "languages": ["python"],
+        },
+    )
+    stats["files"] += 1
+    stats["lines"] += len(source.splitlines())
+
+    try:
+        tree = ast.parse(source)
+    except SyntaxError:
+        return
+
+    for node in ast.walk(tree):
+        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
+            stats["functions"] += 1
+        elif isinstance(node, ast.ClassDef):
+            stats["classes"] += 1
+        elif isinstance(node, ast.Import):
+            for alias in node.names:
+                imported = alias.name.split(".")[0]
+                if imported and imported in module_stats:
+                    dependencies.add((module, imported))
+        elif isinstance(node, ast.ImportFrom) and node.module:
+            imported = node.module.split(".")[0]
+            if imported and imported in module_stats:
+                dependencies.add((module, imported))
+
+
 def drift_map(
     path: str | Path = ".",
     *,
@@ -49,48 +100,7 @@ def drift_map(
     dependencies: set[tuple[str, str]] = set()
 
     for file_path in py_files:
-        try:
-            source = file_path.read_text(encoding="utf-8")
-        except UnicodeDecodeError:
-            source = file_path.read_text(encoding="utf-8", errors="replace")
-        except OSError:
-            continue
-
-        rel = file_path.relative_to(repo_path)
-        module = rel.parent.as_posix() if rel.parent.as_posix() != "." else "<root>"
-        stats = module_stats.setdefault(
-            module,
-            {
-                "path": module,
-                "files": 0,
-                "functions": 0,
-                "classes": 0,
-                "lines": 0,
-                "languages": ["python"],
-            },
-        )
-        stats["files"] += 1
-        stats["lines"] += len(source.splitlines())
-
-        try:
-            tree = ast.parse(source)
-        except SyntaxError:
-            continue
-
-        for node in ast.walk(tree):
-            if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
-                stats["functions"] += 1
-            elif isinstance(node, ast.ClassDef):
-                stats["classes"] += 1
-            elif isinstance(node, ast.Import):
-                for alias in node.names:
-                    imported = alias.name.split(".")[0]
-                    if imported and imported in module_stats:
-                        dependencies.add((module, imported))
-            elif isinstance(node, ast.ImportFrom) and node.module:
-                imported = node.module.split(".")[0]
-                if imported and imported in module_stats:
-                    dependencies.add((module, imported))
+        _process_py_file(file_path, repo_path, module_stats, dependencies)
 
     modules = sorted(module_stats.values(), key=lambda item: str(item["path"]))
     if max_modules > 0:

@@ -22,13 +22,13 @@ def _apply_analysis_cfg_overrides(
 ) -> None:
     """Apply CLI-level performance/model overrides to the loaded config."""
     if worker_strategy is not None:
-        cfg.performance.worker_strategy = cast(Literal["fixed", "auto"], worker_strategy)  # type: ignore[union-attr]
+        cfg.performance.worker_strategy = cast(Literal["fixed", "auto"], worker_strategy)  # type: ignore[union-attr, attr-defined]
     if load_profile is not None:
-        cfg.performance.load_profile = cast(Literal["conservative"], load_profile)  # type: ignore[union-attr]
+        cfg.performance.load_profile = cast(Literal["conservative"], load_profile)  # type: ignore[union-attr, attr-defined]
     if no_embeddings:
-        cfg.embeddings_enabled = False  # type: ignore[union-attr]
+        cfg.embeddings_enabled = False  # type: ignore[union-attr, attr-defined]
     if embedding_model:
-        cfg.embedding_model = embedding_model  # type: ignore[union-attr]
+        cfg.embedding_model = embedding_model  # type: ignore[union-attr, attr-defined]
 
 
 def _resolve_progress_mode(
@@ -65,10 +65,10 @@ def _build_progress_callback(
 
     def _on_rich(phase: str, current: int, total: int) -> None:
         if task_state[0] is not None:
-            progress.update(task_state[0], completed=total, total=total)  # type: ignore[union-attr]
-            progress.remove_task(task_state[0])  # type: ignore[union-attr]
+            progress.update(task_state[0], completed=total, total=total)  # type: ignore[union-attr, attr-defined]
+            progress.remove_task(task_state[0])  # type: ignore[union-attr, attr-defined]
         task_state[1] = max(total, 1)
-        task_state[0] = progress.add_task(phase, total=task_state[1], completed=current)  # type: ignore[union-attr]
+        task_state[0] = progress.add_task(phase, total=task_state[1], completed=current)  # type: ignore[union-attr, attr-defined]
 
     if use_json_progress:
         import time
@@ -110,8 +110,8 @@ def _maybe_enrich_plain_messages(
     if effective_audience == "plain":
         from drift.lang import enrich_human_messages
 
-        analysis.findings = enrich_human_messages(  # type: ignore[union-attr]
-            analysis.findings, lang=effective_language, audience="plain"  # type: ignore[union-attr]
+        analysis.findings = enrich_human_messages(  # type: ignore[union-attr, attr-defined]
+            analysis.findings, lang=effective_language, audience="plain"  # type: ignore[union-attr, attr-defined]
         )
 
 
@@ -145,7 +145,7 @@ def _render_analysis_details(
         analysis=analysis,
         output_format=output_format,
         compact_json=compact_json,
-        drift_score_scope=drift_score_scope,
+        drift_score_scope=drift_score_scope,  # type: ignore[arg-type]
         output_file=output_file,
         effective_console=effective_console,
         max_findings=max_findings,
@@ -157,17 +157,17 @@ def _render_analysis_details(
         explain=explain,
         first_run=is_first_run,
     )
-    if show_suppressed and analysis.suppressed_count:  # type: ignore[union-attr]
+    if show_suppressed and analysis.suppressed_count:  # type: ignore[union-attr, attr-defined]
         effective_console.print(
-            f"[dim italic]{analysis.suppressed_count} finding(s) suppressed "  # type: ignore[union-attr]
+            f"[dim italic]{analysis.suppressed_count} finding(s) suppressed "  # type: ignore[union-attr, attr-defined]
             f"via drift:ignore comments.[/dim italic]"
         )
     if output_format == "rich":
         from drift.output.rich_output import render_recommendations
         from drift.recommendations import generate_recommendations
 
-        recs = generate_recommendations(analysis.findings)  # type: ignore[union-attr]
-        recs = _refine_recommendations_with_are(recs, analysis, cfg, repo)
+        recs = generate_recommendations(analysis.findings)  # type: ignore[union-attr, attr-defined]
+        recs = _refine_recommendations_with_are(recs, analysis, cfg, repo)  # type: ignore[assignment, arg-type]
         if recs:
             render_recommendations(recs, effective_console)
 
@@ -183,7 +183,7 @@ def _emit_intent_status(analysis: object, repo: Path, intent: bool) -> None:
     contracts = load_contracts(repo)
     if not contracts:
         return
-    statuses = match_findings_to_contracts(analysis.findings, contracts)  # type: ignore[union-attr]
+    statuses = match_findings_to_contracts(analysis.findings, contracts)  # type: ignore[union-attr, attr-defined]
     intent_lines = format_intent_status(statuses)
     if intent_lines:
         click.echo("")
@@ -200,7 +200,7 @@ def _refine_recommendations_with_are(
     repo: Path,
 ) -> list[object]:
     """Apply Adaptive Recommendation Engine calibration if enabled in config."""
-    if not cfg.recommendations.enabled or not recs:  # type: ignore[union-attr]
+    if not cfg.recommendations.enabled or not recs:  # type: ignore[union-attr, attr-defined]
         return recs
     from drift.calibration.recommendation_calibrator import load_calibration
     from drift.outcome_tracker import Outcome, OutcomeTracker, compute_fingerprint
@@ -208,22 +208,22 @@ def _refine_recommendations_with_are(
     from drift.reward_chain import compute_reward
 
     repo_root = Path(repo)
-    outcome_path = repo_root / cfg.recommendations.outcome_path  # type: ignore[union-attr]
-    cal_path = repo_root / cfg.recommendations.calibration_path  # type: ignore[union-attr]
+    outcome_path = repo_root / cfg.recommendations.outcome_path  # type: ignore[union-attr, attr-defined]
+    cal_path = repo_root / cfg.recommendations.calibration_path  # type: ignore[union-attr, attr-defined]
 
     tracker = OutcomeTracker(outcome_path)
-    for finding in analysis.findings:  # type: ignore[union-attr]
+    for finding in analysis.findings:  # type: ignore[union-attr, attr-defined]
         tracker.record(finding)
-    current_fps = {compute_fingerprint(f) for f in analysis.findings}  # type: ignore[union-attr]
+    current_fps = {compute_fingerprint(f) for f in analysis.findings}  # type: ignore[union-attr, attr-defined]
     tracker.resolve(current_fps)
-    tracker.archive(max_age_days=cfg.recommendations.archive_after_days)  # type: ignore[union-attr]
+    tracker.archive(max_age_days=cfg.recommendations.archive_after_days)  # type: ignore[union-attr, attr-defined]
 
     outcomes = tracker.load()
     outcome_by_fp: dict[str, Outcome] = {o.fingerprint: o for o in outcomes}
     effort_map = load_calibration(cal_path)
     refined_recs: list[object] = []
     for rec in recs:
-        related = rec.related_findings or []  # type: ignore[union-attr]
+        related = rec.related_findings or []  # type: ignore[union-attr, attr-defined]
         primary_finding = related[0] if related else None
         if primary_finding is None:
             refined_recs.append(rec)
@@ -231,9 +231,9 @@ def _refine_recommendations_with_are(
         fp = compute_fingerprint(primary_finding)
         outcome = outcome_by_fp.get(fp)
         if effort_map.get(primary_finding.signal_type):
-            rec.effort = effort_map[primary_finding.signal_type]  # type: ignore[union-attr]
-        reward = compute_reward(outcome, rec, primary_finding, all_outcomes=outcomes)
-        refined_recs.append(refine(rec, primary_finding, reward))
+            rec.effort = effort_map[primary_finding.signal_type]  # type: ignore[union-attr, attr-defined]
+        reward = compute_reward(outcome, rec, primary_finding, all_outcomes=outcomes)  # type: ignore[arg-type]
+        refined_recs.append(refine(rec, primary_finding, reward))  # type: ignore[arg-type]
     return refined_recs  # type: ignore[return-value]
 
 
@@ -255,7 +255,7 @@ def _run_interactive_review(
 
     feedback_path, _, _ = resolve_feedback_paths(repo, cfg)
     review_findings(
-        analysis.findings[:max_findings],  # type: ignore[index]
+        analysis.findings[:max_findings],  # type: ignore[index, attr-defined]
         feedback_path,
         effective_console,
         repo_root=repo,
@@ -273,10 +273,10 @@ def _maybe_save_analysis_baseline(
         return
     from drift.baseline import save_baseline as _save_bl
 
-    _save_bl(analysis, save_baseline_path)
+    _save_bl(analysis, save_baseline_path)  # type: ignore[arg-type]
     effective_console.print(
         f"[bold green]{ok_marker} Baseline saved:[/bold green] {save_baseline_path} "
-        f"({len(analysis.findings)} findings)",  # type: ignore[arg-type]
+        f"({len(analysis.findings)} findings)",  # type: ignore[arg-type, attr-defined]
     )
     effective_console.print(
         "  [dim]Next step: [bold]drift trend[/bold] "
@@ -295,12 +295,12 @@ def _apply_analysis_severity_gate(
     effective_console: Console,
 ) -> None:
     """Apply the severity gate and sys.exit if findings exceed the threshold."""
-    threshold = fail_on or cfg.severity_gate()  # type: ignore[union-attr]
+    threshold = fail_on or cfg.severity_gate()  # type: ignore[union-attr, attr-defined]
     if not threshold or threshold == "none":
         return
     from drift.scoring.engine import severity_gate_pass
 
-    if not severity_gate_pass(analysis.findings, threshold):  # type: ignore[union-attr]
+    if not severity_gate_pass(analysis.findings, threshold):  # type: ignore[union-attr, attr-defined]
         if not quiet:
             effective_console.print(
                 f"\n[bold red]{fail_marker} Drift check failed:[/bold red] "
@@ -694,13 +694,13 @@ def analyze(
             cfg,
             since_days=since,
             target_path=path,
-            on_progress=effective_callback,
+            on_progress=effective_callback,  # type: ignore[arg-type]
             workers=workers,
             active_signals=active_signals,
             no_cache=no_cache,
         )
         if use_rich_progress and _progress_state[0] is not None:
-            progress.update(_progress_state[0], completed=_progress_state[1])
+            progress.update(_progress_state[0], completed=_progress_state[1])  # type: ignore[arg-type]
 
     # Baseline filtering: remove known findings if --baseline is provided
     apply_baseline_filtering(analysis, cfg, baseline_file)
@@ -742,3 +742,4 @@ def analyze(
     _apply_analysis_severity_gate(
         analysis, fail_on, cfg, exit_zero, quiet, fail_marker, ok_marker, effective_console
     )
+

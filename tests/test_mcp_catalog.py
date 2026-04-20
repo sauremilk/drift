@@ -133,3 +133,33 @@ class TestAssertMcpToolsRegistered:
 
         with pytest.raises(RuntimeError, match="MCP tool registry introspection failed"):
             server_module._assert_mcp_tools_registered()
+
+
+class TestNewToolsV223(TestMcpCatalogCompleteness):
+    """Regression guard: 8 new tools added in v2.23.0 must remain in the catalog."""
+
+    _NEW_TOOLS = [
+        "drift_capture_intent",
+        "drift_verify_intent",
+        "drift_feedback_for_agent",
+        "drift_fix_apply",
+        "drift_steer",
+        "drift_compile_policy",
+        "drift_suggest_rules",
+        "drift_generate_skills",
+    ]
+
+    @pytest.mark.parametrize("tool_name", _NEW_TOOLS)
+    def test_new_tool_registered(self, tool_name: str) -> None:
+        """Each v2.23.0 tool must be registered in the FastMCP runtime catalog."""
+        registered = _registered_tool_names()
+        assert tool_name in registered, (
+            f"v2.23.0 tool '{tool_name}' missing from FastMCP registry."
+        )
+
+    @pytest.mark.parametrize("tool_name", _NEW_TOOLS)
+    def test_new_tool_in_exported_list(self, tool_name: str) -> None:
+        """Each v2.23.0 tool must appear in _EXPORTED_MCP_TOOLS."""
+        assert tool_name in _EXPECTED_TOOL_NAMES, (
+            f"v2.23.0 tool '{tool_name}' not declared in _EXPORTED_MCP_TOOLS."
+        )

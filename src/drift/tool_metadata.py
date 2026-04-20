@@ -284,6 +284,45 @@ def _build_catalog() -> dict[str, ToolMetadataEntry]:
             ),
             phases=("done",),
         ),
+        # --- Intent loop ---
+        ToolMetadataEntry(
+            name="drift_capture_intent",
+            cost=ToolCostMetadata("low", "none", 300, 300),
+            context=ToolContextHint(
+                when_to_use="Capture and persist a structured intent before starting a build.",
+                when_not_to_use="When intent has already been captured for this build.",
+                follow_up_tools=("drift_verify_intent",),
+            ),
+            phases=("fix",),
+        ),
+        ToolMetadataEntry(
+            name="drift_verify_intent",
+            cost=ToolCostMetadata("medium", "none", 800, 600),
+            context=ToolContextHint(
+                when_to_use="After a build — check if the artifact fulfils the captured intent.",
+                when_not_to_use="Before capture_intent has been called.",
+                prerequisite_tools=("drift_capture_intent",),
+                follow_up_tools=("drift_feedback_for_agent",),
+            ),
+            phases=("verify",),
+        ),
+        ToolMetadataEntry(
+            name="drift_feedback_for_agent",
+            cost=ToolCostMetadata("low", "none", 400, 400),
+            context=ToolContextHint(
+                when_to_use=(
+                    "Get a prioritised action list when verify_intent"
+                    " reports missing features."
+                ),
+                when_not_to_use=(
+                    "When intent is already fulfilled"
+                    " (verify_intent returned 'fulfilled')."
+                ),
+                prerequisite_tools=("drift_verify_intent",),
+                follow_up_tools=("drift_verify_intent",),
+            ),
+            phases=("fix",),
+        ),
     ]
     return {e.name: e for e in entries}
 

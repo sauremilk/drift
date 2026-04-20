@@ -35,6 +35,79 @@ _CLOSES_PATTERN = re.compile(
 )
 
 
+def _build_historical_findings_index(
+    snapshots: list[ScanSnapshot],
+) -> dict[str, set[str]]:
+    """Build a {file_path → {signal_types}} index from historical snapshots."""
+    index: dict[str, set[str]] = {}
+    for snap in snapshots:
+        for finding in snap.findings:
+            fp = Path(finding.file_path).as_posix()
+            index.setdefault(fp, set()).add(finding.signal_type)
+    return index
+
+
+def _extract_issue_labels(issue: dict[str, Any]) -> set[str] | None:
+    """Return normalised label set for an issue, or None if issue is invalid."""
+    if not isinstance(issue, dict):
+        return None
+    labels = issue.get("labels", [])
+    if not isinstance(labels, list):
+        return None
+    return {
+        (lbl.get("name", "") if isinstance(lbl, dict) else str(lbl)).lower()
+        for lbl in labels
+    }
+
+
+def _correlate_bug_file(
+    bug_file: str,
+    issue_number: int,
+    issue: dict[str, Any],
+    historical_findings: dict[str, set[str]],
+    seen: set[str],
+    events: list[FeedbackEvent],
+) -> None:
+    """Append TP or FN FeedbackEvents for one bug file in-place."""
+    signal_types = historical_findings.get(bug_file, set())
+    if signal_types:
+        for signal_type in signal_types:
+            dedup_key = f"gh:{signal_type}:{bug_file}:{issue_number}"
+            if dedup_key in seen:
+                continue
+            seen.add(dedup_key)
+            events.append(
+                FeedbackEvent(
+                    signal_type=signal_type,
+                    file_path=bug_file,
+                    verdict="tp",
+                    source="github_api",
+                    evidence={
+                        "issue_number": issue_number,
+                        "issue_title": issue.get("title", ""),
+                    },
+                )
+            )
+    else:
+        dedup_key = f"gh:_fn:{bug_file}:{issue_number}"
+        if dedup_key in seen:
+            return
+        seen.add(dedup_key)
+        events.append(
+            FeedbackEvent(
+                signal_type="_unattributed",
+                file_path=bug_file,
+                verdict="fn",
+                source="github_api",
+                evidence={
+                    "issue_number": issue_number,
+                    "issue_title": issue.get("title", ""),
+                    "reason": "no_signal_flagged_buggy_file",
+                },
+            )
+        )
+
+
 def correlate_github_issues(
     snapshots: list[ScanSnapshot],
     issues: list[dict[str, Any]],
@@ -64,31 +137,13 @@ def correlate_github_issues(
         bug_labels = ["bug", "regression", "defect"]
 
     bug_label_set = {label.lower() for label in bug_labels}
-
-    # Build a set of all historically flagged (signal_type, file_path) pairs
-    historical_findings: dict[str, set[str]] = {}  # file_path → {signal_types}
-    for snap in snapshots:
-        for finding in snap.findings:
-            fp = Path(finding.file_path).as_posix()
-            if fp not in historical_findings:
-                historical_findings[fp] = set()
-            historical_findings[fp].add(finding.signal_type)
-
+    historical_findings = _build_historical_findings_index(snapshots)
     events: list[FeedbackEvent] = []
     seen: set[str] = set()
 
     for issue in issues:
-        if not isinstance(issue, dict):
-            continue
-
-        # Filter to bug-labeled issues only
-        labels = issue.get("labels", [])
-        if isinstance(labels, list):
-            issue_labels = {
-                (lbl.get("name", "") if isinstance(lbl, dict) else str(lbl)).lower()
-                for lbl in labels
-            }
-        else:
+        issue_labels = _extract_issue_labels(issue)
+        if issue_labels is None:
             continue
 
         if not issue_labels & bug_label_set:
@@ -98,7 +153,6 @@ def correlate_github_issues(
         if not isinstance(issue_number, int):
             continue
 
-        # Collect all files from PRs that closed this issue
         bug_files: set[str] = set()
         for _pr_num, files in pr_files_map.items():
             bug_files.update(Path(f).as_posix() for f in files)
@@ -106,50 +160,8 @@ def correlate_github_issues(
         if not bug_files:
             continue
 
-        # Correlate bug files with historical findings
         for bug_file in bug_files:
-            signal_types = historical_findings.get(bug_file, set())
-
-            if signal_types:
-                # TP: drift had flagged this file, and it turned out buggy
-                for signal_type in signal_types:
-                    dedup_key = f"gh:{signal_type}:{bug_file}:{issue_number}"
-                    if dedup_key in seen:
-                        continue
-                    seen.add(dedup_key)
-                    events.append(
-                        FeedbackEvent(
-                            signal_type=signal_type,
-                            file_path=bug_file,
-                            verdict="tp",
-                            source="github_api",
-                            evidence={
-                                "issue_number": issue_number,
-                                "issue_title": issue.get("title", ""),
-                            },
-                        )
-                    )
-            else:
-                # FN: bug in file, but no drift signal had warned about it
-                # We attribute FN to all active signals as weak evidence
-                dedup_key = f"gh:_fn:{bug_file}:{issue_number}"
-                if dedup_key in seen:
-                    continue
-                seen.add(dedup_key)
-                # Record FN without attributing to a specific signal
-                # (the profile builder will distribute FN across all signals)
-                events.append(
-                    FeedbackEvent(
-                        signal_type="_unattributed",
-                        file_path=bug_file,
-                        verdict="fn",
-                        source="github_api",
-                        evidence={
-                            "issue_number": issue_number,
-                            "issue_title": issue.get("title", ""),
-                            "reason": "no_signal_flagged_buggy_file",
-                        },
-                    )
-                )
+            _correlate_bug_file(bug_file, issue_number, issue, historical_findings, seen, events)
 
     return events
+

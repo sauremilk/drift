@@ -10,12 +10,17 @@ Tool surface (v3 — sessions):
     drift_diff            — Diff-based change detection
     drift_explain         — Signal/rule/error explanations
     drift_fix_plan        — Prioritised repair tasks with constraints
+    drift_fix_apply       — Auto-patch high-confidence findings (dry_run default)
     drift_validate        — Preflight config & environment check
     drift_brief           — Pre-task structural briefing with guardrails
     drift_nudge           — Fast directional feedback after edits
     drift_verify          — Binary pass/fail coherence check after edits (ADR-070)
     drift_shadow_verify   — Scope-bounded full re-scan for cross-file-risky edits
     drift_negative_context — Anti-pattern warnings
+    drift_steer           — Location-centric architecture context (layer, neighbors)
+    drift_compile_policy  — Task-specific operative policy compilation
+    drift_suggest_rules   — Propose architecture rules from recurring patterns
+    drift_generate_skills — Generate skill briefings for recurring drift
     drift_session_start   — Create a stateful session (scope, baseline, tasks)
     drift_session_status  — Show current session state
     drift_session_update  — Modify session scope, mark tasks complete
@@ -24,6 +29,9 @@ Tool surface (v3 — sessions):
     drift_map             — Lightweight module/dependency architecture map
     drift_feedback        — Record TP/FP/FN feedback for calibration
     drift_calibrate       — Compute calibrated signal weights from feedback
+    drift_capture_intent  — Extract and persist a structured intent from user input
+    drift_verify_intent   — Verify a build artifact against a captured intent
+    drift_feedback_for_agent — Prioritised action list from verify state
     drift_task_claim      — (deprecated) Claim a task from the fix-plan queue
     drift_task_renew      — (deprecated) Extend an active task lease
     drift_task_release    — (deprecated) Release a claimed task
@@ -1261,6 +1269,96 @@ async def drift_calibrate(
 
 
 # ---------------------------------------------------------------------------
+# Intent-loop tools
+# ---------------------------------------------------------------------------
+
+
+@mcp.tool()
+async def drift_capture_intent(
+    raw: Annotated[
+        str,
+        Field(description="Natural-language user input describing the intent."),
+    ],
+    path: Annotated[
+        str,
+        Field(description="Repository root path used for local intent storage."),
+    ] = ".",
+    session_id: Annotated[
+        str,
+        Field(description="Optional session ID from drift_session_start."),
+    ] = "",
+) -> str:
+    """Extract and persist a structured intent from a raw user input string."""
+    from drift.mcp_router_intent import run_capture_intent
+
+    return await run_capture_intent(
+        raw=raw,
+        path=path,
+        session_id=session_id,
+    )
+
+
+@mcp.tool()
+async def drift_verify_intent(
+    intent_id: Annotated[
+        str,
+        Field(description="The intent ID returned by drift_capture_intent."),
+    ],
+    artifact_path: Annotated[
+        str,
+        Field(description="Path to the built artifact (file or directory) to verify."),
+    ],
+    path: Annotated[
+        str,
+        Field(description="Repository root path used for intent storage lookup."),
+    ] = ".",
+    session_id: Annotated[
+        str,
+        Field(description="Optional session ID from drift_session_start."),
+    ] = "",
+) -> str:
+    """Verify that a build artifact fulfils a previously captured intent."""
+    from drift.mcp_router_intent import run_verify_intent
+
+    return await run_verify_intent(
+        intent_id=intent_id,
+        artifact_path=artifact_path,
+        path=path,
+        session_id=session_id,
+    )
+
+
+@mcp.tool()
+async def drift_feedback_for_agent(
+    intent_id: Annotated[
+        str,
+        Field(description="The intent ID returned by drift_capture_intent."),
+    ],
+    artifact_path: Annotated[
+        str,
+        Field(description="Path to the current build artifact."),
+    ],
+    path: Annotated[
+        str,
+        Field(description="Repository root path."),
+    ] = ".",
+    session_id: Annotated[
+        str,
+        Field(description="Optional session ID from drift_session_start."),
+    ] = "",
+) -> str:
+    """Return a prioritised action list based on the current verify state."""
+    from drift.mcp_router_intent import run_feedback_for_agent
+
+    return await run_feedback_for_agent(
+        intent_id=intent_id,
+        path=path,
+        artifact_path=artifact_path,
+        session_id=session_id,
+    )
+
+
+# ---------------------------------------------------------------------------
 # Patch Engine tools (ADR-074)
 # ---------------------------------------------------------------------------
 
@@ -1405,6 +1503,282 @@ async def drift_patch_commit(
     )
 
 
+# ---------------------------------------------------------------------------
+# Repair: fix_apply (ADR-076) — auto-patch with dry_run=True default
+# ---------------------------------------------------------------------------
+
+
+@mcp.tool()
+async def drift_fix_apply(
+    path: Annotated[str, Field(description="Repository path to analyze.")] = ".",
+    signal: Annotated[
+        str | None,
+        Field(description="Filter to a single signal abbreviation (e.g. 'EDS'). Omit for all."),
+    ] = None,
+    max_tasks: Annotated[
+        int, Field(description="Maximum number of tasks to consider from the fix plan."),
+    ] = 10,
+    dry_run: Annotated[
+        bool,
+        Field(
+            description=(
+                "When true (default), generate and preview patches without writing files. "
+                "Set to false to apply patches to disk (requires clean git state)."
+            ),
+        ),
+    ] = True,
+    target_path: Annotated[
+        str | None,
+        Field(description="Restrict to findings inside this subpath (relative to repo root)."),
+    ] = None,
+    exclude_paths: Annotated[
+        str | None,
+        Field(description="Comma-separated paths to exclude."),
+    ] = None,
+    session_id: Annotated[
+        str,
+        Field(description="Optional session ID from drift_session_start for stateful workflows."),
+    ] = "",
+) -> str:
+    """Generate and optionally apply high-confidence auto-patches (ADR-076).
+
+    Default is dry_run=true (preview only). Only HIGH automation_fit,
+    LOCAL scope, LOW risk tasks are eligible for auto-patching.
+    """
+    from drift.mcp_router_repair import run_fix_apply
+
+    return await run_fix_apply(
+        path=path,
+        signal=signal,
+        max_tasks=max_tasks,
+        dry_run=dry_run,
+        target_path=target_path,
+        exclude_paths=exclude_paths,
+        session_id=session_id,
+    )
+
+
+# ---------------------------------------------------------------------------
+# Architecture: steer, compile_policy, suggest_rules, generate_skills
+# ---------------------------------------------------------------------------
+
+
+@mcp.tool()
+async def drift_steer(
+    path: Annotated[str, Field(description="Repository path.")] = ".",
+    target: Annotated[
+        str,
+        Field(
+            description=(
+                "File or module path to get architecture context for "
+                "(relative to repo root, e.g. 'src/api' or 'src/api/auth.py')."
+            ),
+        ),
+    ] = "",
+    max_abstractions: Annotated[
+        int,
+        Field(description="Maximum number of reusable abstractions to return."),
+    ] = 20,
+    response_profile: Annotated[
+        str | None,
+        Field(
+            description=(
+                "Response profile: 'planner', 'coder', 'verifier', "
+                "'merge_readiness'. Omit for full response."
+            ),
+        ),
+    ] = None,
+    session_id: Annotated[
+        str,
+        Field(description="Optional session ID from drift_session_start."),
+    ] = "",
+) -> str:
+    """Location-centric architecture context: layer, neighbors, hotspots, policies.
+
+    Pre-edit tool — call BEFORE editing a file to understand the architecture
+    at that location.  Fast (<500ms), reads from persisted ArchGraph.
+    """
+    import json
+
+    _err = _validate_enum_param(
+        "response_profile", response_profile, _RESPONSE_PROFILE_VALUES, "drift_steer"
+    )
+    if _err:
+        _err["tool"] = "drift_steer"
+        return json.dumps(_err)
+
+    from drift.mcp_router_architecture import run_steer
+
+    return await run_steer(
+        path=path,
+        target=target,
+        max_abstractions=max_abstractions,
+        response_profile=response_profile,
+        session_id=session_id,
+    )
+
+
+@mcp.tool()
+async def drift_compile_policy(
+    path: Annotated[str, Field(description="Repository path.")] = ".",
+    task: Annotated[
+        str,
+        Field(
+            description="Natural-language task description to compile policy for.",
+        ),
+    ] = "",
+    task_spec_path: Annotated[
+        str | None,
+        Field(description="Optional path to a TaskSpec YAML file for structured boundaries."),
+    ] = None,
+    diff_ref: Annotated[
+        str | None,
+        Field(
+            description=(
+                "Git ref for diff-based scope detection (e.g. 'HEAD'). "
+                "If omitted, git context is skipped."
+            ),
+        ),
+    ] = None,
+    max_rules: Annotated[
+        int, Field(description="Maximum number of rules in the output."),
+    ] = 15,
+    response_profile: Annotated[
+        str | None,
+        Field(
+            description=(
+                "Response profile: 'planner', 'coder', 'verifier', "
+                "'merge_readiness'. Omit for full response."
+            ),
+        ),
+    ] = None,
+    session_id: Annotated[
+        str,
+        Field(description="Optional session ID from drift_session_start."),
+    ] = "",
+) -> str:
+    """Compile task-specific operative policy: scope boundaries, prohibitions, invariants.
+
+    Assembles a compact, agent-consumable policy package from repository state
+    so the agent knows what rules apply before writing code.
+    """
+    import json
+
+    _err = _validate_enum_param(
+        "response_profile", response_profile, _RESPONSE_PROFILE_VALUES, "drift_compile_policy"
+    )
+    if _err:
+        _err["tool"] = "drift_compile_policy"
+        return json.dumps(_err)
+
+    from drift.mcp_router_architecture import run_compile_policy
+
+    return await run_compile_policy(
+        path=path,
+        task=task,
+        task_spec_path=task_spec_path,
+        diff_ref=diff_ref,
+        max_rules=max_rules,
+        response_profile=response_profile,
+        session_id=session_id,
+    )
+
+
+@mcp.tool()
+async def drift_suggest_rules(
+    path: Annotated[str, Field(description="Repository path.")] = ".",
+    min_occurrences: Annotated[
+        int,
+        Field(description="Minimum signal recurrence in a module to trigger a proposal."),
+    ] = 4,
+    response_profile: Annotated[
+        str | None,
+        Field(
+            description=(
+                "Response profile: 'planner', 'coder', 'verifier', "
+                "'merge_readiness'. Omit for full response."
+            ),
+        ),
+    ] = None,
+    session_id: Annotated[
+        str,
+        Field(description="Optional session ID from drift_session_start."),
+    ] = "",
+) -> str:
+    """Propose architecture rules from recurring drift patterns.
+
+    Reads the ArchGraph and detects recurring signal patterns in hotspots,
+    returning proposed ArchDecision rules for maintainer review.
+    """
+    import json
+
+    _err = _validate_enum_param(
+        "response_profile", response_profile, _RESPONSE_PROFILE_VALUES, "drift_suggest_rules"
+    )
+    if _err:
+        _err["tool"] = "drift_suggest_rules"
+        return json.dumps(_err)
+
+    from drift.mcp_router_architecture import run_suggest_rules
+
+    return await run_suggest_rules(
+        path=path,
+        min_occurrences=min_occurrences,
+        response_profile=response_profile,
+        session_id=session_id,
+    )
+
+
+@mcp.tool()
+async def drift_generate_skills(
+    path: Annotated[str, Field(description="Repository path.")] = ".",
+    min_occurrences: Annotated[
+        int,
+        Field(description="Minimum signal recurrence to trigger a skill briefing."),
+    ] = 4,
+    min_confidence: Annotated[
+        float,
+        Field(description="Minimum confidence score to include a briefing (0.0–1.0)."),
+    ] = 0.6,
+    response_profile: Annotated[
+        str | None,
+        Field(
+            description=(
+                "Response profile: 'planner', 'coder', 'verifier', "
+                "'merge_readiness'. Omit for full response."
+            ),
+        ),
+    ] = None,
+    session_id: Annotated[
+        str,
+        Field(description="Optional session ID from drift_session_start."),
+    ] = "",
+) -> str:
+    """Generate agent-prompt skill briefings for modules with recurring drift.
+
+    Returns structured SkillBriefing data with agent_instruction for creating
+    .github/skills/<name>/SKILL.md files.
+    """
+    import json
+
+    _err = _validate_enum_param(
+        "response_profile", response_profile, _RESPONSE_PROFILE_VALUES, "drift_generate_skills"
+    )
+    if _err:
+        _err["tool"] = "drift_generate_skills"
+        return json.dumps(_err)
+
+    from drift.mcp_router_architecture import run_generate_skills
+
+    return await run_generate_skills(
+        path=path,
+        min_occurrences=min_occurrences,
+        min_confidence=min_confidence,
+        response_profile=response_profile,
+        session_id=session_id,
+    )
+
+
 _EXPORTED_MCP_TOOLS = (
     drift_scan,
     drift_diff,
@@ -1430,9 +1804,17 @@ _EXPORTED_MCP_TOOLS = (
     drift_guard_contract,
     drift_feedback,
     drift_calibrate,
+    drift_capture_intent,
+    drift_verify_intent,
+    drift_feedback_for_agent,
     drift_patch_begin,
     drift_patch_check,
     drift_patch_commit,
+    drift_fix_apply,
+    drift_steer,
+    drift_compile_policy,
+    drift_suggest_rules,
+    drift_generate_skills,
 )
 
 

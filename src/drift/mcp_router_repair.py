@@ -222,3 +222,47 @@ async def run_verify(
     if session:
         session.touch()
     return _enrich_response_with_session(raw, session, "drift_verify")
+
+
+async def run_fix_apply(
+    *,
+    path: str,
+    signal: str | None,
+    max_tasks: int,
+    dry_run: bool,
+    target_path: str | None,
+    exclude_paths: str | None,
+    session_id: str,
+) -> str:
+    from drift.api.fix_apply import fix_apply
+
+    session = _resolve_session(session_id)
+    blocked = _strict_guardrail_block_response("drift_fix_apply", session)
+    if blocked is not None:
+        return blocked
+
+    parsed_exclude_paths = _parse_csv_ids(exclude_paths)
+
+    kwargs = _session_defaults(
+        session,
+        {
+            "path": path,
+            "target_path": target_path,
+            "signals": None,
+            "exclude_signals": None,
+        },
+    )
+
+    raw = await _run_api_tool(
+        "drift_fix_apply",
+        fix_apply,
+        path=kwargs["path"],
+        signal=signal,
+        max_tasks=max_tasks,
+        dry_run=dry_run,
+        target_path=kwargs["target_path"],
+        exclude_paths=parsed_exclude_paths,
+    )
+    if session:
+        session.touch()
+    return _enrich_response_with_session(raw, session, "drift_fix_apply")

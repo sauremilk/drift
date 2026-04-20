@@ -1,0 +1,38 @@
+{
+  "version": "2.23.0",
+  "date": "2026-04-20",
+  "feature": "Eight new MCP tools: intent-loop, fix-apply, architecture steering, policy compilation, rule suggestion, skill generation",
+  "scope": [
+    "src/drift/mcp_server.py",
+    "src/drift/mcp_router_intent.py",
+    "src/drift/mcp_router_architecture.py",
+    "src/drift/mcp_router_repair.py",
+    "src/drift/tool_metadata.py",
+    "src/drift/api/diff.py",
+    "src/drift/api/drift_map_api.py",
+    "src/drift/api/validate.py",
+    "src/drift/calibration/github_correlator.py",
+    "src/drift/calibration/outcome_correlator.py"
+  ],
+  "new_tools": [
+    "drift_capture_intent",
+    "drift_verify_intent",
+    "drift_feedback_for_agent",
+    "drift_fix_apply",
+    "drift_steer",
+    "drift_compile_policy",
+    "drift_suggest_rules",
+    "drift_generate_skills"
+  ],
+  "new_modules": [
+    "mcp_router_intent",
+    "mcp_router_architecture"
+  ],
+  "evidence": {
+    "tool_count_before": 27,
+    "tool_count_after": 35,
+    "new_bounded_context_modules": 2,
+    "api_files_refactored": 3,
+    "calibration_files_refactored": 2
+  }
+}

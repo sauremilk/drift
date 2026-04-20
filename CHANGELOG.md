@@ -1,3 +1,18 @@
+## [2.22.0] – 2026-04-20
+
+Short version: eight new MCP tools (intent-loop, fix-apply, steer, compile-policy, suggest-rules, generate-skills); bounded-context router modules; CXS batch refactoring of CLI commands.
+
+### Added
+
+- `drift_capture_intent`, `drift_verify_intent`, `drift_feedback_for_agent`: intent-loop MCP tools backed by `mcp_router_intent`.
+- `drift_fix_apply`, `drift_steer`, `drift_compile_policy`, `drift_suggest_rules`, `drift_generate_skills`: fix-apply, architecture steering, policy compilation, rule suggestion, and skill generation tools.
+- `mcp_router_intent.py`, `mcp_router_architecture.py`: bounded-context modules for intent-loop and architecture-steering logic.
+
+### Changed
+
+- CLI commands refactored (CXS batch) for lower cognitive complexity.
+- `diff.py`, `drift_map_api.py`, `validate.py`, `github_correlator.py`, `outcome_correlator.py`: API and calibration layer cleanup.
+
 ## [2.21.0] – 2026-04-20
 
 Short version: intent-capture system for structured planning; `lang` module with multilingual plain-language messages; `--audience` and `--language` CLI flags; A2A endpoints for intent/feedback loop.

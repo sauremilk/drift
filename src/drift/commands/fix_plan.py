@@ -128,7 +128,7 @@ def _execute_fix_plan_operation(
         exclude_paths=list(exclude_paths) or None,
         include_deferred=include_deferred,
         include_non_operational=include_non_operational,
-        on_progress=progress_cb,
+        on_progress=progress_cb,  # type: ignore[arg-type]
     )
 
 
