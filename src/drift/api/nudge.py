@@ -583,6 +583,35 @@ class _NudgeExecution:
         warnings = self._collect_warnings()
         _new, _resolved = self._filter_findings()
 
+        # --- Bruchstelle 2: Finding cluster summary ---
+        cluster_by_signal: dict[str, int] = {}
+        for f in _new:
+            abbr = signal_abbrev(f.signal_type)
+            cluster_by_signal[abbr] = cluster_by_signal.get(abbr, 0) + 1
+        finding_cluster_summary = {
+            "total_new": len(_new),
+            "by_signal": cluster_by_signal,
+        }
+
+        # --- Bruchstelle 1: Dynamic agent_instruction ---
+        if not safe_to_commit and _new and self.inc_result.direction == "degrading":
+            agent_instruction = (
+                "Significant degradation detected with new findings. "
+                "Run drift_brief to get scope-aware guardrails before continuing edits. "
+                "If safe_to_commit is false, address blocking_reasons first."
+            )
+        elif safe_to_commit:
+            agent_instruction = (
+                "Use drift_nudge between edits for fast direction checks. "
+                "Call drift_diff after completing a batch for full verification."
+            )
+        else:
+            agent_instruction = (
+                "Use drift_nudge between edits for fast direction checks. "
+                "If safe_to_commit is false, address blocking_reasons first. "
+                "Call drift_diff after completing a batch for full verification."
+            )
+
         result = _base_response(
             direction=self.inc_result.direction,
             delta=self.inc_result.delta,
@@ -618,11 +647,8 @@ class _NudgeExecution:
             analyzed_changed_files=sorted(self.effective_changed_set),
             unchanged_hash_skips=self.unchanged_hash_skips,
             warnings=warnings,
-            agent_instruction=(
-                "Use drift_nudge between edits for fast direction checks. "
-                "If safe_to_commit is false, address blocking_reasons first. "
-                "Call drift_diff after completing a batch for full verification."
-            ),
+            finding_cluster_summary=finding_cluster_summary,
+            agent_instruction=agent_instruction,
         )
         result.update(_nudge_next_step_contract(safe_to_commit=safe_to_commit))
         return result

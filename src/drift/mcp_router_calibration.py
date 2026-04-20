@@ -13,6 +13,37 @@ from drift.mcp_orchestration import _resolve_session
 from drift.mcp_utils import _run_sync_in_thread
 
 
+def _build_feedback_response(
+    *,
+    resolved_signal: str,
+    file_path: str,
+    verdict: str,
+    finding_id: str,
+    feedback_path: object,
+) -> str:
+    """Build enriched JSON response for a recorded feedback event."""
+    from drift.calibration.feedback import load_feedback
+
+    events = load_feedback(feedback_path)  # type: ignore[arg-type]
+    pending_fp_count = sum(
+        1 for e in events if e.signal_type == resolved_signal and e.verdict == "fp"
+    )
+
+    return json.dumps({
+        "status": "recorded",
+        "signal": resolved_signal,
+        "file": file_path,
+        "verdict": verdict,
+        "finding_id": finding_id,
+        "pending_fp_count": pending_fp_count,
+        "next_tool_call": {"tool": "drift_calibrate", "params": {}},
+        "agent_instruction": (
+            "Feedback recorded. Run drift_calibrate to apply accumulated "
+            "feedback and update signal weights."
+        ),
+    })
+
+
 async def run_feedback(
     *,
     signal: str,
@@ -68,13 +99,13 @@ async def run_feedback(
             repo, cfg
         )
         record_feedback(feedback_path, event)
-        return json.dumps({
-            "status": "recorded",
-            "signal": resolved,
-            "file": file_path,
-            "verdict": v,
-            "finding_id": event.finding_id,
-        })
+        return _build_feedback_response(
+            resolved_signal=resolved,
+            file_path=file_path,
+            verdict=v,
+            finding_id=event.finding_id,
+            feedback_path=feedback_path,
+        )
 
     raw = await _run_sync_in_thread(_sync, abandon_on_cancel=True)
     if session:

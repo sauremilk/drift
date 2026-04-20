@@ -33,6 +33,7 @@ from drift.api.explain import _repo_examples_for_signal, explain
 from drift.api.fix_apply import fix_apply
 from drift.api.fix_plan import _fix_plan_agent_instruction, fix_plan
 from drift.api.generate_skills import generate_skills
+from drift.api.guard_contract import guard_contract
 from drift.api.neg_context import negative_context
 from drift.api.nudge import _baseline_store, invalidate_nudge_baseline, nudge
 from drift.api.patch import patch_begin, patch_check, patch_commit
@@ -100,6 +101,7 @@ STABLE_API = [
     "scan",
     "shadow_verify",
     "generate_skills",
+    "guard_contract",
     "steer",
     "suggest_rules",
     "validate",

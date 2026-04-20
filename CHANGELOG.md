@@ -1,3 +1,25 @@
+## [Unreleased]
+
+Short version: guard_contract API and `drift context` CLI for pre-edit architectural constraints; nudge finding cluster summary and dynamic agent_instruction; enriched feedback response.
+
+### Added
+
+- `guard_contract()` API and `drift_guard_contract` MCP tool: returns a machine-readable pre-edit contract (layer, invariants, forbidden imports, public API surface, optional findings) to prevent architectural drift before edits. Closes #427.
+- `drift context --target <path> [--for-agent] [--include-findings]` CLI command for generating guard contracts for AI agents and humans. ADR-078.
+- Nudge: `finding_cluster_summary` field (`total_new`, `by_signal`) in nudge response for richer agent observability.
+- Nudge: dynamic `agent_instruction` based on direction — degrading state triggers `drift_brief` recommendation, safe-to-commit state triggers verification guidance.
+- Feedback: enriched response includes `pending_fp_count`, `next_tool_call: {drift_calibrate}`, and `agent_instruction` to guide agents through the calibration loop.
+
+## [2.19.1] – 2026-04-20
+
+Short version: MCP tools startup assertion, SECURITY.md and llms.txt consistency fixes.
+
+### Fixed
+
+- `mcp_server.py`: `_assert_mcp_tools_registered()` verifies all exported MCP tools are present in the FastMCP runtime registry at startup.
+- `SECURITY.md`: added 2.19.x as supported release line.
+- `llms.txt`: updated release status to v2.19.1.
+
 ## [2.19.0] – 2026-04-20
 
 Short version: MCP startup verification, SECURITY.md and llms.txt consistency fixes for v2.19.0.

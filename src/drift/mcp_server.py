@@ -1108,6 +1108,52 @@ async def drift_session_trace(
 
 
 @mcp.tool()
+async def drift_guard_contract(
+    path: Annotated[str, Field(description="Repository path.")] = ".",
+    target: Annotated[
+        str,
+        Field(
+            description="File or module path to generate the guard contract for"
+            " (relative to repo root).",
+        ),
+    ] = "",
+    include_findings: Annotated[
+        bool,
+        Field(description="Include existing drift findings for the target."),
+    ] = False,
+    max_findings: Annotated[
+        int,
+        Field(description="Maximum findings to include (only with include_findings=true)."),
+    ] = 10,
+    session_id: Annotated[
+        str,
+        Field(description="Optional session ID from drift_session_start."),
+    ] = "",
+) -> str:
+    """Pre-edit guard contract: architectural constraints and boundaries for a target.
+
+    Call BEFORE editing a file to learn invariants, layer boundaries,
+    forbidden imports, related tests, and active architectural decisions.
+    """
+    from drift.api.guard_contract import guard_contract
+    from drift.mcp_utils import _run_api_tool
+
+    session = _resolve_session(session_id)
+    resolved_path = path
+    if session and (not path or path == "."):
+        resolved_path = session.repo_path
+
+    return await _run_api_tool(
+        "drift_guard_contract",
+        guard_contract,
+        path=resolved_path,
+        target=target,
+        include_findings=include_findings,
+        max_findings=max_findings,
+    )
+
+
+@mcp.tool()
 async def drift_map(
     path: Annotated[str, Field(description="Repository path to map.")] = ".",
     target_path: Annotated[
@@ -1381,6 +1427,7 @@ _EXPORTED_MCP_TOOLS = (
     drift_task_status,
     drift_session_trace,
     drift_map,
+    drift_guard_contract,
     drift_feedback,
     drift_calibrate,
     drift_patch_begin,

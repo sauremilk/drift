@@ -23,7 +23,7 @@ drift status         # traffic-light health check — your daily entry point
 <img src="https://raw.githubusercontent.com/mick-gsk/drift/main/demos/demo.gif" alt="drift analyze — Rich terminal output showing structural findings" width="720">
 
 [![CI](https://github.com/mick-gsk/drift/actions/workflows/ci.yml/badge.svg)](https://github.com/mick-gsk/drift/actions/workflows/ci.yml)
-[![Drift Score](https://img.shields.io/badge/drift%20score-0.36-brightgreen?style=flat)](benchmark_results/drift_self.json)
+[![Drift Score](https://img.shields.io/badge/drift%20score-0.39-brightgreen?style=flat)](benchmark_results/drift_self.json)
 [![codecov](https://codecov.io/gh/mick-gsk/drift/branch/main/graph/badge.svg)](https://codecov.io/gh/mick-gsk/drift)
 [![PyPI](https://img.shields.io/pypi/v/drift-analyzer?cacheSeconds=300)](https://pypi.org/project/drift-analyzer/)
 [![PyPI Downloads](https://static.pepy.tech/badge/drift-analyzer/month)](https://pepy.tech/project/drift-analyzer)

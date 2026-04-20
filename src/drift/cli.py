@@ -278,6 +278,7 @@ from drift.commands.check import check
 from drift.commands.ci import ci
 from drift.commands.completions import completions
 from drift.commands.config_cmd import config
+from drift.commands.context_cmd import context
 from drift.commands.copilot_context import copilot_context
 from drift.commands.diff_cmd import diff
 from drift.commands.explain import explain
@@ -317,6 +318,7 @@ main.add_command(calibrate)
 main.add_command(init)
 main.add_command(check)
 main.add_command(config)
+main.add_command(context)
 main.add_command(copilot_context)
 main.add_command(diff)
 main.add_command(explain)

@@ -128,6 +128,7 @@ class TestNudgeAPI:
             "parse_failure_treatment",
             "changed_files",
             "agent_instruction",
+            "finding_cluster_summary",
         }
         assert expected_fields.issubset(set(result.keys()))
 
@@ -1375,3 +1376,166 @@ class TestNudgeUsesBaselineManager:
         result = nudge(tmp_path, changed_files=[])
         assert analyze_calls["n"] == 1
         assert result["baseline_refresh_reason"] == "baseline_missing"
+
+
+# ---------------------------------------------------------------------------
+# Bruchstelle 2 — Finding cluster summary
+# ---------------------------------------------------------------------------
+
+
+class TestFindingClusterSummary:
+    """Nudge response includes a cluster summary of ALL new findings (not just top 5)."""
+
+    @pytest.fixture(autouse=True)
+    def _clear_baseline_store(self) -> None:
+        _baseline_store.clear()
+        BaselineManager.reset_instance()
+
+    def test_cluster_summary_present_in_response(
+        self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+    ) -> None:
+        """nudge() response always includes finding_cluster_summary field."""
+        TestNudgeAPI._mock_nudge_deps(monkeypatch, tmp_path)
+        result = nudge(tmp_path, changed_files=[])
+        assert "finding_cluster_summary" in result
+
+    def test_cluster_summary_counts_all_findings_not_just_capped(
+        self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+    ) -> None:
+        """Cluster summary counts ALL new findings, not just the 5 returned in new_findings."""
+        findings = [
+            _make_finding(
+                signal_type=SignalType.PATTERN_FRAGMENTATION,
+                severity=Severity.MEDIUM,
+                title=f"PFS finding {i}",
+                file_path=f"src/f{i}.py",
+            )
+            for i in range(8)
+        ]
+        TestNudgeAPI._mock_nudge_deps(monkeypatch, tmp_path, findings=findings)
+
+        # Pre-seed empty baseline so all findings are "new"
+        mgr = BaselineManager.instance()
+        mgr.store(
+            tmp_path.resolve(),
+            BaselineSnapshot(file_hashes={}, score=0.0),
+            [],
+            {},
+        )
+        monkeypatch.setattr(
+            "drift.api._emit_api_telemetry",
+            lambda **kw: None,
+        )
+        monkeypatch.setattr(
+            "drift.incremental._capture_git_state",
+            lambda *a, **kw: None,
+        )
+
+        def _fake_run(*args, **kwargs):
+            return SimpleNamespace(
+                direction="degrading",
+                delta=0.1,
+                score=0.5,
+                new_findings=findings,
+                resolved_findings=[],
+                confidence={},
+                file_local_signals_run=["pattern_fragmentation"],
+                cross_file_signals_estimated=[],
+                baseline_valid=True,
+                pruned_removed_cross_file_findings=0,
+            )
+
+        monkeypatch.setattr("drift.incremental.IncrementalSignalRunner.run", _fake_run)
+
+        result = nudge(tmp_path, changed_files=["src/f0.py"])
+
+        assert len(result["new_findings"]) <= 5  # capped at 5
+        summary = result["finding_cluster_summary"]
+        assert summary["total_new"] == 8  # all 8 counted
+        assert "PFS" in summary["by_signal"]
+        assert summary["by_signal"]["PFS"] == 8
+
+    def test_cluster_summary_empty_when_no_findings(
+        self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+    ) -> None:
+        """Clean nudge has zero counts in cluster summary."""
+        TestNudgeAPI._mock_nudge_deps(monkeypatch, tmp_path)
+        result = nudge(tmp_path, changed_files=[])
+        summary = result["finding_cluster_summary"]
+        assert summary["total_new"] == 0
+        assert summary["by_signal"] == {}
+
+
+# ---------------------------------------------------------------------------
+# Bruchstelle 1 — Dynamic agent_instruction
+# ---------------------------------------------------------------------------
+
+
+class TestDynamicAgentInstruction:
+    """agent_instruction adapts to the current nudge state."""
+
+    @pytest.fixture(autouse=True)
+    def _clear_baseline_store(self) -> None:
+        _baseline_store.clear()
+        BaselineManager.reset_instance()
+
+    def test_agent_instruction_mentions_brief_when_degrading(
+        self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+    ) -> None:
+        """When findings are new and blocking, agent_instruction suggests drift_brief."""
+        findings = [
+            _make_finding(
+                signal_type=SignalType.ARCHITECTURE_VIOLATION,
+                severity=Severity.HIGH,
+                title="Layer violation in checkout",
+                file_path="src/checkout.py",
+            )
+        ]
+        TestNudgeAPI._mock_nudge_deps(monkeypatch, tmp_path, findings=findings)
+
+        mgr = BaselineManager.instance()
+        mgr.store(
+            tmp_path.resolve(),
+            BaselineSnapshot(file_hashes={}, score=0.0),
+            [],
+            {},
+        )
+        monkeypatch.setattr(
+            "drift.api._emit_api_telemetry",
+            lambda **kw: None,
+        )
+        monkeypatch.setattr(
+            "drift.incremental._capture_git_state",
+            lambda *a, **kw: None,
+        )
+
+        def _fake_run(*args, **kwargs):
+            return SimpleNamespace(
+                direction="degrading",
+                delta=0.1,
+                score=0.5,
+                new_findings=findings,
+                resolved_findings=[],
+                confidence={},
+                file_local_signals_run=["architecture_violation"],
+                cross_file_signals_estimated=[],
+                baseline_valid=True,
+                pruned_removed_cross_file_findings=0,
+            )
+
+        monkeypatch.setattr("drift.incremental.IncrementalSignalRunner.run", _fake_run)
+
+        result = nudge(tmp_path, changed_files=["src/checkout.py"])
+
+        assert result["safe_to_commit"] is False
+        assert "drift_brief" in result["agent_instruction"]
+
+    def test_agent_instruction_standard_when_safe(
+        self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+    ) -> None:
+        """When safe_to_commit is true, standard instruction is given."""
+        TestNudgeAPI._mock_nudge_deps(monkeypatch, tmp_path)
+        result = nudge(tmp_path, changed_files=[])
+        assert result["safe_to_commit"] is True
+        assert "drift_nudge" in result["agent_instruction"]
+        assert "drift_diff" in result["agent_instruction"]
