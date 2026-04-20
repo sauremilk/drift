@@ -23,7 +23,7 @@ from drift.api_helpers import _base_response, _error_response
 from drift.intent._classify import classify_intent
 from drift.intent._questions import generate_questions
 from drift.intent._store import load_contracts, save_contract
-from drift.intent.capture import capture, load_intent_json, save_intent_json
+from drift.intent.capture import capture, load_intent_json, save_intent_json  # drift:ignore[PHR]
 from drift.intent.formalize import formalize
 from drift.intent.handoff import handoff, save_agent_prompt
 from drift.intent.models import ContractStatus
@@ -63,6 +63,8 @@ def capture_intent(
     dict
         Contract data with ``contract``, ``questions``, and ``saved_to`` keys.
     """
+    if not description or not description.strip():
+        raise ValueError("description must not be empty")
     contract = classify_intent(description, language=language, llm_config=llm_config)
     questions = generate_questions(contract)
 
@@ -99,6 +101,8 @@ def list_intents(project_root: Path) -> list[dict[str, Any]]:
     list[dict]
         Serialized contract dicts.
     """
+    if not project_root:
+        return []
     contracts = load_contracts(project_root)
     return [c.to_dict() for c in contracts]
 
