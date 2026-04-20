@@ -1,3 +1,18 @@
+## [2.18.0] – 2026-04-20
+
+Short version: Suppression insert/list commands, diff --auto feedback loop, explain --from-file, interactive review, and staleness detection for inline suppressions.
+
+### Added
+
+- `suppression.py` + `commands/suppress.py`: `insert_suppression_comment()` writes `drift:ignore` comments (Python/TS/JS); `drift suppress list --check-stale` flags stale suppressions via embedded `hash:` tag; `include_hash` kwarg embeds hash at creation.
+- `drift diff --auto`: post-fix feedback loop auto-saves scan snapshot to `.drift-cache/last_scan.json`; reruns and renders score delta without specifying commit hashes. (`commands/_last_scan.py` helper added.)
+- `drift explain FINGERPRINT --from-file analysis.json`: resolve findings from a cached JSON without re-running a live scan.
+- `output/interactive_review.py`: interactive per-finding TP/FP review session appending verdicts to `.drift/feedback.jsonl` for calibration (`drift analyze --review`).
+
+### Fixed
+
+- `suppression.py`: `InlineSuppression` gains `stored_hash` / `current_hash`; `collect_inline_suppressions()` computes current line-content hash for staleness detection.
+
 ## [2.17.2] – 2026-04-19
 
 Short version: Docs-only — update drift score badge and self-analysis result to 0.36.
@@ -6,14 +21,6 @@ Short version: Docs-only — update drift score badge and self-analysis result t
 
 - README: drift score badge updated from 0.44 to 0.36 (Grade B).
 - `benchmark_results/drift_self.json`: refreshed self-analysis at v2.17.1.
-
-### Added (post-release feature additions)
-
-- `suppression.py`: `insert_suppression_comment()` writes `drift:ignore` inline comments into Python/TypeScript/JavaScript source files with correct comment prefixes and signal abbreviations.
-- `drift diff --auto`: post-fix feedback loop — `drift analyze` auto-saves a snapshot to `.drift-cache/last_scan.json`; `drift diff --auto` runs a fresh scan and renders score delta + resolved/new findings without specifying commit hashes.
-- `commands/_last_scan.py`: new helper module for auto-save and load of scan snapshots.
-- `drift explain FINGERPRINT --from-file analysis.json`: resolve findings from a cached JSON without re-running a live scan.
-- `output/interactive_review.py`: interactive per-finding TP/FP review session that appends verdicts to `.drift/feedback.jsonl` for calibration (`drift analyze --review`).
 
 ## [2.17.1] – 2026-04-19
 

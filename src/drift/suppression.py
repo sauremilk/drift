@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import re
 from collections.abc import Mapping
 from dataclasses import dataclass, field
@@ -39,6 +40,12 @@ class InlineSuppression:
     signals: set[str] | None
     until: date | None = None
     reason: str | None = None
+    #: Short SHA-256 hash of the code content *when the suppression was written*.
+    #: Present only when the ``hash:XXXXXXXX`` tag appears in the comment.
+    stored_hash: str | None = None
+    #: Short SHA-256 hash of the code content *as read right now*.
+    #: Always computed during collection; ``None`` only if the line was unreadable.
+    current_hash: str | None = None
 
 
 @dataclass(frozen=True)
@@ -52,6 +59,7 @@ class SuppressionFilterResult:
 
 _UNTIL_PATTERN = re.compile(r"\buntil:(\d{4}-\d{2}-\d{2})\b")
 _REASON_PATTERN = re.compile(r"\breason:(.+)$")
+_HASH_PATTERN = re.compile(r"\bhash:([0-9a-f]{8})\b")
 
 
 def _parse_until(text: str) -> date | None:
@@ -72,6 +80,17 @@ def _parse_reason(text: str) -> str | None:
         return None
     reason = match.group(1).strip()
     return reason or None
+
+
+def _parse_stored_hash(text: str) -> str | None:
+    """Parse optional ``hash:XXXXXXXX`` metadata from comment tail."""
+    match = _HASH_PATTERN.search(text)
+    return match.group(1) if match else None
+
+
+def _code_content_hash(code: str) -> str:
+    """Return the first 8 hex chars of SHA-256 of *code* (stripped)."""
+    return hashlib.sha256(code.strip().encode("utf-8")).hexdigest()[:8]
 
 
 def collect_inline_suppressions(
@@ -114,6 +133,8 @@ def collect_inline_suppressions(
                 signals = resolved
 
             tail = line[match.end() :]
+            # Code content = everything before the drift:ignore comment
+            code_part = line[: match.start()]
             entries.append(
                 InlineSuppression(
                     file_path=finfo.path.as_posix(),
@@ -121,6 +142,8 @@ def collect_inline_suppressions(
                     signals=signals,
                     until=_parse_until(tail),
                     reason=_parse_reason(tail),
+                    stored_hash=_parse_stored_hash(tail),
+                    current_hash=_code_content_hash(code_part),
                 )
             )
 
@@ -291,12 +314,18 @@ def insert_suppression_comment(
     until: date | None = None,
     reason: str | None = None,
     language: str = "python",
+    include_hash: bool = False,
 ) -> None:
     """Append a ``drift:ignore`` comment to *line_number* in *file_path*.
 
     Modifies the file in-place using UTF-8 encoding.  *line_number* is
     1-based.  *signals* is a set of full signal names (e.g.
     ``{"architecture_violation"}``); pass ``None`` to suppress all signals.
+
+    When *include_hash* is ``True``, a short SHA-256 hash of the current line
+    content is embedded in the comment as ``hash:XXXXXXXX``.  This enables
+    ``drift suppress list --check-stale`` to detect suppressions whose code
+    context has changed since the suppression was created.
     """
     prefix = _COMMENT_PREFIX_BY_LANG.get(language, "#")
 
@@ -322,5 +351,9 @@ def insert_suppression_comment(
     # Strip existing trailing newline to append comment cleanly
     stripped = line.rstrip("\n").rstrip("\r")
     eol = line[len(stripped):]
+
+    if include_hash:
+        tag += f" hash:{_code_content_hash(stripped)}"
+
     lines[idx] = f"{stripped}  {tag}{eol}"
     file_path.write_text("".join(lines), encoding="utf-8")

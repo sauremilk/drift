@@ -346,3 +346,141 @@ class TestInsertSuppressionComment:
         text = src.read_text(encoding="utf-8")
         assert text.endswith("\n")
         assert text.count("\n") == 2
+
+    def test_include_hash_embeds_tag(self, tmp_path: Path) -> None:
+        src = tmp_path / "app.py"
+        src.write_text("x = 1\n", encoding="utf-8")
+        insert_suppression_comment(
+            src, line_number=1, signals=None, language="python", include_hash=True
+        )
+        result = src.read_text(encoding="utf-8")
+        assert "hash:" in result
+        # hash must be exactly 8 hex chars
+        import re
+        assert re.search(r"hash:[0-9a-f]{8}", result)
+
+    def test_include_hash_matches_collect(self, tmp_path: Path) -> None:
+        """Stored hash written by insert_suppression_comment must equal current_hash
+        as computed by collect_inline_suppressions on the same line."""
+        from drift.models import FileInfo
+        from drift.suppression import collect_inline_suppressions
+
+        src = tmp_path / "app.py"
+        src.write_text("password = os.environ['DB_PASS']\n", encoding="utf-8")
+        insert_suppression_comment(
+            src, line_number=1, signals=None, language="python", include_hash=True
+        )
+        files = [FileInfo(path=Path("app.py"), language="python", size_bytes=60)]
+        entries = collect_inline_suppressions(files, tmp_path)
+        assert len(entries) == 1
+        entry = entries[0]
+        assert entry.stored_hash is not None
+        assert entry.current_hash == entry.stored_hash  # not stale yet
+
+
+# ---------------------------------------------------------------------------
+# Staleness detection
+# ---------------------------------------------------------------------------
+
+
+class TestStalenessDetection:
+    """Tests for stale suppression detection via content hashes."""
+
+    def _make_suppressed_file(
+        self,
+        tmp_path: Path,
+        code_line: str,
+        *,
+        include_hash: bool = True,
+        language: str = "python",
+        suffix: str = ".py",
+    ) -> Path:
+        src = tmp_path / f"app{suffix}"
+        src.write_text(f"{code_line}\n", encoding="utf-8")
+        insert_suppression_comment(
+            src, line_number=1, signals=None, language=language,
+            include_hash=include_hash,
+        )
+        return src
+
+    def test_unchanged_line_is_not_stale(self, tmp_path: Path) -> None:
+        from drift.models import FileInfo
+        from drift.suppression import collect_inline_suppressions
+
+        self._make_suppressed_file(
+            tmp_path, 'password = os.environ["DB_PASS"]'
+        )
+        files = [FileInfo(path=Path("app.py"), language="python", size_bytes=80)]
+        entries = collect_inline_suppressions(files, tmp_path)
+        assert entries[0].stored_hash == entries[0].current_hash
+
+    def test_changed_line_is_stale(self, tmp_path: Path) -> None:
+        """After the code is modified, current_hash should differ from stored_hash."""
+        from drift.models import FileInfo
+        from drift.suppression import collect_inline_suppressions
+
+        # Write original line with hash
+        src = tmp_path / "app.py"
+        original_code = 'password = os.environ["DB_PASS"]'
+        src.write_text(f"{original_code}\n", encoding="utf-8")
+        insert_suppression_comment(
+            src, line_number=1, signals=None, language="python", include_hash=True
+        )
+        # Now overwrite with a "refactored" — but dangerous — version,
+        # keeping the old suppression comment intact
+        suppressed_line = src.read_text(encoding="utf-8").splitlines()[0]
+        new_code_part = 'password = "hardcoded_pwd_123"'
+        # Replace only the code part before the drift:ignore comment
+        import re as _re
+        new_line = _re.sub(r"^.*?(?=  # drift:ignore)", new_code_part, suppressed_line)
+        src.write_text(new_line + "\n", encoding="utf-8")
+
+        files = [FileInfo(path=Path("app.py"), language="python", size_bytes=100)]
+        entries = collect_inline_suppressions(files, tmp_path)
+        assert len(entries) == 1
+        entry = entries[0]
+        assert entry.stored_hash is not None
+        assert entry.current_hash != entry.stored_hash  # stale!
+
+    def test_suppression_without_hash_has_none_stored_hash(self, tmp_path: Path) -> None:
+        from drift.models import FileInfo
+        from drift.suppression import collect_inline_suppressions
+
+        src = tmp_path / "app.py"
+        # Suppression added without --include-hash (legacy suppression)
+        src.write_text(
+            'password = os.environ["DB_PASS"]  # drift:ignore reason:env var\n',
+            encoding="utf-8",
+        )
+        files = [FileInfo(path=Path("app.py"), language="python", size_bytes=80)]
+        entries = collect_inline_suppressions(files, tmp_path)
+        assert len(entries) == 1
+        assert entries[0].stored_hash is None
+        # current_hash is always computed
+        assert entries[0].current_hash is not None
+
+    def test_stale_security_signal_scenario(self, tmp_path: Path) -> None:
+        """Reproduces the concrete scenario from issue #524 (HSC signal)."""
+        from drift.models import FileInfo
+        from drift.suppression import collect_inline_suppressions
+
+        src = tmp_path / "app.py"
+        # Original safe code
+        original = 'password = os.environ["DB_PASS"]'
+        src.write_text(f"{original}\n", encoding="utf-8")
+        insert_suppression_comment(
+            src, line_number=1, signals=None, language="python",
+            include_hash=True, reason="env var, not a secret",
+        )
+
+        # Six months later: dangerous refactor, comment not updated
+        suppressed_line = src.read_text(encoding="utf-8").splitlines()[0]
+        dangerous = 'password = "hardcoded_pwd_123"'
+        import re as _re
+        new_line = _re.sub(r"^.*?(?=  # drift:ignore)", dangerous, suppressed_line)
+        src.write_text(new_line + "\n", encoding="utf-8")
+
+        files = [FileInfo(path=Path("app.py"), language="python", size_bytes=120)]
+        entries = collect_inline_suppressions(files, tmp_path)
+        stale = [e for e in entries if e.stored_hash and e.current_hash != e.stored_hash]
+        assert len(stale) == 1, "Stale suppression hiding real security issue must be detectable"

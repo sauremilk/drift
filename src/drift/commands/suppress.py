@@ -66,8 +66,18 @@ def suppress() -> None:
     default=None,
     help="Config file path.",
 )
-def list_suppressions(repo: Path, config: Path | None) -> None:
-    """List all inline suppression directives with optional metadata."""
+@click.option(
+    "--check-stale",
+    is_flag=True,
+    default=False,
+    help=(
+        "Highlight suppressions whose code content has changed since the "
+        "suppression was written (requires the hash: tag in the comment; "
+        "use drift suppress insert --include-hash to embed it)."
+    ),
+)
+def list_suppressions(repo: Path, config: Path | None, check_stale: bool) -> None:
+    """List all inline suppression directives with optional staleness metadata."""
     from drift.suppression import collect_inline_suppressions
 
     files = _discover_files(repo, config)
@@ -78,23 +88,63 @@ def list_suppressions(repo: Path, config: Path | None) -> None:
         return
 
     signal_to_abbrev = _abbrev_from_signal_map()
+
+    stale_entries = []
+    if check_stale:
+        stale_entries = [
+            e for e in entries
+            if e.stored_hash is not None and e.current_hash != e.stored_hash
+        ]
+        hashless = [e for e in entries if e.stored_hash is None]
+
     table = Table(title=f"Inline suppressions ({len(entries)})")
     table.add_column("File", overflow="fold")
     table.add_column("Line", justify="right")
     table.add_column("Signals")
     table.add_column("Until")
     table.add_column("Reason", overflow="fold")
+    if check_stale:
+        table.add_column("Stale?")
 
     for entry in sorted(entries, key=lambda e: (e.file_path, e.line_number)):
-        table.add_row(
+        is_stale = (
+            check_stale
+            and entry.stored_hash is not None
+            and entry.current_hash != entry.stored_hash
+        )
+        row = [
             entry.file_path,
             str(entry.line_number),
             _render_signals(entry.signals, signal_to_abbrev),
             entry.until.isoformat() if entry.until else "-",
             entry.reason or "-",
-        )
+        ]
+        if check_stale:
+            if is_stale:
+                row.append("[bold red]STALE[/bold red]")
+            elif entry.stored_hash is None:
+                row.append("[dim]no hash[/dim]")
+            else:
+                row.append("[green]ok[/green]")
+        table.add_row(*row)
 
     console.print(table)
+
+    if check_stale:
+        if stale_entries:
+            console.print(
+                f"\n[bold red]{len(stale_entries)} stale suppression(s) detected.[/bold red] "
+                "The code at these lines has changed since the suppression was added. "
+                "Review whether the suppression is still justified."
+            )
+        if hashless:
+            console.print(
+                f"\n[dim]{len(hashless)} suppression(s) have no embedded hash "
+                "and cannot be checked for staleness. Re-add them with "
+                "`drift suppress interactive` "
+                "(or `insert_suppression_comment(..., include_hash=True)`) "
+                "to enable future staleness detection.[/dim]"
+            )
 
 
 @suppress.command("audit")
