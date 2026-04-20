@@ -484,6 +484,34 @@ def _collect_scope_files(scope_paths: list[str], repo_path: Path) -> list[Path]:
     return files
 
 
+def _expand_imports_from_file(
+    py_file: Path,
+    repo_path: Path,
+    existing: set[str],
+    imported_dirs: set[str],
+) -> None:
+    """Scan py_file for intra-repo imports and add new dirs to imported_dirs."""
+    try:
+        source = py_file.read_text(encoding="utf-8", errors="replace")
+    except OSError:
+        return
+
+    for match in _IMPORT_RE.finditer(source):
+        module = match.group(1) or match.group(2)
+        if not module:
+            continue
+
+        for candidate in _module_to_path_candidates(module):
+            full = repo_path / candidate
+            if full.exists():
+                rel_dir = Path(candidate).parent.as_posix()
+                if rel_dir == ".":
+                    continue
+                if rel_dir not in existing and rel_dir not in imported_dirs:
+                    imported_dirs.add(rel_dir)
+                break
+
+
 def expand_scope_imports(
     scope: ResolvedScope,
     repo_path: Path,
@@ -515,25 +543,6 @@ def expand_scope_imports(
     existing = set(scope.paths)
 
     for py_file in py_files:
-        try:
-            source = py_file.read_text(encoding="utf-8", errors="replace")
-        except OSError:
-            continue
-
-        for match in _IMPORT_RE.finditer(source):
-            module = match.group(1) or match.group(2)
-            if not module:
-                continue
-
-            for candidate in _module_to_path_candidates(module):
-                full = repo_path / candidate
-                if full.exists():
-                    # Use the parent directory as the expanded scope path
-                    rel_dir = Path(candidate).parent.as_posix()
-                    if rel_dir == ".":
-                        continue  # Skip root-level modules
-                    if rel_dir not in existing and rel_dir not in imported_dirs:
-                        imported_dirs.add(rel_dir)
-                    break
+        _expand_imports_from_file(py_file, repo_path, existing, imported_dirs)
 
     return sorted(imported_dirs)

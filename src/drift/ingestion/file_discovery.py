@@ -7,6 +7,7 @@ import hashlib
 import json
 import logging
 import os
+import re
 import subprocess
 import tempfile
 import time
@@ -293,6 +294,187 @@ def _serialize_files(files: list[FileInfo]) -> list[dict[str, Any]]:
     ]
 
 
+def _resolve_cache_invalidator(
+    repo_path: Path,
+    include_patterns: list[str],
+    prepared_exclude: tuple[re.Pattern[str], ...],
+    supported: set[str],
+) -> tuple[str, str]:
+    """Return (invalidator_type, invalidator_value) for cache lookup."""
+    invalidator_type = "git_head"
+    invalidator_value = _current_git_head(repo_path)
+    if invalidator_value is None:
+        invalidator_type = "mtime"
+        invalidator_value = _mtime_fingerprint(
+            repo_path,
+            include_patterns,
+            prepared_exclude,
+            supported,
+        )
+    return invalidator_type, invalidator_value
+
+
+def _check_discovery_cache(
+    manifest: dict[str, Any],
+    cache_key: str,
+    invalidator_type: str,
+    invalidator_value: str,
+    skipped_out: dict[str, int] | None,
+) -> list[FileInfo] | None:
+    """Return cached files if the cache entry is valid, else None."""
+    entry = manifest.get("entries", {}).get(cache_key)
+    if not isinstance(entry, dict):
+        return None
+    entry_invalidator = entry.get("invalidator")
+    if not (
+        isinstance(entry_invalidator, dict)
+        and entry_invalidator.get("type") == invalidator_type
+        and entry_invalidator.get("value") == invalidator_value
+    ):
+        return None
+    cached_items = entry.get("files")
+    if not isinstance(cached_items, list):
+        return None
+    if skipped_out is not None:
+        cached_skipped = entry.get("skipped_languages")
+        if isinstance(cached_skipped, dict):
+            for language, count in cached_skipped.items():
+                if isinstance(language, str) and isinstance(count, int):
+                    skipped_out[language] = count
+    return _deserialize_files(cached_items)
+
+
+def _enumerate_repo_files(
+    repo_path: Path,
+    include_patterns: list[str],
+    prepared_exclude: tuple[re.Pattern[str], ...],
+    supported: set[str],
+    max_files: int | None,
+    skipped_out: dict[str, int] | None,
+) -> tuple[list[FileInfo], dict[str, int]]:
+    """Enumerate source files matching include/exclude patterns.
+
+    Returns (files, skipped_langs).  If max_files is reached, returns early
+    without populating skipped_out (same behaviour as the original inline loop).
+    """
+    files: list[FileInfo] = []
+    max_bytes = 5 * 1024 * 1024
+    seen: set[str] = set()
+    skipped_langs: dict[str, int] = {}
+
+    for pattern in include_patterns:
+        try:
+            matches = repo_path.glob(pattern)
+        except (OSError, ValueError) as exc:
+            logger.warning("glob(%s) failed: %s", pattern, exc)
+            continue
+        for match in matches:
+            try:
+                if not match.is_file():
+                    continue
+                if match.is_symlink():
+                    continue
+            except OSError:
+                continue
+
+            rel_path = match.relative_to(repo_path)
+            rel = rel_path.as_posix()
+
+            if rel in seen:
+                continue
+            seen.add(rel)
+
+            if _matches_any_prepared(rel, prepared_exclude):
+                continue
+
+            lang = detect_language(match)
+            if lang is None:
+                continue
+            if lang not in supported:
+                skipped_langs[lang] = skipped_langs.get(lang, 0) + 1
+                continue
+
+            try:
+                stat = match.stat()
+            except OSError:
+                logger.debug("stat() failed, skipping: %s", rel)
+                continue
+            if stat.st_size > max_bytes:
+                logger.debug("Skipping oversized file (%d bytes): %s", stat.st_size, rel)
+                continue
+
+            line_count = stat.st_size // 40
+            files.append(
+                FileInfo(
+                    path=rel_path,
+                    language=lang,
+                    size_bytes=stat.st_size,
+                    line_count=line_count,
+                )
+            )
+
+            if max_files is not None and len(files) >= max_files:
+                logger.warning(
+                    "Reached discovery file limit (%d). Stopping enumeration.",
+                    max_files,
+                )
+                return files, skipped_langs
+
+    if skipped_langs:
+        summary = ", ".join(f"{lang} ({n})" for lang, n in sorted(skipped_langs.items()))
+        logger.warning(
+            "Skipped %d file(s) with unsupported languages: %s. "
+            "Install tree-sitter for TypeScript/TSX support.",
+            sum(skipped_langs.values()),
+            summary,
+        )
+        if skipped_out is not None:
+            skipped_out.update(skipped_langs)
+
+    return files, skipped_langs
+
+
+def _persist_discovery_cache(
+    manifest_file: Path,
+    manifest: dict[str, Any],
+    cache_key: str,
+    files: list[FileInfo],
+    skipped_langs: dict[str, int],
+    invalidator_type: str,
+    invalidator_value: str,
+) -> None:
+    """Write discovered files into the discovery manifest cache."""
+    entries = manifest.setdefault("entries", {})
+    if not isinstance(entries, dict):
+        return
+    entries[cache_key] = {
+        "created_at": int(time.time()),
+        "invalidator": {
+            "type": invalidator_type,
+            "value": invalidator_value,
+        },
+        "files": _serialize_files(files),
+        "skipped_languages": skipped_langs,
+    }
+    if len(entries) > _DISCOVERY_MANIFEST_MAX_ENTRIES:
+        sorted_items = sorted(
+            entries.items(),
+            key=lambda item: (
+                int(item[1].get("created_at", 0))
+                if isinstance(item[1], dict)
+                else 0
+            ),
+            reverse=True,
+        )
+        manifest["entries"] = {
+            key: value for key, value in sorted_items[:_DISCOVERY_MANIFEST_MAX_ENTRIES]
+        }
+    try:
+        _store_discovery_manifest(manifest_file, manifest)
+    except OSError:
+        logger.debug("Unable to persist discovery manifest: %s", manifest_file)
+
+
 def discover_files(
     repo_path: Path,
     include: list[str] | None = None,
@@ -368,151 +550,28 @@ def discover_files(
         ts_enabled,
         supported,
     )
-    invalidator_type = "git_head"
-    invalidator_value = _current_git_head(repo_path)
-    if invalidator_value is None:
-        invalidator_type = "mtime"
-        invalidator_value = _mtime_fingerprint(
-            repo_path,
-            include_patterns,
-            prepared_exclude,
-            supported,
-        )
+
+    invalidator_type, invalidator_value = _resolve_cache_invalidator(
+        repo_path, include_patterns, prepared_exclude, supported
+    )
 
     manifest_file = _manifest_path(repo_path, cache_dir)
     manifest = _load_discovery_manifest(manifest_file)
-    entry = manifest.get("entries", {}).get(cache_key)
-    if isinstance(entry, dict):
-        entry_invalidator = entry.get("invalidator")
-        if (
-            isinstance(entry_invalidator, dict)
-            and entry_invalidator.get("type") == invalidator_type
-            and entry_invalidator.get("value") == invalidator_value
-        ):
-            cached_items = entry.get("files")
-            if isinstance(cached_items, list):
-                if skipped_out is not None:
-                    cached_skipped = entry.get("skipped_languages")
-                    if isinstance(cached_skipped, dict):
-                        for language, count in cached_skipped.items():
-                            if isinstance(language, str) and isinstance(count, int):
-                                skipped_out[language] = count
-                cached_files = _deserialize_files(cached_items)
-                return cached_files
+    cached = _check_discovery_cache(
+        manifest, cache_key, invalidator_type, invalidator_value, skipped_out
+    )
+    if cached is not None:
+        return cached
 
-    files: list[FileInfo] = []
-
-    # Max file size to analyse (5 MB) — skip generated/vendored giants
-    max_bytes = 5 * 1024 * 1024
-
-    # Pre-deuplicate: track seen paths during enumeration
-    seen: set[str] = set()
-    skipped_langs: dict[str, int] = {}
-
-    for pattern in include_patterns:
-        try:
-            matches = repo_path.glob(pattern)
-        except (OSError, ValueError) as exc:
-            logger.warning("glob(%s) failed: %s", pattern, exc)
-            continue
-        for match in matches:
-            try:
-                if not match.is_file():
-                    continue
-
-                # Skip symlinks to avoid loops and double-counting
-                if match.is_symlink():
-                    continue
-            except OSError:
-                continue
-
-            rel_path = match.relative_to(repo_path)
-            rel = rel_path.as_posix()
-
-            # Inline dedup — glob patterns can match same file
-            if rel in seen:
-                continue
-            seen.add(rel)
-
-            if _matches_any_prepared(rel, prepared_exclude):
-                continue
-
-            lang = detect_language(match)
-            if lang is None:
-                continue
-            if lang not in supported:
-                skipped_langs[lang] = skipped_langs.get(lang, 0) + 1
-                continue
-
-            try:
-                stat = match.stat()
-            except OSError:
-                logger.debug("stat() failed, skipping: %s", rel)
-                continue
-            if stat.st_size > max_bytes:
-                logger.debug("Skipping oversized file (%d bytes): %s", stat.st_size, rel)
-                continue
-
-            # Estimate line count from file size (avoids reading file)
-            # Actual line count computed later during AST parsing
-            line_count = stat.st_size // 40  # ~40 bytes/line heuristic
-
-            files.append(
-                FileInfo(
-                    path=rel_path,
-                    language=lang,
-                    size_bytes=stat.st_size,
-                    line_count=line_count,
-                )
-            )
-
-            if max_files is not None and len(files) >= max_files:
-                logger.warning(
-                    "Reached discovery file limit (%d). Stopping enumeration.",
-                    max_files,
-                )
-                return sorted(files, key=lambda f: f.path.as_posix())
-
-    if skipped_langs:
-        summary = ", ".join(f"{lang} ({n})" for lang, n in sorted(skipped_langs.items()))
-        logger.warning(
-            "Skipped %d file(s) with unsupported languages: %s. "
-            "Install tree-sitter for TypeScript/TSX support.",
-            sum(skipped_langs.values()),
-            summary,
-        )
-        if skipped_out is not None:
-            skipped_out.update(skipped_langs)
-
+    files, skipped_langs = _enumerate_repo_files(
+        repo_path, include_patterns, prepared_exclude, supported, max_files, skipped_out
+    )
     files = sorted(files, key=lambda f: f.path.as_posix())
 
-    entries = manifest.setdefault("entries", {})
-    if isinstance(entries, dict):
-        entries[cache_key] = {
-            "created_at": int(time.time()),
-            "invalidator": {
-                "type": invalidator_type,
-                "value": invalidator_value,
-            },
-            "files": _serialize_files(files),
-            "skipped_languages": skipped_langs,
-        }
-        if len(entries) > _DISCOVERY_MANIFEST_MAX_ENTRIES:
-            sorted_items = sorted(
-                entries.items(),
-                key=lambda item: (
-                    int(item[1].get("created_at", 0))
-                    if isinstance(item[1], dict)
-                    else 0
-                ),
-                reverse=True,
-            )
-            manifest["entries"] = {
-                key: value for key, value in sorted_items[:_DISCOVERY_MANIFEST_MAX_ENTRIES]
-            }
-        try:
-            _store_discovery_manifest(manifest_file, manifest)
-        except OSError:
-            logger.debug("Unable to persist discovery manifest: %s", manifest_file)
+    if max_files is None or len(files) < max_files:
+        _persist_discovery_cache(
+            manifest_file, manifest, cache_key, files, skipped_langs,
+            invalidator_type, invalidator_value
+        )
 
     return files

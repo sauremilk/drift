@@ -255,6 +255,128 @@ class _BulkCommitData:
     deletions: int = 0
 
 
+def _run_git_log_cmd(
+    repo_path: Path,
+    since_date: datetime.datetime,
+    fmt: str,
+    rev_range: str | None,
+) -> str | None:
+    """Run git log and return stdout, or None on error."""
+    try:
+        cmd = [
+            "git",
+            "log",
+            f"--since={since_date.isoformat()}",
+            f"--format={fmt}",
+            "--numstat",
+        ]
+        if rev_range:
+            cmd.append(rev_range)
+
+        result = subprocess.run(
+            cmd,
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+            cwd=str(repo_path),
+            timeout=60,
+            stdin=subprocess.DEVNULL,
+        )
+    except (FileNotFoundError, subprocess.TimeoutExpired):
+        return None
+
+    if result.returncode != 0:
+        return None
+
+    raw = result.stdout
+    return raw if raw.strip() else None
+
+
+def _parse_numstat_block(
+    numstat_block: str,
+    repo_prefix: str,
+) -> tuple[list[str], int, int]:
+    """Parse a numstat block into (files_changed, total_ins, total_del)."""
+    files_changed: list[str] = []
+    total_ins = 0
+    total_del = 0
+    for line in numstat_block.split("\n"):
+        if "\t" not in line:
+            continue
+        numstat_parts = line.split("\t", 2)
+        if len(numstat_parts) != 3:
+            continue
+        try:
+            ins = int(numstat_parts[0]) if numstat_parts[0] != "-" else 0
+            dels = int(numstat_parts[1]) if numstat_parts[1] != "-" else 0
+            fpath = numstat_parts[2].strip()
+            if not fpath:
+                continue
+            if repo_prefix and fpath.startswith(repo_prefix):
+                fpath = fpath[len(repo_prefix):]
+            elif repo_prefix:
+                continue
+            files_changed.append(fpath)
+            total_ins += ins
+            total_del += dels
+        except ValueError:
+            pass
+    return files_changed, total_ins, total_del
+
+
+def _parse_commit_record(
+    parts: list[str],
+    i: int,
+    repo_prefix: str,
+    ai_confidence_threshold: float,
+    indicator_boost: float,
+    file_filter: set[str] | None,
+) -> CommitInfo | None:
+    """Parse one commit record from split log parts, returning CommitInfo or None."""
+    full_hash = parts[i].strip()
+    author = parts[i + 1].strip()
+    email = parts[i + 2].strip()
+    timestamp_str = parts[i + 3].strip()
+    message_raw = parts[i + 4]
+    numstat_block = parts[i + 5]
+
+    if not full_hash or len(full_hash) < 10:
+        return None
+
+    files_changed, total_ins, total_del = _parse_numstat_block(numstat_block, repo_prefix)
+    message = message_raw.strip()
+
+    if file_filter and not any(f in file_filter for f in files_changed):
+        return None
+
+    try:
+        ts = datetime.datetime.fromisoformat(timestamp_str)
+    except ValueError:
+        return None
+
+    coauthors_raw = CO_AUTHOR_RE.findall(message)
+    coauthors = [name for name, _email in coauthors_raw]
+    _is_ai_raw, ai_conf = _detect_ai_attribution(
+        message, coauthors, indicator_boost=indicator_boost,
+    )
+    is_ai = ai_conf >= ai_confidence_threshold
+
+    return CommitInfo(
+        hash=full_hash[:12],
+        author=author or "unknown",
+        email=email,
+        timestamp=ts,
+        message=message,
+        files_changed=files_changed,
+        insertions=total_ins,
+        deletions=total_del,
+        is_ai_attributed=is_ai,
+        ai_confidence=ai_conf,
+        coauthors=coauthors,
+    )
+
+
 def parse_git_history(
     repo_path: Path,
     since_days: int = 90,
@@ -283,123 +405,21 @@ def parse_git_history(
     rs = "\x1e"  # ASCII Record Separator
     fmt = f"{rs}%H{rs}%aN{rs}%aE{rs}%aI{rs}%B{rs}"
 
-    try:
-        cmd = [
-            "git",
-            "log",
-            f"--since={since_date.isoformat()}",
-            f"--format={fmt}",
-            "--numstat",
-        ]
-        if rev_range:
-            cmd.append(rev_range)
-
-        result = subprocess.run(
-            cmd,
-            capture_output=True,
-            text=True,
-            encoding="utf-8",
-            errors="replace",
-            cwd=str(repo_path),
-            timeout=60,
-            stdin=subprocess.DEVNULL,
-        )
-    except (FileNotFoundError, subprocess.TimeoutExpired):
-        return []
-
-    if result.returncode != 0:
-        return []
-
-    raw = result.stdout
-    if not raw.strip():
+    raw = _run_git_log_cmd(repo_path, since_date, fmt, rev_range)
+    if raw is None:
         return []
 
     commits: list[CommitInfo] = []
-
-    # Split on the record separator.
-    # Format per commit: RS hash RS author RS email RS ts RS message RS
-    # Numstat lines follow AFTER the trailing RS, until the next commit's
-    # leading RS.  So after splitting we get groups of 6 parts:
-    #   [hash, author, email, ts, message, numstat_block]
     parts = raw.split(rs)
 
     i = 1  # skip leading empty part
     while i + 5 < len(parts):
-        full_hash = parts[i].strip()
-        author = parts[i + 1].strip()
-        email = parts[i + 2].strip()
-        timestamp_str = parts[i + 3].strip()
-        message_raw = parts[i + 4]
-        numstat_block = parts[i + 5]
+        commit = _parse_commit_record(
+            parts, i, repo_prefix, ai_confidence_threshold, indicator_boost, file_filter
+        )
+        if commit is not None:
+            commits.append(commit)
         i += 6
-
-        if not full_hash or len(full_hash) < 10:
-            continue
-
-        # numstat_block contains the numstat lines between this commit's
-        # trailing RS and the next commit's leading RS.
-        lines = numstat_block.split("\n")
-
-        files_changed: list[str] = []
-        total_ins = 0
-        total_del = 0
-
-        for line in lines:
-            if "\t" in line:
-                numstat_parts = line.split("\t", 2)
-                if len(numstat_parts) == 3:
-                    try:
-                        ins = int(numstat_parts[0]) if numstat_parts[0] != "-" else 0
-                        dels = int(numstat_parts[1]) if numstat_parts[1] != "-" else 0
-                        fpath = numstat_parts[2].strip()
-                        if fpath:
-                            # Map git-root-relative paths to repo-relative
-                            # paths when repo_path is a subdirectory (#117).
-                            if repo_prefix and fpath.startswith(repo_prefix):
-                                fpath = fpath[len(repo_prefix):]
-                            elif repo_prefix:
-                                # File is outside repo_path scope — skip it
-                                continue
-                            files_changed.append(fpath)
-                            total_ins += ins
-                            total_del += dels
-                            continue
-                    except ValueError:
-                        pass
-
-        message = message_raw.strip()
-
-        if file_filter and not any(f in file_filter for f in files_changed):
-            continue
-
-        # Parse timestamp
-        try:
-            ts = datetime.datetime.fromisoformat(timestamp_str)
-        except ValueError:
-            continue
-
-        coauthors_raw = CO_AUTHOR_RE.findall(message)
-        coauthors = [name for name, _email in coauthors_raw]
-        _is_ai_raw, ai_conf = _detect_ai_attribution(
-            message, coauthors, indicator_boost=indicator_boost,
-        )
-        is_ai = ai_conf >= ai_confidence_threshold
-
-        commits.append(
-            CommitInfo(
-                hash=full_hash[:12],
-                author=author or "unknown",
-                email=email,
-                timestamp=ts,
-                message=message,
-                files_changed=files_changed,
-                insertions=total_ins,
-                deletions=total_del,
-                is_ai_attributed=is_ai,
-                ai_confidence=ai_conf,
-                coauthors=coauthors,
-            ),
-        )
 
     return commits
 

@@ -20,7 +20,7 @@ import threading
 import time
 from collections import defaultdict
 from collections.abc import Callable
-from concurrent.futures import ThreadPoolExecutor, as_completed
+from concurrent.futures import Future, ThreadPoolExecutor, as_completed
 from concurrent.futures import TimeoutError as FutureTimeoutError
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any, cast
@@ -480,6 +480,175 @@ class IngestionPhase:
         self._fetch_git_history = fetch_git_history_fn
         self._future_timeout_seconds = max(0.001, float(future_timeout_seconds))
 
+    def _fix_stale_cache_path(self, hit: ParseResult, finfo: FileInfo) -> None:
+        """Update file path references in a cache hit whose path has changed."""
+        hit.file_path = finfo.path
+        for func in hit.functions:
+            func.file_path = finfo.path
+        for cls in hit.classes:
+            cls.file_path = finfo.path
+            for method in cls.methods:
+                method.file_path = finfo.path
+        for imp in hit.imports:
+            imp.source_file = finfo.path
+        for pattern in hit.patterns:
+            pattern.file_path = finfo.path
+
+    def _run_parse_futures(
+        self,
+        executor: ThreadPoolExecutor,
+        to_parse: list[tuple[int, FileInfo, str | None]],
+        parse_results_opt: list[ParseResult | None],
+        repo_path: Path,
+        degradation: DegradationInfo,
+        *,
+        no_cache: bool,
+        cache: ParseCache,
+    ) -> bool:
+        """Submit parse futures, collect results, handle errors/timeouts.
+
+        Returns True if a timeout occurred (so the executor can be shut down
+        with cancel_futures=True), False otherwise.
+        """
+        new_results: list[tuple[int, str, ParseResult]] = []
+        futures = {
+            executor.submit(
+                self._parse_file,
+                finfo.path,
+                repo_path,
+                finfo.language,
+            ): (idx, finfo, content_hash)
+            for idx, finfo, content_hash in to_parse
+        }
+        pending = set(futures)
+        timed_out = False
+        try:
+            for future in as_completed(futures, timeout=self._future_timeout_seconds):
+                pending.discard(future)
+                idx, finfo, content_hash = futures[future]
+                try:
+                    result = future.result(timeout=0)
+                except Exception as exc:
+                    logging.getLogger("drift").warning(
+                        "Parser failure for %s; file skipped in degraded mode.",
+                        finfo.path,
+                        exc_info=True,
+                    )
+                    degradation.causes.add("parser_failure")
+                    degradation.components.add("parser")
+                    degradation.events.append(
+                        make_degradation_event(
+                            cause="parser_failure",
+                            component="parser",
+                            message=(
+                                f"Parser failed for {finfo.path.as_posix()};"
+                                " file skipped in degraded mode."
+                            ),
+                            details={"error": str(exc), "file": finfo.path.as_posix()},
+                        ),
+                    )
+                    parse_results_opt[idx] = ParseResult(
+                        file_path=finfo.path,
+                        language=finfo.language,
+                        parse_errors=[str(exc)],
+                    )
+                    continue
+                parse_results_opt[idx] = result
+                if content_hash is not None:
+                    new_results.append((idx, content_hash, result))
+        except FutureTimeoutError:
+            timed_out = True
+            degradation.causes.add("parser_timeout")
+            degradation.components.add("parser")
+            for pending_future in pending:
+                idx, finfo, _content_hash = futures[pending_future]
+                pending_future.cancel()
+                degradation.events.append(
+                    make_degradation_event(
+                        cause="parser_timeout",
+                        component="parser",
+                        message=(
+                            f"Parser timed out for {finfo.path.as_posix()};"
+                            " file skipped in degraded mode."
+                        ),
+                        details={
+                            "file": finfo.path.as_posix(),
+                            "timeout_seconds": str(self._future_timeout_seconds),
+                        },
+                    ),
+                )
+                parse_results_opt[idx] = ParseResult(
+                    file_path=finfo.path,
+                    language=finfo.language,
+                    parse_errors=[
+                        f"parse timeout exceeded ({self._future_timeout_seconds:.3f}s)"
+                    ],
+                )
+
+        if not no_cache:
+            for _idx, h, r in new_results:
+                cache.put(h, r)
+
+        return timed_out
+
+    def _wait_for_git_history(
+        self,
+        git_future: Future | None,  # type: ignore[type-arg]
+        degradation: DegradationInfo,
+    ) -> tuple[list[CommitInfo], dict[str, FileHistory], float, bool]:
+        """Wait for git-history future.
+
+        Returns (commits, file_histories, git_seconds, timed_out).
+        """
+        timed_out = False
+        if git_future is not None:
+            try:
+                commits, file_histories, git_seconds, git_error = git_future.result(
+                    timeout=self._future_timeout_seconds
+                )
+                if git_error is not None:
+                    logging.getLogger("drift").warning(
+                        "Git history fetch failed; continuing without history.",
+                        exc_info=True,
+                    )
+                    degradation.causes.add("git_history_unavailable")
+                    degradation.components.add("git_history")
+                    degradation.events.append(
+                        make_degradation_event(
+                            cause="git_history_unavailable",
+                            component="git_history",
+                            message=(
+                                "Git history parsing failed; "
+                                "temporal/git-based context omitted."
+                            ),
+                            details={"error": str(git_error)},
+                        ),
+                    )
+            except FutureTimeoutError:
+                timed_out = True
+                git_future.cancel()
+                commits, file_histories, git_seconds = [], {}, 0.0
+                degradation.causes.add("git_history_timeout")
+                degradation.components.add("git_history")
+                degradation.events.append(
+                    make_degradation_event(
+                        cause="git_history_timeout",
+                        component="git_history",
+                        message=(
+                            "Git history retrieval timed out; "
+                            "temporal/git-based context omitted."
+                        ),
+                        details={"timeout_seconds": str(self._future_timeout_seconds)},
+                    ),
+                )
+        else:
+            logging.getLogger("drift").info(
+                "Not a git repository - skipping git history analysis.",
+            )
+            commits, file_histories, git_seconds = [], {}, 0.0
+
+        return commits, file_histories, git_seconds, timed_out
+
     def run(
         self,
         repo_path: Path,
@@ -522,17 +691,7 @@ class IngestionPhase:
                     # so a hit may carry a file_path from a different
                     # file with identical content (#115).
                     if hit.file_path != finfo.path:
-                        hit.file_path = finfo.path
-                        for func in hit.functions:
-                            func.file_path = finfo.path
-                        for cls in hit.classes:
-                            cls.file_path = finfo.path
-                            for method in cls.methods:
-                                method.file_path = finfo.path
-                        for imp in hit.imports:
-                            imp.source_file = finfo.path
-                        for pattern in hit.patterns:
-                            pattern.file_path = finfo.path
+                        self._fix_stale_cache_path(hit, finfo)
                     cached_results[idx] = hit
                     continue
             except OSError:
@@ -603,89 +762,15 @@ class IngestionPhase:
                 parse_results_opt[idx] = cached
 
             if to_parse:
-                new_results: list[tuple[int, str, ParseResult]] = []
-                futures = {
-                    executor.submit(
-                        self._parse_file,
-                        finfo.path,
-                        repo_path,
-                        finfo.language,
-                    ): (idx, finfo, content_hash)
-                    for idx, finfo, content_hash in to_parse
-                }
-                pending = set(futures)
-                try:
-                    for future in as_completed(futures, timeout=self._future_timeout_seconds):
-                        pending.discard(future)
-                        idx, finfo, content_hash = futures[future]
-                        try:
-                            result = future.result(timeout=0)
-                        except Exception as exc:
-                            logging.getLogger("drift").warning(
-                                "Parser failure for %s; file skipped in degraded mode.",
-                                finfo.path,
-                                exc_info=True,
-                            )
-                            degradation.causes.add("parser_failure")
-                            degradation.components.add("parser")
-                            degradation.events.append(
-                                make_degradation_event(
-                                    cause="parser_failure",
-                                    component="parser",
-                                    message=(
-                                        f"Parser failed for {finfo.path.as_posix()};"
-                                        " file skipped in degraded mode."
-                                    ),
-                                    details={
-                                        "error": str(exc),
-                                        "file": finfo.path.as_posix(),
-                                    },
-                                ),
-                            )
-                            parse_results_opt[idx] = ParseResult(
-                                file_path=finfo.path,
-                                language=finfo.language,
-                                parse_errors=[str(exc)],
-                            )
-                            continue
-                        parse_results_opt[idx] = result
-                        if content_hash is not None:
-                            new_results.append((idx, content_hash, result))
-                except FutureTimeoutError:
-                    timed_out = True
-                    degradation.causes.add("parser_timeout")
-                    degradation.components.add("parser")
-                    for pending_future in pending:
-                        idx, finfo, _content_hash = futures[pending_future]
-                        pending_future.cancel()
-                        degradation.events.append(
-                            make_degradation_event(
-                                cause="parser_timeout",
-                                component="parser",
-                                message=(
-                                    f"Parser timed out for {finfo.path.as_posix()};"
-                                    " file skipped in degraded mode."
-                                ),
-                                details={
-                                    "file": finfo.path.as_posix(),
-                                    "timeout_seconds": str(self._future_timeout_seconds),
-                                },
-                            ),
-                        )
-                        parse_results_opt[idx] = ParseResult(
-                            file_path=finfo.path,
-                            language=finfo.language,
-                            parse_errors=[
-                                (
-                                    "parse timeout exceeded "
-                                    f"({self._future_timeout_seconds:.3f}s)"
-                                )
-                            ],
-                        )
-
-                if not no_cache:
-                    for _idx, h, r in new_results:
-                        cache.put(h, r)
+                timed_out = self._run_parse_futures(
+                    executor,
+                    to_parse,
+                    parse_results_opt,
+                    repo_path,
+                    degradation,
+                    no_cache=no_cache,
+                    cache=cache,
+                )
 
             missing = [i for i, pr in enumerate(parse_results_opt) if pr is None]
             if missing:
@@ -701,53 +786,10 @@ class IngestionPhase:
             if progress:
                 progress("Parsing files", len(files), len(files))
 
-            git_seconds = 0.0
-            if git_future is not None:
-                try:
-                    commits, file_histories, git_seconds, git_error = git_future.result(
-                        timeout=self._future_timeout_seconds
-                    )
-                    if git_error is not None:
-                        logging.getLogger("drift").warning(
-                            "Git history fetch failed; continuing without history.",
-                            exc_info=True,
-                        )
-                        degradation.causes.add("git_history_unavailable")
-                        degradation.components.add("git_history")
-                        degradation.events.append(
-                            make_degradation_event(
-                                cause="git_history_unavailable",
-                                component="git_history",
-                                message=(
-                                    "Git history parsing failed; "
-                                    "temporal/git-based context omitted."
-                                ),
-                                details={"error": str(git_error)},
-                            ),
-                        )
-                except FutureTimeoutError:
-                    timed_out = True
-                    git_future.cancel()
-                    commits, file_histories, git_seconds = [], {}, 0.0
-                    degradation.causes.add("git_history_timeout")
-                    degradation.components.add("git_history")
-                    degradation.events.append(
-                        make_degradation_event(
-                            cause="git_history_timeout",
-                            component="git_history",
-                            message=(
-                                    "Git history retrieval timed out; "
-                                    "temporal/git-based context omitted."
-                            ),
-                            details={"timeout_seconds": str(self._future_timeout_seconds)},
-                        ),
-                    )
-            else:
-                logging.getLogger("drift").info(
-                    "Not a git repository - skipping git history analysis.",
-                )
-                commits, file_histories = [], {}
-                git_seconds = 0.0
+            commits, file_histories, git_seconds, git_timed_out = self._wait_for_git_history(
+                git_future, degradation
+            )
+            timed_out = timed_out or git_timed_out
         finally:
             executor.shutdown(wait=not timed_out, cancel_futures=timed_out)
 

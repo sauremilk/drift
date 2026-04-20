@@ -226,21 +226,10 @@ def _is_passive_definition_module(parse_result: ParseResult | None) -> bool:
     )
 
 
-def build_import_graph(
+def _build_graph_lookups(
     parse_results: list[ParseResult],
-) -> tuple[nx.DiGraph, list[ImportInfo]]:
-    """Build a directed dependency graph from import statements.
-
-    Complexity: O(n + m) where n = files, m = total imports.
-    Nodes are files (or unresolved external modules). Edges are import
-    relationships. Downstream analysis uses in-degree centrality for hub
-    detection and Tarjan's SCC algorithm for circular dependency detection.
-    """
-    graph = nx.DiGraph()
-    all_imports: list[ImportInfo] = []
-
-    # Build a direct module -> file lookup once to avoid repeated linear scans
-    # over all known files for every import in large repositories.
+) -> tuple[dict[str, str], dict[str, str]]:
+    """Build module-to-file and path-to-file lookup dicts from parse results."""
     module_to_file: dict[str, str] = {}
     path_to_file: dict[str, str] = {}
     for pr in parse_results:
@@ -254,44 +243,76 @@ def build_import_graph(
             path_to_file.setdefault(trimmed.with_suffix("").as_posix(), file_posix)
         for module_alias in _module_aliases_for_path(pr.file_path):
             module_to_file.setdefault(module_alias, file_posix)
+    return module_to_file, path_to_file
+
+
+def _resolve_import_target(
+    imp: ImportInfo,
+    file_path: Path,
+    module_to_file: dict[str, str],
+    path_to_file: dict[str, str],
+) -> tuple[str | None, str]:
+    """Resolve an import to a known file path, returning (target_file, target_module)."""
+    target_module = imp.imported_module
+    target_file: str | None = module_to_file.get(target_module)
+    if target_file is None:
+        target_file = path_to_file.get(target_module)
+    if target_file is None and imp.is_relative:
+        for candidate in _relative_import_candidates(file_path, imp):
+            resolved = module_to_file.get(candidate)
+            if resolved is not None:
+                return resolved, candidate
+    if target_file is None and imp.is_relative:
+        for candidate in _relative_path_candidates(file_path, target_module):
+            resolved = path_to_file.get(candidate)
+            if resolved is not None:
+                return resolved, candidate
+    return target_file, target_module
+
+
+def _add_graph_edge(
+    graph: nx.DiGraph,
+    src: str,
+    target_file: str | None,
+    target_module: str,
+    imp: ImportInfo,
+) -> None:
+    """Add an import edge to the graph, handling unresolved/external imports."""
+    if target_file is not None:
+        graph.add_edge(src, target_file, import_info=imp)
+    else:
+        unresolved_target = target_module.strip()
+        if not unresolved_target:
+            unresolved_target = ".".join(
+                n for n in imp.imported_names if n and n != "*"
+            ) or "<relative>"
+        graph.add_node(unresolved_target, external=True)
+        graph.add_edge(src, unresolved_target, import_info=imp)
+
+
+def build_import_graph(
+    parse_results: list[ParseResult],
+) -> tuple[nx.DiGraph, list[ImportInfo]]:
+    """Build a directed dependency graph from import statements.
+
+    Complexity: O(n + m) where n = files, m = total imports.
+    Nodes are files (or unresolved external modules). Edges are import
+    relationships. Downstream analysis uses in-degree centrality for hub
+    detection and Tarjan's SCC algorithm for circular dependency detection.
+    """
+    module_to_file, path_to_file = _build_graph_lookups(parse_results)
+    graph = nx.DiGraph()
+    all_imports: list[ImportInfo] = []
 
     for pr in parse_results:
         src = pr.file_path.as_posix()
         graph.add_node(src)
-
         for imp in pr.imports:
             all_imports.append(imp)
-
-            # Try to resolve the import to a known file
-            target_module = imp.imported_module
-            target_file = module_to_file.get(target_module)
-            if target_file is None:
-                target_file = path_to_file.get(target_module)
-            if target_file is None and imp.is_relative:
-                for candidate in _relative_import_candidates(pr.file_path, imp):
-                    resolved = module_to_file.get(candidate)
-                    if resolved is not None:
-                        target_module = candidate
-                        target_file = resolved
-                        break
-            if target_file is None and imp.is_relative:
-                for candidate in _relative_path_candidates(pr.file_path, target_module):
-                    resolved = path_to_file.get(candidate)
-                    if resolved is not None:
-                        target_module = candidate
-                        target_file = resolved
-                        break
-            if target_file is not None:
-                graph.add_edge(src, target_file, import_info=imp)
-            else:
-                # External or unresolved — still record it
-                unresolved_target = target_module.strip()
-                if not unresolved_target:
-                    unresolved_target = ".".join(
-                        n for n in imp.imported_names if n and n != "*"
-                    ) or "<relative>"
-                graph.add_node(unresolved_target, external=True)
-                graph.add_edge(src, unresolved_target, import_info=imp)
+            target_file, target_module = _resolve_import_target(
+                imp, pr.file_path, module_to_file, path_to_file
+            )
+            _add_graph_edge(graph, src, target_file, target_module, imp)
 
     return graph, all_imports
 

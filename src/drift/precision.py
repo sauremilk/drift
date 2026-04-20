@@ -362,6 +362,27 @@ class PrecisionRecallReport:
         return "\n".join(lines)
 
 
+def _classify_expectation(
+    exp: ExpectedFinding,
+    findings: list[Finding],
+    report: PrecisionRecallReport,
+    fixture_name: str,
+    signal_filter: set[SignalType] | None,
+) -> None:
+    """Record one expectation as TP/FN/FP/TN in the report."""
+    if signal_filter and exp.signal_type not in signal_filter:
+        return
+    detected = has_matching_finding(findings, exp)
+    if exp.should_detect and detected:
+        report.record_tp(exp.signal_type, fixture_name, exp.description)
+    elif exp.should_detect and not detected:
+        report.record_fn(exp.signal_type, fixture_name, exp.description)
+    elif not exp.should_detect and detected:
+        report.record_fp(exp.signal_type, fixture_name, exp.description)
+    else:
+        report.record_tn(exp.signal_type, fixture_name, exp.description)
+
+
 def evaluate_fixtures(
     fixtures: list[GroundTruthFixture],
     tmp_path: Path,
@@ -382,16 +403,6 @@ def evaluate_fixtures(
         all_warnings.extend(warnings)
 
         for exp in fixture.expected:
-            if signal_filter and exp.signal_type not in signal_filter:
-                continue
-            detected = has_matching_finding(findings, exp)
-            if exp.should_detect and detected:
-                report.record_tp(exp.signal_type, fixture.name, exp.description)
-            elif exp.should_detect and not detected:
-                report.record_fn(exp.signal_type, fixture.name, exp.description)
-            elif not exp.should_detect and detected:
-                report.record_fp(exp.signal_type, fixture.name, exp.description)
-            else:
-                report.record_tn(exp.signal_type, fixture.name, exp.description)
+            _classify_expectation(exp, findings, report, fixture.name, signal_filter)
 
     return report, all_warnings

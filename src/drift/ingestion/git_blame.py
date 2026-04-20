@@ -187,6 +187,77 @@ class BlameCache:
 # ---------------------------------------------------------------------------
 
 
+def _compute_blame_ranges(
+    file_requests: list[tuple[str, int | None, int | None]],
+) -> dict[str, tuple[int | None, int | None]]:
+    """Deduplicate file requests, widening line ranges per file."""
+    file_ranges: dict[str, tuple[int | None, int | None]] = {}
+    for fpath, start, end in file_requests:
+        existing = file_ranges.get(fpath)
+        if existing is None:
+            file_ranges[fpath] = (start, end)
+        else:
+            if existing[0] is None or start is None:
+                file_ranges[fpath] = (None, None)
+            else:
+                file_ranges[fpath] = (
+                    min(existing[0], start),
+                    max(existing[1] or start, end or start),
+                )
+    return file_ranges
+
+
+def _split_cached_blame(
+    file_ranges: dict[str, tuple[int | None, int | None]],
+    repo_path: Path,
+    cache: BlameCache,
+) -> tuple[dict[str, list[BlameLine]], dict[str, tuple[int | None, int | None]]]:
+    """Split file_ranges into cached results and uncached entries."""
+    results: dict[str, list[BlameLine]] = {}
+    uncached: dict[str, tuple[int | None, int | None]] = {}
+    for fpath, (start, end) in file_ranges.items():
+        chash = _content_hash(repo_path, fpath)
+        if chash is not None:
+            cached = cache.get(chash)
+            if cached is not None:
+                results[fpath] = cached
+                continue
+        uncached[fpath] = (start, end)
+    return results, uncached
+
+
+def _run_blame_parallel(
+    uncached: dict[str, tuple[int | None, int | None]],
+    repo_path: Path,
+    timeout_per_file: float,
+    max_workers: int,
+    cache: BlameCache,
+) -> dict[str, list[BlameLine]]:
+    """Execute blame for uncached files using a thread pool."""
+    results: dict[str, list[BlameLine]] = {}
+
+    def _blame_one(fpath: str, start: int | None, end: int | None) -> tuple[str, list[BlameLine]]:
+        bl = blame_lines(repo_path, fpath, start, end, timeout=timeout_per_file)
+        chash = _content_hash(repo_path, fpath)
+        if chash is not None:
+            cache.put(chash, bl)
+        return fpath, bl
+
+    with ThreadPoolExecutor(max_workers=min(max_workers, len(uncached))) as pool:
+        futures = {
+            pool.submit(_blame_one, fp, s, e): fp for fp, (s, e) in uncached.items()
+        }
+        for future in as_completed(futures):
+            try:
+                fpath, blame_result = future.result()
+                results[fpath] = blame_result
+            except Exception:
+                fpath = futures[future]
+                logger.debug("blame worker failed for %s", fpath, exc_info=True)
+                results[fpath] = []
+    return results
+
+
 def blame_files_parallel(
     repo_path: Path,
     file_requests: list[tuple[str, int | None, int | None]],
@@ -210,60 +281,13 @@ def blame_files_parallel(
     if cache is None:
         cache = BlameCache()
 
-    # Deduplicate: group requests by file. For each file, use the widest
-    # line range (or full file if any request omits lines).
-    file_ranges: dict[str, tuple[int | None, int | None]] = {}
-    for fpath, start, end in file_requests:
-        existing = file_ranges.get(fpath)
-        if existing is None:
-            file_ranges[fpath] = (start, end)
-        else:
-            # Widen range: if either request has no start_line, blame full file
-            if existing[0] is None or start is None:
-                file_ranges[fpath] = (None, None)
-            else:
-                file_ranges[fpath] = (
-                    min(existing[0], start),
-                    max(existing[1] or start, end or start),
-                )
-
-    results: dict[str, list[BlameLine]] = {}
-
-    # Check cache first
-    uncached: dict[str, tuple[int | None, int | None]] = {}
-    for fpath, (start, end) in file_ranges.items():
-        chash = _content_hash(repo_path, fpath)
-        if chash is not None:
-            cached = cache.get(chash)
-            if cached is not None:
-                results[fpath] = cached
-                continue
-        uncached[fpath] = (start, end)
+    file_ranges = _compute_blame_ranges(file_requests)
+    results, uncached = _split_cached_blame(file_ranges, repo_path, cache)
 
     if not uncached:
         return results
 
-    def _blame_one(fpath: str, start: int | None, end: int | None) -> tuple[str, list[BlameLine]]:
-        bl = blame_lines(repo_path, fpath, start, end, timeout=timeout_per_file)
-        # Cache result
-        chash = _content_hash(repo_path, fpath)
-        if chash is not None:
-            cache.put(chash, bl)
-        return fpath, bl
-
-    with ThreadPoolExecutor(max_workers=min(max_workers, len(uncached))) as pool:
-        futures = {
-            pool.submit(_blame_one, fp, s, e): fp for fp, (s, e) in uncached.items()
-        }
-        for future in as_completed(futures):
-            try:
-                fpath, blame_result = future.result()
-                results[fpath] = blame_result
-            except Exception:
-                fpath = futures[future]
-                logger.debug("blame worker failed for %s", fpath, exc_info=True)
-                results[fpath] = []
-
+    results.update(_run_blame_parallel(uncached, repo_path, timeout_per_file, max_workers, cache))
     return results
 
 

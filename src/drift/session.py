@@ -586,6 +586,54 @@ class DriftSession:  # drift:ignore[DCA]
                     return "pending"
         return "unknown"
 
+    def _check_duplicate_lease(self, task_id: str) -> bool:
+        """Return True if task_id already has an active lease (should reject)."""
+        existing = self.active_leases.get(task_id)
+        if existing and existing["expires_at"] > time.time():
+            self.metrics.duplicate_claims_attempted += 1
+            return True
+        return False
+
+    def _find_pending_task(self, task_id: str | None) -> dict[str, Any] | None:
+        """Find the target task from selected_tasks by ID or first pending."""
+        if task_id is not None:
+            for t in self.selected_tasks:
+                tid = t.get("id", t.get("task_id", ""))
+                if tid == task_id:
+                    return t if self._effective_task_state(task_id) == "pending" else None
+        else:
+            for t in self.selected_tasks:
+                tid = t.get("id", t.get("task_id", ""))
+                if self._effective_task_state(tid) == "pending":
+                    return t
+        return None
+
+    def _record_lease(
+        self,
+        tid: str,
+        agent_id: str,
+        now: float,
+        lease_ttl_seconds: int,
+    ) -> dict[str, Any]:
+        """Store the new lease entry and update metrics."""
+        self.active_leases[tid] = {
+            "agent_id": agent_id,
+            "acquired_at": now,
+            "expires_at": now + lease_ttl_seconds,
+            "lease_ttl_seconds": lease_ttl_seconds,
+            "renew_count": 0,
+        }
+        self.metrics.tasks_claimed += 1
+        if self.metrics.first_claim_at is None:
+            self.metrics.first_claim_at = now
+        return {
+            "task_id": tid,
+            "agent_id": agent_id,
+            "acquired_at": now,
+            "expires_at": now + lease_ttl_seconds,
+            "lease_ttl_seconds": lease_ttl_seconds,
+        }
+
     def claim_task(
         self,
         agent_id: str,
@@ -604,53 +652,18 @@ class DriftSession:  # drift:ignore[DCA]
                 return None
 
             # Phase G: explicit Claim-Guard — reject if already actively leased
-            if task_id is not None:
-                existing = self.active_leases.get(task_id)
-                if existing and existing["expires_at"] > time.time():
-                    self.metrics.duplicate_claims_attempted += 1
-                    return None
+            if task_id is not None and self._check_duplicate_lease(task_id):
+                return None
 
-            target_task: dict[str, Any] | None = None
-            if task_id is not None:
-                for t in self.selected_tasks:
-                    tid = t.get("id", t.get("task_id", ""))
-                    if tid == task_id:
-                        if self._effective_task_state(task_id) == "pending":
-                            target_task = t
-                        break
-            else:
-                for t in self.selected_tasks:
-                    tid = t.get("id", t.get("task_id", ""))
-                    if self._effective_task_state(tid) == "pending":
-                        target_task = t
-                        break
-
+            target_task = self._find_pending_task(task_id)
             if target_task is None:
                 return None
 
             tid = target_task.get("id", target_task.get("task_id", ""))
             now = time.time()
-            self.active_leases[tid] = {
-                "agent_id": agent_id,
-                "acquired_at": now,
-                "expires_at": now + lease_ttl_seconds,
-                "lease_ttl_seconds": lease_ttl_seconds,
-                "renew_count": 0,
-            }
-            self.metrics.tasks_claimed += 1
-            if self.metrics.first_claim_at is None:
-                self.metrics.first_claim_at = now
+            lease = self._record_lease(tid, agent_id, now, lease_ttl_seconds)
             self.touch()
-            return {
-                "task": target_task,
-                "lease": {
-                    "task_id": tid,
-                    "agent_id": agent_id,
-                    "acquired_at": now,
-                    "expires_at": now + lease_ttl_seconds,
-                    "lease_ttl_seconds": lease_ttl_seconds,
-                },
-            }
+            return {"task": target_task, "lease": lease}
 
     def renew_lease(
         self,

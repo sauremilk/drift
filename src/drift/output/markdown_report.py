@@ -14,7 +14,8 @@ from typing import TYPE_CHECKING
 from drift import __version__
 
 if TYPE_CHECKING:
-    from drift.models import Finding, RepoAnalysis
+    from drift.models import Finding, ModuleScore, RepoAnalysis
+    from drift.preflight import PreflightResult
 
 _SEVERITY_EMOJI = {
     "critical": "🔴",
@@ -47,6 +48,84 @@ def _finding_row(finding: Finding, rank: int) -> str:
     signal = finding.signal_type
     title = finding.title or finding.description[:80]
     return f"| {rank} | {sev} {finding.severity.value} | `{signal}` | `{location}` | {title} |"
+
+
+def _md_preflight_section(pf: PreflightResult) -> list[str]:
+    """Build preflight diagnostics lines."""
+    lines: list[str] = []
+    lines.append("## Preflight Diagnostics")
+    lines.append("")
+    git_icon = "✅" if pf.git_available else "⚠️"
+    lines.append(f"- {git_icon} Git: {'available' if pf.git_available else 'not found'}")
+    lines.append(f"- 📁 {pf.python_files_found} Python files found")
+    lines.append(f"- 🔍 {pf.active_count} signals active, {pf.skipped_count} skipped")
+    if pf.skipped_signals:
+        lines.append("")
+        lines.append("**Skipped signals:**")
+        lines.append("")
+        for skip in pf.skipped_signals:
+            lines.append(f"- **{skip.signal_id}** ({skip.signal_name}): {skip.reason}")
+            lines.append(f"  - 💡 {skip.hint}")
+    if pf.warnings:
+        lines.append("")
+        for warn in pf.warnings:
+            lines.append(f"> ⚠️ {warn}")
+    lines.append("")
+    return lines
+
+
+def _md_findings_section(findings: list[Finding], max_findings: int) -> list[str]:
+    """Build findings table lines."""
+    lines: list[str] = []
+    total = len(findings)
+    shown = findings[:max_findings]
+    if shown:
+        lines.append(f"## Findings ({total})")
+        lines.append("")
+        lines.append("| # | Severity | Signal | Location | Title |")
+        lines.append("|---|----------|--------|----------|-------|")
+        for i, f in enumerate(shown, 1):
+            lines.append(_finding_row(f, i))
+        if total > max_findings:
+            lines.append(f"| | | | | *...and {total - max_findings} more* |")
+    else:
+        lines.append("## Findings")
+        lines.append("")
+        lines.append("✅ **No findings** — no structural coherence problems detected.")
+    lines.append("")
+    return lines
+
+
+def _md_modules_section(module_scores: list[ModuleScore]) -> list[str]:
+    """Build module scores section lines."""
+    lines: list[str] = []
+    lines.append("## Module Scores")
+    lines.append("")
+    lines.append("| Module | Score | Findings |")
+    lines.append("|--------|-------|----------|")
+    for m in sorted(module_scores, key=lambda x: -x.drift_score):
+        lines.append(f"| `{m.path}` | {m.drift_score:.1f} | {len(m.findings)} |")
+    lines.append("")
+    return lines
+
+
+def _md_signal_coverage_section(pf: PreflightResult) -> list[str]:
+    """Build signal coverage section lines."""
+    lines: list[str] = []
+    lines.append("## Signal Coverage")
+    lines.append("")
+    active_str = (
+        ", ".join(f"`{s}`" for s in pf.active_signals)
+        if pf.active_signals
+        else "none"
+    )
+    lines.append(f"**Active:** {active_str}")
+    if pf.skipped_signals:
+        lines.append(
+            f"**Skipped:** {', '.join(f'`{s.signal_id}`' for s in pf.skipped_signals)}"
+        )
+    lines.append("")
+    return lines
 
 
 def analysis_to_markdown(
@@ -99,76 +178,22 @@ def analysis_to_markdown(
     # Preflight
     pf = analysis.preflight
     if include_preflight and pf is not None:
-        lines.append("## Preflight Diagnostics")
-        lines.append("")
-        git_icon = "✅" if pf.git_available else "⚠️"
-        lines.append(f"- {git_icon} Git: {'available' if pf.git_available else 'not found'}")
-        lines.append(f"- 📁 {pf.python_files_found} Python files found")
-        lines.append(f"- 🔍 {pf.active_count} signals active, {pf.skipped_count} skipped")
-        if pf.skipped_signals:
-            lines.append("")
-            lines.append("**Skipped signals:**")
-            lines.append("")
-            for skip in pf.skipped_signals:
-                lines.append(f"- **{skip.signal_id}** ({skip.signal_name}): {skip.reason}")
-                lines.append(f"  - 💡 {skip.hint}")
-        if pf.warnings:
-            lines.append("")
-            for warn in pf.warnings:
-                lines.append(f"> ⚠️ {warn}")
-        lines.append("")
+        lines.extend(_md_preflight_section(pf))
 
     # Findings table
-    findings = sorted(analysis.findings, key=lambda f: (
+    sorted_findings = sorted(analysis.findings, key=lambda f: (
         {"critical": 0, "high": 1, "medium": 2, "low": 3, "info": 4}.get(f.severity.value, 5),
         -(f.impact or 0),
     ))
-    total = len(findings)
-    shown = findings[:max_findings]
-
-    if shown:
-        lines.append(f"## Findings ({total})")
-        lines.append("")
-        lines.append("| # | Severity | Signal | Location | Title |")
-        lines.append("|---|----------|--------|----------|-------|")
-        for i, f in enumerate(shown, 1):
-            lines.append(_finding_row(f, i))
-        if total > max_findings:
-            lines.append(f"| | | | | *...and {total - max_findings} more* |")
-        lines.append("")
-    else:
-        lines.append("## Findings")
-        lines.append("")
-        lines.append("✅ **No findings** — no structural coherence problems detected.")
-        lines.append("")
+    lines.extend(_md_findings_section(sorted_findings, max_findings))
 
     # Module scores
     if include_modules and analysis.module_scores:
-        lines.append("## Module Scores")
-        lines.append("")
-        lines.append("| Module | Score | Findings |")
-        lines.append("|--------|-------|----------|")
-        for m in sorted(analysis.module_scores, key=lambda x: -x.drift_score):
-            lines.append(
-                f"| `{m.path}` | {m.drift_score:.1f} | {len(m.findings)} |"
-            )
-        lines.append("")
+        lines.extend(_md_modules_section(analysis.module_scores))
 
     # Signal coverage
     if include_signal_coverage and pf is not None:
-        lines.append("## Signal Coverage")
-        lines.append("")
-        active_str = (
-            ", ".join(f"`{s}`" for s in pf.active_signals)
-            if pf.active_signals
-            else "none"
-        )
-        lines.append(f"**Active:** {active_str}")
-        if pf.skipped_signals:
-            lines.append(
-                f"**Skipped:** {', '.join(f'`{s.signal_id}`' for s in pf.skipped_signals)}"
-            )
-        lines.append("")
+        lines.extend(_md_signal_coverage_section(pf))
 
     # Analyzer warnings (signal-level)
     analyzer_warnings = getattr(analysis, "analyzer_warnings", [])

@@ -347,47 +347,122 @@ def analysis_to_json(
     return json.dumps(data, indent=indent, default=str, sort_keys=True)
 
 
+def _sarif_build_rule(f: Finding) -> dict[str, Any]:
+    """Build a SARIF rule object for a finding."""
+    rule_obj: dict[str, Any] = {
+        "id": f.rule_id or f.signal_type,
+        "shortDescription": {"text": f.signal_type},
+        "defaultConfiguration": {
+            "level": "error"
+            if f.severity in (Severity.CRITICAL, Severity.HIGH)
+            else "warning"
+            if f.severity == Severity.MEDIUM
+            else "note",
+        },
+    }
+    cwe = f.metadata.get("cwe")
+    if cwe and isinstance(cwe, str) and cwe.startswith("CWE-"):
+        cwe_id = cwe.split("-", 1)[1]
+        rule_obj["helpUri"] = f"https://cwe.mitre.org/data/definitions/{cwe_id}.html"
+    try:
+        rule_rec = generate_recommendation(f)
+        if rule_rec:
+            rule_obj["help"] = {
+                "text": rule_rec.description,
+                "markdown": f"**{rule_rec.title}**: {rule_rec.description}",
+            }
+    except (ImportError, AttributeError, KeyError, TypeError):
+        pass
+    return rule_obj
+
+
+def _sarif_build_location(f: Finding) -> dict[str, Any] | None:
+    """Build a SARIF physicalLocation dict for a finding, or None if no file."""
+    if not f.file_path:
+        return None
+    location: dict[str, Any] = {
+        "physicalLocation": {
+            "artifactLocation": {"uri": f.file_path.as_posix()},
+        },
+    }
+    if f.start_line is not None and f.start_line > 0:
+        location["physicalLocation"]["region"] = {"startLine": f.start_line}
+        if f.end_line and f.end_line > 0:
+            location["physicalLocation"]["region"]["endLine"] = f.end_line
+    else:
+        location["physicalLocation"]["region"] = {"startLine": 1}
+    return location
+
+
+def _sarif_enrich_result(f: Finding, result: dict[str, Any]) -> None:
+    """Enrich a SARIF result dict with location, related files, fix text, and props."""
+    location = _sarif_build_location(f)
+    if location:
+        result["locations"] = [location]
+
+    if f.logical_location:
+        ll: dict[str, Any] = {
+            "name": f.logical_location.name,
+            "kind": f.logical_location.kind,
+            "fullyQualifiedName": f.logical_location.fully_qualified_name,
+        }
+        result["locations"] = result.get("locations", [])
+        if result["locations"]:
+            result["locations"][0]["logicalLocations"] = [ll]
+        else:
+            result["logicalLocations"] = [ll]
+
+    if f.related_files:
+        result["relatedLocations"] = [
+            {
+                "id": idx,
+                "message": {"text": "Related file"},
+                "physicalLocation": {"artifactLocation": {"uri": rf.as_posix()}},
+            }
+            for idx, rf in enumerate(f.related_files)
+        ]
+
+    if f.fix:
+        base_text = f"{f.title}\n{f.description}\nFIX: {f.fix}"
+        try:
+            msg_rec = generate_recommendation(f)
+            if msg_rec:
+                combined = f"{base_text} | {msg_rec.title}"
+                base_text = combined[:400] if len(combined) > 400 else combined
+        except (ImportError, AttributeError, KeyError, TypeError):
+            pass
+        result["message"]["text"] = base_text
+
+    props: dict[str, Any] = {"drift:findingId": finding_fingerprint(f)}
+    if f.language:
+        props["drift:language"] = f.language
+    ctx_tags = f.metadata.get("context_tags")
+    if ctx_tags:
+        props["drift:context"] = ctx_tags
+    if f.attribution:
+        props["drift:attribution"] = {
+            "commitHash": f.attribution.commit_hash,
+            "author": f.attribution.author,
+            "date": f.attribution.date.isoformat(),
+            "branchHint": f.attribution.branch_hint,
+            "aiAttributed": f.attribution.ai_attributed,
+            "aiConfidence": f.attribution.ai_confidence,
+        }
+    if props:
+        result["properties"] = props
+
+
 def findings_to_sarif(analysis: RepoAnalysis) -> str:
     """Export findings in SARIF format for GitHub Code Scanning integration."""
-    rules: list[dict[str, object]] = []
-    results: list[dict[str, object]] = []
-
+    rules: list[dict[str, Any]] = []
+    results: list[dict[str, Any]] = []
     rule_ids: dict[str, int] = {}
+
     for f in sorted(analysis.findings, key=_finding_sort_key):
         rule_key = f.rule_id or f.signal_type
         if rule_key not in rule_ids:
             rule_ids[rule_key] = len(rules)
-            rule_obj: dict[str, object] = {
-                "id": rule_key,
-                "shortDescription": {"text": f.signal_type},
-                "defaultConfiguration": {
-                    "level": "error"
-                    if f.severity in (Severity.CRITICAL, Severity.HIGH)
-                    else "warning"
-                    if f.severity == Severity.MEDIUM
-                    else "note",
-                },
-            }
-            # Attach CWE reference for security-related findings.
-            cwe = f.metadata.get("cwe")
-            if cwe and isinstance(cwe, str) and cwe.startswith("CWE-"):
-                cwe_id = cwe.split("-", 1)[1]
-                rule_obj["helpUri"] = (
-                    f"https://cwe.mitre.org/data/definitions/{cwe_id}.html"
-                )
-            # ADR-052: attach recommendation as rule-level help text.
-            try:
-                from drift.recommendations import generate_recommendation
-
-                rule_rec = generate_recommendation(f)
-                if rule_rec:
-                    rule_obj["help"] = {
-                        "text": rule_rec.description,
-                        "markdown": f"**{rule_rec.title}**: {rule_rec.description}",
-                    }
-            except (ImportError, AttributeError, KeyError, TypeError):
-                pass
-            rules.append(rule_obj)
+            rules.append(_sarif_build_rule(f))
 
         result: dict[str, Any] = {
             "ruleId": rule_key,
@@ -398,93 +473,7 @@ def findings_to_sarif(analysis: RepoAnalysis) -> str:
             if f.severity == Severity.MEDIUM
             else "note",
         }
-
-        if f.file_path:
-            location: dict[str, Any] = {
-                "physicalLocation": {
-                    "artifactLocation": {"uri": f.file_path.as_posix()},
-                },
-            }
-            if f.start_line is not None and f.start_line > 0:
-                location["physicalLocation"]["region"] = {
-                    "startLine": f.start_line,
-                }
-                if f.end_line and f.end_line > 0:
-                    location["physicalLocation"]["region"]["endLine"] = f.end_line
-            else:
-                # Fallback: provide startLine 1 so GitHub can create
-                # file-level inline annotations (#95).
-                location["physicalLocation"]["region"] = {"startLine": 1}
-            result["locations"] = [location]
-
-        # SARIF v2.1.0 §3.33: logical locations for AST-based navigation.
-        if f.logical_location:
-            ll: dict[str, Any] = {
-                "name": f.logical_location.name,
-                "kind": f.logical_location.kind,
-                "fullyQualifiedName": f.logical_location.fully_qualified_name,
-            }
-            result["locations"] = result.get("locations", [])
-            if result["locations"]:
-                result["locations"][0]["logicalLocations"] = [ll]
-            else:
-                result["logicalLocations"] = [ll]
-
-        # Include all related locations (Opt-2: expose every location in SARIF)
-        if f.related_files:
-            result["relatedLocations"] = [
-                {
-                    "id": idx,
-                    "message": {"text": "Related file"},
-                    "physicalLocation": {
-                        "artifactLocation": {"uri": rf.as_posix()},
-                    },
-                }
-                for idx, rf in enumerate(f.related_files)
-            ]
-
-        # ADR-052: enrich message with fix text and recommendation action.
-        if f.fix:
-            base_text = f"{f.title}\n{f.description}\nFIX: {f.fix}"
-            try:
-                from drift.recommendations import generate_recommendation
-
-                msg_rec = generate_recommendation(f)
-                if msg_rec:
-                    combined = f"{base_text} | {msg_rec.title}"
-                    base_text = combined[:400] if len(combined) > 400 else combined
-            except (ImportError, AttributeError, KeyError, TypeError):
-                pass
-            result["message"]["text"] = base_text
-
-        # ADR-006: context tags as SARIF result properties
-        props: dict[str, Any] = {}
-
-        # ADR-042: stable finding ID for cross-referencing
-        props["drift:findingId"] = finding_fingerprint(f)
-
-        # Language annotation for multi-language repositories.
-        if f.language:
-            props["drift:language"] = f.language
-
-        ctx_tags = f.metadata.get("context_tags")
-        if ctx_tags:
-            props["drift:context"] = ctx_tags
-
-        # ADR-034: attribution provenance in SARIF properties
-        if f.attribution:
-            props["drift:attribution"] = {
-                "commitHash": f.attribution.commit_hash,
-                "author": f.attribution.author,
-                "date": f.attribution.date.isoformat(),
-                "branchHint": f.attribution.branch_hint,
-                "aiAttributed": f.attribution.ai_attributed,
-                "aiConfidence": f.attribution.ai_confidence,
-            }
-
-        if props:
-            result["properties"] = props
-
+        _sarif_enrich_result(f, result)
         results.append(result)
 
     run_obj: dict[str, Any] = {
