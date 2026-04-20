@@ -53,6 +53,37 @@
       "tests": [
         "tests/test_interactive_review.py"
       ]
+    },
+    {
+      "id": "nudge_baseline_ttl_configurable",
+      "description": "nudge_baseline_ttl_seconds (default 900) in DriftConfig lets users tune how long a baseline snapshot stays valid",
+      "motivation": "Hardcoded 900s was too short for large repos and untunable; config field replaces persisted TTL on warm load so a change takes effect immediately",
+      "coverage": {
+        "config_field": "nudge_baseline_ttl_seconds",
+        "api_path": "src/drift/api/nudge.py",
+        "config_path": "src/drift/config/_loader.py",
+        "incremental_path": "src/drift/incremental.py",
+        "example_yaml": "drift.example.yaml"
+      },
+      "tests": [
+        "tests/test_nudge.py"
+      ],
+      "closes": "#421"
+    },
+    {
+      "id": "no_cache_flag_and_cache_clear",
+      "description": "drift analyze --no-cache bypasses parse/signal caches for the current run; drift cache clear removes cache entries with optional --parse-only/--signal-only/--dry-run scoping",
+      "motivation": "Allows users to force fresh analysis without deleting cache entries and to manually invalidate caches when fixtures or configs change",
+      "coverage": {
+        "cli_flags": ["--no-cache", "cache clear", "--parse-only", "--signal-only", "--dry-run"],
+        "threaded_through": ["IngestionPhase.run()", "SignalPhase.run()", "AnalysisPipeline.run()", "_run_pipeline()", "analyze_repo()"],
+        "analyzer_path": "src/drift/analyzer.py"
+      },
+      "tests": [
+        "tests/test_no_cache_flag.py",
+        "tests/test_cache_cmd.py"
+      ],
+      "closes": "#424"
     }
   ]
 }
