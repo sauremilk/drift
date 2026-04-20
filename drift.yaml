@@ -18,36 +18,19 @@ exclude:
   - "demos/**"
   - ".drift/**"
 
-# Per-path overrides: suppress pattern_fragmentation in modules where
-# error-handling and return-pattern diversity is architecturally intentional
-# (i.e. domain-specific contracts, not accidental fragmentation).
 path_overrides:
-  # Each signal type has its own error-handling contract (IOError, ValueError,
-  # Exception, specific AST errors). Variation is intentional by design.
   "src/drift/signals":
     exclude_signals:
       - pattern_fragmentation
-  # Subprocess, entry-point loading, and JSON parsing have fundamentally
-  # different error models and cannot share a single canonical pattern.
   "src/drift/integrations":
     exclude_signals:
       - pattern_fragmentation
-  # Loop-based calibration functions use `continue` for resilience; this
-  # deviates from the module's dominant return-based pattern by design.
   "src/drift/calibration":
     exclude_signals:
       - pattern_fragmentation
-  # API layer: query functions return Optional, command functions return data
-  # directly. Mixed return-type contract is intentional (CQRS-lite pattern).
   "src/drift/api":
     exclude_signals:
       - pattern_fragmentation
-  # ADR files reference directory names (calibration/, serve/, etc.) as
-  # architecture descriptions — the actual directories exist under src/drift/
-  # with full package paths. DIA bare-name matching produces FPs here.
-  "decisions/*":
-    exclude_signals:
-      - doc_impl_drift
 
 calibration:
   enabled: true
