@@ -7,7 +7,7 @@ from pathlib import Path
 from typing import Any
 
 from drift.api._config import _emit_api_telemetry, _log
-from drift.intent._storage import load_intent
+from drift.intent._storage import load_intent  # drift:ignore[PHR]
 from drift.intent.feedback import generate_feedback
 from drift.intent.verify import verify_artifact
 

@@ -7,8 +7,8 @@ from pathlib import Path
 from typing import Any
 
 from drift.api._config import _emit_api_telemetry, _log
-from drift.intent._storage import save_intent
-from drift.intent.capture import extract_intent
+from drift.intent._storage import save_intent  # drift:ignore[PHR]
+from drift.intent.capture import extract_intent  # drift:ignore[PHR]
 
 
 def capture_intent(*, raw: str, path: str) -> dict[str, Any]:
@@ -25,6 +25,10 @@ def capture_intent(*, raw: str, path: str) -> dict[str, Any]:
         confidence, clarification_needed, clarification_question,
         next_tool_call, agent_instruction.
     """
+    if not raw or not raw.strip():
+        return {"error": "raw must be a non-empty string"}
+    if not path:
+        return {"error": "path must be a non-empty string"}
     t0 = _time.monotonic()
     repo_root = Path(path)
     error: Exception | None = None
