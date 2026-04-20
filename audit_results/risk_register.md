@@ -1,5 +1,20 @@
 # Risk Register
 
+## 2026-04-20 - Output: human_message field added to JSON output (--audience plain)
+
+- Risk ID: RISK-OUTPUT-2026-04-20-HUMAN-MESSAGE-FIELD
+- Component: `src/drift/output/json_output.py`, `src/drift/output/rich_output.py`
+- Type: Additive output-format extension (new JSON field)
+- Description: `human_message` field added to per-finding JSON output; `description` now prefers
+  `human_message` (plain-language, audience-aware) over raw `description` when the lang module
+  provides one. Rich output uses the same preference. Additive only — consumers ignoring unknown
+  fields are unaffected; no existing fields removed or renamed.
+- Severity: LOW — backward-compatible addition; no trust-boundary change; no new write paths.
+- Mitigations: (1) Existing `description` field preserved unchanged; (2) `human_message` is
+  `None` when lang module not active (transparent fallback); (3) JSON schema updated to allow
+  the new optional field.
+- Residual risk: Minimal — additive field, no precision/recall impact.
+
 ## 2026-04-20 - COD FP: Private Helper Extraction in Mono-Function Files
 
 - Risk ID: RISK-COD-PRIVATE-HELPERS-2026-04-20
