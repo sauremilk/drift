@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import asyncio
 import json
+import os
+import time
 from collections.abc import Callable
 from pathlib import Path
 from typing import Any
@@ -11,6 +13,38 @@ from typing import Any
 from drift.mcp_autopilot import AUTOPILOT_PAYLOAD_MODES, build_autopilot_summary
 from drift.mcp_orchestration import _strict_guardrail_block_response
 from drift.mcp_utils import _parse_csv_ids, _run_sync_in_thread
+
+# ---------------------------------------------------------------------------
+# ADR-081 Nachschärfung (Q2): plan-staleness threshold
+# ---------------------------------------------------------------------------
+# A queue log whose newest ``plan_created`` event is older than this many
+# seconds is treated as stale: the session_start response still replays the
+# plan so no work is lost, but ``resumed_plan_stale`` becomes True, the
+# agent_instruction warns the agent, and ``next_tool_call`` is redirected to
+# ``drift_fix_plan`` so prioritisation can happen against the current scan.
+# Default 24 h matches the "next working day" heuristic; override via the
+# ``DRIFT_QUEUE_STALE_SECONDS`` environment variable for tests or projects
+# with very fast cadence.
+_QUEUE_PLAN_STALE_SECONDS_DEFAULT: float = 86_400.0
+
+
+def _queue_plan_stale_threshold() -> float:
+    """Return the current staleness threshold in seconds.
+
+    Reads ``DRIFT_QUEUE_STALE_SECONDS`` at call time so tests can override
+    it via ``monkeypatch.setenv`` without reloading the module.  Invalid
+    or non-positive values fall back to the default.
+    """
+    raw = os.environ.get("DRIFT_QUEUE_STALE_SECONDS")
+    if not raw:
+        return _QUEUE_PLAN_STALE_SECONDS_DEFAULT
+    try:
+        value = float(raw)
+    except (TypeError, ValueError):
+        return _QUEUE_PLAN_STALE_SECONDS_DEFAULT
+    if value <= 0.0:
+        return _QUEUE_PLAN_STALE_SECONDS_DEFAULT
+    return value
 
 
 async def run_session_start(
@@ -99,6 +133,9 @@ async def run_session_start(
     resumed_tasks = 0
     resumed_completed = 0
     resumed_failed = 0
+    resumed_plan_created_at: float | None = None
+    resumed_plan_age_seconds: float | None = None
+    resumed_plan_stale = False
     if session is not None and not fresh_start:
         events = replay_events(session.repo_path)
         if events:
@@ -117,6 +154,14 @@ async def run_session_start(
                 resumed_tasks = len(state.selected_tasks)
                 resumed_completed = len(state.completed_task_ids)
                 resumed_failed = len(state.failed_task_ids)
+                # ADR-081 Nachschärfung (Q2): surface plan age so agents
+                # can decide to re-plan rather than follow a stale queue.
+                if state.plan_created_at is not None:
+                    resumed_plan_created_at = float(state.plan_created_at)
+                    age = max(0.0, time.time() - resumed_plan_created_at)
+                    resumed_plan_age_seconds = age
+                    if age > _queue_plan_stale_threshold():
+                        resumed_plan_stale = True
 
     result: dict[str, Any] = {
         "status": "ok",
@@ -129,6 +174,9 @@ async def run_session_start(
         "resumed_tasks": resumed_tasks,
         "resumed_completed": resumed_completed,
         "resumed_failed": resumed_failed,
+        "resumed_plan_created_at": resumed_plan_created_at,
+        "resumed_plan_age_seconds": resumed_plan_age_seconds,
+        "resumed_plan_stale": resumed_plan_stale,
         "agent_instruction": (
             f"Session {session_id[:8]} created. Pass session_id=\"{session_id}\" "
             "to subsequent drift tools to use session defaults and track state. "
@@ -148,6 +196,27 @@ async def run_session_start(
         },
         "done_when": "session.tasks_remaining == 0",
     }
+
+    # ADR-081 Nachschärfung (Q2): when the replayed plan is older than the
+    # staleness threshold, override agent_instruction and next_tool_call so
+    # the agent re-prioritises against the current codebase instead of
+    # following a zombie plan.
+    if resumed_plan_stale and resumed_plan_age_seconds is not None:
+        age_hours = resumed_plan_age_seconds / 3600.0
+        result["agent_instruction"] = (
+            f"Session {session_id[:8]} resumed a queued plan that is "
+            f"{age_hours:.1f}h old ({resumed_tasks} pending tasks). "
+            "Plan may be stale — run drift_fix_plan again to re-prioritise "
+            "against the current scan before applying fixes."
+        )
+        result["next_tool_call"] = {
+            "tool": "drift_fix_plan",
+            "params": {"session_id": session_id},
+        }
+        result["fallback_tool_call"] = {
+            "tool": "drift_scan",
+            "params": {"session_id": session_id},
+        }
 
     if autopilot:
         from drift.analyzer import analyze_repo

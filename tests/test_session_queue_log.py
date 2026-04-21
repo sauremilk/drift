@@ -98,6 +98,35 @@ def test_reduce_events_empty_without_plan() -> None:
     assert state.completed_task_ids == []
 
 
+def test_reduce_events_exposes_latest_plan_metadata() -> None:
+    """ADR-081 Nachschärfung (Q2): reducer exposes plan_created_at / plan_session_id
+    for the latest ``plan_created`` event so callers can detect stale replays.
+    """
+    events = [
+        QueueEvent(type=EVENT_PLAN_CREATED, session_id="old", timestamp=100.0,
+                   payload={"tasks": [{"id": "A"}]}),
+        QueueEvent(type=EVENT_PLAN_CREATED, session_id="new", timestamp=500.0,
+                   payload={"tasks": [{"id": "X"}, {"id": "Y"}]}),
+        QueueEvent(type=EVENT_TASK_COMPLETED, session_id="new", timestamp=600.0,
+                   payload={"task_id": "X"}),
+    ]
+    state = reduce_events(events)
+    assert state.plan_created_at == 500.0
+    assert state.plan_session_id == "new"
+    assert state.selected_tasks == [{"id": "X"}, {"id": "Y"}]
+
+
+def test_reduce_events_metadata_none_without_plan() -> None:
+    """Without any plan_created event the metadata fields stay None."""
+    events = [
+        QueueEvent(type=EVENT_TASK_COMPLETED, session_id="s", timestamp=1.0,
+                   payload={"task_id": "A"}),
+    ]
+    state = reduce_events(events)
+    assert state.plan_created_at is None
+    assert state.plan_session_id is None
+
+
 def test_reduce_events_ignores_transient_events() -> None:
     events = [
         QueueEvent(type=EVENT_PLAN_CREATED, session_id="s1", timestamp=1.0,

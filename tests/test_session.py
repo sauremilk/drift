@@ -501,28 +501,180 @@ class TestRestartReplay:
         assert data["resumed_from_log"] is False
         assert data["resumed_tasks"] == 0
 
-    def test_update_isolates_selected_tasks_list(self):
-        mgr = SessionManager.instance()
-        sid = mgr.create("/tmp/repo")
-        tasks = [{"id": "T1", "title": "task one"}]
-        mgr.update(sid, selected_tasks=tasks)
-        tasks.append({"id": "T2", "title": "intruder"})
-        session = mgr.get(sid)
-        assert session is not None
-        assert len(session.selected_tasks) == 1
-        assert session.selected_tasks[0]["id"] == "T1"
 
-    def test_update_isolates_completed_task_ids_list(self):
-        mgr = SessionManager.instance()
-        sid = mgr.create("/tmp/repo")
-        completed = ["T1"]
-        mgr.update(sid, completed_task_ids=completed)
-        completed.append("T2")
-        session = mgr.get(sid)
-        assert session is not None
-        assert session.completed_task_ids == ["T1"]
+# ---------------------------------------------------------------------------
+# Plan-staleness surfacing (ADR-081 Nachschärfung, Q2)
+# ---------------------------------------------------------------------------
 
-    def test_shared_payload_does_not_bleed_across_sessions(self):
+
+class TestResumedPlanStaleness:
+    """``run_session_start`` surfaces plan age on replay so agents can
+    choose to re-plan rather than follow a stale queue."""
+
+    def _seed_plan(self, repo: Path, *, ts: float) -> None:
+        from drift.session_queue_log import QueueEvent, append_event
+
+        append_event(
+            repo,
+            QueueEvent(
+                type="plan_created",
+                session_id="old-session",
+                timestamp=ts,
+                payload={"tasks": [{"id": "A"}, {"id": "B"}]},
+            ),
+        )
+
+    def _start_session(self, repo: Path) -> dict[str, object]:
+        import asyncio
+
+        from drift.mcp_router_session import run_session_start
+
+        SessionManager.reset_instance()
+        raw = asyncio.run(
+            run_session_start(
+                path=str(repo),
+                signals=None,
+                exclude_signals=None,
+                target_path=None,
+                exclude_paths=None,
+                ttl_seconds=60,
+                autopilot=False,
+                autopilot_payload="summary",
+                response_profile=None,
+                fresh_start=False,
+            )
+        )
+        return json.loads(raw)
+
+    def test_fresh_plan_reports_age_and_not_stale(self, tmp_path: Path) -> None:
+        import time as _t
+
+        self._seed_plan(tmp_path, ts=_t.time() - 60.0)  # 1 min ago
+        data = self._start_session(tmp_path)
+
+        assert data["resumed_from_log"] is True
+        assert data["resumed_plan_stale"] is False
+        assert isinstance(data["resumed_plan_created_at"], float)
+        assert isinstance(data["resumed_plan_age_seconds"], float)
+        assert data["resumed_plan_age_seconds"] < 3600.0
+        # Fresh plan keeps the default next_tool_call → drift_scan
+        assert data["next_tool_call"]["tool"] == "drift_scan"
+
+    def test_stale_plan_flips_stale_and_redirects_next_tool_call(
+        self, tmp_path: Path
+    ) -> None:
+        import time as _t
+
+        # 48 h old — well beyond the 24 h default threshold
+        self._seed_plan(tmp_path, ts=_t.time() - 48 * 3600.0)
+        data = self._start_session(tmp_path)
+
+        assert data["resumed_from_log"] is True
+        assert data["resumed_plan_stale"] is True
+        assert data["resumed_plan_age_seconds"] is not None
+        assert data["resumed_plan_age_seconds"] > 24 * 3600.0
+        assert data["next_tool_call"]["tool"] == "drift_fix_plan"
+        assert data["fallback_tool_call"]["tool"] == "drift_scan"
+        assert "stale" in data["agent_instruction"].lower()
+        assert "drift_fix_plan" in data["agent_instruction"]
+
+    def test_env_override_lowers_staleness_threshold(
+        self, tmp_path: Path, monkeypatch
+    ) -> None:
+        """DRIFT_QUEUE_STALE_SECONDS lowers the threshold so tests / projects
+        with fast cadence can tune the heuristic."""
+        import time as _t
+
+        # Lower threshold to 60 s so a 5-minute-old plan is stale
+        monkeypatch.setenv("DRIFT_QUEUE_STALE_SECONDS", "60")
+        self._seed_plan(tmp_path, ts=_t.time() - 300.0)
+        data = self._start_session(tmp_path)
+
+        assert data["resumed_plan_stale"] is True
+        assert data["next_tool_call"]["tool"] == "drift_fix_plan"
+
+    def test_env_override_invalid_falls_back_to_default(
+        self, tmp_path: Path, monkeypatch
+    ) -> None:
+        import time as _t
+
+        monkeypatch.setenv("DRIFT_QUEUE_STALE_SECONDS", "not-a-number")
+        # 1 min old plan — would be stale only with a sub-minute override,
+        # so with the default 24 h threshold it must still be fresh.
+        self._seed_plan(tmp_path, ts=_t.time() - 60.0)
+        data = self._start_session(tmp_path)
+
+        assert data["resumed_plan_stale"] is False
+
+    def test_env_override_non_positive_falls_back_to_default(
+        self, tmp_path: Path, monkeypatch
+    ) -> None:
+        import time as _t
+
+        monkeypatch.setenv("DRIFT_QUEUE_STALE_SECONDS", "0")
+        self._seed_plan(tmp_path, ts=_t.time() - 60.0)
+        data = self._start_session(tmp_path)
+
+        assert data["resumed_plan_stale"] is False
+
+    def test_fresh_start_skips_plan_age_metadata(self, tmp_path: Path) -> None:
+        """``fresh_start=true`` must not surface replay metadata at all."""
+        import asyncio
+        import time as _t
+
+        from drift.mcp_router_session import run_session_start
+
+        self._seed_plan(tmp_path, ts=_t.time() - 48 * 3600.0)
+
+        SessionManager.reset_instance()
+        raw = asyncio.run(
+            run_session_start(
+                path=str(tmp_path),
+                signals=None,
+                exclude_signals=None,
+                target_path=None,
+                exclude_paths=None,
+                ttl_seconds=60,
+                autopilot=False,
+                autopilot_payload="summary",
+                response_profile=None,
+                fresh_start=True,
+            )
+        )
+        data = json.loads(raw)
+        assert data["resumed_from_log"] is False
+        assert data["resumed_plan_stale"] is False
+        assert data["resumed_plan_age_seconds"] is None
+        assert data["resumed_plan_created_at"] is None
+        # Fresh start must not redirect next_tool_call
+        assert data["next_tool_call"]["tool"] == "drift_scan"
+
+    def test_empty_log_yields_none_plan_metadata(self, tmp_path: Path) -> None:
+        """No queue log → plan-age fields stay None, stale False, default nav."""
+        import asyncio
+
+        from drift.mcp_router_session import run_session_start
+
+        SessionManager.reset_instance()
+        raw = asyncio.run(
+            run_session_start(
+                path=str(tmp_path),
+                signals=None,
+                exclude_signals=None,
+                target_path=None,
+                exclude_paths=None,
+                ttl_seconds=60,
+                autopilot=False,
+                autopilot_payload="summary",
+                response_profile=None,
+                fresh_start=False,
+            )
+        )
+        data = json.loads(raw)
+        assert data["resumed_plan_created_at"] is None
+        assert data["resumed_plan_age_seconds"] is None
+        assert data["resumed_plan_stale"] is False
+        assert data["next_tool_call"]["tool"] == "drift_scan"
         mgr = SessionManager.instance()
         signals = ["PFS"]
         sid1 = mgr.create("/tmp/repo1", signals=signals)

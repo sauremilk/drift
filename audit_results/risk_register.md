@@ -1,5 +1,24 @@
 # Risk Register
 
+## 2026-04-21 - Q2 (ADR-081 Nachschärfung): plan-staleness surfacing in run_session_start
+
+- Risk ID: RISK-ADR-081-STALE-PLAN-REPLAY
+- Component: `src/drift/session_queue_log.py::ReplayedState` / `reduce_events`, `src/drift/mcp_router_session.py::run_session_start`
+- Type: Persistence / replay observability risk (additive response fields, no interface change)
+- Description: ADR-081 replays the most recent `plan_created` event on session start but the response surfaced only a boolean `resumed_from_log`. An abandoned project could leave `.drift-cache/queue.jsonl` untouched for weeks; a new agent would silently inherit a zombie plan. Rotation only triggers beyond 10 MB so small logs live indefinitely. The agent had no signal to distinguish "plan is 5 min old, keep working" from "plan is 5 days old, re-plan first".
+- Severity: LOW — additive; no existing caller sees a breaking change. `fresh_start=true` continues to suppress replay entirely.
+- Triggers (concrete): MCP server restarts after 48 h idle, resumed queue is a pre-weekend snapshot; a second VS Code window reopens a repo that hadn't been touched in a week; agent re-starts an exhausted session on a branch that diverged since the original plan.
+- Impact: Agent follows stale prioritisation; recent findings are ignored; queue-persistence nudges the agent back to obsolete tasks instead of serving its purpose.
+- Mitigations:
+  - `ReplayedState` now carries `plan_created_at` and `plan_session_id` (drawn from the most recent `plan_created` event).
+  - `run_session_start` response adds `resumed_plan_created_at`, `resumed_plan_age_seconds`, `resumed_plan_stale`.
+  - Default staleness threshold = 24 h; override via `DRIFT_QUEUE_STALE_SECONDS` (invalid / non-positive values fall back to default).
+  - When `resumed_plan_stale=true`, `agent_instruction` reports the age in hours and instructs the agent to call `drift_fix_plan` again; `next_tool_call` is rewritten from `drift_scan` to `drift_fix_plan`.
+  - `fresh_start=true` bypasses the entire replay, leaving all plan-age fields `None`.
+- Verification: `tests/test_session_queue_log.py::test_reduce_events_exposes_latest_plan_metadata`, `::test_reduce_events_metadata_none_without_plan`; `tests/test_session.py::TestResumedPlanStaleness` (7 integration tests covering fresh, stale, env override, invalid / non-positive env, fresh_start, empty log).
+- FMEA: `audit_results/fmea_matrix.md` 2026-04-21 "Q2 (ADR-081 Nachschärfung): plan-staleness surfacing in run_session_start" (RPN = 9, mitigated).
+- Residual risk: Agent can still ignore the `agent_instruction` warning and call `drift_fix_apply` directly — SG-008/SG-009 (Q1) then require `drift_fix_plan` to populate `selected_tasks`, but the queue may still carry stale tasks if `drift_fix_plan` is never re-run. Detection remains on the agent layer, not enforced in orchestration.
+
 ## 2026-04-21 - Q1 (ADR-081 Nachschärfung): SG-008/SG-009 queue-driven mutation gates
 
 - Risk ID: RISK-ADR-081-QUEUE-BYPASS

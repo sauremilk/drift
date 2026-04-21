@@ -312,6 +312,11 @@ class ReplayedState:
     completed_task_ids: list[str] = field(default_factory=list)
     failed_task_ids: list[str] = field(default_factory=list)
     source_session_ids: list[str] = field(default_factory=list)
+    # ADR-081 Nachschärfung (Q2): expose the latest-plan metadata so
+    # callers can detect stale replays (e.g. a plan that was created days
+    # ago by an abandoned session) and surface age hints in responses.
+    plan_created_at: float | None = None
+    plan_session_id: str | None = None
 
 
 def reduce_events(events: list[QueueEvent]) -> ReplayedState:
@@ -324,6 +329,9 @@ def reduce_events(events: list[QueueEvent]) -> ReplayedState:
 
     if latest_plan is None:
         return state
+
+    state.plan_created_at = latest_plan.timestamp
+    state.plan_session_id = latest_plan.session_id
 
     raw_tasks = latest_plan.payload.get("tasks")
     if isinstance(raw_tasks, list):

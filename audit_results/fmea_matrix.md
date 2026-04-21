@@ -1,5 +1,11 @@
 # FMEA Matrix
 
+## 2026-04-21 - Q2 (ADR-081 Nachschärfung): plan-staleness surfacing in run_session_start
+
+| Component | Failure Mode | Cause | Effect | Detection | Mitigation | S | O | D | RPN | Status |
+|---|---|---|---|---|---|---:|---:|---:|---:|---|
+| `drift.mcp_router_session.run_session_start` | Agent akzeptiert replayed Plan als aktuell, obwohl das Repo sich seit dem `plan_created` deutlich verändert hat | Response meldete bisher nur `resumed_from_log=true` ohne Alter des Plans; Rotation greift erst ab 10 MB, kleine Logs leben unbegrenzt | Agent arbeitet an veralteter Priorisierung, übersieht neue Findings, Queue-Persistenz wird zur Falle statt Hilfe | `tests/test_session_queue_log.py::test_reduce_events_exposes_latest_plan_metadata`; `tests/test_session.py::TestResumedPlanStaleness::test_stale_plan_flips_stale_and_redirects_next_tool_call`; 7 weitere Tests (fresh / env-override / invalid / non-positive / fresh_start / empty-log) | Response gewinnt `resumed_plan_created_at` (epoch s), `resumed_plan_age_seconds`, `resumed_plan_stale`; Default-Schwelle 24 h, überschreibbar via `DRIFT_QUEUE_STALE_SECONDS`; bei stale → `agent_instruction` nennt Alter + empfiehlt `drift_fix_plan`, `next_tool_call` wird auf `drift_fix_plan` umgelenkt; `fresh_start=true` übergeht die gesamte Logik | 3 | 3 | 1 | 9 | Mitigated |
+
 ## 2026-04-21 - Q1 (ADR-081 Nachschärfung): SG-008/SG-009 queue-driven mutation gates
 
 | Component | Failure Mode | Cause | Effect | Detection | Mitigation | S | O | D | RPN | Status |
