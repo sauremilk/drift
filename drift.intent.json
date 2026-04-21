@@ -1,0 +1,154 @@
+{
+  "schema_version": "1.0",
+  "prompt": "Architektonische Erosion in Python-Codebases erkennen und handlungsfähige Empfehlungen geben",
+  "category": "utility",
+  "contracts": [
+    {
+      "id": "persist-survive-restart",
+      "description_technical": "Application state must be persisted to durable storage; in-memory-only state is insufficient.",
+      "description_human": "Deine Daten überleben einen App-Neustart",
+      "category": "persistence",
+      "severity": "critical",
+      "auto_repair_eligible": true,
+      "source": "baseline",
+      "verification_signal": "exception_contract_drift"
+    },
+    {
+      "id": "persist-concurrent-safety",
+      "description_technical": "Concurrent write access must use transactions or locking to prevent data races and lost updates.",
+      "description_human": "Gleichzeitige Änderungen mehrerer Nutzer führen nicht zu Datenverlust",
+      "category": "persistence",
+      "severity": "high",
+      "auto_repair_eligible": true,
+      "source": "baseline",
+      "verification_signal": "exception_contract_drift"
+    },
+    {
+      "id": "persist-input-integrity",
+      "description_technical": "Input validation must occur before persistence; malformed data must not corrupt stored state.",
+      "description_human": "Fehlerhafte Eingaben korrumpieren keine gespeicherten Daten",
+      "category": "persistence",
+      "severity": "high",
+      "auto_repair_eligible": true,
+      "source": "baseline",
+      "verification_signal": "guard_clause_deficit"
+    },
+    {
+      "id": "sec-no-plaintext-secrets",
+      "description_technical": "Passwords and sensitive credentials must be hashed or encrypted; plaintext storage is forbidden.",
+      "description_human": "Passwörter und sensible Daten werden nicht im Klartext gespeichert",
+      "category": "security",
+      "severity": "critical",
+      "auto_repair_eligible": true,
+      "source": "baseline",
+      "verification_signal": "hardcoded_secret_candidate"
+    },
+    {
+      "id": "sec-input-validation",
+      "description_technical": "All user inputs must be validated and sanitized before processing to prevent injection attacks.",
+      "description_human": "Nutzereingaben werden vor der Verarbeitung validiert",
+      "category": "security",
+      "severity": "high",
+      "auto_repair_eligible": true,
+      "source": "baseline",
+      "verification_signal": "guard_clause_deficit"
+    },
+    {
+      "id": "sec-external-data-validation",
+      "description_technical": "Data from external sources must be validated for schema conformance and integrity before use.",
+      "description_human": "Externe Datenquellen werden auf Gültigkeit geprüft",
+      "category": "security",
+      "severity": "high",
+      "auto_repair_eligible": true,
+      "source": "baseline",
+      "verification_signal": "guard_clause_deficit"
+    },
+    {
+      "id": "err-user-friendly-messages",
+      "description_technical": "Exceptions must be caught and translated to user-facing messages; raw tracebacks must not leak.",
+      "description_human": "Die App zeigt eine verständliche Meldung wenn etwas schiefläuft",
+      "category": "error_handling",
+      "severity": "medium",
+      "auto_repair_eligible": true,
+      "source": "baseline",
+      "verification_signal": "broad_exception_monoculture"
+    },
+    {
+      "id": "err-empty-input-resilience",
+      "description_technical": "Empty or null inputs must be handled gracefully without causing unhandled exceptions or crashes.",
+      "description_human": "Die App stürzt nicht ab wenn eine Eingabe leer ist",
+      "category": "error_handling",
+      "severity": "high",
+      "auto_repair_eligible": true,
+      "source": "baseline",
+      "verification_signal": "guard_clause_deficit"
+    },
+    {
+      "id": "err-network-data-safety",
+      "description_technical": "Network failures must be caught; partial writes must be rolled back or retried to prevent silent data loss.",
+      "description_human": "Netzwerkfehler führen nicht zu einem stillen Datenverlust",
+      "category": "error_handling",
+      "severity": "high",
+      "auto_repair_eligible": true,
+      "source": "baseline",
+      "verification_signal": "broad_exception_monoculture"
+    },
+    {
+      "id": "ext-python",
+      "description_technical": "Support for Python functionality",
+      "description_human": "Python wird unterstützt",
+      "category": "utility",
+      "severity": "medium",
+      "auto_repair_eligible": false,
+      "source": "extracted",
+      "verification_signal": "guard_clause_deficit"
+    },
+    {
+      "id": "ext-architektonische",
+      "description_technical": "Support for Architektonische functionality",
+      "description_human": "Architektonische wird unterstützt",
+      "category": "utility",
+      "severity": "medium",
+      "auto_repair_eligible": false,
+      "source": "extracted",
+      "verification_signal": "guard_clause_deficit"
+    },
+    {
+      "id": "ext-codebases",
+      "description_technical": "Support for Codebases functionality",
+      "description_human": "Codebases wird unterstützt",
+      "category": "utility",
+      "severity": "medium",
+      "auto_repair_eligible": false,
+      "source": "extracted",
+      "verification_signal": "guard_clause_deficit"
+    },
+    {
+      "id": "ext-erosion",
+      "description_technical": "Support for Erosion functionality",
+      "description_human": "Erosion wird unterstützt",
+      "category": "utility",
+      "severity": "medium",
+      "auto_repair_eligible": false,
+      "source": "extracted",
+      "verification_signal": "guard_clause_deficit"
+    },
+    {
+      "id": "ext-empfehlungen",
+      "description_technical": "Support for Empfehlungen functionality",
+      "description_human": "Empfehlungen wird unterstützt",
+      "category": "utility",
+      "severity": "medium",
+      "auto_repair_eligible": false,
+      "source": "extracted",
+      "verification_signal": "guard_clause_deficit"
+    }
+  ],
+  "validation": {
+    "schema_valid": true,
+    "errors": [],
+    "warnings": [],
+    "manual_signal_count": 0,
+    "total_contracts": 14
+  }
+}

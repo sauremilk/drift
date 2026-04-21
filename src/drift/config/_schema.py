@@ -389,10 +389,12 @@ class AgentObjective(BaseModel):
         description="Natural-language description of the agent's current task.",
     )
     strict_guardrails: bool = Field(
-        default=False,
+        default=True,
         description=(
             "When true, MCP orchestration enforces strict preconditions and "
-            "blocks unsafe tool transitions with recovery hints."
+            "blocks unsafe tool transitions with recovery hints. "
+            "Default flipped to true in v2.25.0 (ADR-XXX). Set to false to "
+            "restore the earlier advisory-only behaviour."
         ),
     )
     out_of_scope: list[str] = Field(

@@ -421,3 +421,108 @@ class TestStrictGuardrailViolations:
         session = _FakeSession()  # no brief
         violations = _strict_guardrail_violations("drift_scan", session)
         assert not any(v["rule_id"] == "SG-006" for v in violations)
+
+
+# ---------------------------------------------------------------------------
+# _strict_guardrail_violations — SG-007 (scope_gate) and SG-005a (stale brief)
+# ---------------------------------------------------------------------------
+
+
+class TestScopeGateAndStalenessRules:
+    """SG-007 blocks when the last brief raised a scope_gate.ask_user.
+
+    SG-005a / SG-006a block when the brief is stale (score delta, call
+    count or elapsed time exceeded).
+    """
+
+    def _session_with_brief(self, **overrides: Any) -> _FakeSession:
+        import time as _t
+
+        session = _FakeSession(
+            guardrails=[{"id": "GR-001"}],
+            last_brief_at=_t.time(),
+            last_brief_score=0.5,
+            last_scan_score=0.5,
+            tool_calls_since_brief=0,
+            last_brief_scope_gate=None,
+        )
+        for k, v in overrides.items():
+            setattr(session, k, v)
+        return session
+
+    def test_sg007_blocks_fix_apply_when_scope_gate_requires_ask_user(self):
+        from drift.mcp_orchestration import _strict_guardrail_violations
+
+        gate = {"action_required": "ask_user", "reason": "scope_confidence_low"}
+        session = self._session_with_brief(last_brief_scope_gate=gate)
+        violations = _strict_guardrail_violations("drift_fix_apply", session)
+        assert any(v["rule_id"] == "SG-007" for v in violations)
+
+    def test_sg007_blocks_patch_begin_when_scope_gate_requires_ask_user(self):
+        from drift.mcp_orchestration import _strict_guardrail_violations
+
+        gate = {"action_required": "ask_user", "reason": "scope_confidence_low"}
+        session = self._session_with_brief(last_brief_scope_gate=gate)
+        violations = _strict_guardrail_violations("drift_patch_begin", session)
+        assert any(v["rule_id"] == "SG-007" for v in violations)
+
+    def test_sg007_passes_when_scope_gate_is_none(self):
+        from drift.mcp_orchestration import _strict_guardrail_violations
+
+        session = self._session_with_brief(last_brief_scope_gate=None)
+        violations = _strict_guardrail_violations("drift_fix_apply", session)
+        assert not any(v["rule_id"] == "SG-007" for v in violations)
+
+    def test_sg007_not_triggered_for_unrelated_tool(self):
+        from drift.mcp_orchestration import _strict_guardrail_violations
+
+        gate = {"action_required": "ask_user"}
+        session = self._session_with_brief(last_brief_scope_gate=gate)
+        violations = _strict_guardrail_violations("drift_scan", session)
+        assert not any(v["rule_id"] == "SG-007" for v in violations)
+
+    def test_sg005a_blocks_fix_apply_when_score_drifted(self):
+        from drift.mcp_orchestration import _strict_guardrail_violations
+
+        # baseline drifted from 0.5 → 0.9 (delta 0.4, above 0.1 threshold)
+        session = self._session_with_brief(last_brief_score=0.5, last_scan_score=0.9)
+        violations = _strict_guardrail_violations("drift_fix_apply", session)
+        assert any(v["rule_id"] == "SG-005a" for v in violations)
+
+    def test_sg006a_blocks_patch_begin_when_score_drifted(self):
+        from drift.mcp_orchestration import _strict_guardrail_violations
+
+        session = self._session_with_brief(last_brief_score=0.5, last_scan_score=0.9)
+        violations = _strict_guardrail_violations("drift_patch_begin", session)
+        assert any(v["rule_id"] == "SG-006a" for v in violations)
+
+    def test_sg005a_blocks_when_tool_call_count_exceeded(self):
+        from drift.mcp_orchestration import _strict_guardrail_violations
+
+        session = self._session_with_brief(tool_calls_since_brief=25)
+        violations = _strict_guardrail_violations("drift_fix_apply", session)
+        assert any(v["rule_id"] == "SG-005a" for v in violations)
+
+    def test_sg005a_blocks_when_too_much_time_elapsed(self):
+        import time as _t
+
+        from drift.mcp_orchestration import _strict_guardrail_violations
+
+        session = self._session_with_brief(last_brief_at=_t.time() - 3600)
+        violations = _strict_guardrail_violations("drift_fix_apply", session)
+        assert any(v["rule_id"] == "SG-005a" for v in violations)
+
+    def test_sg005a_passes_when_brief_is_fresh(self):
+        from drift.mcp_orchestration import _strict_guardrail_violations
+
+        session = self._session_with_brief()  # fresh brief, identical score
+        violations = _strict_guardrail_violations("drift_fix_apply", session)
+        assert not any(v["rule_id"] == "SG-005a" for v in violations)
+
+    def test_sg005a_passes_when_no_brief_ever_called(self):
+        from drift.mcp_orchestration import _strict_guardrail_violations
+
+        # SG-005 handles that case — SG-005a should stay silent to avoid duplicates.
+        session = _FakeSession(last_brief_at=None)
+        violations = _strict_guardrail_violations("drift_fix_apply", session)
+        assert not any(v["rule_id"] == "SG-005a" for v in violations)

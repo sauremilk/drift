@@ -136,7 +136,7 @@ thresholds:
 # targeted feedback, scope advisories, and quality tracking.
 # agent:
 #   goal: "Migrate payment module to new Stripe API"
-#   strict_guardrails: true  # Optional: block unsafe MCP tool transitions
+#   strict_guardrails: true  # Default since v2.25.0; set false to opt out
 #   # Strict orchestration order:
 #   # 1) drift_brief  2) drift_scan  3) drift_fix_plan
 #   # 4) edits + drift_nudge  5) drift_diff  6) drift_session_end

@@ -1,5 +1,25 @@
 # FMEA Matrix
 
+## 2026-04-22 - v2.26.0: Strict MCP default, SG-007, SG-005a/SG-006a, nudge revert gate
+
+| Component | Failure Mode | Cause | Effect | Detection | Mitigation | S | O | D | RPN | Status |
+|---|---|---|---|---|---|---:|---:|---:|---:|---|
+| `mcp_orchestration._strict_guardrail_violations` (SG-007) | Agent edits out-of-scope because drift_brief returned low scope_confidence as passive warning | scope_gate not enforced before edits | Edits to wrong module, hidden technical debt, silent policy drift | Test `TestScopeGateAndStalenessRules::test_sg007_blocks_*`; CHANGELOG BREAKING note | SG-007 blocks drift_fix_apply/drift_patch_begin when `last_brief_scope_gate.action_required=ask_user` until user confirms scope | 5 | 3 | 2 | 30 | Mitigated |
+| `mcp_orchestration._brief_staleness_reason` (SG-005a/SG-006a) | Agent uses a 2-hour-old brief after significant baseline change | no staleness check previously; brief only required once | Outdated guardrails, edits based on obsolete architecture snapshot | 11 new tests in `TestScopeGateAndStalenessRules` | Primary trigger: baseline score delta > 0.1. Fallbacks: tool_calls_since_brief > 20; age > 30 min. Thresholds tunable via module constants | 4 | 4 | 3 | 48 | Accepted-with-mitigations |
+| `api/nudge` revert_recommended | False REVERT on git-blind runs when no files actually changed | earlier rule OR'd `git_detection_failed` unconditionally | Spurious reverts, agent loses trust in nudge | `tests/test_nudge.py` revert matrix; new condition requires `not changed_set` | Condition tightened: `git_detection_failed AND not changed_set` (no changed files reported AND git failed) | 3 | 2 | 2 | 12 | Mitigated |
+| `scripts/nudge_gate.py` pre-commit hook | Hook blocks legitimate commit when no nudge state exists | default policy too strict | Friction for users not running MCP workflow | `tests/test_nudge_gate.py::test_on_missing_warn_policy_is_default` | Default `on_missing: warn` (log-only). Opt-in `block` via drift.yaml. Bypass via `DRIFT_SKIP_NUDGE_GATE=1` | 3 | 3 | 2 | 18 | Mitigated |
+| `config._schema.AgentConfig.strict_guardrails` default flip | Existing repos break after upgrade | BREAKING behaviour change | Unexpected blocks on first fix/patch call after upgrade | ADR-080 status=proposed; CHANGELOG BREAKING section; `agent.strict_guardrails: false` opt-out | Explicit rollback documented; migration note in release message | 4 | 4 | 1 | 16 | Accepted-with-mitigations |
+
+## 2026-04-21 - ADR-079: Session-Handover-Gate
+
+| Component | Failure Mode | Cause | Effect | Detection | Mitigation | S | O | D | RPN | Status |
+|---|---|---|---|---|---|---:|---:|---:|---:|---|
+| `drift.session_handover` / L1 existence | Agent liefert kein `work_artifacts/session_<id>.md` ab | Gate schlägt den Session-End-Aufruf nicht gestoppt hätte → Architektur-Change ohne Übergabe | Verlust institutioneller Erinnerung zwischen Agenten; nachfolgende Sessions starten ohne Kontext | `run_session_end` → `DRIFT-6100` mit `missing_artifacts`; `test_session_end_gate.TestSessionEndGate::test_blocks_when_artifacts_missing` | L1-Existenzprüfung (Mindestgröße 200 B); Session bleibt aktiv, Retry-Counter bis MAX_HANDOVER_RETRIES=5 | 4 | 3 | 1 | 12 | Mitigated |
+| `drift.session_handover` / L2 shape | Session-MD fehlt Pflicht-Sektion oder Frontmatter-Feld | Agent kopiert Template ohne Ausfüllen | Handover-Artefakt existiert, ist aber inhaltlich leer (Security-Theater) | `_check_session_md_shape`; `TestL2Shape::test_missing_section_blocks`; `TestL2Shape::test_session_id_mismatch_blocks` | L2 verlangt 5 Sektionen (Scope, Ergebnisse, Offene Enden, Next-Agent-Einstieg, Evidenz) und session_id-Crosscheck | 4 | 3 | 2 | 24 | Mitigated |
+| `drift.session_handover` / L3 placeholder | Platzhaltertokens (`TODO`, `<N>`, `LOREM`) in Handover-Text | Agent sendet Template-Skeleton unbefüllt | Inhaltsleere Artefakte passieren L1/L2, blockieren aber kein Follow-up | `_scan_placeholders` mit Denylist; `TestL3Placeholders::test_todo_in_offene_enden_blocks` | Deterministischer Regex-Scan mit Exempt für ≥5-Zeilen-Codeblöcke | 3 | 4 | 2 | 24 | Mitigated |
+| `drift.session_handover` / force bypass | `force=true` mit Platzhaltertext missbraucht | Agent umgeht Gate routinemäßig | Audit-Trail inhaltsleer, Gate wirkungslos | `validate_bypass_reason`; `TestSessionEndGate::test_force_with_placeholder_reason_blocks`; WARNING-Log + `record_trace` | Mindestens 40 Zeichen, keine Denylist-Tokens, immer protokolliert | 4 | 2 | 1 | 8 | Mitigated |
+| `drift.session_handover` / empty-session exemption | Session mit 0 Task-Arbeiten wird fälschlich geblockt | Strikte Gate ohne Carve-Out | Legitime Read-Only-Explorationen enden mit DRIFT-6100 | `test_empty_session_without_work_is_exempt`; `test_mcp_server_task_tools_boost` FakeSession | Empty-Session-Bedingung: keine completed_task_ids + keine selected_tasks + tool_calls < 3 + change_class=CHORE | 2 | 2 | 3 | 12 | Accepted |
+
 ## 2026-04-20 - COD FP: Private Helper Extraction in Mono-Function Files
 
 | Component | Failure Mode | Cause | Effect | Detection | Mitigation | S | O | D | RPN | Status |

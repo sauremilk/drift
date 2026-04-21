@@ -58,3 +58,5 @@ _fix_encoding.py
 pytest_out.txt
 pytest_output.txt
 /CLAUDE.md
+
+_selfcheck.json

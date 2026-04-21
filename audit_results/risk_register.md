@@ -1,5 +1,32 @@
 # Risk Register
 
+## 2026-04-22 - v2.26.0: Strict MCP guardrails default, SG-007 / SG-005a / SG-006a, nudge revert enforcement
+
+- Risk ID: RISK-MCP-2026-04-22-STRICT-DEFAULT
+- Component: `src/drift/config/_schema.py`, `src/drift/mcp_orchestration.py`, `src/drift/api/nudge.py`, `src/drift/api/brief.py`, `scripts/nudge_gate.py`
+- Type: Behavior / enforcement risk (BREAKING default flip)
+- Description: `agent.strict_guardrails` default flipped `false -> true` (ADR-080). Three new rules added:
+  SG-007 blocks `drift_fix_apply` / `drift_patch_begin` when the last brief raised `scope_gate.action_required=ask_user`;
+  SG-005a / SG-006a block the same tools when the brief is stale (baseline score drift > 0.1,
+  tool_calls_since_brief > 20, or age > 30 min). `drift_nudge.revert_recommended` hardened to
+  `not safe_to_commit AND (direction=degrading OR parse_failures>0 OR git_blind_without_changed_files)`.
+  Pre-commit hook `scripts/nudge_gate.py` blocks commits when the last nudge recommended REVERT
+  and flagged files are unchanged (sha256-16 hash compare).
+- Severity: MEDIUM — changes default agent behaviour; existing workflows relying on advisory-only
+  guardrails will start seeing blocks. Opt-out is explicit and documented.
+- Mitigations:
+  - `strict_guardrails: false` in `drift.yaml` restores v2.25.0 behaviour.
+  - `DRIFT_SKIP_NUDGE_GATE=1` bypasses the pre-commit gate per commit.
+  - `nudge_gate.on_missing` config key (default `warn`) controls behaviour when no nudge state exists.
+  - CHANGELOG marks the flip as BREAKING behavior with explicit rollback steps.
+  - Tests: `tests/test_mcp_orchestration_coverage.py::TestScopeGateAndStalenessRules` (11 cases),
+    `tests/test_nudge_gate.py` (8 cases), `tests/test_nudge.py` (revert matrix), full quick suite passes.
+- Residual risk: Thresholds (delta 0.1, 20 calls, 30 min) not yet empirically validated across
+  real agent sessions. Accepted pending field-test evidence; adjustable via constants in
+  `src/drift/mcp_orchestration.py` (`_BRIEF_STALE_DELTA`, `_BRIEF_STALE_TOOL_CALLS`, `_BRIEF_STALE_SECONDS`).
+- Status: Accepted-with-mitigations
+- Evidenz: `benchmark_results/v2.26.0_feature_evidence.json`, `decisions/ADR-080-strict-mode-default.md`.
+
 ## 2026-04-21 - v2.25.0: Brief-staleness, session score fields, SG hardening, mypy/ruff fixes
 
 - Risk ID: RISK-SESSION-2026-04-21-BRIEF-STALENESS

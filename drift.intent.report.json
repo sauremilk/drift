@@ -1,0 +1,84 @@
+{
+  "schema_version": "1.0",
+  "prompt": "Architektonische Erosion in Python-Codebases erkennen und handlungsfähige Empfehlungen geben",
+  "iteration": 0,
+  "summary": {
+    "total": 14,
+    "fulfilled": 14,
+    "violated": 0,
+    "unverifiable": 0,
+    "all_fulfilled": true
+  },
+  "contracts": [
+    {
+      "contract_id": "persist-survive-restart",
+      "status": "fulfilled",
+      "description_human": "Deine Daten überleben einen App-Neustart"
+    },
+    {
+      "contract_id": "persist-concurrent-safety",
+      "status": "fulfilled",
+      "description_human": "Gleichzeitige Änderungen mehrerer Nutzer führen nicht zu Datenverlust"
+    },
+    {
+      "contract_id": "persist-input-integrity",
+      "status": "fulfilled",
+      "description_human": "Fehlerhafte Eingaben korrumpieren keine gespeicherten Daten"
+    },
+    {
+      "contract_id": "sec-no-plaintext-secrets",
+      "status": "fulfilled",
+      "description_human": "Passwörter und sensible Daten werden nicht im Klartext gespeichert"
+    },
+    {
+      "contract_id": "sec-input-validation",
+      "status": "fulfilled",
+      "description_human": "Nutzereingaben werden vor der Verarbeitung validiert"
+    },
+    {
+      "contract_id": "sec-external-data-validation",
+      "status": "fulfilled",
+      "description_human": "Externe Datenquellen werden auf Gültigkeit geprüft"
+    },
+    {
+      "contract_id": "err-user-friendly-messages",
+      "status": "fulfilled",
+      "description_human": "Die App zeigt eine verständliche Meldung wenn etwas schiefläuft"
+    },
+    {
+      "contract_id": "err-empty-input-resilience",
+      "status": "fulfilled",
+      "description_human": "Die App stürzt nicht ab wenn eine Eingabe leer ist"
+    },
+    {
+      "contract_id": "err-network-data-safety",
+      "status": "fulfilled",
+      "description_human": "Netzwerkfehler führen nicht zu einem stillen Datenverlust"
+    },
+    {
+      "contract_id": "ext-python",
+      "status": "fulfilled",
+      "description_human": "Python wird unterstützt"
+    },
+    {
+      "contract_id": "ext-architektonische",
+      "status": "fulfilled",
+      "description_human": "Architektonische wird unterstützt"
+    },
+    {
+      "contract_id": "ext-codebases",
+      "status": "fulfilled",
+      "description_human": "Codebases wird unterstützt"
+    },
+    {
+      "contract_id": "ext-erosion",
+      "status": "fulfilled",
+      "description_human": "Erosion wird unterstützt"
+    },
+    {
+      "contract_id": "ext-empfehlungen",
+      "status": "fulfilled",
+      "description_human": "Empfehlungen wird unterstützt"
+    }
+  ]
+}

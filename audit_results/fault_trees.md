@@ -1,5 +1,34 @@
 # Fault Tree Analysis
 
+## 2026-04-21 - ADR-079: Session-Handover-Gate — empty-artifact fault tree
+
+### Top Event (TE-HANDOVER-079)
+`drift_session_end` returns `status=ok` although the session produced no
+reusable handover artifacts (no session markdown, or placeholder-only
+content, or mismatched `session_id`).
+
+### FT-1: False-accept path
+
+```
+      TE-HANDOVER-079: session_end ok but no usable handover
+                             |
+        +--------------------+--------------------+
+        |                    |                    |
+   BE-1 gate disabled   BE-2 force=true abused   BE-3 empty-session
+   (regression)         (weak bypass reason)     carve-out triggered
+                                                 despite real work
+```
+
+- BE-1 mitigated by mandatory `DriftSession` isinstance guard and integration
+  test `TestSessionEndGate::test_blocks_when_artifacts_missing`.
+- BE-2 mitigated by `validate_bypass_reason` (≥40 chars, placeholder denylist)
+  plus WARNING log + `record_trace` entry (integration tests
+  `test_force_requires_valid_bypass_reason`, `test_force_with_placeholder_reason_blocks`).
+- BE-3 mitigated by strict exemption condition: `completed_task_ids` empty AND
+  `selected_tasks` empty/None AND `tool_calls < 3` AND classification is
+  `CHORE`. Covered by `test_empty_session_without_work_is_exempt` and by
+  `classify_session` coverage in `test_session_handover.py`.
+
 ## 2025-07-27 - ADR-074: Patch Engine — false-clean fault tree
 
 ### Top Event (TE-PATCH-074)

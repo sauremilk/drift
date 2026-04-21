@@ -1,0 +1,86 @@
+{
+  "version": "v2.26.0",
+  "date": "2026-04-22",
+  "feature": "Strict MCP guardrails default true; SG-007 scope-gate; SG-005a/SG-006a brief staleness; nudge revert_recommended hardening + pre-commit gate; brief anti-patterns; ADR relevance + cross-file hint",
+  "adr": "decisions/ADR-080-strict-mode-default.md",
+  "summary": "Closes L7 (revert advisory), L8 (scope warning only), L11 (stale brief undetected) from the Vibe-Coding gap analysis. Moves drift from advisory to enforcing.",
+  "scope": {
+    "modules_touched": [
+      "src/drift/config/_schema.py",
+      "src/drift/session.py",
+      "src/drift/mcp_orchestration.py",
+      "src/drift/api/nudge.py",
+      "src/drift/api/brief.py",
+      "src/drift/api/guard_contract.py",
+      "src/drift/adr_scanner.py",
+      "src/drift/guardrails.py",
+      "scripts/nudge_gate.py",
+      "drift.schema.json",
+      "drift.example.yaml",
+      ".pre-commit-config.yaml",
+      "decisions/ADR-080-strict-mode-default.md"
+    ]
+  },
+  "behavior_changes": {
+    "BREAKING": [
+      "agent.strict_guardrails default flipped false -> true. Opt-out via strict_guardrails: false in drift.yaml."
+    ],
+    "new_guardrail_rules": [
+      {
+        "id": "SG-007",
+        "tools": ["drift_fix_apply", "drift_patch_begin"],
+        "trigger": "last drift_brief raised scope_gate.action_required=ask_user",
+        "recovery": ["ask_user", "drift_brief"]
+      },
+      {
+        "id": "SG-005a",
+        "tools": ["drift_fix_apply"],
+        "trigger": "brief stale (score drift > 0.1, tool_calls > 20, or age > 30 min)",
+        "recovery": ["drift_brief (fresh)"]
+      },
+      {
+        "id": "SG-006a",
+        "tools": ["drift_patch_begin"],
+        "trigger": "brief stale (score drift > 0.1, tool_calls > 20, or age > 30 min)",
+        "recovery": ["drift_brief (fresh)"]
+      }
+    ],
+    "nudge_changes": [
+      "revert_recommended now requires: not safe_to_commit AND (direction == degrading OR parse_failures > 0 OR git_detection_failed without changed_files)",
+      "cross_file_hint added when MDS/AVS are estimated on non-fast-path runs",
+      ".drift-cache/last_nudge.json persisted with sha256-16 hashes (schema_version=1) for pre-commit enforcement"
+    ],
+    "brief_changes": [
+      "Active scope_gate block on scope.confidence < 0.5 with action_required=ask_user and blocking=true",
+      "Top-3 anti-patterns surfaced in JSON response and prompt block (## Anti-Patterns section)"
+    ],
+    "pre_commit": {
+      "hook": "scripts/nudge_gate.py",
+      "blocks_when": "revert_recommended AND overlap(changed_files, staged) AND hashes unchanged",
+      "config_key": "nudge_gate.on_missing",
+      "config_values": ["warn", "block"],
+      "config_default": "warn",
+      "bypass_env": "DRIFT_SKIP_NUDGE_GATE=1"
+    }
+  },
+  "tests": {
+    "new_files": [
+      "tests/test_nudge_gate.py"
+    ],
+    "extended_classes": [
+      "tests/test_mcp_orchestration_coverage.py::TestScopeGateAndStalenessRules (11 new tests)"
+    ],
+    "quick_suite_result": "5997 passed, 129 skipped, 1 flaky hypothesis deadline (unrelated)",
+    "schema_sync": "drift.schema.json regenerated and test_schema_matches_live_model passes"
+  },
+  "self_analysis": {
+    "status": "complete",
+    "degraded": false,
+    "findings_count": 792,
+    "regression": "none (baseline preserved)"
+  },
+  "rollback": {
+    "config": "strict_guardrails: false in drift.yaml",
+    "env": "DRIFT_SKIP_NUDGE_GATE=1 to bypass pre-commit gate per commit"
+  }
+}

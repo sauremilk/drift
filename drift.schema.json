@@ -51,8 +51,8 @@
           "type": "array"
         },
         "strict_guardrails": {
-          "default": false,
-          "description": "When true, MCP orchestration enforces strict preconditions and blocks unsafe tool transitions with recovery hints.",
+          "default": true,
+          "description": "When true, MCP orchestration enforces strict preconditions and blocks unsafe tool transitions with recovery hints. Default flipped to true in v2.25.0 (ADR-XXX). Set to false to restore the earlier advisory-only behaviour.",
           "title": "Strict Guardrails",
           "type": "boolean"
         },

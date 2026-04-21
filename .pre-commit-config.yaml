@@ -68,3 +68,16 @@ repos:
       - id: conventional-pre-commit
         stages: [commit-msg]
         args: [feat, fix, docs, style, refactor, perf, test, build, ci, chore, revert]
+
+  - repo: local
+    hooks:
+      - id: drift-nudge-gate
+        name: drift nudge gate
+        description: >-
+          Block commits when the last drift_nudge recommended REVERT and the
+          flagged files are still unchanged. Set DRIFT_SKIP_NUDGE_GATE=1 to
+          bypass, or nudge_gate.on_missing: warn|block in drift.yaml.
+        entry: python scripts/nudge_gate.py
+        language: system
+        pass_filenames: false
+        stages: [pre-commit]
