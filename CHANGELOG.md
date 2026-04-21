@@ -1,21 +1,18 @@
 ## [2.24.0] – 2026-04-21
 
-Short version: ADR scanner; enriched `brief` API (layer_contract, relevant_tests, active_adrs); nudge post-edit regression detector (revert_recommended, latency_ms, latency_exceeded, auto_fast_path, timeout_ms); MCP strict guardrail rules SG-005/SG-006.
+Short version: ADR scanner; enriched `brief` API (layer_contract, relevant_tests, active_adrs); nudge post-edit regression detector; MCP strict guardrail rules SG-005/SG-006.
 
 ### Added
 
-- `src/drift/adr_scanner.py`: ADR scanner that parses `decisions/*.md` frontmatter (stdlib-only) and returns active ADRs (status: `accepted`/`proposed`) relevant to a given task scope and path list.
-- `brief` API (`drift_brief`): response now includes `layer_contract` (layer name, allowed/forbidden imports), `relevant_tests` (test files matching the scope), and `active_adrs` (filtered ADR list). `guardrails_to_prompt_block` extended with `## Layer Constraints` and `## Active ADR Constraints` sections.
-- `guard_contract.py`: public aliases `infer_layer`, `LAYER_ALLOWED_IMPORTS`, `LAYER_FORBIDDEN_IMPORTS`, `find_related_tests` for reuse in `brief` and tests.
-- Nudge post-edit regression detector: `timeout_ms` parameter (default 1000 ms); response fields `revert_recommended`, `latency_ms`, `latency_exceeded`, `auto_fast_path`; `agent_instruction` now contains explicit `REVERT` directive on degrading + unsafe commits.
-- MCP strict guardrail rule **SG-005**: `drift_fix_apply` requires prior `drift_brief` call in strict sessions.
-- MCP strict guardrail rule **SG-006**: `drift_patch_begin` requires prior `drift_brief` call in strict sessions.
-- Copilot instructions: "Post-Edit Drift-Nudge" mandatory workflow section for all coding agents.
+- `adr_scanner`: stdlib-only parser for `decisions/*.md`; returns active ADRs (accepted/proposed) filtered by scope paths and task keywords.
+- `brief` API: response now includes `layer_contract`, `relevant_tests`, `active_adrs`; prompt block extended with Layer Constraints and Active ADR Constraints sections.
+- Nudge regression detector: `timeout_ms` param (default 1000 ms); new fields `revert_recommended`, `latency_ms`, `latency_exceeded`, `auto_fast_path`; explicit REVERT directive in `agent_instruction` on degrading+unsafe edits.
+- MCP SG-005/SG-006: `drift_fix_apply` and `drift_patch_begin` require prior `drift_brief` in strict sessions.
+- `copilot-instructions.md`: mandatory Post-Edit Drift-Nudge workflow section for all coding agents.
 
 ### Changed
 
-- `drift.yaml`: `doc_impl_drift` signal excluded from `decisions/*` path override to suppress ADR-file false positives.
-- `drift_nudge` MCP tool: `timeout_ms` parameter exposed in the MCP schema.
+- `drift.yaml`: `doc_impl_drift` excluded from `decisions/*` to suppress ADR-file false positives.
 
 ## [2.22.0] – 2026-04-20
 
