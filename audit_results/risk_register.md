@@ -1,5 +1,41 @@
 # Risk Register
 
+## 2026-04-21 - v2.25.0: Brief-staleness, session score fields, SG hardening, mypy/ruff fixes
+
+- Risk ID: RISK-SESSION-2026-04-21-BRIEF-STALENESS
+- Component: `src/drift/session.py`, `src/drift/mcp_orchestration.py`, `src/drift/mcp_router_session.py`, `src/drift/mcp_server.py`
+- Type: Correctness / observability risk
+- Description: Session now tracks `last_brief_at`, `last_brief_score`, `last_scan_score`, `tool_calls_since_brief`.
+  `_brief_staleness_reason()` fires when score delta > 0.05, elapsed > 600 s, or calls_since_brief > 10.
+  SG-005/SG-006: `drift_fix_apply` and `drift_patch_begin` reset brief counters. Mypy/ruff fixes in
+  `file_discovery.py` (type annotations), `session_handover.py` (getattr fallback), `nudge.py` (line length).
+  Changed signal-relevant files: `file_discovery.py`, `git_blame.py`, `git_history.py`, `json_output.py`,
+  `markdown_report.py`, `architecture_violation.py`, `hardcoded_secret.py` — all changes are mypy/ruff
+  correctness fixes with no behavioral signal changes.
+- Severity: LOW — type annotation and staleness-tracking changes; no signal logic altered.
+- Mitigations: All changes covered by existing test suite (5984 passed). Mypy reports 0 errors.
+- Residual risk: Staleness threshold defaults (0.05 score delta, 600 s, 10 calls) may need tuning post-observation. Accepted pending empirical data.
+- Status: Accepted-with-mitigations
+- Evidenz: `benchmark_results/v2.25.0_feature_evidence.json`.
+
+## 2026-04-21 - ADR-079: Session-Handover-Gate Bypass
+
+- Risk ID: RISK-SESSION-2026-04-21-HANDOVER-BYPASS
+- Component: `src/drift/session_handover.py`, `src/drift/mcp_router_session.py::run_session_end`
+- Type: Process / governance risk
+- Description: `drift_session_end(force=true)` erlaubt einen auditierbaren Notausgang am Handover-Gate.
+  Missbrauch würde Security-Theater erzeugen (Session wird beendet, ohne dass verwertbare Handover-Artefakte
+  vorliegen). Mitigationen: `bypass_reason` mit mindestens 40 Zeichen und ohne Denylist-Tokens, WARNING-Log
+  in der `drift`-Logger-Kette, `record_trace` mit `advisory="session_handover.blocked"` bzw. bei Bypass
+  mit `handover_bypass.forced=true` in der Session-Summary. Retry-Counter begrenzt Dauerblockaden auf
+  `MAX_HANDOVER_RETRIES=5`, danach kann ausschliesslich mit validem `bypass_reason` beendet werden.
+- Verbleibendes Risiko: Agent koennte plausiblen aber unehrlichen Bypass-Grund formulieren. Akzeptiert,
+  weil jeder Bypass in Trace und Log vorliegt und manuell gereviewt werden kann.
+- Status: Accepted-with-mitigations
+- Evidenz: `tests/test_session_end_gate.py::test_force_with_valid_reason_unblocks`,
+  `tests/test_session_end_gate.py::test_force_with_placeholder_reason_blocks`,
+  `benchmark_results/v2.25.0_session_handover_gate_feature_evidence.json`.
+
 ## 2026-04-20 - interactive_review.py: pragma annotation only (non-functional)
 
 - Risk ID: RISK-OUTPUT-2026-04-20-PRAGMA-ANNOTATION
