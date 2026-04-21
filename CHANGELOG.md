@@ -8,25 +8,17 @@ Short version: Strict MCP guardrails default true (ADR-080); SG-007 scope-gate; 
 
 ### Added
 
-- **SG-007** blocks `drift_fix_apply` / `drift_patch_begin` when the last `drift_brief` raised `scope_gate.action_required=ask_user` (low scope confidence).
-- **SG-005a / SG-006a** block the same tools when the brief is stale (baseline score drift > 0.1, more than 20 tool calls, or more than 30 min since the brief).
-- `drift_brief` returns an active `scope_gate` block on `scope.confidence < 0.5` with `action_required=ask_user` and `blocking=true`; passive `scope_warning` retained for back-compat.
-- `drift_brief` surfaces up to 3 negative-context anti-patterns in both the JSON response and the prompt block (`## Anti-Patterns (vermeiden)` section).
-- `drift_nudge` emits a new `cross_file_hint` when estimated cross-file signals (MDS, AVS) may hide precision on non-fast-path runs.
-- `drift_nudge` persists `.drift-cache/last_nudge.json` (schema_version=1) with sha256-16 file hashes for pre-commit gating.
-- `scripts/nudge_gate.py` + `pre-commit` hook: blocks commits when the last nudge recommended REVERT and the flagged files are unchanged. Configurable via `nudge_gate.on_missing: warn|block` in `drift.yaml`; bypass via `DRIFT_SKIP_NUDGE_GATE=1`.
-- ADR-080 documents the strict-mode default flip and the new guardrail rules.
+- **SG-007 / SG-005a / SG-006a guardrails**: `drift_fix_apply` / `drift_patch_begin` blocked when last brief raised low scope confidence (SG-007) or brief is stale — score drift > 0.1, > 20 tool calls, or > 30 min (SG-005a/SG-006a).
+- `drift_brief` raises active `scope_gate` block on `scope.confidence < 0.5`; surfaces top-3 negative-context anti-patterns in JSON response and prompt block.
+- `drift_nudge` persists `.drift-cache/last_nudge.json` (schema_version=1); `scripts/nudge_gate.py` + pre-commit hook blocks commits when last nudge recommended REVERT and flagged files are unchanged. ADR-080 added.
 
 ### Changed
 
-- `drift_nudge.revert_recommended` is now stricter: requires `not safe_to_commit AND (direction == "degrading" OR parse_failures > 0 OR (git_detection_failed AND no changed_files))`.
-- `guard_contract._find_related_tests` additionally greps test files for `from <module>` / `import <module>` patterns derived from changed files (capped at 10, skips files > 200 KB).
-- `adr_scanner` scans a 2000-character relevance window (up from 500) and skips bodies under "rejected alternatives" / "considered alternatives" / "alternatives considered" headings.
-- `drift.schema.json` regenerated for the new `strict_guardrails` default.
+- `drift_nudge.revert_recommended` tightened; `cross_file_hint` added on non-fast-path runs; `adr_scanner` uses 2000-char relevance window and skips alternatives headings; `guard_contract._find_related_tests` greps import patterns in test files.
 
 ### Fixed
 
-- Tool-call counter `tool_calls_since_brief` now increments via `begin_call` once a brief has been recorded; previously it could remain at 0 across calls.
+- `tool_calls_since_brief` counter now increments via `begin_call` once a brief has been recorded.
 
 ## [2.25.0] – 2026-04-21
 
