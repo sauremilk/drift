@@ -600,8 +600,18 @@ class _NudgeExecution:
         _degrading_signals = sorted(
             {signal_abbrev(f.signal_type) for f in _new}
         ) if _new else []
-        _revert_recommended = (
-            not safe_to_commit and self.inc_result.direction == "degrading"
+        # Revert is recommended whenever the commit is unsafe AND at least one
+        # hard structural/observability signal is tripped.  This covers:
+        #   - direct degradation (direction == "degrading")
+        #   - parse failures (file not analyzable -> safe_to_commit==False is
+        #     otherwise "soft"; recommend revert so the agent addresses the
+        #     syntactic regression first)
+        #   - git detection failure with no explicit changed_files (nudge was
+        #     blind; the edit could still be regressing undetected)
+        _revert_recommended = (not safe_to_commit) and (
+            self.inc_result.direction == "degrading"
+            or parse_failure_count > 0
+            or (self.git_detection_failed and not self.changed_set)
         )
         _latency_ms = self.elapsed_ms()
         _latency_exceeded = (
@@ -611,15 +621,42 @@ class _NudgeExecution:
             not self.inc_result.cross_file_signals_estimated
             and bool(self.inc_result.file_local_signals_run)
         )
-        if _revert_recommended:
-            _sig_label = f" ({', '.join(_degrading_signals)}" + ")" if _degrading_signals else ""
-            agent_instruction = (
-                f"REVERT this edit immediately. "
-                f"Degradation detected: {_new_count} new finding"
-                f"{'s' if _new_count != 1 else ''}{_sig_label}. "
-                "Address blocking_reasons or run drift_brief for guided repair, "
-                "then try a different approach."
+        # Phase E3: gentle push toward drift_diff when cross-file signals
+        # are estimated (not measured) and nothing looks degrading.  Helps
+        # catch MDS/AVS regressions that nudge cannot see.
+        _cross_file_hint: str | None = None
+        if (
+            not _auto_fast_path
+            and self.inc_result.direction != "degrading"
+            and self.inc_result.cross_file_signals_estimated
+        ):
+            _cross_file_hint = (
+                "Cross-file signals are estimated from baseline. "
+                "Run drift_diff to verify cross-file impact (MDS/AVS)."
             )
+        if _revert_recommended:
+            if self.inc_result.direction == "degrading":
+                _sig_label = (
+                    f" ({', '.join(_degrading_signals)})" if _degrading_signals else ""
+                )
+                agent_instruction = (
+                    f"REVERT this edit immediately. "
+                    f"Degradation detected: {_new_count} new finding"
+                    f"{'s' if _new_count != 1 else ''}{_sig_label}. "
+                    "Address blocking_reasons or run drift_brief for guided repair, "
+                    "then try a different approach."
+                )
+            elif parse_failure_count > 0:
+                agent_instruction = (
+                    "REVERT this edit: parse failures detected in "
+                    f"{parse_failure_count} file(s). Fix syntax/parse errors "
+                    "before retrying."
+                )
+            else:
+                agent_instruction = (
+                    "REVERT or pass changed_files explicitly. Git change detection "
+                    "failed; nudge could not verify this edit."
+                )
         elif safe_to_commit:
             agent_instruction = (
                 "Use drift_nudge between edits for fast direction checks. "
@@ -673,6 +710,7 @@ class _NudgeExecution:
             latency_ms=_latency_ms,
             latency_exceeded=_latency_exceeded,
             auto_fast_path=_auto_fast_path,
+            cross_file_hint=_cross_file_hint,
         )
         result.update(_nudge_next_step_contract(safe_to_commit=safe_to_commit))
         return result
@@ -717,8 +755,56 @@ class _NudgeExecution:
         self._run_incremental_analysis()
         self._record_outcome()
         result = self._build_response()
+        self._persist_nudge_state(result)
         result = apply_output_mode(result, getattr(self.cfg, "output_mode", "full"))
         return shape_for_profile(result, self.response_profile)
+
+    def _persist_nudge_state(self, result: dict[str, Any]) -> None:
+        """Persist last-nudge state so the pre-commit gate can enforce REVERT.
+
+        Writes ``.drift-cache/last_nudge.json`` with a minimal payload.
+        Any failure is silently ignored — nudge must never break the caller.
+        """
+        try:
+            import hashlib
+            import json
+
+            cache_dir = self.repo_path / getattr(self.cfg, "cache_dir", ".drift-cache")
+            cache_dir.mkdir(parents=True, exist_ok=True)
+
+            # file_hashes for changed files (short sha256) — the gate compares
+            # these against staged files to know whether the REVERTed state
+            # is still unchanged.
+            file_hashes: dict[str, str] = {}
+            for fp in sorted(self.changed_set):
+                full = self.repo_path / fp
+                if full.is_file():
+                    try:
+                        file_hashes[fp] = hashlib.sha256(
+                            full.read_bytes()
+                        ).hexdigest()[:16]
+                    except OSError:
+                        continue
+
+            payload = {
+                "schema_version": 1,
+                "timestamp": self._time.time(),
+                "repo_path": self.repo_path.as_posix(),
+                "changed_files": sorted(self.changed_set),
+                "file_hashes": file_hashes,
+                "revert_recommended": bool(result.get("revert_recommended")),
+                "safe_to_commit": bool(result.get("safe_to_commit")),
+                "direction": result.get("direction"),
+                "delta": result.get("delta"),
+                "latency_ms": result.get("latency_ms"),
+                "agent_instruction": result.get("agent_instruction"),
+            }
+            (cache_dir / "last_nudge.json").write_text(
+                json.dumps(payload, indent=2, sort_keys=True),
+                encoding="utf-8",
+            )
+        except Exception:  # pragma: no cover — persistence is best-effort
+            _log.debug("Could not persist last_nudge state", exc_info=True)
 
 
     def run(self) -> dict[str, Any]:
