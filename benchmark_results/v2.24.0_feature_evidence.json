@@ -1,0 +1,52 @@
+{
+  "version": "2.24.0",
+  "date": "2026-04-21",
+  "feature": "ADR scanner; enriched brief API (layer_contract, relevant_tests, active_adrs); nudge post-edit regression detector; MCP strict guardrail rules SG-005/SG-006",
+  "scope": [
+    "src/drift/adr_scanner.py",
+    "src/drift/api/brief.py",
+    "src/drift/api/guard_contract.py",
+    "src/drift/api/nudge.py",
+    "src/drift/guardrails.py",
+    "src/drift/mcp_orchestration.py",
+    "src/drift/mcp_router_analysis.py",
+    "src/drift/mcp_server.py",
+    "tests/test_adr_scanner.py",
+    "tests/test_brief.py",
+    "tests/test_mcp_orchestration_coverage.py",
+    "tests/test_nudge.py"
+  ],
+  "new_modules": [
+    "adr_scanner"
+  ],
+  "new_api_fields": {
+    "brief": ["layer_contract", "relevant_tests", "active_adrs"],
+    "nudge": ["revert_recommended", "latency_ms", "latency_exceeded", "auto_fast_path"]
+  },
+  "new_mcp_guardrail_rules": ["SG-005", "SG-006"],
+  "new_parameters": {
+    "nudge": ["timeout_ms"],
+    "drift_nudge_mcp_tool": ["timeout_ms"],
+    "guardrails_to_prompt_block": ["layer_contract", "active_adrs"]
+  },
+  "evidence": {
+    "adr_scanner": {
+      "description": "stdlib-only ADR parser; scans decisions/*.md; filters by frontmatter status (accepted/proposed) and relevance (path tokens, task keywords); no pyyaml dependency",
+      "test_coverage": "tests/test_adr_scanner.py — accepted/proposed/rejected/obsolete/no_decisions_dir/scope_filter/task_filter/no_filter cases"
+    },
+    "brief_enrichment": {
+      "description": "brief API now exposes layer_contract (layer name + allowed/forbidden import lists from guard_contract module), relevant_tests (test files matching scope), and active_adrs (ADR scanner results); guardrails_to_prompt_block extended with Layer Constraints and Active ADR Constraints sections",
+      "test_coverage": "tests/test_brief.py — test_prompt_block_includes_layer_section, test_prompt_block_includes_adr_section, TestApiBriefNewFields"
+    },
+    "nudge_regression_detector": {
+      "description": "revert_recommended=True when direction==degrading AND safe_to_commit==False; latency_ms always present; latency_exceeded=True when wall-clock exceeds timeout_ms; auto_fast_path=True when all signals are file-local with exact confidence; agent_instruction contains explicit REVERT directive on degrading+unsafe",
+      "test_coverage": "tests/test_nudge.py — TestPostEditRegressionDetector (12 test cases)"
+    },
+    "mcp_strict_guardrails": {
+      "description": "SG-005: drift_fix_apply blocked without prior drift_brief; SG-006: drift_patch_begin blocked without prior drift_brief; enforced in _strict_guardrail_violations",
+      "test_coverage": "tests/test_mcp_orchestration_coverage.py — TestStrictGuardrailViolations"
+    }
+  },
+  "audit_artifacts_updated": [],
+  "notes": "No signals changed; no audit artifact update required. copilot-instructions.md updated with mandatory Post-Edit Drift-Nudge section. drift.yaml updated to exclude doc_impl_drift from decisions/*."
+}

@@ -223,6 +223,7 @@ class _NudgeExecution:
         task_signal: str | None,
         task_edit_kind: str | None,
         task_context_class: str | None,
+        timeout_ms: int | None = 1000,
     ) -> None:
         import time as _time
 
@@ -237,6 +238,7 @@ class _NudgeExecution:
         }
         self._initial_changed_files = changed_files
         self.uncommitted = uncommitted
+        self.timeout_ms = timeout_ms
         self.signals = signals
         self.exclude_signals = exclude_signals
         self.response_profile = response_profile
@@ -594,11 +596,29 @@ class _NudgeExecution:
         }
 
         # --- Bruchstelle 1: Dynamic agent_instruction ---
-        if not safe_to_commit and _new and self.inc_result.direction == "degrading":
+        _new_count = len(_new)
+        _degrading_signals = sorted(
+            {signal_abbrev(f.signal_type) for f in _new}
+        ) if _new else []
+        _revert_recommended = (
+            not safe_to_commit and self.inc_result.direction == "degrading"
+        )
+        _latency_ms = self.elapsed_ms()
+        _latency_exceeded = (
+            self.timeout_ms is not None and _latency_ms > self.timeout_ms
+        )
+        _auto_fast_path = (
+            not self.inc_result.cross_file_signals_estimated
+            and bool(self.inc_result.file_local_signals_run)
+        )
+        if _revert_recommended:
+            _sig_label = f" ({', '.join(_degrading_signals)}" + ")" if _degrading_signals else ""
             agent_instruction = (
-                "Significant degradation detected with new findings. "
-                "Run drift_brief to get scope-aware guardrails before continuing edits. "
-                "If safe_to_commit is false, address blocking_reasons first."
+                f"REVERT this edit immediately. "
+                f"Degradation detected: {_new_count} new finding"
+                f"{'s' if _new_count != 1 else ''}{_sig_label}. "
+                "Address blocking_reasons or run drift_brief for guided repair, "
+                "then try a different approach."
             )
         elif safe_to_commit:
             agent_instruction = (
@@ -649,6 +669,10 @@ class _NudgeExecution:
             warnings=warnings,
             finding_cluster_summary=finding_cluster_summary,
             agent_instruction=agent_instruction,
+            revert_recommended=_revert_recommended,
+            latency_ms=_latency_ms,
+            latency_exceeded=_latency_exceeded,
+            auto_fast_path=_auto_fast_path,
         )
         result.update(_nudge_next_step_contract(safe_to_commit=safe_to_commit))
         return result
@@ -696,6 +720,7 @@ class _NudgeExecution:
         result = apply_output_mode(result, getattr(self.cfg, "output_mode", "full"))
         return shape_for_profile(result, self.response_profile)
 
+
     def run(self) -> dict[str, Any]:
         try:
             result = self._execute()
@@ -717,6 +742,7 @@ def nudge(
     task_signal: str | None = None,
     task_edit_kind: str | None = None,
     task_context_class: str | None = None,
+    timeout_ms: int | None = 1000,
 ) -> dict[str, Any]:
     """Incremental directional feedback after file changes.
 
@@ -766,6 +792,15 @@ def nudge(
     baseline (typically 2–10 s depending on repo size).  Subsequent calls are
     incremental and usually complete in 0.1–0.5 s.  Callers should expect
     the warm-up cost on the initial invocation.
+
+    Parameters (additional)
+    -----------------------
+    timeout_ms:
+        Total wall-clock budget in milliseconds for this call.  When the
+        actual latency exceeds this value the response includes
+        ``latency_exceeded: true`` so agents can decide to skip future
+        nudge calls.  No early abort is performed; a full result is always
+        returned.  Defaults to ``1000`` ms.  Set to ``None`` to disable.
     """
     return _NudgeExecution(
         path,
@@ -777,6 +812,7 @@ def nudge(
         task_signal=task_signal,
         task_edit_kind=task_edit_kind,
         task_context_class=task_context_class,
+        timeout_ms=timeout_ms,
     ).run()
 
 

@@ -529,3 +529,58 @@ class TestGuardrailMinConfidence:
         findings = self._make_findings()
         guardrails = generate_guardrails(findings)
         assert len(guardrails) >= 1
+
+    def test_prompt_block_includes_layer_section(self) -> None:
+        """guardrails_to_prompt_block emits a layer constraints section when provided."""
+        layer_contract = {
+            "layer": "signals",
+            "allowed": ["models", "ingestion"],
+            "forbidden": ["output", "commands"],
+        }
+        block = guardrails_to_prompt_block([], layer_contract=layer_contract)
+        assert "Layer Constraints" in block
+        assert "signals" in block
+
+    def test_prompt_block_includes_adr_section(self) -> None:
+        """guardrails_to_prompt_block emits an ADR constraints section when provided."""
+        active_adrs = [
+            {
+                "id": "ADR-042",
+                "title": "ADR-042: Signals must not import from output",
+                "status": "accepted",
+                "scope_match_reason": "path_token:signals",
+            }
+        ]
+        block = guardrails_to_prompt_block([], active_adrs=active_adrs)
+        assert "ADR" in block
+        assert "ADR-042" in block
+
+
+# ---------------------------------------------------------------------------
+# API brief — new guardrail-source fields (layer_contract, relevant_tests, active_adrs)
+# ---------------------------------------------------------------------------
+
+
+class TestApiBriefNewFields:
+    def test_result_contains_layer_contract(self, tmp_repo: Path) -> None:
+        result = api_brief(tmp_repo, task="refactor signals layer")
+        assert "layer_contract" in result
+
+    def test_layer_contract_has_expected_keys(self, tmp_repo: Path) -> None:
+        result = api_brief(tmp_repo, task="refactor signals layer")
+        lc = result["layer_contract"]
+        assert isinstance(lc, dict)
+        # Must have at least layer/allowed/forbidden
+        assert "layer" in lc
+        assert "allowed" in lc
+        assert "forbidden" in lc
+
+    def test_result_contains_relevant_tests(self, tmp_repo: Path) -> None:
+        result = api_brief(tmp_repo, task="update ingestion")
+        assert "relevant_tests" in result
+        assert isinstance(result["relevant_tests"], list)
+
+    def test_result_contains_active_adrs(self, tmp_repo: Path) -> None:
+        result = api_brief(tmp_repo, task="refactor signals")
+        assert "active_adrs" in result
+        assert isinstance(result["active_adrs"], list)

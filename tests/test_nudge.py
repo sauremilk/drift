@@ -1539,3 +1539,220 @@ class TestDynamicAgentInstruction:
         assert result["safe_to_commit"] is True
         assert "drift_nudge" in result["agent_instruction"]
         assert "drift_diff" in result["agent_instruction"]
+
+
+# ---------------------------------------------------------------------------
+# Post-edit regression detector fields
+# ---------------------------------------------------------------------------
+
+
+class TestPostEditRegressionDetector:
+    """revert_recommended, latency_ms, latency_exceeded, auto_fast_path."""
+
+    @pytest.fixture(autouse=True)
+    def _clear_baseline_store(self) -> None:
+        _baseline_store.clear()
+        BaselineManager.reset_instance()
+
+    def _seed_baseline(self, tmp_path: Path) -> None:
+        BaselineManager.instance().store(
+            tmp_path.resolve(),
+            BaselineSnapshot(file_hashes={}, score=0.0),
+            [],
+            {},
+        )
+
+    def _patch_git_state(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        monkeypatch.setattr(
+            "drift.incremental._capture_git_state",
+            lambda *a, **kw: None,
+        )
+
+    def _inject_runner(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+        *,
+        direction: str,
+        delta: float,
+        score: float,
+        new_findings: list[Finding],
+        file_local_signals_run: list[str],
+        cross_file_signals_estimated: list[str],
+    ) -> None:
+        def _fake_run(*args, **kwargs):
+            return SimpleNamespace(
+                direction=direction,
+                delta=delta,
+                score=score,
+                new_findings=new_findings,
+                resolved_findings=[],
+                confidence={},
+                file_local_signals_run=file_local_signals_run,
+                cross_file_signals_estimated=cross_file_signals_estimated,
+                baseline_valid=True,
+                pruned_removed_cross_file_findings=0,
+            )
+
+        monkeypatch.setattr("drift.incremental.IncrementalSignalRunner.run", _fake_run)
+
+    def test_revert_recommended_true_when_degrading_and_not_safe(
+        self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+    ) -> None:
+        """revert_recommended=True when direction==degrading and safe_to_commit==False."""
+        findings = [
+            _make_finding(severity=Severity.HIGH, title="layer violation")
+        ]
+        TestNudgeAPI._mock_nudge_deps(monkeypatch, tmp_path, findings=findings)
+        self._seed_baseline(tmp_path)
+        self._patch_git_state(monkeypatch)
+        self._inject_runner(
+            monkeypatch,
+            direction="degrading",
+            delta=0.1,
+            score=0.4,
+            new_findings=findings,
+            file_local_signals_run=["pattern_fragmentation"],
+            cross_file_signals_estimated=[],
+        )
+
+        result = nudge(tmp_path, changed_files=["src/a.py"])
+
+        assert result["safe_to_commit"] is False
+        assert result["revert_recommended"] is True
+        assert "REVERT" in result["agent_instruction"]
+
+    def test_revert_recommended_false_when_degrading_but_safe(
+        self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+    ) -> None:
+        """revert_recommended=False when direction==degrading but safe_to_commit==True."""
+        # Create the file so it is discovered and the runner is actually invoked
+        src_dir = tmp_path / "src"
+        src_dir.mkdir()
+        (src_dir / "a.py").write_text("x = 1\n", encoding="utf-8")
+
+        TestNudgeAPI._mock_nudge_deps(monkeypatch, tmp_path)
+        self._seed_baseline(tmp_path)
+        self._patch_git_state(monkeypatch)
+        # delta=0.01 < _NUDGE_SIGNIFICANT_DELTA=0.05, new_findings=[] → safe_to_commit=True
+        self._inject_runner(
+            monkeypatch,
+            direction="degrading",
+            delta=0.01,
+            score=0.31,
+            new_findings=[],
+            file_local_signals_run=["pattern_fragmentation"],
+            cross_file_signals_estimated=[],
+        )
+
+        result = nudge(tmp_path, changed_files=["src/a.py"])
+
+        assert result["safe_to_commit"] is True
+        assert result["revert_recommended"] is False
+
+    def test_latency_ms_present_in_response(
+        self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+    ) -> None:
+        """Response always contains latency_ms as a non-negative integer."""
+        TestNudgeAPI._mock_nudge_deps(monkeypatch, tmp_path)
+        result = nudge(tmp_path, changed_files=[])
+
+        assert "latency_ms" in result
+        assert isinstance(result["latency_ms"], int)
+        assert result["latency_ms"] >= 0
+
+    def test_latency_exceeded_true_when_over_threshold(
+        self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+    ) -> None:
+        """latency_exceeded=True when elapsed > timeout_ms."""
+        TestNudgeAPI._mock_nudge_deps(monkeypatch, tmp_path)
+
+        _call_count = [0]
+
+        def _fake_monotonic() -> float:
+            _call_count[0] += 1
+            # First call (start timestamp): return 0; all subsequent: return 2.0 (=2000 ms)
+            return 0.0 if _call_count[0] == 1 else 2.0
+
+        monkeypatch.setattr("time.monotonic", _fake_monotonic)
+
+        result = nudge(tmp_path, changed_files=[], timeout_ms=1000)
+
+        assert result["latency_exceeded"] is True
+
+    def test_latency_exceeded_false_when_under_threshold(
+        self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+    ) -> None:
+        """latency_exceeded=False when elapsed < timeout_ms."""
+        TestNudgeAPI._mock_nudge_deps(monkeypatch, tmp_path)
+        # Real execution on empty changed_files should be well under 500 ms
+        result = nudge(tmp_path, changed_files=[], timeout_ms=10_000)
+
+        assert result["latency_exceeded"] is False
+
+    def test_latency_exceeded_false_when_timeout_disabled(
+        self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+    ) -> None:
+        """latency_exceeded=False when timeout_ms=None (gate disabled)."""
+        TestNudgeAPI._mock_nudge_deps(monkeypatch, tmp_path)
+        result = nudge(tmp_path, changed_files=[], timeout_ms=None)
+
+        assert result["latency_exceeded"] is False
+
+    def test_auto_fast_path_true_when_only_file_local_signals(
+        self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+    ) -> None:
+        """auto_fast_path=True when cross_file_signals_estimated is empty."""
+        TestNudgeAPI._mock_nudge_deps(monkeypatch, tmp_path)
+        self._seed_baseline(tmp_path)
+        self._patch_git_state(monkeypatch)
+        self._inject_runner(
+            monkeypatch,
+            direction="stable",
+            delta=0.0,
+            score=0.3,
+            new_findings=[],
+            file_local_signals_run=["pattern_fragmentation"],
+            cross_file_signals_estimated=[],
+        )
+
+        result = nudge(tmp_path, changed_files=["src/a.py"])
+
+        assert result["auto_fast_path"] is True
+
+    def test_auto_fast_path_false_when_cross_file_signals_estimated(
+        self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+    ) -> None:
+        """auto_fast_path=False when MDS/AVS are in cross_file_signals_estimated."""
+        TestNudgeAPI._mock_nudge_deps(monkeypatch, tmp_path)
+        self._seed_baseline(tmp_path)
+        self._patch_git_state(monkeypatch)
+        self._inject_runner(
+            monkeypatch,
+            direction="stable",
+            delta=0.0,
+            score=0.3,
+            new_findings=[],
+            file_local_signals_run=["pattern_fragmentation"],
+            cross_file_signals_estimated=["architecture_violation", "mutant_duplicate"],
+        )
+
+        result = nudge(tmp_path, changed_files=["src/a.py"])
+
+        assert result["auto_fast_path"] is False
+
+    def test_response_schema_includes_new_fields(
+        self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+    ) -> None:
+        """All 4 new post-edit fields are present in every nudge response."""
+        TestNudgeAPI._mock_nudge_deps(monkeypatch, tmp_path)
+        result = nudge(tmp_path, changed_files=[])
+
+        assert "revert_recommended" in result
+        assert "latency_ms" in result
+        assert "latency_exceeded" in result
+        assert "auto_fast_path" in result
+        assert isinstance(result["revert_recommended"], bool)
+        assert isinstance(result["latency_ms"], int)
+        assert isinstance(result["latency_exceeded"], bool)
+        assert isinstance(result["auto_fast_path"], bool)
+

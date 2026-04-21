@@ -161,6 +161,16 @@ def _extract_imports(file_path: Path) -> list[str]:
 
 
 # ---------------------------------------------------------------------------
+# Public aliases for layer-boundary data (used by drift_brief and tests)
+# ---------------------------------------------------------------------------
+
+infer_layer = _infer_layer
+LAYER_ALLOWED_IMPORTS = _LAYER_ALLOWED_IMPORTS
+LAYER_FORBIDDEN_IMPORTS = _LAYER_FORBIDDEN_IMPORTS
+find_related_tests = _find_related_tests
+
+
+# ---------------------------------------------------------------------------
 # Core logic
 # ---------------------------------------------------------------------------
 

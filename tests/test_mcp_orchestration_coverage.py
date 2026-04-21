@@ -369,3 +369,55 @@ class TestDeriveDiagnosticHypothesisId:
             "non_goals": ["no"],
         }
         assert _derive_diagnostic_hypothesis_id(p1) != _derive_diagnostic_hypothesis_id(p2)
+
+
+# ---------------------------------------------------------------------------
+# _strict_guardrail_violations — SG-005 and SG-006
+# ---------------------------------------------------------------------------
+
+
+class TestStrictGuardrailViolations:
+    """Tests for SG-005 (fix_apply requires brief) and SG-006 (patch_begin requires brief)."""
+
+    def test_sg005_fix_apply_blocked_without_brief(self):
+        from drift.mcp_orchestration import _strict_guardrail_violations
+
+        session = _FakeSession()  # guardrails=None → brief not called
+        violations = _strict_guardrail_violations("drift_fix_apply", session)
+        assert any(v["rule_id"] == "SG-005" for v in violations)
+
+    def test_sg005_fix_apply_passes_after_brief(self):
+        from drift.mcp_orchestration import _strict_guardrail_violations
+
+        # guardrails set → brief was called
+        session = _FakeSession(guardrails=[{"id": "GR-001"}])
+        violations = _strict_guardrail_violations("drift_fix_apply", session)
+        assert not any(v["rule_id"] == "SG-005" for v in violations)
+
+    def test_sg006_patch_begin_blocked_without_brief(self):
+        from drift.mcp_orchestration import _strict_guardrail_violations
+
+        session = _FakeSession()
+        violations = _strict_guardrail_violations("drift_patch_begin", session)
+        assert any(v["rule_id"] == "SG-006" for v in violations)
+
+    def test_sg006_patch_begin_passes_after_brief(self):
+        from drift.mcp_orchestration import _strict_guardrail_violations
+
+        session = _FakeSession(guardrails=[{"id": "GR-001"}])
+        violations = _strict_guardrail_violations("drift_patch_begin", session)
+        assert not any(v["rule_id"] == "SG-006" for v in violations)
+
+    def test_sg005_not_triggered_for_unrelated_tool(self):
+        from drift.mcp_orchestration import _strict_guardrail_violations
+
+        session = _FakeSession()  # no brief
+        violations = _strict_guardrail_violations("drift_scan", session)
+        assert not any(v["rule_id"] == "SG-005" for v in violations)
+
+    def test_sg006_not_triggered_for_unrelated_tool(self):
+        from drift.mcp_orchestration import _strict_guardrail_violations
+
+        session = _FakeSession()  # no brief
+        violations = _strict_guardrail_violations("drift_scan", session)
+        assert not any(v["rule_id"] == "SG-006" for v in violations)

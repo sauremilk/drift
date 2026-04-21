@@ -177,6 +177,7 @@ async def run_nudge(
     task_signal: str | None,
     task_edit_kind: str | None,
     task_context_class: str | None,
+    timeout_ms: int | None = 1000,
 ) -> str:
     from drift.api import nudge
 
@@ -206,6 +207,7 @@ async def run_nudge(
         task_signal=task_signal,
         task_edit_kind=task_edit_kind,
         task_context_class=task_context_class,
+        timeout_ms=timeout_ms,
     )
     if session:
         try:
