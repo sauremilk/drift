@@ -62,3 +62,8 @@ src
 tests
 uv.lock
 work_artifacts
+.drift-intent.yaml
+drift.agent.prompt.md
+drift.intent.json
+drift.intent.report.json
+drift.intent.report.md
