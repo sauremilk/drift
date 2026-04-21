@@ -78,6 +78,7 @@ def _execute_fix_plan_operation(
     include_deferred: bool,
     include_non_operational: bool,
     progress_cb: object,
+    yes: bool = False,
 ) -> dict:  # type: ignore[type-arg]
     """Dispatch to the appropriate fix-plan sub-operation and return the result dict."""
     if dismiss_task_id:
@@ -117,6 +118,7 @@ def _execute_fix_plan_operation(
             dry_run=dry_run or not do_apply,
             target_path=target_path,
             exclude_paths=list(exclude_paths) or None,
+            require_clean_git=not yes,
         )
     return api_fix_plan(
         path,
@@ -321,5 +323,6 @@ def fix_plan(
         do_apply, dry_run,
         finding_id, signal, max_tasks, target_path, exclude_paths,
         automation_fit_min, include_deferred, include_non_operational, progress_cb,
+        yes=yes,
     )
     _emit_fix_plan_result(result, output, output_format)

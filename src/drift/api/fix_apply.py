@@ -236,7 +236,6 @@ def fix_apply(
     signal: str | None = None,
     max_tasks: int = 10,
     dry_run: bool = True,
-    yes: bool = False,
     target_path: str | None = None,
     exclude_paths: list[str] | None = None,
     require_clean_git: bool = True,
@@ -253,9 +252,6 @@ def fix_apply(
         Maximum number of tasks to consider from the fix plan.
     dry_run:
         When *True* (default), generate patches but do not write files.
-    yes:
-        When *True*, skip the clean-git-state requirement (for testing only).
-        Not exposed as a CLI flag in unsafe form — CLI handles confirmation UX.
     target_path:
         Restrict to findings inside this subpath.
     exclude_paths:

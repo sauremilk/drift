@@ -1,3 +1,11 @@
+## [2.26.1] – 2026-04-22
+
+Short version: Vulture dead-code fix; yes flag now forwarded to require_clean_git in fix_plan CLI.
+
+### Fixed
+
+- `fix_plan` CLI `--yes` flag now forwarded as `require_clean_git=not yes` to `api_fix_apply`; removed unused `yes` parameter from `fix_apply` public API. Fixes vulture dead-code CI failure.
+
 ## [2.26.0] – 2026-04-22
 
 Short version: Strict MCP guardrails default true (ADR-080); SG-007 scope-gate; SG-005a/SG-006a brief staleness; nudge `revert_recommended` hardening + pre-commit gate; brief anti-patterns; enriched ADR relevance; cross-file hint.
