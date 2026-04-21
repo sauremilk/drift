@@ -1,5 +1,43 @@
 # Risk Register
 
+## 2026-04-22 - ADR-082: Fingerprint v2 (Symbol-based, Line-independent)
+
+- Risk ID: RISK-ADR-082-FINGERPRINT-V2
+- Component: `src/drift/baseline.py` (finding_fingerprint, save_baseline, load_baseline, baseline_diff), `src/drift/analyzer.py` (_HeadMatchIndex, get_head_match_index_for_diff), `src/drift/api/diff.py` (_subtract_pre_existing_head), `src/drift/config/_schema.py` (thresholds.diff_fuzzy_head_subtraction).
+- Type: Signal/output-contract risk (affects finding identity and baseline compatibility).
+- Description: v1-Fingerprints hashten `(signal, file, start_line, end_line, title)`. Jeder Edit, der Zeilen verschiebt, und jede Titel-Metrik-Änderung erzeugten einen neuen Hash → `drift_diff` meldete unveränderte HEAD-Findings als "new". Field-Test 2026-04-21 bestätigte 13 "new findings" post-fix-loop, davon ~6 reine Shift-FPs. v2 hasht `(signal, file, symbol_identity, stable_title)` mit Kaskade `logical_location.fully_qualified_name → logical_location.name → symbol → ""` und Titel-Normalisierung (`\d+ → <N>`, strip trailing `(file:line)`).
+- Severity: MEDIUM — `finding_id` in CLI/SARIF-Output ändert sich, externe Konsumenten müssen umstellen; `finding_id_v1` bleibt aber als Alias im Baseline-Schema für 2 Minor-Release-Zyklen erhalten.
+- Triggers: Agent-Fix-Loop mit Helper-Extraktion (shiftet Zeilen); Metrik-tragende Titel wie `"return_pattern: 2 variants"`, wo der Count bei jedem Rescan driftet; File-Moves.
+- Impact without mitigation: Agent verliert Vertrauen in `drift_diff`, deaktiviert Drift-Integration oder ignoriert `accept_change=false`; Baseline-Workflow wird praktisch unbenutzbar nach jedem Refactor.
+- Mitigations:
+  - Fingerprint v2 als Default (`finding_fingerprint` delegiert an v2).
+  - Baseline-Schema v2 mit `fingerprint_v1`-Alias pro Entry → alte Dateien laden weiter, `baseline_diff` macht Dual-Lookup.
+  - Fuzzy-HEAD-Subtraktion als Safety-Net für symbol-lose Findings (TPD, DRS): `(signal, file, stable_title)`-Match, default on, abschaltbar via `thresholds.diff_fuzzy_head_subtraction=false`.
+  - Migrationswarnung: v1-Baselines emittieren beim Load ein Warning mit klarem Upgrade-Hinweis.
+- Monitoring:
+  - `tests/test_baseline.py::TestFingerprintV2Stability` (7 Stabilitäts-Asserts).
+  - `tests/test_baseline.py::TestStableTitle` (Normalisierungs-Contract).
+  - `tests/test_baseline.py::test_v1_schema_baseline_still_loads` (Migrations-Compat).
+  - `tests/test_scan_diversity.py::test_uncommitted_ignores_shifted_findings_via_v2_fingerprint` + fuzzy-Pendant (End-to-End-Beweis des HEAD-Subtraktions-Pfads).
+- Residual Risk: Signale ohne `symbol` UND ohne `logical_location` (z. B. repo-scoped TPD) greifen nur auf `(signal, file, stable_title)` zurück — Fuzzy-Pass fängt das meiste ab, aber ein genuines Umbenennen eines solchen Findings bleibt detektierbar. Akzeptabel: unter 5 % der Findings sind symbol-los und repo-weit.
+- Status: MITIGATED (v2.27.0 Release-Kandidat).
+
+## 2026-04-22 - ADR-083: Agent Pre-Edit Pattern-Scan via drift_steer
+
+- Risk ID: RISK-ADR-083-PATTERN-DRIFT-POST-FIX
+- Component: `.github/prompts/drift-fix-loop.prompt.md` (Schritt 2b, neu), Agent-Fix-Loop-Workflow.
+- Type: Prozess-/Prompt-Risiko (kein Code-Contract).
+- Description: Nach Helper-Extraktion führt der Agent Fremd-Pattern ein (z. B. `raise ValueError` in einem Modul, das bereits `DomainError` nutzt), obwohl PFS dies messen und anzeigen kann. Field-Test 2026-04-21 zeigte ~4 echte post-fix PFS-Findings (return_pattern, error_handling) — vermeidbar, wenn der Agent vor dem Edit das dominante Pattern liest.
+- Severity: MEDIUM — echte Findings, nicht Tooling-FPs; entstehen konsistent in einer messbaren Rate.
+- Triggers: Jede Refactor-Task, die ein neues Symbol einführt (Helper-Extraktion, Duplikat-Konsolidierung, Skeleton-Funktion).
+- Mitigations:
+  - `drift_steer(target=<file>)` VOR Symbol-Einführung wird im Fix-Loop-Prompt zur Pflicht.
+  - Agent extrahiert `patterns_used_in_scope` und zitiert das gewählte Pattern im Task-Log.
+  - Ausnahme nur für rein lokale Bugfixes ohne neues Symbol.
+- Monitoring: Post-Fix-Loop-Audit (Anzahl neuer PFS-Findings in `work_artifacts/reduce_findings_*/`); Folge-Feldtest nach Rollout muss Rate auf ≤1 echte PFS-Finding pro 10 Fixes senken.
+- Residual Risk: Agent ignoriert Prompt-Pflicht. Gegenmaßnahme in Folge-Iteration: `patterns_used_in_scope` direkt im `drift_fix_plan`-Task-Payload mitliefern (Stream 4b, deferred).
+- Status: MITIGATED (Prompt-Ebene); Stream 4b als Follow-up offen.
+
 ## 2026-04-21 - Q3 (ADR-081 Nachschärfung): concurrent-writer advisory lock
 
 - Risk ID: RISK-ADR-081-CONCURRENT-WRITER

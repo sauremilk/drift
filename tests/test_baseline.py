@@ -9,8 +9,16 @@ from pathlib import Path
 import pytest
 from click.testing import CliRunner
 
-from drift.baseline import baseline_diff, finding_fingerprint, load_baseline, save_baseline
-from drift.models import Finding, RepoAnalysis, Severity, SignalType
+from drift.baseline import (
+    baseline_diff,
+    finding_fingerprint,
+    finding_fingerprint_v1,
+    finding_fingerprint_v2,
+    load_baseline,
+    save_baseline,
+    stable_title,
+)
+from drift.models import Finding, LogicalLocation, RepoAnalysis, Severity, SignalType
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -70,9 +78,14 @@ class TestFindingFingerprint:
         assert finding_fingerprint(f1) != finding_fingerprint(f2)
 
     def test_changes_with_line(self) -> None:
+        """v2 contract: pure line-shift without symbol/title change must NOT
+        change the fingerprint (see ADR-082). v1 remains line-sensitive."""
         f1 = _make_finding(start_line=10)
         f2 = _make_finding(start_line=20)
-        assert finding_fingerprint(f1) != finding_fingerprint(f2)
+        # v2 (canonical) must be stable under pure line-shift.
+        assert finding_fingerprint(f1) == finding_fingerprint(f2)
+        # v1 (legacy) remains line-sensitive by design.
+        assert finding_fingerprint_v1(f1) != finding_fingerprint_v1(f2)
 
     def test_changes_with_title(self) -> None:
         f1 = _make_finding(title="X")
@@ -90,6 +103,112 @@ class TestFindingFingerprint:
         fp = finding_fingerprint(f)
         assert len(fp) == 16
         int(fp, 16)  # must be valid hex
+
+
+# ===========================================================================
+# Unit tests: fingerprint v2 stability contract (ADR-082)
+# ===========================================================================
+
+
+class TestFingerprintV2Stability:
+    """v2 fingerprint must be stable across line-shifts and metric-title
+    changes, and must remain sensitive to genuine symbol renames."""
+
+    def _with_symbol(
+        self,
+        symbol: str,
+        start_line: int = 10,
+        title: str = "Unexplained complexity: main",
+    ) -> Finding:
+        f = _make_finding(start_line=start_line, title=title)
+        f.symbol = symbol
+        f.logical_location = LogicalLocation(
+            fully_qualified_name=f"mod.{symbol}",
+            name=symbol,
+            kind="function",
+        )
+        return f
+
+    def test_stable_across_line_shift(self) -> None:
+        """Pure line-shift within the same symbol must not shift v2."""
+        f1 = self._with_symbol("main", start_line=10)
+        f2 = self._with_symbol("main", start_line=120)
+        assert finding_fingerprint_v2(f1) == finding_fingerprint_v2(f2)
+
+    def test_stable_across_metric_title_change(self) -> None:
+        """Changing a numeric metric in the title must not shift v2."""
+        f1 = self._with_symbol("main", title="return_pattern: 2 variants in scripts/")
+        f2 = self._with_symbol("main", title="return_pattern: 5 variants in scripts/")
+        assert finding_fingerprint_v2(f1) == finding_fingerprint_v2(f2)
+
+    def test_stable_across_trailing_refs(self) -> None:
+        """Trailing ``(file:line)`` references must be stripped before hashing."""
+        f1 = self._with_symbol("main", title="deviation (scripts/foo.py:87)")
+        f2 = self._with_symbol("main", title="deviation (scripts/foo.py:112)")
+        assert finding_fingerprint_v2(f1) == finding_fingerprint_v2(f2)
+
+    def test_detects_genuine_rename(self) -> None:
+        """Different symbol identity must produce a different v2 fingerprint."""
+        f1 = self._with_symbol("login")
+        f2 = self._with_symbol("signin")
+        assert finding_fingerprint_v2(f1) != finding_fingerprint_v2(f2)
+
+    def test_detects_file_move(self) -> None:
+        """Moving a finding to a different file must shift v2."""
+        f1 = self._with_symbol("main")
+        f1.file_path = Path("a/foo.py")
+        f2 = self._with_symbol("main")
+        f2.file_path = Path("b/foo.py")
+        assert finding_fingerprint_v2(f1) != finding_fingerprint_v2(f2)
+
+    def test_detects_signal_change(self) -> None:
+        """Different signal_type must shift v2 even if everything else matches."""
+        f1 = self._with_symbol("main")
+        f1.signal_type = SignalType.PATTERN_FRAGMENTATION
+        f2 = self._with_symbol("main")
+        f2.signal_type = SignalType.MUTANT_DUPLICATE
+        assert finding_fingerprint_v2(f1) != finding_fingerprint_v2(f2)
+
+    def test_falls_back_to_symbol_when_no_logical_location(self) -> None:
+        """Findings without logical_location but with symbol still get a
+        stable, symbol-bound fingerprint."""
+        f1 = _make_finding(start_line=10)
+        f1.symbol = "main"
+        f2 = _make_finding(start_line=120)
+        f2.symbol = "main"
+        assert finding_fingerprint_v2(f1) == finding_fingerprint_v2(f2)
+
+    def test_falls_back_to_file_when_no_symbol(self) -> None:
+        """Findings without any symbol identity hash on (signal, file, title)
+        only — line-independent but not symbol-scoped."""
+        f1 = _make_finding(start_line=10, title="Happy-path-only test suite in tests/")
+        f2 = _make_finding(start_line=500, title="Happy-path-only test suite in tests/")
+        assert finding_fingerprint_v2(f1) == finding_fingerprint_v2(f2)
+
+
+class TestStableTitle:
+    """Unit tests for the title-normalisation helper."""
+
+    def test_strips_leading_metric(self) -> None:
+        assert stable_title("2 variants in scripts/") == "<N> variants in scripts/"
+
+    def test_strips_multiple_metrics(self) -> None:
+        assert (
+            stable_title("error_handling: 5 variants (4 unique)")
+            == "error_handling: <N> variants (<N> unique)"
+        )
+
+    def test_strips_trailing_file_line_refs(self) -> None:
+        assert (
+            stable_title("Deviation (scripts/foo.py:87)")
+            == "Deviation"
+        )
+
+    def test_preserves_stable_text(self) -> None:
+        assert stable_title("Unexplained complexity: main") == "Unexplained complexity: main"
+
+    def test_empty_and_none_safe(self) -> None:
+        assert stable_title("") == ""
 
 
 # ===========================================================================
@@ -206,6 +325,67 @@ class TestBaselineIO:
 
         fps = load_baseline(bl_path)
         assert len(fps) == 1
+
+    def test_save_writes_v2_schema_with_v1_alias(self, tmp_path: Path) -> None:
+        """Saved entries must contain both v2 'fingerprint' and 'fingerprint_v1'
+        alias (see ADR-082 migration window)."""
+        findings = [_make_finding(title="A")]
+        analysis = _make_analysis(findings)
+        bl_path = tmp_path / "baseline.json"
+
+        save_baseline(analysis, bl_path)
+        data = json.loads(bl_path.read_text())
+
+        assert data["baseline_version"] == 2
+        entry = data["findings"][0]
+        assert entry["fingerprint"] == finding_fingerprint_v2(findings[0])
+        assert entry["fingerprint_v1"] == finding_fingerprint_v1(findings[0])
+
+    def test_v1_schema_baseline_still_loads(
+        self, tmp_path: Path, caplog: pytest.LogCaptureFixture
+    ) -> None:
+        """Legacy v1-schema baseline files must still load, emit a schema
+        upgrade warning, and remain matchable via baseline_diff."""
+        import logging
+
+        findings = [_make_finding(title="A")]
+        v1_baseline = {
+            "baseline_version": 1,
+            "drift_version": "1.0.0-legacy",
+            "created_at": "2025-01-01T00:00:00+00:00",
+            "drift_score": 0.1,
+            "finding_count": 1,
+            "findings": [
+                {
+                    "fingerprint": finding_fingerprint_v1(findings[0]),
+                    "signal": findings[0].signal_type,
+                    "severity": findings[0].severity.value,
+                    "file": findings[0].file_path.as_posix(),
+                    "start_line": findings[0].start_line,
+                    "title": findings[0].title,
+                }
+            ],
+        }
+        bl_path = tmp_path / "baseline.json"
+        bl_path.write_text(json.dumps(v1_baseline), encoding="utf-8")
+
+        with caplog.at_level(logging.WARNING, logger="drift.baseline"):
+            fps = load_baseline(bl_path)
+
+        # The returned set contains the v1 fingerprint as stored.
+        assert fps == {finding_fingerprint_v1(findings[0])}
+
+        # baseline_diff must still recognise the finding as known because
+        # it checks BOTH v2 and v1 against the baseline set.
+        new, known = baseline_diff(findings, fps)
+        assert new == []
+        assert len(known) == 1
+
+        # A schema-upgrade warning must have been emitted.
+        assert any(
+            "Baseline schema v1 is older than current v2" in r.message
+            for r in caplog.records
+        )
 
 
 # ===========================================================================

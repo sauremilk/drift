@@ -10,6 +10,7 @@ import pkgutil
 import subprocess
 import time
 from collections.abc import Callable
+from dataclasses import dataclass
 from pathlib import Path
 
 import drift.signals
@@ -436,10 +437,39 @@ def get_head_fingerprints_for_diff(
 
     Returns an empty frozenset on any failure (safe degradation).
     """
+    return get_head_match_index_for_diff(repo_path, changed_files, config).fingerprints
+
+
+@dataclass(frozen=True)
+class _HeadMatchIndex:
+    """Indexed HEAD-state data for pre-existing-finding subtraction.
+
+    ``fingerprints`` is the canonical (v2) fingerprint set used for the
+    primary exact-match pass. ``fuzzy_keys`` is a secondary index keyed by
+    ``(signal_type, file_posix, stable_title)`` for the optional fuzzy pass
+    that catches findings without a stable symbol scope (see ADR-082).
+    """
+
+    fingerprints: frozenset[str]
+    fuzzy_keys: frozenset[tuple[str, str, str]]
+
+
+def get_head_match_index_for_diff(
+    repo_path: Path,
+    changed_files: list[str],
+    config: DriftConfig | None = None,
+) -> _HeadMatchIndex:
+    """Return both exact and fuzzy HEAD-match indexes for diff subtraction.
+
+    See ``_HeadMatchIndex`` for field semantics. Returns empty indexes on
+    any failure (safe degradation).
+    """
     import tempfile
 
+    empty = _HeadMatchIndex(frozenset(), frozenset())
+
     if not changed_files:
-        return frozenset()
+        return empty
 
     logger = logging.getLogger("drift")
 
@@ -447,9 +477,9 @@ def get_head_fingerprints_for_diff(
         try:
             config = DriftConfig.load(repo_path)
         except Exception:
-            return frozenset()
+            return empty
 
-    from drift.baseline import finding_fingerprint
+    from drift.baseline import finding_fingerprint, stable_title
 
     # Get HEAD content for each changed file.  Files not in HEAD (new files)
     # are skipped — their findings are legitimately new.
@@ -471,7 +501,7 @@ def get_head_fingerprints_for_diff(
             pass  # New file or git error → findings are truly new
 
     if not head_contents:
-        return frozenset()
+        return empty
 
     try:
         with tempfile.TemporaryDirectory(prefix="drift_head_") as tmp_dir:
@@ -505,11 +535,20 @@ def get_head_fingerprints_for_diff(
                 on_progress=None,
                 workers=effective_workers,
             )
-            return frozenset(finding_fingerprint(f) for f in head_analysis.findings)
+            fps = frozenset(finding_fingerprint(f) for f in head_analysis.findings)
+            fuzzy = frozenset(
+                (
+                    f.signal_type,
+                    f.file_path.as_posix() if f.file_path else "",
+                    stable_title(f.title),
+                )
+                for f in head_analysis.findings
+            )
+            return _HeadMatchIndex(fingerprints=fps, fuzzy_keys=fuzzy)
     except Exception:
         logger.debug(
             "Could not compute HEAD fingerprints for diff comparison; "
             "falling back to reporting all findings as new.",
             exc_info=True,
         )
-        return frozenset()
+        return empty

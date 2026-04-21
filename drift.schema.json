@@ -1034,6 +1034,11 @@
           "title": "Diff Baseline Recommend Max Out Of Scope Findings",
           "type": "integer"
         },
+        "diff_fuzzy_head_subtraction": {
+          "default": true,
+          "title": "Diff Fuzzy Head Subtraction",
+          "type": "boolean"
+        },
         "ecm_lookback_commits": {
           "default": 20,
           "title": "Ecm Lookback Commits",

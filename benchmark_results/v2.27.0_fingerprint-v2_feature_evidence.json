@@ -1,0 +1,35 @@
+{
+  "version": "2.27.0",
+  "date": "2026-04-21",
+  "feature": "Fingerprint v2 (symbol-based) + fuzzy HEAD-subtraction for drift_diff",
+  "description": "Feature evidence for Fingerprint v2 (symbol-based) + fuzzy HEAD-subtraction for drift_diff (v2.27.0).",
+  "generated_by": {
+    "script": "scripts/generate_feature_evidence.py",
+    "git_sha": "9bfea8da0b6a01625c2ee227da14ce0c462950af",
+    "drift_version": "2.23.0",
+    "timestamp": "2026-04-21T16:31:06.511263+00:00"
+  },
+  "self_analysis": {
+    "error": "JSON parse error: Extra data: line 94043 column 1 (char 3757418)"
+  },
+  "tests": {
+    "total_passing": 6104,
+    "total_failing": 0,
+    "exit_code": 0
+  },
+  "precision_recall_suite": {
+    "total_tests": 207,
+    "passing": 207,
+    "failing": 0,
+    "exit_code": 0,
+    "source": "live: pytest tests/test_precision_recall.py -v --tb=short"
+  },
+  "audit_artifacts_updated": [
+    "decisions/ADR-082-fingerprint-v2-symbol-based.md",
+    "decisions/ADR-083-agent-pre-edit-pattern-scan.md",
+    "audit_results/fmea_matrix.md",
+    "audit_results/risk_register.md",
+    "audit_results/fault_trees.md",
+    "audit_results/stride_threat_model.md"
+  ]
+}

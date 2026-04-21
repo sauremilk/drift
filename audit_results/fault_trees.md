@@ -1,5 +1,57 @@
 # Fault Tree Analysis
 
+## 2026-04-22 - ADR-082: drift_diff false-new fault tree
+
+### Top Event (TE-FP-DIFF-NEW)
+`drift_diff(..., uncommitted=true)` returns `new_finding_count > 0` and
+`accept_change=false` although no new architectural finding was actually
+introduced by the working-tree edit.
+
+### FT-1: Line-shift path (v1-only, mitigated by ADR-082)
+
+```
+TE-FP-DIFF-NEW
+├─ OR
+│  ├─ Finding identity is line-dependent   ← mitigated by v2 hash
+│  │    ← `finding_fingerprint_v1` hashes (signal, file, start_line, end_line, title)
+│  │    ← Any edit above the finding line shifts start_line/end_line
+│  ├─ Title contains volatile metric        ← mitigated by stable_title
+│  │    ← e.g. "return_pattern: 2 variants" → counter changes per rescan
+│  └─ Trailing `(file:line)` reference       ← mitigated by stable_title strip
+└─ AND
+   └─ HEAD-subtraction key-match fails on shifted finding
+       ← Resolved by fuzzy pass on (signal, file, stable_title)
+```
+
+### Countermeasures (in-tree)
+
+1. `finding_fingerprint_v2` in `src/drift/baseline.py` uses
+   `(signal, file, symbol_identity, stable_title)` — immune to line shifts.
+2. `stable_title` strips numeric metrics (`\d+ → <N>`) and trailing
+   `(file:line)` parens; tests: `TestStableTitle`.
+3. Fuzzy HEAD-subtraction in `src/drift/api/diff.py::_subtract_pre_existing_head`
+   covers symbol-less findings (TPD, DRS); guarded by
+   `thresholds.diff_fuzzy_head_subtraction` (default true).
+4. Baseline-Schema migration: `_BASELINE_VERSION=2` with `fingerprint_v1`
+   alias kept for two minor releases; `baseline_diff` performs v1+v2
+   dual-lookup so existing v1 baselines continue to match.
+
+### Verification
+
+- `tests/test_scan_diversity.py::test_uncommitted_ignores_shifted_findings_via_v2_fingerprint`
+- `tests/test_scan_diversity.py::test_uncommitted_fuzzy_pass_catches_symbol_less_findings`
+- `tests/test_baseline.py::TestFingerprintV2Stability` (7 tests)
+- `tests/test_baseline.py::test_v1_schema_baseline_still_loads`
+
+### Residual failure paths
+
+- Symbol-less finding + file path change + metric change simultaneously:
+  not covered by fuzzy pass (different file). Acceptable: genuine file moves
+  should surface as new findings for review.
+- v1-only downstream consumer reading `finding_id` from CLI/SARIF output
+  after v2 rollout: mitigated by `fingerprint_v1` alias in baseline entries
+  for two minor-release cycles; external consumers must migrate by v2.29.
+
 ## 2026-04-21 - ADR-079: Session-Handover-Gate — empty-artifact fault tree
 
 ### Top Event (TE-HANDOVER-079)

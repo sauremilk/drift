@@ -1012,11 +1012,16 @@ class TestDiffUncommittedScope:
 
         monkeypatch.setattr(subprocess, "run", _fake_subprocess_run)
 
-        # Stub get_head_fingerprints_for_diff to return the pre-existing fp
+        # Stub get_head_match_index_for_diff to return the pre-existing fp
+        from drift.analyzer import _HeadMatchIndex
+
         monkeypatch.setattr(
             analyzer_module,
-            "get_head_fingerprints_for_diff",
-            lambda repo_path, changed_files, config=None: frozenset({head_fp}),
+            "get_head_match_index_for_diff",
+            lambda repo_path, changed_files, config=None: _HeadMatchIndex(
+                fingerprints=frozenset({head_fp}),
+                fuzzy_keys=frozenset(),
+            ),
         )
 
         result = diff(Path("."), uncommitted=True)
@@ -1026,6 +1031,201 @@ class TestDiffUncommittedScope:
         )
         assert result["accept_change"] is True, (
             "accept_change must be True when all findings were pre-existing in HEAD"
+        )
+        assert result["noise_context"]["pre_existing_head_count"] == 1
+
+    def test_uncommitted_ignores_shifted_findings_via_v2_fingerprint(
+        self,
+        monkeypatch,
+    ):
+        """ADR-082: a finding that was present in HEAD but has shifted line
+        numbers (and/or metric-containing title) in the working tree MUST
+        still be recognised as pre-existing via the v2 fingerprint.
+
+        This test simulates an agent that touched the file — line-shifting
+        the pre-existing finding — and verifies that drift_diff does not
+        report the finding as new.
+        """
+        import subprocess
+
+        import drift.analyzer as analyzer_module
+        import drift.api as api_module
+        from drift.api import diff
+        from drift.baseline import finding_fingerprint_v2
+        from drift.config import DriftConfig
+
+        # Two findings that share symbol + stable title, but differ in
+        # start_line and the numeric portion of the title. In v1 these would
+        # hash differently; in v2 they are identical.
+        head_finding = _make_finding(
+            PFS,
+            0.8,
+            0.8,
+            file="src/changed.py",
+            line=5,
+        )
+        head_finding.symbol = "extract_helper"
+        head_finding.title = "return_pattern: 2 variants in src/"
+
+        shifted_finding = _make_finding(
+            PFS,
+            0.8,
+            0.8,
+            file="src/changed.py",
+            line=42,  # agent added code above — line shifted
+        )
+        shifted_finding.symbol = "extract_helper"
+        shifted_finding.title = "return_pattern: 3 variants in src/"  # metric drift
+
+        assert finding_fingerprint_v2(head_finding) == finding_fingerprint_v2(
+            shifted_finding
+        )
+
+        analysis = SimpleNamespace(
+            findings=[shifted_finding],
+            drift_score=0.3,
+            severity=Severity.MEDIUM,
+            trend=SimpleNamespace(previous_score=0.3),
+            is_degraded=False,
+            total_files=1,
+        )
+
+        monkeypatch.setattr(
+            DriftConfig,
+            "load",
+            staticmethod(lambda *a, **kw: object()),
+        )
+        monkeypatch.setattr(
+            analyzer_module,
+            "analyze_diff",
+            lambda *a, **kw: analysis,
+        )
+        monkeypatch.setattr(
+            api_module,
+            "_emit_api_telemetry",
+            lambda **kw: None,
+        )
+        monkeypatch.setattr(
+            _scan_mod,
+            "_finding_concise",
+            lambda f: {"title": f.title, "file": f.file_path.as_posix()},
+        )
+
+        original_run = subprocess.run
+
+        def _fake_subprocess_run(cmd, **kwargs):
+            if isinstance(cmd, list) and "diff" in cmd and "--name-only" in cmd:
+                return SimpleNamespace(stdout="src/changed.py\n", returncode=0)
+            return original_run(cmd, **kwargs)
+
+        monkeypatch.setattr(subprocess, "run", _fake_subprocess_run)
+
+        from drift.analyzer import _HeadMatchIndex
+
+        # HEAD index reports the ORIGINAL (un-shifted) v2 fingerprint.
+        monkeypatch.setattr(
+            analyzer_module,
+            "get_head_match_index_for_diff",
+            lambda repo_path, changed_files, config=None: _HeadMatchIndex(
+                fingerprints=frozenset({finding_fingerprint_v2(head_finding)}),
+                fuzzy_keys=frozenset(),
+            ),
+        )
+
+        result = diff(Path("."), uncommitted=True)
+
+        assert result["new_finding_count"] == 0, (
+            "v2 fingerprint must recognise a line-shifted / metric-drifted "
+            "finding as pre-existing in HEAD"
+        )
+        assert result["noise_context"]["pre_existing_head_count"] == 1
+
+    def test_uncommitted_fuzzy_pass_catches_symbol_less_findings(
+        self,
+        monkeypatch,
+    ):
+        """ADR-082 fuzzy pass: a finding without a stable symbol must still
+        be recognised as pre-existing when its (signal, file, stable_title)
+        matches a HEAD fuzzy key."""
+        import subprocess
+
+        import drift.analyzer as analyzer_module
+        import drift.api as api_module
+        from drift.api import diff
+        from drift.config import DriftConfig
+
+        # Symbol-less finding (e.g. a TPD-style repo-wide finding).
+        finding = _make_finding(
+            PFS,
+            0.8,
+            0.8,
+            file="tests",
+            line=0,
+        )
+        finding.symbol = None
+        finding.logical_location = None
+        finding.title = "Happy-path-only test suite (5264 functions)"
+
+        analysis = SimpleNamespace(
+            findings=[finding],
+            drift_score=0.3,
+            severity=Severity.MEDIUM,
+            trend=SimpleNamespace(previous_score=0.3),
+            is_degraded=False,
+            total_files=1,
+        )
+
+        monkeypatch.setattr(
+            DriftConfig,
+            "load",
+            staticmethod(lambda *a, **kw: object()),
+        )
+        monkeypatch.setattr(
+            analyzer_module,
+            "analyze_diff",
+            lambda *a, **kw: analysis,
+        )
+        monkeypatch.setattr(
+            api_module,
+            "_emit_api_telemetry",
+            lambda **kw: None,
+        )
+        monkeypatch.setattr(
+            _scan_mod,
+            "_finding_concise",
+            lambda f: {"title": f.title, "file": f.file_path.as_posix()},
+        )
+
+        original_run = subprocess.run
+        monkeypatch.setattr(
+            subprocess,
+            "run",
+            lambda cmd, **kw: SimpleNamespace(stdout="tests\n", returncode=0)
+            if isinstance(cmd, list) and "--name-only" in cmd
+            else original_run(cmd, **kw),
+        )
+
+        from drift.analyzer import _HeadMatchIndex
+        from drift.baseline import stable_title
+
+        fuzzy_key = (
+            finding.signal_type,
+            finding.file_path.as_posix(),
+            stable_title("Happy-path-only test suite (4212 functions)"),  # different metric
+        )
+        monkeypatch.setattr(
+            analyzer_module,
+            "get_head_match_index_for_diff",
+            lambda repo_path, changed_files, config=None: _HeadMatchIndex(
+                fingerprints=frozenset(),  # no exact match
+                fuzzy_keys=frozenset({fuzzy_key}),
+            ),
+        )
+
+        result = diff(Path("."), uncommitted=True)
+
+        assert result["new_finding_count"] == 0, (
+            "Fuzzy pass must treat (signal, file, stable_title)-match as pre-existing"
         )
         assert result["noise_context"]["pre_existing_head_count"] == 1
 

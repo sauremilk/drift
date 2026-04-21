@@ -56,6 +56,36 @@ Den **ersten** Task über `drift_fix_plan(session_id=..., max_tasks=1)` holen un
 
 **Regel:** Immer nur einen Task gleichzeitig. Nicht mehrere Findings in einem Schritt mischen.
 
+### Schritt 2b — Pre-Edit Pattern-Scan (ADR-083, PFLICHT vor neuen Symbolen)
+
+Wenn der Task das **Einfügen eines neuen Symbols** (Funktion, Methode, Klasse, Helper) vorsieht — insbesondere bei Refactorings, Helfer-Extraktion oder Duplikat-Beseitigung — **muss** der Agent **vor** dem Edit `drift_steer` mit dem Ziel-Modul aufrufen:
+
+```
+drift_steer(
+    session_id="<session_id>",
+    target="<pfad/zur/ziel/datei.py>"
+)
+```
+
+Aus der Antwort werden die Felder `layer`, `patterns_used_in_scope` und `architecture_rules` extrahiert und **als verbindliche Edit-Constraints** verwendet:
+
+- **`patterns_used_in_scope`** beschreibt dominante Pattern-Dialekte des Moduls
+  (z. B. Error-Handling via `raise ValueError(...)`, Return-Shape `tuple[str, int]`).
+  Der neu eingefügte Symbol-Body **muss** den dominanten Dialekt übernehmen,
+  nicht einen abweichenden Stil einführen. Das verhindert echte PFS-Findings
+  (return_pattern, error_handling) nach Helper-Extraktionen.
+- **`architecture_rules`** sind harte Grenzen (z. B. verbotene Cross-Layer-Imports).
+  Verstöße werden als Finding zurückkommen; Agent bricht dann ab und schlägt einen
+  anderen Scope vor.
+- **`layer`** hilft, den richtigen Import-Pfad und die passende Typ-Annotation zu wählen.
+
+**Ausnahme (Pattern-Scan darf entfallen):** Reiner Bugfix ohne neues Symbol (z. B. Typo,
+Konstanten-Anpassung, Off-by-One in vorhandener Funktion). Dann direkt zu Schritt 3.
+
+**Dokumentation:** Der Agent notiert im Task-Log, welches dominante Pattern gewählt wurde
+("Gewähltes Pattern: `raise DomainError(...)` gemäß `patterns_used_in_scope[0]`"). Ohne
+Notiz gilt der Fix als unsauber und kann im Review zurückgewiesen werden.
+
 ### Schritt 3 — Nach jeder Dateiänderung: nudge
 
 ```

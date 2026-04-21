@@ -160,6 +160,10 @@ class ThresholdsConfig(BaseModel):
     diff_baseline_recommend_max_changed_files: int = 50
     diff_baseline_recommend_max_new_findings: int = 100
     diff_baseline_recommend_max_out_of_scope_findings: int = 50
+    # Fuzzy HEAD-subtraction (ADR-082): second-pass match on
+    # (signal, file, stable_title) for findings without a stable symbol.
+    # Enabled by default; disable to require strict v2-fingerprint matches.
+    diff_fuzzy_head_subtraction: bool = True
 
     # PHR runtime validation (ADR-041)
     phr_runtime_validation: bool = False  # opt-in: import + hasattr check

@@ -1,5 +1,24 @@
 # STRIDE Threat Model
 
+## 2026-04-22 - ADR-082/083: Fingerprint v2 & Pre-Edit Pattern-Scan
+
+- Scope: Baseline fingerprint schema change (`src/drift/baseline.py`), HEAD match index + fuzzy pass (`src/drift/analyzer.py`, `src/drift/api/diff.py`), config flag `thresholds.diff_fuzzy_head_subtraction` (`src/drift/config/_schema.py`), fix-loop prompt update (`.github/prompts/drift-fix-loop.prompt.md`).
+- Input path changes: None in tool surface. Internally, `baseline_diff` now computes both v1 and v2 fingerprints per finding and checks both against the loaded baseline set. `_subtract_pre_existing_head` performs a secondary fuzzy match on `(signal, file, stable_title)` when exact v2 match fails. No new user-supplied input channels.
+- Output path changes: Baseline file schema `baseline_version=2`; each entry now carries `fingerprint` (v2), `fingerprint_v1` (alias, 2-minor-release deprecation window), and an additional `symbol` field. CLI/SARIF `finding_id` now derives from the v2 hash. `drift.schema.json` regenerated to include the new threshold flag.
+- External interface changes: Semi-breaking: external consumers that cached v1 `finding_id` strings must migrate. `finding_id_v1` alias in baseline entries preserves local workflows through two minor releases.
+- Trust boundary: No new boundary. The v2 hash is still a deterministic content hash over `(signal_type, file_path, symbol_identity, stable_title)` — all inputs are already inside the Finding model produced by the signal pipeline from repo content. The fuzzy pass key uses the same inputs with title-normalisation applied; no new external data source.
+- STRIDE review:
+  - S (Spoofing): No change. Fingerprints are content-derived; they do not establish identity or authentication.
+  - T (Tampering): Low risk. An attacker with write access to the working tree can already alter any finding by editing code; the v2 hash does not widen this surface. `stable_title` strips digits and trailing `(file:line)` — an attacker crafting a title solely to collide with another finding would require overlapping `signal_type`, same `file_path`, same `symbol_identity`, and identical stable prefix; the collision space is narrower than a SHA256 pre-image attack on 16 hex chars (~2^64) makes relevant. No signed boundary depends on fingerprint uniqueness.
+  - R (Repudiation): Improves auditability. Line-shift noise previously masked genuine "new finding" events in audit logs; v2 makes the real delta observable. Baseline files now include `baseline_version=2` and `fingerprint_v1` alias, so forensic reconstruction of which schema wrote which entry is unambiguous.
+  - I (Information Disclosure): No change. All fingerprint inputs are already present in existing finding output; the hash itself carries no additional info.
+  - D (Denial of Service): Negligible. HEAD-match index computation adds one dict/set per changed-file analysis (O(findings)); fuzzy pass adds one tuple lookup per new finding. Both are bounded by the existing analysis cost. The new `_HeadMatchIndex` dataclass replaces two separate fingerprint-set computations with one — net-positive on latency.
+  - E (Elevation of Privilege): No change. No new privileged operation; baseline load/save stays within repo-local `.drift-cache/`.
+- Adversarial considerations for fuzzy pass:
+  - A malicious contributor cannot weaponise the fuzzy pass to silently introduce findings: the fuzzy match only **subtracts** pre-existing findings from the "new" set — a missing entry in the HEAD fuzzy-key set means the finding is reported, not suppressed.
+  - Operators who distrust fuzzy matching can set `thresholds.diff_fuzzy_head_subtraction=false` to disable the secondary pass entirely.
+- ADR-083 (prompt-layer) threat surface: Prompt change only; no code or trust-boundary impact. Agent non-compliance with `drift_steer` pre-edit step is a process risk tracked in the Risk Register, not a security risk.
+
 ## 2026-04-21 - ADR-081 Nachschärfung (Q3): Concurrent-Writer-Advisory-Lock
 
 - Scope: New module [src/drift/session_writer_lock.py](src/drift/session_writer_lock.py) introducing an advisory single-writer lockfile at `<repo>/.drift-cache/queue.lock`. Integration points: acquire on `drift_session_start`, release on `drift_session_end` in [src/drift/mcp_router_session.py](src/drift/mcp_router_session.py). Cooperates with, but does not replace, the OS-level write lock already used by `session_queue_log.append_event`.
