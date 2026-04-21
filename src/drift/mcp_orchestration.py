@@ -613,6 +613,24 @@ def _strict_guardrail_violations(tool_name: str, session: Any) -> list[dict[str,
             "observed": {"tasks_remaining": session.tasks_remaining()},
         })
 
+    if tool_name == "drift_fix_apply" and "drift_brief" not in called_tools:
+        violations.append({
+            "rule_id": "SG-005",
+            "reason": "missing_brief",
+            "message": "drift_fix_apply requires drift_brief in strict mode.",
+            "required": ["drift_brief"],
+            "observed": sorted(called_tools),
+        })
+
+    if tool_name == "drift_patch_begin" and "drift_brief" not in called_tools:
+        violations.append({
+            "rule_id": "SG-006",
+            "reason": "missing_brief",
+            "message": "drift_patch_begin requires drift_brief in strict mode.",
+            "required": ["drift_brief"],
+            "observed": sorted(called_tools),
+        })
+
     return violations
 
 

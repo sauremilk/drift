@@ -215,6 +215,31 @@ Wenn ein Agent Drift-Findings ueber MCP-Tools behebt, gilt ausschliesslich der W
 
 ---
 
+## Post-Edit Drift-Nudge (Pflicht für alle Coding-Agenten)
+
+Nach **jeder** Dateiänderung MUSS ein Coding-Agent `drift_nudge` als schnellen Regression-Detektor aufrufen. Dieser Workflow ist verbindlich:
+
+1. **Nach jedem Edit:** `drift_nudge(changed_files=["<geaenderte_datei>"], timeout_ms=1000)` aufrufen.
+2. **`latency_exceeded: true`:** Nudge-Aufruf hat >1 s gebraucht → diesen und alle weiteren Nudge-Aufrufe im laufenden Task überspringen. Stattdessen am Ende `drift_diff` verwenden.
+3. **`revert_recommended: true`:** Edit **sofort revertieren**. Bedeutet: `direction == "degrading"` **und** `safe_to_commit == false`. Neuen Ansatz wählen, dann erneut implementieren.
+4. **`auto_fast_path: true`:** Alle Signale liefen mit exakter Konfidenz (nur file-local, kein Cross-File-Estimated). Das Ergebnis ist vollständig verlässlich.
+5. **`auto_fast_path: false`:** MDS/AVS sind estimated (Baseline-Carryforward). Bei Unsicherheit zusätzlich `drift_diff` oder `drift_scan` aufrufen.
+
+**Schnell-Referenz:**
+
+| Feld | Bedeutung | Agent-Aktion |
+|------|-----------|--------------|
+| `revert_recommended: true` | Edit verschlechtert Architektur messbar | **Edit revertieren, neu versuchen** |
+| `latency_exceeded: true` | Nudge zu langsam (>1 s) | Weitere Nudge-Calls überspringen |
+| `auto_fast_path: true` | Nur file-local Signale, 100 % exakt | Ergebnis vertrauen |
+| `auto_fast_path: false` | Cross-file Signale geschätzt | Ggf. Vollscan ergänzen |
+| `direction: "improving"` | Architekturqualität verbessert | Weiter |
+| `direction: "stable"` | Kein messbarer Effekt | Weiter |
+
+**Grenzen:** Signale mit `cross_file`-Scope (MDS, AVS) sind im Nudge-Modus estimated — sie brauchen für volle Präzision einen Vollscan (`drift_diff`).
+
+---
+
 ## Arbeitsnavigation
 
 Die operative Referenz liegt in den folgenden Dateien und soll von Agenten bevorzugt gelesen werden statt hier gepflegte Kurzfassungen zu erraten:

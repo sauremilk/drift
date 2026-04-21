@@ -148,6 +148,13 @@ def _build_brief_result(
     elapsed_ms_value: int,
 ) -> dict[str, Any]:
     """Build brief response payload from already prepared analysis artifacts."""
+    from drift.adr_scanner import scan_active_adrs
+    from drift.api.guard_contract import (
+        LAYER_ALLOWED_IMPORTS,
+        LAYER_FORBIDDEN_IMPORTS,
+        find_related_tests,
+        infer_layer,
+    )
     from drift.guardrails import generate_guardrails, guardrails_to_prompt_block
     from drift.models import Severity
 
@@ -165,7 +172,35 @@ def _build_brief_result(
         scoped_findings,
         max_guardrails=max_guardrails,
     )
-    prompt_block = guardrails_to_prompt_block(guardrails)
+
+    # --- New guardrail sources ---
+
+    # Layer contract: infer from scope paths
+    scope_path = expanded_paths[0] if expanded_paths else (scope.paths[0] if scope.paths else "")
+    layer = infer_layer(scope_path)
+    layer_contract: dict[str, Any] = {
+        "layer": layer,
+        "allowed": LAYER_ALLOWED_IMPORTS.get(layer, []),
+        "forbidden": LAYER_FORBIDDEN_IMPORTS.get(layer, []),
+    }
+
+    # Relevant tests: find test files for the first scope path
+    relevant_tests: list[str] = []
+    if scope_path:
+        relevant_tests = find_related_tests(repo_path, scope_path)
+
+    # Active ADRs: scan decisions/ directory
+    active_adrs = scan_active_adrs(
+        repo_path,
+        scope_paths=expanded_paths or scope.paths,
+        task=task,
+    )
+
+    prompt_block = guardrails_to_prompt_block(
+        guardrails,
+        layer_contract=layer_contract,
+        active_adrs=active_adrs,
+    )
 
     top_sigs = _top_signals(
         analysis,
@@ -208,6 +243,9 @@ def _build_brief_result(
         },
         guardrails=[g.to_dict() for g in guardrails],
         guardrails_prompt_block=prompt_block,
+        layer_contract=layer_contract,
+        relevant_tests=relevant_tests,
+        active_adrs=active_adrs,
         recommended_next=["drift diff --uncommitted", "drift nudge"],
         meta={
             "analysis_duration_ms": elapsed_ms_value,

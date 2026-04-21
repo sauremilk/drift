@@ -555,6 +555,18 @@ async def drift_nudge(
             ),
         ),
     ] = None,
+    timeout_ms: Annotated[
+        int | None,
+        Field(
+            description=(
+                "Wall-clock budget in milliseconds for this nudge call (default: 1000). "
+                "When actual latency exceeds this value the response includes "
+                "latency_exceeded=true so agents can skip future nudge calls. "
+                "No early abort is performed; a full result is always returned. "
+                "Set to null to disable the latency gate."
+            ),
+        ),
+    ] = 1000,
 ) -> str:
     """Get directional feedback after a file change (experimental).
 
@@ -585,6 +597,7 @@ async def drift_nudge(
         task_signal=task_signal,
         task_edit_kind=task_edit_kind,
         task_context_class=task_context_class,
+        timeout_ms=timeout_ms,
     )
 
 
