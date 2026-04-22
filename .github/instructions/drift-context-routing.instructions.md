@@ -9,6 +9,8 @@ description: "Nutze diese Instruction, wenn unklar ist, welche Drift-Instruction
 
 Diese Datei definiert **kein eigenes Regelwerk**. Sie ist ein Routing-Index und verweist auf die jeweils autoritativen Dateien.
 
+Schneller Einstieg: Fuer kompakte Task-zu-Gate Zuordnung ohne vollstaendiges Routing nutze `.github/instructions/drift-agent-quickref.instructions.md`.
+
 ## Routing-Tabelle
 
 | Aufgabentyp | Primäre Instructions | Relevante Skills | Primärer Fokus |

@@ -536,6 +536,27 @@ echo ">>> [pre-push] Starting local CI checks..."
 # from the parent repo and fail with exit 128 ("not a git repository").
 unset GIT_DIR GIT_WORK_TREE GIT_INDEX_FILE GIT_OBJECT_DIRECTORY GIT_COMMON_DIR
 
+# 0. Auto-repair version refs (llms.txt, SECURITY.md) before any gate runs.
+#    If drift is detected, sync_version.py fixes the files and creates a
+#    lightweight "chore: sync version refs" commit that is included in the push.
+#    This prevents check_model_consistency failures caused by CI-managed files
+#    (pyproject.toml, CHANGELOG.md) getting ahead of manually maintained refs.
+#    Bypass: DRIFT_SKIP_VERSION_SYNC=1
+if [ "${DRIFT_SKIP_VERSION_SYNC:-0}" != "1" ]; then
+        echo ">>> [0/6] Checking version refs (llms.txt, SECURITY.md)..."
+        sync_output=$("$PYTHON_CMD" scripts/sync_version.py --json 2>/dev/null || echo "[]")
+        drift_count=$(echo "$sync_output" | "$PYTHON_CMD" -c \
+                "import sys, json; data=json.load(sys.stdin); print(len(data))" 2>/dev/null || echo "0")
+
+        if [ "$drift_count" -gt 0 ]; then
+                echo ">>> [0/6] Version drift detected ($drift_count file(s)) — auto-repairing..."
+                "$PYTHON_CMD" scripts/sync_version.py --fix --git-add --commit
+                echo ">>> [0/6] Version refs synced and committed. Push continues with sync commit."
+        else
+                echo ">>> [0/6] Version refs consistent — no repair needed."
+        fi
+fi
+
 # 1. Version format (SemVer)
 echo ">>> [1/6] Checking SemVer version..."
 "$PYTHON_CMD" scripts/check_version.py --check-semver

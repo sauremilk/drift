@@ -143,6 +143,23 @@ make self        Drift self-analysis
 make clean       Remove caches
 ```
 
+#### Agent Workflow Shortcuts
+
+Zusaetzliche Targets speziell fuer Agenten und Automatisierung:
+
+```
+make feat-start                             Vor dem ersten Edit bei feat: (Policy-Gate + Baseline)
+make fix-start                              Vor dem ersten Edit bei fix: (Baseline + Test-Run)
+make gate-check COMMIT_TYPE=feat            Gates proaktiv pruefen (vor Push)
+make audit-diff                             Zeigt Audit-Pflichten bei signals/ingestion/output
+make changelog-entry COMMIT_TYPE=feat MSG=  Formatgerechten CHANGELOG-Snippet ausgeben
+make handover TASK='beschreibung'           Session-Uebergabe-Artefakt anlegen
+make catalog                                Alle scripts/ mit Kurzbeschreibung anzeigen
+make catalog ARGS='--search evidence'       Skript-Katalog nach Stichwort filtern
+```
+
+
+
 ### CLI subcommands
 
 ```

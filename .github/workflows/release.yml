@@ -95,6 +95,28 @@ jobs:
           $tag = "${{ steps.release.outputs.tag }}"
           git tag -f $tag
 
+      - name: Sync version refs (llms.txt, SECURITY.md)
+        if: steps.release.outputs.released == 'true'
+        shell: powershell
+        run: |
+          # Repair llms.txt and SECURITY.md to match the new pyproject.toml version.
+          # These files are NOT managed by python-semantic-release; without this step
+          # they lag behind every release and cause check_model_consistency.py failures
+          # when developers push after pulling the release commit.
+          $version = "${{ steps.release.outputs.version }}"
+          $tag = "${{ steps.release.outputs.tag }}"
+          python scripts/sync_version.py --fix --git-add
+          # Only amend + re-tag if sync_version actually staged something.
+          $staged = git diff --cached --name-only
+          if ($staged) {
+            git commit --amend --no-edit
+            # Re-tag to amended commit after the amend changed the hash.
+            git tag -f $tag
+            Write-Output "Synced version refs in: $staged"
+          } else {
+            Write-Output "Version refs already consistent — no amend needed."
+          }
+
       - name: Push release commit and tag
         if: steps.release.outputs.released == 'true'
         shell: powershell

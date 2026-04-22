@@ -122,6 +122,12 @@ def _print_config_overview(repo_path: Path, cfg: DriftConfig, cfg_path: Path | N
     else:
         console.print("  Non-default values: none — using shipped defaults.")
 
+    if not cfg.attribution.enabled:
+        console.print(
+            "  [dim]Attribution (git-blame provenance): disabled — "
+            "enable with attribution.enabled: true in drift.yaml[/dim]"
+        )
+
     recommended = "drift analyze --repo ."
     if cfg_path is None or not cfg_path.exists():
         console.print("  Recommended next: drift init --interactive")

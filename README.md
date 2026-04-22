@@ -147,6 +147,7 @@ drift brief --task "refactor the auth service" --format markdown
 drift check --fail-on high         # local or CI gate
 drift check --fail-on none         # pre-commit hook (advisory, report-only)
 drift analyze --repo . --format json  # full report
+drift adr --repo .                 # list active ADRs and their relevance to scope
 ```
 
 📖 [Full workflow guide →](https://mick-gsk.github.io/drift/getting-started/quickstart/)
@@ -288,6 +289,8 @@ cd extensions/vscode-drift && npm install && npm run compile
 
 📖 [Extension README →](extensions/vscode-drift/README.md)
 
+> **Plugin CLI commands:** Third-party packages can expose additional `drift` subcommands via the `drift.commands` entry-point group. Installed plugins are discovered automatically at startup and appear in `drift --help`.
+
 ---
 
 ## 🎛️ Configuration profiles
@@ -305,6 +308,8 @@ Pick a profile that matches your project — or start with `default` and calibra
 | **quick** | First exploration, demos | `drift init -p quick` |
 
 > **Team workflow:** Commit `drift.yaml` to your repo → CI enforces the same thresholds → team inherits calibrated weights.
+>
+> **Inspect effective config:** `drift config show --repo .` renders the active configuration and shows discoverability hints for disabled features — e.g., `attribution.enabled: true` to enable git-blame provenance.
 
 📖 [Profile gallery with full details →](https://mick-gsk.github.io/drift/guides/configuration-profiles/) · [Configuration reference →](https://mick-gsk.github.io/drift/getting-started/configuration/)
 
@@ -447,6 +452,7 @@ Paste the Markdown output into your README:
 | [Configuration](https://mick-gsk.github.io/drift/getting-started/configuration/) | drift.yaml, layer boundaries, signal weights |
 | [Configuration Levels](https://mick-gsk.github.io/drift/guides/configuration-levels/) | Zero-Config → Preset → YAML → Calibration → MCP → CI |
 | [Calibration & Feedback](https://mick-gsk.github.io/drift/algorithms/scoring/) | Adaptive signal reweighting, feedback workflow |
+| ADR Inspection (`drift adr`) | List active ADRs from `decisions/` — filter by task or scope |
 | [Vibe-coding Playbook](examples/vibe-coding/README.md) | 30-day rollout guide for AI-heavy teams |
 | [Open Research Questions](RESEARCH.md) | 5 falsifiable hypotheses on validity and effectiveness |
 | [Contributing](CONTRIBUTING.md) | Dev setup, FP/FN reporting, signal development |

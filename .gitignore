@@ -33,7 +33,16 @@ site/
 audit_results/
 drift_score.json
 work_artifacts/
-master-backlog/
+master-backlog/*
+# Tracked exceptions: Phase-B/C strategy items linked from ADR-084
+!master-backlog/04-audience-validation-experiment.md
+!master-backlog/05-drift-nudge-cold-start.md
+!master-backlog/06-trend-gate-enforcement.md
+!master-backlog/07-patch-auto-verify-loop.md
+!master-backlog/08-vscode-extension-beta.md
+!master-backlog/09-cross-language-ir.md
+!master-backlog/10-agent-framework-sdk.md
+!master-backlog/11-cloud-trend-storage.md
 .internal/
 scripts/_*
 tagesplanung/

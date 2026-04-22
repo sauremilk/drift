@@ -209,6 +209,29 @@ Die vollstaendige Freshness-Regel fuer Prompts ist Single Source of Truth in
 
 ---
 
+## Agent Workflow Shortcuts (Pflicht)
+
+Fuer jeden Coding-Agenten im Drift-Workspace gelten folgende Pflicht-Shortcuts.
+Die detaillierte Referenz liegt in `.github/instructions/drift-agent-quickref.instructions.md`.
+
+| Workflow-Moment | Pflicht-Befehl |
+|---|---|
+| Vor dem ersten Edit bei `feat:` | `make feat-start` |
+| Vor dem ersten Edit bei `fix:` | `make fix-start` |
+| Gates vor Push pruefen | `make gate-check COMMIT_TYPE=<feat\|fix\|chore>` |
+| Audit-Pflichten pruefen (bei signals/ingestion/output) | `make audit-diff` |
+| CHANGELOG-Snippet erzeugen | `make changelog-entry COMMIT_TYPE=<typ> MSG='<text>'` |
+| Session-Handover anlegen | `make handover TASK='<beschreibung>'` |
+| Unbekanntes Skript suchen | `make catalog` oder `make catalog ARGS='--search <stichwort>'` |
+| Vollstaendiger CI-Check | `make check` |
+
+**Verwendungsregel:** Ein Agent DARF `CHANGELOG.md` nicht manuell formattieren —
+er MUSS stattdessen `make changelog-entry` aufrufen und den Output einfuegen.
+Ein Agent SOLL `make gate-check` vor jedem Push aufrufen, damit kein Hook-Abbruch
+durch fehlende Artefakte entsteht.
+
+---
+
 ## MCP Fix-Loop — Optimierter Workflow für Finding-Behebung
 
 Wenn ein Agent Drift-Findings ueber MCP-Tools behebt, gilt ausschliesslich der Workflow in `.github/prompts/drift-fix-loop.prompt.md`. Diese Datei wiederholt den Ablauf nicht; sie verweist nur auf die verbindliche Quelle.

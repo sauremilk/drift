@@ -268,6 +268,7 @@ def main(verbose: bool = False) -> None:
 
 
 # --- Register subcommands -------------------------------------------------
+from drift.commands.adr_cmd import adr
 from drift.commands.analyze import analyze
 from drift.commands.badge import badge
 from drift.commands.baseline import baseline
@@ -311,6 +312,7 @@ from drift.commands.verify import verify
 from drift.commands.visualize import visualize
 from drift.commands.watch import watch
 
+main.add_command(adr)
 main.add_command(analyze)
 main.add_command(baseline)
 main.add_command(brief)
@@ -354,6 +356,22 @@ main.add_command(completions)
 main.add_command(visualize)
 main.add_command(watch)
 main.add_command(synthesize)
+
+# --- Register plugin commands (drift.commands entry points) ---------------
+# Runs after all built-in commands so that plugins cannot shadow them.
+try:
+    import logging as _logging
+
+    from drift.plugins import discover_command_plugins as _discover_command_plugins
+
+    _plugin_logger = _logging.getLogger("drift")
+    for _plugin_cmd in _discover_command_plugins():
+        if _plugin_cmd.name and _plugin_cmd.name not in main.commands:
+            main.add_command(_plugin_cmd)
+            _plugin_logger.debug("Registered plugin command: %s", _plugin_cmd.name)
+except Exception:  # noqa: BLE001
+    import logging as _logging
+    _logging.getLogger("drift").debug("Plugin command discovery failed; skipping.", exc_info=True)
 
 
 def _handle_click_exception(exc: click.ClickException, machine_errors: bool) -> None:

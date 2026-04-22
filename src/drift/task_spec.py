@@ -211,6 +211,37 @@ class TaskSpec(BaseModel):
             )
         return self
 
+    def to_patch_intent(
+        self,
+        task_id: str,
+        session_id: str | None = None,
+    ) -> PatchIntent:
+        """Create a :class:`PatchIntent` from this task specification.
+
+        Maps TaskSpec fields to PatchIntent fields:
+        ``scope_boundaries`` → ``declared_files``,
+        ``forbidden_paths`` → ``forbidden_paths``,
+        ``quality_constraints`` → ``quality_constraints``,
+        ``acceptance_criteria`` → ``acceptance_criteria``,
+        ``goal`` → ``expected_outcome``.
+
+        Args:
+            task_id: Unique identifier for the patch transaction.
+            session_id: Optional session ID for multi-turn workflows.
+        """
+        from drift.models._patch import BlastRadius, PatchIntent
+
+        return PatchIntent(
+            task_id=task_id,
+            session_id=session_id,
+            declared_files=list(self.scope_boundaries),
+            forbidden_paths=list(self.forbidden_paths),
+            expected_outcome=self.goal,
+            blast_radius=BlastRadius.LOCAL,
+            quality_constraints=list(self.quality_constraints),
+            acceptance_criteria=list(self.acceptance_criteria),
+        )
+
     @classmethod
     def from_yaml(cls, path: str | Path) -> TaskSpec:
         """Load a TaskSpec from YAML and run full semantic validation."""
@@ -266,25 +297,6 @@ class TaskSpec(BaseModel):
         if from_version == 1 and cls.CURRENT_SCHEMA_VERSION == 1:
             return data
         raise ValueError(f"No TaskSpec migration registered for schema_version {from_version}.")
-
-    def to_patch_intent(
-        self,
-        task_id: str,
-        session_id: str | None = None,
-    ) -> PatchIntent:
-        """Convert this spec to a PatchIntent for the Patch Engine (ADR-074)."""
-        from drift.models._patch import BlastRadius, PatchIntent
-
-        return PatchIntent(
-            task_id=task_id,
-            session_id=session_id,
-            declared_files=list(self.scope_boundaries),
-            forbidden_paths=list(self.forbidden_paths),
-            quality_constraints=list(self.quality_constraints),
-            acceptance_criteria=list(self.acceptance_criteria),
-            expected_outcome=self.goal,
-            blast_radius=BlastRadius.LOCAL,
-        )
 
 
 def validate_task_spec(spec: TaskSpec) -> TaskSpecValidationResult:

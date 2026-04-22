@@ -2,6 +2,14 @@
 
 ### Added
 
+- **Agent-Workflow-Shortcuts, `drift adr` Subcommand, und Release-Version-Sync.** Operative Tooling-Erweiterungen fuer agentengesteuerte Entwicklung.
+  - Neue `make`-Targets: `feat-start`, `fix-start`, `catalog`, `gate-check`, `feat-bundle`, `handover`, `changelog-entry`, `audit-diff`.
+  - Neue Skripte: `catalog.py`, `gate_check.py`, `generate_changelog_entry.py`, `risk_audit_diff.py`, `session_handover.py`, `sync_version.py`.
+  - Neuer `drift adr` CLI-Subcommand listet ADRs in `decisions/` mit optionalem Task-Relevanz-Filter.
+  - `TaskSpec.to_patch_intent()` konvertiert `TaskSpec` nach `PatchIntent` fuer Patch-Engine-Integration.
+  - Neue CI-Stage Sync-version-refs in `release.yml` haelt `llms.txt` und `SECURITY.md` nach PSR-Releases konsistent.
+  - Tests fuer alle neuen Skripte und den `adr`-Subcommand.
+
 - **Trend-Gate Enforcement (ADR-086, Feature 06).** `drift check` und `drift ci` koennen jetzt optional ein trendbasiertes Quality-Gate erzwingen, das bei persistenter Score-Verschlechterung ueber ein Commit-Fenster blockiert. Konfiguration erfolgt ueber `gate.trend` (`enabled`, `window_commits`, `delta_threshold`, `require_remediation_activity`). Historie wurde um `commit_hash` und `finding_fingerprints` erweitert, damit Remediation-Aktivitaet im Fenster erkannt werden kann. CLI-Overrides `--trend-gate/--no-trend-gate` wurden fuer `check` und `ci` hinzugefuegt. Neue Tests in `tests/test_trend_gate.py`, Evidence in `benchmark_results/v2.28.0_trend_gate_feature_evidence.json`, ADR in `decisions/ADR-086-trend-gate-enforcement.md`.
 
 - **Fingerprint v2 (symbol-based, line-independent) + fuzzy HEAD-subtraction (ADR-082, ADR-083, #531).** Closes the last-mile false-positive path in `drift_diff`: pre-existing HEAD findings that merely shifted lines or whose title carried a volatile metric were reported as "new" after every agent-driven edit. Field-test 2026-04-21 (`work_artifacts/reduce_findings_2026-04-21/`) showed ~6 of 13 "new" findings were pure line-shift false positives; post-fix PFS findings accounted for the rest.
