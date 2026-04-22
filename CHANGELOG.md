@@ -2,9 +2,16 @@
 
 ### Fixed
 
+- **Add `@needs_tree_sitter` skip guard for TSB issue-318–325 tests.** Six additional TSB regression test files (issues 318, 319, 322, 323, 324, 325) were missing the tree-sitter skip guard on their `analyze`-dependent tests, causing CI failures on matrix entries without `tree-sitter-typescript`. Added skip decorator to all affected tests.
+
+## [2.30.0] – 2026-04-22
+
+Short version: Regression fixes for Windows CI runners — repair PowerShell em-dash in release workflow and add missing `@needs_tree_sitter` skip guard to TSB signal regression tests.
+
+### Fixed
+
 - **Repair PowerShell em-dash terminator in release workflow.** The `Sync version refs` step in `.github/workflows/release.yml` contained a Unicode em-dash (`—`) in a `Write-Output` string that caused a `TerminatorExpectedAtEndOfString` error on Windows runners. Replaced with ASCII hyphen.
 - **Add `@needs_tree_sitter` skip guard for TSB issue-317 test.** `test_issue_317_tsb_message_handler_test_support.py` called `TypeSafetyBypassSignal().analyze(...)` without a skip guard; CI matrix entries without `tree-sitter-typescript` produced 0 findings, causing `assert 0 == 1`. Added skip decorator mirroring the pattern from `test_issue_298`.
-- **Add `@needs_tree_sitter` skip guard for TSB issue-318–325 tests.** Six additional TSB regression test files (issues 318, 319, 322, 323, 324, 325) were missing the tree-sitter skip guard on their `analyze`-dependent tests, causing CI failures on matrix entries without `tree-sitter-typescript`. Added skip decorator to all affected tests.
 
 ## [2.29.0] – 2026-04-22
 
