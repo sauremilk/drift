@@ -1,0 +1,28 @@
+{
+  "version": "2.29.0",
+  "date": "2026-04-22",
+  "feature": "agent workflow shortcuts",
+  "description": "Feature evidence for agent workflow shortcuts (v2.29.0).",
+  "generated_by": {
+    "script": "scripts/generate_feature_evidence.py",
+    "git_sha": "4254aefc7cd9d5aa3490535bcf888468da48eb0c",
+    "drift_version": "2.23.0",
+    "timestamp": "2026-04-22T05:53:37.581961+00:00"
+  },
+  "self_analysis": {
+    "error": "JSON parse error: Extra data: line 95375 column 1 (char 3815885)"
+  },
+  "tests": {
+    "total_passing": 6211,
+    "total_failing": 0,
+    "exit_code": 0
+  },
+  "precision_recall_suite": {
+    "total_tests": 207,
+    "passing": 207,
+    "failing": 0,
+    "exit_code": 0,
+    "source": "live: pytest tests/test_precision_recall.py -v --tb=short"
+  },
+  "audit_artifacts_updated": []
+}
