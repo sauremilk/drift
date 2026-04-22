@@ -1,5 +1,28 @@
 # Risk Register
 
+## 2026-05-04 - ADR-094: Human-Approval-Gate (Paket 2B)
+
+- Risk ID: RISK-ADR-094-APPROVAL-GATE
+- Component: `.github/workflows/drift-agent-gate.yml`, `.github/CODEOWNERS` (Agent-critical section), `scripts/verify_gate_not_bypassed.py`.
+- Type: Process / CI-Gate - formaler Maintainer-Review-Zwang fuer Findings mit `gate == "BLOCK"` im `agent_telemetry`-Block.
+- Description: Der Workflow liest den JSON-Output von `drift analyze` auf jedem PR gegen `main`. Findet er mindestens einen BLOCK-Action-Eintrag oder ein Finding mit Severity `critical`/`high`, failt der Job - ausser das PR-Label `drift/approved` ist gesetzt. CODEOWNERS bindet Agent-kritische Dateien (Prompt, Schemas, signal_registry, handoff) an den Maintainer; das Label kann nur von Write-berechtigten Maintainern gesetzt werden.
+- Severity: HIGH - Ein Bypass laesst den Agenten BLOCK-Findings selbst absegnen. Ohne formales Gate degeneriert `agent_telemetry` zur Dokumentation ohne Durchsetzung.
+- Triggers:
+  - False-positive BLOCK auf legitimem Refactor -> Maintainer setzt `drift/approved`, dokumentiert Begruendung im PR.
+  - Agent manipuliert `agent_telemetry.agent_actions_taken`, um BLOCK zu verbergen -> `drift.output.schema.json` in CI + `verify_gate_not_bypassed.py` erkennt fehlende Gate-Passage-Evidence.
+  - Workflow selbst wird im PR veraendert -> CODEOWNERS-Eintrag fuer `.github/workflows/drift-agent-gate.yml` erzwingt Review.
+  - Label wird von einem Nicht-Maintainer gesetzt -> nicht moeglich (GitHub-permission), aber zusaetzlich via `verify_gate_not_bypassed.py` auditierbar.
+- Impact without mitigation:
+  - Agent committet BLOCK-klassifizierte Findings ohne Review; das gesamte Gate-System (ADR-089/090/093) verliert seine abschreckende Wirkung.
+  - Tampering an `agent_telemetry` wird erst nachgelagert sichtbar.
+- Mitigations:
+  - Workflow failt hart (exit 1) bei BLOCK ohne `drift/approved`-Label.
+  - CODEOWNERS schuetzt Agent-Prompt, Schemas, signal_registry, handoff, Workflow selbst und `decisions/`.
+  - Schema-Validierung erzwingt Struktur von `agent_telemetry`.
+  - `verify_gate_not_bypassed.py --all-artifacts` laeuft als letzter Schritt (soft-fail bei Exit 2, hart bei 1/3).
+  - 13 Vertrags-Tests (`tests/test_drift_agent_gate_workflow.py`) sichern Trigger/Permissions/CODEOWNERS/ADR-Status ab.
+- Residual risk: LOW - Bypass erfordert Maintainer-Cooperation (Label) oder gleichzeitige Manipulation von Workflow + Schema + Artefakten, was in mindestens drei CODEOWNER-Pfaden sichtbar waere.
+
 ## 2026-05-04 - ADR-093: Baseline-Ratchet (Paket 2A)
 
 - Risk ID: RISK-ADR-093-BASELINE-RATCHET

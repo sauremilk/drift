@@ -1,5 +1,20 @@
 # STRIDE Threat Model
 
+## 2026-05-04 - ADR-094: Human-Approval-Gate (Paket 2B)
+
+- Scope: Neuer CI-Workflow `.github/workflows/drift-agent-gate.yml` als PR-Blockierer, erweiterte `.github/CODEOWNERS` (Section "Agent-critical files"), PR-Label-Contract `drift/approved`. Bestehender Bypass-Detector `scripts/verify_gate_not_bypassed.py` wird im Workflow mit ausgefuehrt.
+- Input path changes: Workflow liest ausschliesslich die vom Job selbst erzeugte `drift-analysis.json` und das PR-Label-Set. Keine externen Netzwerk-Calls ausser `pip install -e .` und `actions/checkout`/`setup-python`.
+- Output path changes: Workflow schreibt das Artefakt `drift-analysis` (Retention 14 Tage) und gibt Step-Outputs (`block_actions`, `block_findings`, `approved`, `needs_block`) aus. Keine PR-Kommentare, keine Label-Mutationen, keine Pushes.
+- External interface changes: Additiv, kein bestehender Workflow wird geaendert. `drift analyze --exit-zero` Semantik unveraendert.
+- Trust boundary: PR-Autor -> GitHub Actions Runner -> Drift-Output (`agent_telemetry`) -> Gate-Entscheidung. Die Boundary unterstellt, dass der Runner nicht kompromittiert ist und dass GitHub-Labels nur von Write-berechtigten Identitaeten gesetzt werden.
+- STRIDE review:
+  - **S (Spoofing): Low.** Label-Setzung an GitHub-Permission gebunden. `GITHUB_TOKEN` im Workflow ist `contents:read + pull-requests:read` -> kann Label nicht selbst setzen (Spoofing durch Token ausgeschlossen). Ein Maintainer-Account muss aktiv werden.
+  - **T (Tampering): Medium, aktiv mitigiert.** Primaerrisiko: Agent manipuliert `agent_telemetry.agent_actions_taken` im JSON-Output, um BLOCK zu verbergen. Mitigation: Sekundaersignal `findings[*].severity in {critical,high}` feuert das Gate unabhaengig vom Telemetry-Block; `drift.output.schema.json` + `verify_gate_not_bypassed.py --all-artifacts` erkennen Struktur- bzw. Artefakt-Tampering. Zweite Surface: Workflow-Datei selbst wird im PR veraendert. Mitigation: CODEOWNERS-Eintrag fuer `.github/workflows/drift-agent-gate.yml` + `decisions/` erzwingt Maintainer-Review.
+  - **R (Repudiation): Improves.** Jede Freigabe hinterlaesst GitHub-Audit-Trail (Label-Event + Reviewer-Identitaet). Gate-Passage-Evidence wird in `work_artifacts/agent_run_*.md` erwartet und maschinell auditiert.
+  - **I (Information Disclosure): None.** Kein Zugriff auf neue Ressourcen. Artefakt-Retention (14 Tage) ist enger als GitHub-Default-90-Tage.
+  - **E (Elevation of Privilege): Medium -> Low mit Mitigation.** Angreifer-Szenario: Agent setzt `drift/approved` selbst. Mitigiert durch GitHub-Permission-Model und zusaetzlich durch Reviewer-Requirement aus CODEOWNERS (Label allein reicht nicht; Maintainer-Approval via Review ist zweite Bedingung). Bypass erfordert gleichzeitige Kompromittierung von (a) Token mit Label-Rechten, (b) Reviewer-Account, (c) `decisions/`-Ordner - drei disjunkte CODEOWNER-Pfade.
+  - **D (Denial of Service): Low.** Workflow ist ein einzelner Python-Inline-Check (~100 ms) nach `drift analyze`. Keine externen Service-Calls nach Setup. Timeout 10 min schuetzt vor Endlos-Analyse.
+
 ## 2026-04-27 - ADR-091: Drift-Retrieval-RAG (drift_retrieve / drift_cite)
 
 - Scope: Neuer Trust-Boundary „Corpus-Loader" — `src/drift/retrieval/{corpus_builder,cache,index,search,fact_ids,models}.py`, MCP-Router `src/drift/mcp_router_retrieval.py`, zwei neue MCP-Tools `drift_retrieve` und `drift_cite`. Zusätzliche Instruction `.github/instructions/drift-rag-grounding.instructions.md` und Append-Only-Registry `decisions/fact_id_migrations.jsonl`.

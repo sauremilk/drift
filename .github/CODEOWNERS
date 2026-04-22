@@ -28,3 +28,17 @@ SECURITY.md @mick-gsk
 .secrets.baseline @mick-gsk
 src/drift/ingestion/ast_parser.py @mick-gsk
 src/drift/ingestion/git_history.py @mick-gsk
+
+
+# Agent-critical files (Paket 2B / ADR-094) — changes here can affect how an
+# autonomous drift agent classifies findings or what it is allowed to do.
+# Requiring maintainer review makes the human-approval gate bypass-resistant:
+# the agent cannot grant itself a review, so these paths always wait for a human.
+drift.agent.prompt.md @mick-gsk
+drift.output.schema.json @mick-gsk
+drift.schema.json @mick-gsk
+src/drift/signal_registry.py @mick-gsk
+src/drift/intent/handoff.py @mick-gsk
+.github/workflows/drift-agent-gate.yml @mick-gsk
+scripts/verify_gate_not_bypassed.py @mick-gsk
+decisions/ @mick-gsk

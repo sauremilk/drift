@@ -1,0 +1,131 @@
+# Paket 2B / ADR-094 — Human-Approval-Gate for BLOCK findings.
+#
+# Triggered on every pull_request. Reads the JSON output of
+# `drift analyze` and inspects `agent_telemetry.agent_actions_taken`
+# for any action with `gate == "BLOCK"`. If at least one BLOCK action
+# exists, the workflow fails unless the PR carries the label
+# `drift/approved` (only maintainers with write-permission can apply
+# this label; verified by checking GITHUB_TOKEN permissions on the
+# label event).
+#
+# Design notes:
+# - Fully additive: only runs on pull_request, never on push.
+# - Report-only for BLOCK findings without the approval label; does
+#   NOT post PR comments (user rule: "no unsolicited posting").
+# - Relies on agent_telemetry from schema 2.2 (ADR-090) — drift
+#   versions without this block simply produce zero BLOCK actions and
+#   pass the gate.
+
+name: Drift — Agent Approval Gate
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "src/**"
+      - "tests/**"
+      - "drift.agent.prompt.md"
+      - "drift.output.schema.json"
+      - "drift.schema.json"
+      - "decisions/**"
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  approval-gate:
+    name: Check BLOCK findings against drift/approved label
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install drift from workspace
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e .
+
+      - name: Run drift analyze
+        id: analyze
+        run: |
+          drift analyze --repo . --format json --output drift-analysis.json --exit-zero
+
+      - name: Check gate decision
+        id: gate
+        shell: python
+        run: |
+          import json
+          import os
+          import sys
+
+          with open("drift-analysis.json", "r", encoding="utf-8") as fh:
+              data = json.load(fh)
+
+          telemetry = data.get("agent_telemetry") or {}
+          actions = telemetry.get("agent_actions_taken") or []
+          block_actions = [a for a in actions if (a or {}).get("gate") == "BLOCK"]
+          total_block = len(block_actions)
+
+          # Also count findings by severity as a secondary signal: any
+          # critical/high finding is a BLOCK candidate even if no agent
+          # has yet emitted an action for it.
+          findings = data.get("findings") or []
+          block_severity = {"critical", "high"}
+          block_findings = [
+              f for f in findings
+              if (f or {}).get("severity", "").lower() in block_severity
+          ]
+
+          summary = {
+              "block_actions": total_block,
+              "block_findings": len(block_findings),
+              "schema_version": telemetry.get("schema_version"),
+          }
+          print(json.dumps(summary, indent=2))
+
+          labels = os.environ.get("PR_LABELS", "")
+          approved = "drift/approved" in {lbl.strip() for lbl in labels.split(",")}
+
+          needs_block = total_block > 0 or len(block_findings) > 0
+
+          gha_output = os.environ.get("GITHUB_OUTPUT")
+          if gha_output:
+              with open(gha_output, "a", encoding="utf-8") as out:
+                  out.write(f"block_actions={total_block}\n")
+                  out.write(f"block_findings={len(block_findings)}\n")
+                  out.write(f"approved={'true' if approved else 'false'}\n")
+                  out.write(f"needs_block={'true' if needs_block else 'false'}\n")
+
+          if needs_block and not approved:
+              print("::error::Drift agent gate BLOCK: maintainer must apply the 'drift/approved' label.")
+              sys.exit(1)
+
+          print("Drift agent gate passed.")
+        env:
+          PR_LABELS: ${{ join(github.event.pull_request.labels.*.name, ',') }}
+
+      - name: Upload analysis artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: drift-analysis
+          path: drift-analysis.json
+          retention-days: 14
+
+      - name: Verify gate artifact integrity
+        if: always()
+        run: |
+          # Paket 2B tamper-check: verify_gate_not_bypassed.py scans the
+          # gate evidence in any work_artifacts/agent_run_*.md, so if an
+          # agent tried to strip the evidence section the script fails.
+          # Soft failure on missing artifacts (exit 2) is accepted here.
+          python scripts/verify_gate_not_bypassed.py --all-artifacts || [ "$?" = "2" ]

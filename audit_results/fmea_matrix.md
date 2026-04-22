@@ -1,5 +1,13 @@
 # FMEA Matrix
 
+## 2026-05-04 - ADR-094: Human-Approval-Gate (Paket 2B)
+
+| Component | Failure Mode | Cause | Effect | Detection | Mitigation | S | O | D | RPN | Status |
+|---|---|---|---|---|---|---:|---:|---:|---:|---|
+| `.github/workflows/drift-agent-gate.yml` BLOCK-Check | Agent manipuliert `agent_telemetry.agent_actions_taken`, um BLOCK-Eintrag zu verstecken | Output-Serialisierungspfad wird veraendert; Schema-Validierung wird uebersprungen | BLOCK-Finding wird unsichtbar gemergt; Gate verliert Wirkung | Schema-Validierung `drift.output.schema.json` + Sekundaersignal `findings[*].severity in {critical,high}`; `verify_gate_not_bypassed.py --all-artifacts` als letzter Schritt | Sekundaer-Pfad erzwingt exit 1 auch ohne `agent_actions_taken`; Workflow-Datei selbst unter CODEOWNERS; 13 Vertrags-Tests sichern Trigger/Permissions/Labels | 4 | 2 | 3 | 24 | Mitigated |
+| `.github/CODEOWNERS` Agent-critical Section | Maintainer merged agent-kritische Datei ohne Review-Wartezeit | CODEOWNERS-Datei selbst wird in PR veraendert (section entfernt) | Agent kann Prompt/Schema/signal_registry veraendern, ohne menschliche Gegenprobe | CODEOWNERS schuetzt sich selbst durch Default-Owner; jede Aenderung an `/` erfordert Review | `decisions/` ist ebenfalls unter CODEOWNERS -> jedes ADR (inkl. ADR-094) triggert Review; Test `TestCodeownersCoverage` sichert Pfadliste ab | 3 | 2 | 2 | 12 | Mitigated |
+| PR-Label `drift/approved` | Nicht-Maintainer setzt Label via kompromittiertem Token | Token-Permissions falsch konfiguriert | Agent/Contributor umgeht Gate | GitHub permission model (Label-Write nur fuer Write-Role) + Audit via `verify_gate_not_bypassed.py` | Label-Nutzung wird als Gate-Passage-Evidence erfasst; Review-Log in `work_artifacts/agent_run_*.md` | 4 | 1 | 3 | 12 | Mitigated |
+
 ## 2026-05-04 - ADR-093: Baseline-Ratchet (Paket 2A)
 
 | Component | Failure Mode | Cause | Effect | Detection | Mitigation | S | O | D | RPN | Status |

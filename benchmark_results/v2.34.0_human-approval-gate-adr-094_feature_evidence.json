@@ -1,0 +1,29 @@
+{
+  "version": "2.34.0",
+  "date": "2026-04-22",
+  "feature": "human approval gate adr 094",
+  "description": "Feature evidence for human approval gate adr 094 (v2.34.0).",
+  "generated_by": {
+    "script": "scripts/generate_feature_evidence.py",
+    "git_sha": "5c1028b762f2f5614e2bac81c3ba383729071ca4",
+    "drift_version": "0.0.0",
+    "timestamp": "2026-04-22T17:30:49.042581+00:00"
+  },
+  "self_analysis": {
+    "error": "JSON parse error: Extra data: line 100408 column 1 (char 4021414)"
+  },
+  "tests": {
+    "total_passing": 4766,
+    "total_failing": 1,
+    "failing_note": "FAILED tests/test_watch_file_output.py::test_output_file_created_on_initial",
+    "exit_code": 2
+  },
+  "precision_recall_suite": {
+    "total_tests": 207,
+    "passing": 207,
+    "failing": 0,
+    "exit_code": 0,
+    "source": "live: pytest tests/test_precision_recall.py -v --tb=short"
+  },
+  "audit_artifacts_updated": []
+}
