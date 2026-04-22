@@ -5,18 +5,17 @@
   "description": "Feature evidence for trend gate (v2.28.0).",
   "generated_by": {
     "script": "scripts/generate_feature_evidence.py",
-    "git_sha": "d3e26834a4f993f6a118e58182d8a846187e520c",
+    "git_sha": "1b979d7d201b14b161dae74586dc08963acc79ca",
     "drift_version": "2.23.0",
-    "timestamp": "2026-04-22T05:22:38.884994+00:00"
+    "timestamp": "2026-04-22T05:24:32.085535+00:00"
   },
   "self_analysis": {
-    "error": "JSON parse error: Extra data: line 94708 column 1 (char 3786239)"
+    "error": "JSON parse error: Extra data: line 94708 column 1 (char 3786238)"
   },
   "tests": {
-    "total_passing": 6147,
-    "total_failing": 1,
-    "failing_note": "FAILED tests/test_model_consistency.py::test_model_consistency_check_passes",
-    "exit_code": 2
+    "total_passing": 6148,
+    "total_failing": 0,
+    "exit_code": 0
   },
   "precision_recall_suite": {
     "total_tests": 207,
