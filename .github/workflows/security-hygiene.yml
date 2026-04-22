@@ -61,3 +61,20 @@ jobs:
         shell: powershell
         run: |
           python -m pip_audit --strict --desc
+
+      - name: SAST scan (bandit)
+        shell: powershell
+        run: |
+          python -m pip install --quiet bandit
+          # -ll = report medium- and high-severity only; -r recursive
+          python -m bandit -r src/drift -ll --format json --output bandit-report.json
+          # Always print summary; exit non-zero only on actual findings
+          python -m bandit -r src/drift -ll --quiet
+
+      - name: Upload Bandit SAST report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: bandit-sast-report
+          path: bandit-report.json
+          retention-days: 30

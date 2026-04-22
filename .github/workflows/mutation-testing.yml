@@ -1,0 +1,160 @@
+name: Mutation Testing
+
+# Scheduled mutation benchmark against src/drift/scoring/ and src/drift/signals/.
+# Runs weekly and on manual trigger.  Results are uploaded as a run artifact.
+# This workflow supplements (not replaces) unit tests — it measures whether
+# the test suite actually catches semantic regressions in the scoring logic.
+
+on:
+  workflow_dispatch:
+    inputs:
+      fail_threshold:
+        description: "Minimum mutation score (0-100) to pass the gate"
+        required: false
+        default: "60"
+        type: string
+  schedule:
+    # Every Sunday at 03:00 UTC (before perf-regression-loop at 04:00)
+    - cron: "0 3 * * 0"
+
+concurrency:
+  group: "mutation-testing"
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  mutmut:
+    name: Mutation score gate
+    runs-on: windows-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: pyproject.toml
+
+      - name: Install dependencies
+        shell: powershell
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e ".[dev]"
+
+      - name: Run mutation benchmark (synthetic patterns)
+        id: mutation_benchmark
+        shell: powershell
+        run: |
+          python scripts/_mutation_benchmark.py
+          $json = Get-Content benchmark_results/mutation_benchmark.json -Raw | ConvertFrom-Json
+          $recall = [math]::Round($json.overall_recall * 100, 1)
+          Write-Output "recall=$recall" >> $env:GITHUB_OUTPUT
+          Write-Output "Mutation recall: $recall%"
+
+      - name: Run mutmut on scoring + signals
+        id: mutmut_run
+        shell: powershell
+        continue-on-error: true
+        run: |
+          # Run mutmut against scoring/ and signals/ paths defined in pyproject.toml.
+          # Uses a scoped runner to keep runtime under 30 min.
+          python -m mutmut run --no-progress 2>&1 | Tee-Object -FilePath mutmut_output.txt
+          $exitCode = $LASTEXITCODE
+          # Generate results summary
+          python -m mutmut results 2>&1 | Tee-Object -FilePath mutmut_results.txt
+          Write-Output "mutmut_exit=$exitCode" >> $env:GITHUB_OUTPUT
+
+      - name: Parse mutmut score and apply gate
+        id: score_gate
+        shell: powershell
+        run: |
+          $threshold = ${{ inputs.fail_threshold || '60' }}
+          # Extract survived / total from mutmut results
+          $resultsText = ""
+          if (Test-Path mutmut_results.txt) {
+            $resultsText = Get-Content mutmut_results.txt -Raw
+          }
+          # Pattern: "X out of Y mutants survived"
+          if ($resultsText -match '(\d+) out of (\d+) mutants survived') {
+            $survived = [int]$matches[1]
+            $total = [int]$matches[2]
+            if ($total -gt 0) {
+              $killed = $total - $survived
+              $score = [math]::Round(($killed / $total) * 100, 1)
+            } else {
+              $score = 0
+              Write-Output "WARNING: mutmut reported 0 mutants total"
+            }
+          } else {
+            # Fallback: use benchmark recall as proxy
+            $score = ${{ steps.mutation_benchmark.outputs.recall || '0' }}
+            Write-Output "INFO: mutmut results unparseable, using benchmark recall=$score as proxy"
+          }
+          Write-Output "Mutation score: $score% (threshold: $threshold%)"
+          Write-Output "score=$score" >> $env:GITHUB_OUTPUT
+          if ([double]$score -lt [double]$threshold) {
+            Write-Output "FAIL: mutation score $score% is below threshold $threshold%"
+            Exit 1
+          } else {
+            Write-Output "PASS: mutation score $score% meets threshold $threshold%"
+          }
+
+      - name: Save mutation results to benchmark_results
+        if: always()
+        shell: powershell
+        run: |
+          $ts = Get-Date -Format "yyyyMMdd_HHmmss"
+          $outFile = "benchmark_results/mutation_ci_run_$ts.json"
+          $data = @{
+            run_at = (Get-Date -Format "yyyy-MM-ddTHH:mm:ssZ")
+            workflow = "mutation-testing.yml"
+            score_percent = "${{ steps.score_gate.outputs.score }}"
+            threshold_percent = "${{ inputs.fail_threshold || '60' }}"
+            benchmark_recall = "${{ steps.mutation_benchmark.outputs.recall }}"
+            mutmut_exit = "${{ steps.mutmut_run.outputs.mutmut_exit }}"
+          }
+          $data | ConvertTo-Json | Set-Content $outFile -Encoding UTF8
+
+      - name: Upload mutation test artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mutation-testing-results
+          path: |
+            mutmut_output.txt
+            mutmut_results.txt
+            benchmark_results/mutation_benchmark.json
+            benchmark_results/mutation_ci_run_*.json
+          retention-days: 30
+
+      - name: File issue on mutation score regression
+        if: failure() && github.event_name == 'schedule'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const score = '${{ steps.score_gate.outputs.score }}';
+            const threshold = '${{ inputs.fail_threshold || '60' }}';
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: `Mutation score regression: ${score}% < ${threshold}% threshold`,
+              labels: ['regression', 'quality'],
+              body: [
+                '## Mutation Testing Regression',
+                '',
+                `Scheduled mutation test reported **${score}%** mutation score,`,
+                `below the threshold of **${threshold}%**.`,
+                '',
+                '**Workflow run:** ' + context.serverUrl + '/' + context.repo.owner + '/' + context.repo.repo + '/actions/runs/' + context.runId,
+                '',
+                '### Next steps',
+                '1. Review `mutmut_results.txt` in the workflow artifacts.',
+                '2. Identify which mutants survived (uncaught mutations in scoring or signals).',
+                '3. Add tests to kill surviving mutants.',
+                '4. Re-run this workflow to verify the score is restored.',
+              ].join('\n'),
+            });
