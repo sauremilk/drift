@@ -1941,6 +1941,10 @@ async def drift_cite(
     path: Annotated[
         str, Field(description="Repository path that hosts the fact corpus.")
     ] = ".",
+    session_id: Annotated[
+        str | None,
+        Field(description="Optional session ID for telemetry and context tracking (ADR-022)."),
+    ] = None,
 ) -> str:
     """Expand a Fact-ID to its verbatim chunk text with a SHA-256 anchor.
 
