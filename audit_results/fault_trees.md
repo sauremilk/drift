@@ -1,5 +1,33 @@
 # Fault Tree Analysis
 
+## 2026-04-24 - ADR-088: Outcome-Feedback-Ledger (K2 MVP)
+
+### Top Event (TE-OUTCOME-MISCALIBRATION)
+Eine spaetere Weight-Update-Phase kalibriert Scoring-Gewichte auf einem biased
+oder korrumpierten Outcome-Ledger und verschlechtert die Signalqualitaet im
+Gesamtsystem. (Im MVP kein aktives Top-Event, aber dokumentiert als Leitfaden
+fuer Phase 3.)
+
+### FT-B1: Selection-Bias im Merge-Korpus
+- AND
+  - Walker filtert `--merges --first-parent`: squash/rebase Merges werden uebersehen.
+  - Author-Split Human/AI/Mixed ist ungleich verteilt (AI-PRs oft squashed, Human-PRs oft echte Merges).
+- Mitigation: Report macht den Filter explizit sichtbar; Phase 2 erweitert Walker; Phase 3 darf nur kalibrieren, wenn Korpus hinreichend gross und ausgewogen ist (>100 Trajektorien, Author-Split-Varianz <0.3).
+
+### FT-B2: Fingerprint-Mismatch zwischen pre/post
+- OR
+  - Signal-Heuristik wurde zwischen pre-Scan und post-Scan geaendert.
+  - ADR-082 Fingerprint-v2 upgrade zwischen den Scans.
+- Effekt: `per_signal_delta` wird systematisch verzerrt.
+- Mitigation: noise_floor 0.005 filtert kleine Deltas; Phase 3 MUSS drift-Version pro Eintrag speichern und beim Lesen nur gleich-versionierte Eintraege fuer Kalibrierung nutzen.
+
+### FT-B3: Worktree-Cleanup-Leak
+- AND
+  - `git worktree remove --force` failed (gesperrte Datei unter Windows, Prozess-Kill).
+  - `shutil.rmtree(ignore_errors=True)` ebenfalls blockiert (Antivirus, OneDrive-Sync).
+- Effekt: Verwaiste Worktree-Ordner unter Temp; `git worktree list` zeigt verwaiste Eintraege.
+- Mitigation: `git worktree prune` als dokumentierter manueller Fallback; Test `test_cleanup_on_analysis_exception` deckt den Haupt-Pfad ab.
+
 ## 2026-04-23 - ADR-087: Blast-Radius-Gate false-accept / false-block
 
 ### Top Event (TE-BLAST-FALSE-ACCEPT)

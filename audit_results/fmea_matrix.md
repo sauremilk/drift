@@ -1,5 +1,14 @@
 # FMEA Matrix
 
+## 2026-04-24 - ADR-088: Outcome-Feedback-Ledger (K2 MVP)
+
+| Component | Failure Mode | Cause | Effect | Detection | Mitigation | S | O | D | RPN | Status |
+|---|---|---|---|---|---|---:|---:|---:|---:|---|
+| `drift.api.analyze_commit_pair._detached_worktree` | Worktree-Cleanup schlaegt fehl, verwaiste Ordner in Temp + Git worktree list haengen | `git worktree remove --force` failed oder Prozess abgebrochen zwischen `add` und `remove` | Platte faellt voll, Git `worktree prune` wird noetig, im Extremfall beeinflusst verwaister Pfad Haupt-HEAD nicht, aber User sieht Chaos | Test `test_cleanup_on_analysis_exception` monkeypatched `analyze_repo` zu exception und prueft `worktree list` | `contextlib.suppress(CalledProcessError)` um `git worktree remove`; `shutil.rmtree(ignore_errors=True)` in outer finally; kein try-except-pass | 3 | 2 | 3 | 18 | Mitigated |
+| `drift.outcome_ledger.walker.walk_recent_merges` | Selection-Bias: `--merges --first-parent` erfasst squash/rebase merges nicht | Git-Topologie: GitHub "Squash and merge" erzeugt single-parent commits, nicht merge commits | Outcome-Korpus systematisch verzerrt → spaetere Weight-Adaption (Phase 3) wuerde auf biased Daten kalibrieren | Report-Header listet `merges analysed`; Author-Split macht Under-Representation bestimmter Flows sichtbar | ADR-088 dokumentiert Filter explizit; Phase 2 erweitert Walker um Squash-Heuristik | 3 | 4 | 2 | 24 | Accepted (MVP) |
+| `drift.outcome_ledger.ledger_io.append_trajectory` | Ledger-JSONL korrumpiert (teilgeschriebene Zeile nach Crash) | Prozess-Kill zwischen `fh.write(line)` und `fh.write("\n")` | `load_trajectories` parst Zeile als JSON → Fehler, Ledger unbrauchbar | JSON-parse im `load_trajectories` reist deutlich; append-only JSONL ist Standard-Pattern | `.jsonl` Format mit einer Zeile pro Eintrag; Schema-Version in jeder Zeile macht Recovery moeglich (letzte kaputte Zeile loeschen) | 2 | 2 | 3 | 12 | Mitigated |
+| `drift.outcome_ledger._models.MergeTrajectory` | Schema-Drift: neue Felder in v2 brechen v1-Reader | Aenderung am Modell ohne `schema_version`-Bump | Historische Ledger werden unlesbar, Kalibrierungsdaten verloren | Pydantic `extra="forbid"` wirft bei unbekannten Feldern | `schema_version: int` Pflichtfeld, Default 1; jede Schema-Aenderung muss Version inkrementieren und Reader-Logik anpassen | 3 | 2 | 2 | 12 | Mitigated |
+
 ## 2026-04-23 - ADR-087: Blast-Radius-Engine (K1)
 
 | Component | Failure Mode | Cause | Effect | Detection | Mitigation | S | O | D | RPN | Status |

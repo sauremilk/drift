@@ -1,5 +1,30 @@
 # Risk Register
 
+## 2026-04-24 - ADR-088: Outcome-Feedback-Ledger (K2 MVP)
+
+- Risk ID: RISK-ADR-088-OUTCOME-LEDGER
+- Component: `src/drift/outcome_ledger/**`, `src/drift/api/analyze_commit_pair.py`, `scripts/ops_outcome_trajectory_cycle.py`, Artefakte `.drift/outcome_ledger.jsonl` + `.drift/reports/<ts>/outcome_trajectory.{json,md}`.
+- Type: Feedback-/Observability-Artefakt (kein Signal, kein Score, noch kein Weight-Update).
+- Description: Ledger schreibt retrospektive Merge-Trajektorien (pre/post Drift-Score, per-signal delta, author_type) als JSONL. MVP-Scope: nur Schreiben + Reporting, keine Rueckkopplung in Signal-Heuristik oder Scoring.
+- Severity: MEDIUM — Outcome-Signal kann zukuenftige Weight-Adjustments fehlleiten, wenn Merge-Korpus biased, Fingerprints instabil oder Worktree-Cleanup haengen bleibt. Im MVP nur beobachtend, daher Auswirkung begrenzt auf Report-Qualitaet.
+- Triggers:
+  - Ops-Runner `scripts/ops_outcome_trajectory_cycle.py --apply` appendet neue Eintraege.
+  - Aenderung an Fingerprint-/Scoring-Code (ADR-082) kann pre/post nicht mehr vergleichbar machen.
+- Impact without mitigation: Kalibrierungsdaten mit systematischem Bias (AI vs. Human, first-parent-Filter); stale Daten ueber 180d verzerren Baseline; Worktree-Leaks verbrauchen Platte und koennen HEAD-State stoeren.
+- Mitigations:
+  - Detached `git worktree` mit garantiertem Cleanup via `contextlib.suppress` + `shutil.rmtree` in `finally`.
+  - Staleness-Buckets (<=90d fresh, 90-180d warning, >180d historical) im Report sichtbar.
+  - Author-Split (Human/AI/Mixed) macht Bias im Report transparent.
+  - `schema_version=1` und immutables frozen Pydantic-Modell verhindern silent Schema-Drift.
+  - Kein automatisches Weight-Update im MVP (Scope-Guard via ADR-088).
+- Monitoring:
+  - `tests/test_outcome_ledger.py` (12 pass, 2 skipped: worktree-integration tests die echtes Git brauchen).
+  - `git status` vor/nach ops-Runner muss identisch sein (Worktree-Isolations-Contract).
+- Residual Risk:
+  - Selection-Bias durch `--merges --first-parent`-Filter (squash/rebase merges uebersehen) → Report dokumentiert den Filter; Phase 2 erweitert.
+  - Fingerprint-Mismatch bei Signal-Aenderungen zwischen pre und post → noise_floor 0.005 filtert sehr kleine Deltas; Phase 3 braucht Versions-Stamp pro Eintrag.
+- Status: MITIGATED (MVP; keine Signal-/Score-Rueckkopplung).
+
 ## 2026-04-23 - ADR-087: Blast-Radius-Engine (K1)
 
 - Risk ID: RISK-ADR-087-BLAST-RADIUS

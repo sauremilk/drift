@@ -1,5 +1,24 @@
 # STRIDE Threat Model
 
+## 2026-04-24 - ADR-088: Outcome-Feedback-Ledger (K2 MVP)
+
+- Scope: Detached-worktree rescore (`src/drift/api/analyze_commit_pair.py`), merge-commit walker (`src/drift/outcome_ledger/walker.py`), JSONL ledger (`src/drift/outcome_ledger/ledger_io.py`), ops runner (`scripts/ops_outcome_trajectory_cycle.py`).
+- Input path changes: Runner invokes `git log --merges --first-parent --pretty=format:...` and `git worktree add --detach <tmp> <sha>` against the repo being analysed. All inputs are local git data; no new network surface.
+- Output path changes: Writes `.drift/reports/<ts>/outcome_trajectory.{json,md}` and optionally appends to `.drift/outcome_ledger.jsonl`. All artefacts are local; JSONL schema carries `schema_version: 1`.
+- External interface changes: None in CLI/MCP surface. New ops script is opt-in, not wired into push gates or default pipelines.
+- Trust boundary: Detached worktree is a new local filesystem boundary. The worktree path is under a `tempfile.mkdtemp(prefix="drift-outcome-")`, git-managed; the HEAD and working tree of the main checkout are never modified.
+- STRIDE review:
+  - S (Spoofing): No change. Ledger entries carry commit SHAs, not user identities.
+  - T (Tampering): Local append-only JSONL. An attacker with write access to `.drift/` can forge entries, but that attacker already has full repo write access; the ledger does not raise privilege. The main working tree cannot be tampered with through the worktree flow because `analyze_repo` only reads.
+  - R (Repudiation): Each entry carries `merge_commit`, `parent_commit`, `timestamp` — retrospective analysis is traceable to concrete git history. AI-attribution signal is derived from commit message metadata (`_detect_ai_attribution`), not fabricated.
+  - I (Information Disclosure): Report aggregates public commit data (SHAs, timestamps, author_type). No secrets, no tokens. `.drift/outcome_ledger.jsonl` lives inside the repo tree; gitignore responsibility rests with the operator (documented in ADR-088).
+  - D (Denial of Service): Each merge analysed costs 2x `analyze_repo`. Default `--limit 50`, `--since-days 180` bounds cost. Worktree cleanup guaranteed via `contextlib.suppress` + `shutil.rmtree`; no leak under normal operation. Disk-fill risk from verwaiste Worktrees bei abruptem Kill mitigiert durch `git worktree prune` als manueller Fallback.
+  - E (Elevation of Privilege): No new privileged operation. `git worktree add` uses the same permissions as the invoking user; no setuid, no sudo.
+- Adversarial considerations:
+  - Malicious merge-message crafting to force `author_type=AI` misattribution: possible but low impact — author_type is observational, nicht security-relevant.
+  - Ledger-poisoning: operator with write access to `.drift/outcome_ledger.jsonl` can insert fake trajectories. MVP has no auto-consumer of the ledger, so blast radius is nil. Phase 3 (weight adaptation) MUST add signed or hash-chained entries before trusting ledger for calibration.
+- ADR-088 MVP scope constraint: no weight-update pathway exists. Every security concern that depends on the ledger being a trusted calibration source is deferred to Phase 3 and explicitly out-of-scope here.
+
 ## 2026-04-22 - ADR-082/083: Fingerprint v2 & Pre-Edit Pattern-Scan
 
 - Scope: Baseline fingerprint schema change (`src/drift/baseline.py`), HEAD match index + fuzzy pass (`src/drift/analyzer.py`, `src/drift/api/diff.py`), config flag `thresholds.diff_fuzzy_head_subtraction` (`src/drift/config/_schema.py`), fix-loop prompt update (`.github/prompts/drift-fix-loop.prompt.md`).
