@@ -258,7 +258,91 @@ Alle Exit-Codes sind in `src/drift/errors.py` definiert. Die folgende Tabelle is
 
 ---
 
-## 5. Häufige Fehler
+## 5. Trend-Tracking — Snapshots über CI-Läufe hinweg persistieren
+
+`drift trend` ist nur dann aussagekräftig, wenn Snapshots über Tage und Wochen hinweg gesammelt werden. Jede `drift analyze`-Ausführung speichert automatisch einen Snapshot in `.drift-cache/history.json`. Damit diese Datei zwischen CI-Läufen erhalten bleibt, muss das Cache-Verzeichnis als Actions-Cache persistiert werden.
+
+### Minimalkonfiguration: Wöchentlicher Trend-Job
+
+```yaml
+# .github/workflows/drift-trend.yml
+name: Drift — Trend-Tracking
+
+on:
+  schedule:
+    - cron: "0 3 * * 1"   # jeden Montag 03:00 UTC
+  workflow_dispatch:
+
+jobs:
+  trend:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Snapshot-Cache wiederherstellen
+        uses: actions/cache@v4
+        with:
+          path: .drift-cache
+          key: drift-cache-${{ runner.os }}-${{ github.ref_name }}
+          restore-keys: |
+            drift-cache-${{ runner.os }}-
+
+      - name: Analyse ausführen (Snapshot wird automatisch gespeichert)
+        uses: mick-gsk/drift@v2
+        with:
+          fail-on: none
+
+      - name: Trend anzeigen
+        run: pip install drift-analyzer && drift trend --repo .
+```
+
+> **Warum `fail-on: none`?** Der Trend-Job soll den Score rein beobachten, nicht blockieren. Quality-Gates laufen im separaten PR-Workflow.
+
+> **Cache-Key-Strategie:** Der `restore-keys`-Fallback stellt sicher, dass auch nach Branch-Wechseln auf den letzten verfügbaren Snapshot-Cache zurückgefallen wird.
+
+### Integration in bestehenden Analyze-Job
+
+Wenn bereits ein `drift analyze`-Job läuft, genügt das Ergänzen des Cache-Steps:
+
+```yaml
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Snapshot-Cache
+        uses: actions/cache@v4
+        with:
+          path: .drift-cache
+          key: drift-cache-${{ runner.os }}-${{ github.sha }}
+          restore-keys: |
+            drift-cache-${{ runner.os }}-
+
+      - uses: mick-gsk/drift@v2
+        with:
+          fail-on: high
+```
+
+Nach einigen Läufen über mehrere Tage zeigt `drift trend` einen aussagekräftigen Verlauf:
+
+```
+  Score History (last 10)
+  ┌─────────────────────┬────────┬────────┬──────────┐
+  │ 2026-04-14 03:02:11 │  0.281 │ —      │ 12       │
+  │ 2026-04-21 03:01:44 │  0.294 │ +0.013 │ 14       │
+  │ 2026-04-28 03:03:02 │  0.287 │ -0.007 │ 13       │
+  └─────────────────────┴────────┴────────┴──────────┘
+  Overall trend (3 snapshots): → stable  (+0.006)
+```
+
+---
+
+## 6. Häufige Fehler
 
 ### 1. Git-History fehlt — temporale Signale greifen nicht
 
@@ -349,6 +433,8 @@ Oder in der Action:
 with:
   since: "90"
 ```
+
+---
 
 ---
 

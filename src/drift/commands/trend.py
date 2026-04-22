@@ -71,8 +71,12 @@ def trend(repo: Path, days: int, config: Path | None, as_json: bool) -> None:
         console.print()
         console.print(
             "[yellow]\u26a0 Not enough history for trend comparison.[/yellow]\n"
-            "  Run [bold]drift analyze --save-baseline .drift-baseline.json[/bold] "
-            "to start tracking, then re-run [bold]drift trend[/bold] over time."
+            "  Snapshots are saved automatically on each run to "
+            "[bold].drift-cache/history.json[/bold].\n"
+            "  For a meaningful trend, run [bold]drift analyze[/bold] periodically — "
+            "or add a scheduled CI job that caches [bold].drift-cache/[/bold] between runs:\n"
+            "  See [bold]docs/guides/ci-integration.md[/bold] section \"Trend-Tracking\" "
+            "for a ready-made GitHub Actions example."
         )
         return
 
@@ -124,7 +128,10 @@ def trend(repo: Path, days: int, config: Path | None, as_json: bool) -> None:
                 f" {span_label}.[/bold yellow]"
             )
             console.print(
-                "  [dim]For meaningful trends, accumulate snapshots over days/weeks.[/dim]"
+                "  [dim]For meaningful trends, accumulate snapshots over days/weeks.[/dim]\n"
+                "  [dim]Tip: cache [bold].drift-cache/[/bold] in CI so snapshots persist\n"
+                "  across runs — see [bold]docs/guides/ci-integration.md[/bold]"
+                " \u2192 Trend-Tracking.[/dim]"
             )
             console.print()
     except (ValueError, KeyError):

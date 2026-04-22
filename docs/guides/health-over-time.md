@@ -68,6 +68,10 @@ Der Trend-Verlauf wird als ASCII-Sparkline ergänzt, wenn mindestens drei Snapsh
 
 **Hinweis zur Datenlage:** Drift speichert maximal 100 Snapshots in der History-Datei. Sinnvolle Trends entstehen erst nach Akkumulierung über mindestens einige Tage; zeigt `drift trend` eine Warnung wie `All N snapshots span only X minutes`, sollten die Snapshots aus automatisierten CI-Läufen über mehrere Tage gesammelt werden, bevor Schlussfolgerungen gezogen werden.
 
+### Snapshot-Persistenz in CI
+
+Damit Snapshots zwischen CI-Läufen erhalten bleiben, muss das Cache-Verzeichnis `.drift-cache/` als Actions-Cache konfiguriert werden. Ein fertiger Workflow dafür ist in [ci-integration.md](ci-integration.md) → Abschnitt „Trend-Tracking" dokumentiert.
+
 ---
 
 ## 3. `drift timeline` — Findings-Ursachen über Zeit
