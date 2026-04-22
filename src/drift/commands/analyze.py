@@ -171,6 +171,17 @@ def _render_analysis_details(
         if recs:
             render_recommendations(recs, effective_console)
 
+    if output_format == "rich":
+        from drift.calibration.feedback import resolve_feedback_paths
+        from drift.output.rich_output import render_feedback_calibration_hint
+
+        _feedback_path, _, _ = resolve_feedback_paths(repo, cfg)
+        render_feedback_calibration_hint(
+            analysis,  # type: ignore[arg-type]
+            _feedback_path,
+            effective_console,
+        )
+
 
 def _emit_intent_status(analysis: object, repo: Path, intent: bool) -> None:
     """Print intent validation status if --intent is requested."""

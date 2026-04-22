@@ -295,3 +295,98 @@ def test_render_summary_surfaces_skipped_language_warning() -> None:
     output = console.export_text()
     assert "Skipped 3 file(s): typescript (3)." in output
     assert "pip install drift-analyzer[typescript]" in output
+
+
+# ---------------------------------------------------------------------------
+# render_feedback_calibration_hint tests
+# ---------------------------------------------------------------------------
+
+
+def _make_findings(n: int) -> list[Finding]:
+    """Build n minimal Finding objects for testing."""
+    return [
+        Finding(
+            signal_type="pattern_fragmentation",
+            severity=Severity.HIGH,
+            score=0.5,
+            title=f"Finding {i}",
+            description="test",
+            file_path=Path(f"src/f{i}.py"),
+        )
+        for i in range(n)
+    ]
+
+
+def _make_analysis_with_findings(n: int) -> RepoAnalysis:
+    return RepoAnalysis(
+        repo_path=Path("."),
+        analyzed_at=datetime.datetime.now(tz=datetime.UTC),
+        drift_score=0.55,
+        findings=_make_findings(n),
+        total_files=20,
+        total_functions=50,
+        ai_attributed_ratio=0.5,
+        analysis_duration_seconds=1.0,
+        analysis_status="complete",
+    )
+
+
+def test_feedback_hint_shown_when_high_count_and_no_feedback(tmp_path: Path) -> None:
+    """Panel is shown when findings >= threshold and feedback file absent."""
+    from drift.output.rich_output import render_feedback_calibration_hint
+
+    analysis = _make_analysis_with_findings(50)
+    feedback_path = tmp_path / ".drift" / "feedback.jsonl"  # does not exist
+
+    console = Console(record=True, force_terminal=True, width=120)
+    render_feedback_calibration_hint(analysis, feedback_path, console, threshold=50)
+
+    output = console.export_text()
+    assert "50 findings found" in output
+    assert "drift feedback mark" in output
+    assert "drift calibrate run" in output
+
+
+def test_feedback_hint_suppressed_below_threshold(tmp_path: Path) -> None:
+    """No panel when finding count is below threshold."""
+    from drift.output.rich_output import render_feedback_calibration_hint
+
+    analysis = _make_analysis_with_findings(10)
+    feedback_path = tmp_path / ".drift" / "feedback.jsonl"
+
+    console = Console(record=True, force_terminal=True, width=120)
+    render_feedback_calibration_hint(analysis, feedback_path, console, threshold=50)
+
+    output = console.export_text()
+    assert "drift feedback mark" not in output
+
+
+def test_feedback_hint_suppressed_when_feedback_exists(tmp_path: Path) -> None:
+    """No panel when at least one feedback event already exists."""
+    import json
+
+    from drift.output.rich_output import render_feedback_calibration_hint
+
+    analysis = _make_analysis_with_findings(100)
+    feedback_dir = tmp_path / ".drift"
+    feedback_dir.mkdir(parents=True)
+    feedback_path = feedback_dir / "feedback.jsonl"
+    feedback_path.write_text(
+        json.dumps(
+            {
+                "signal_type": "pattern_fragmentation",
+                "file_path": "src/f0.py",
+                "verdict": "tp",
+                "source": "user",
+                "timestamp": "2026-04-22T10:00:00+00:00",
+            }
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+
+    console = Console(record=True, force_terminal=True, width=120)
+    render_feedback_calibration_hint(analysis, feedback_path, console, threshold=50)
+
+    output = console.export_text()
+    assert "drift feedback mark" not in output

@@ -1301,6 +1301,62 @@ def render_recommendations(
 
 
 # ---------------------------------------------------------------------------
+# Feedback / calibration onboarding hint
+# ---------------------------------------------------------------------------
+
+# Minimum finding count that triggers the feedback/calibration hint when no
+# feedback records exist yet.
+_FEEDBACK_HINT_THRESHOLD: int = 50
+
+
+def render_feedback_calibration_hint(
+    analysis: RepoAnalysis,
+    feedback_path: "Path",
+    console: Console | None = None,
+    *,
+    threshold: int = _FEEDBACK_HINT_THRESHOLD,
+) -> None:
+    """Print a calibration-loop nudge when findings are high but no feedback exists.
+
+    The hint is suppressed when:
+    - finding count is below *threshold* (default 50), or
+    - at least one feedback record already exists in *feedback_path*.
+    """
+    if len(analysis.findings) < threshold:
+        return
+
+    try:
+        from drift.calibration.feedback import load_feedback
+
+        if load_feedback(feedback_path):
+            return
+    except Exception:  # noqa: BLE001 — treat any I/O error as "no feedback"
+        pass
+
+    if console is None:
+        console = Console()
+
+    finding_count = len(analysis.findings)
+    console.print()
+    console.print(
+        Panel(
+            f"[bold]{finding_count} findings found — no feedback recorded yet.[/bold]\n\n"
+            "Start the calibration loop to reduce noise and improve signal weights:\n\n"
+            "  [bold cyan]drift feedback mark -m fp -s PFS -f <file>[/bold cyan]"
+            "  [dim](mark a false positive)[/dim]\n"
+            "  [bold cyan]drift calibrate run[/bold cyan]"
+            "                              [dim](apply adjusted weights)[/dim]\n"
+            "  [bold cyan]drift feedback summary[/bold cyan]"
+            "                           [dim](review label counts)[/dim]\n\n"
+            "[dim]Run [bold]drift analyze --review[/bold] for interactive triage.[/dim]",
+            title="[bold yellow]Tip: Calibration loop not started[/bold yellow]",
+            border_style="yellow",
+            padding=(0, 1),
+        )
+    )
+
+
+# ---------------------------------------------------------------------------
 # Trend chart rendering
 # ---------------------------------------------------------------------------
 
