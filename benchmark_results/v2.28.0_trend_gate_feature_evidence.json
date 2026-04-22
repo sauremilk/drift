@@ -5,15 +5,15 @@
   "description": "Feature evidence for trend gate (v2.28.0).",
   "generated_by": {
     "script": "scripts/generate_feature_evidence.py",
-    "git_sha": "4c7bb8a609f6df7fd5f69f7aca5061fc3ec724e2",
+    "git_sha": "2a2f142e3590a74ec2873cd637e413e5058b6bbf",
     "drift_version": "2.23.0",
-    "timestamp": "2026-04-22T05:18:55.847079+00:00"
+    "timestamp": "2026-04-22T05:20:30.136960+00:00"
   },
   "self_analysis": {
-    "error": "JSON parse error: Extra data: line 94708 column 1 (char 3786247)"
+    "error": "JSON parse error: Extra data: line 94348 column 1 (char 3770545)"
   },
   "tests": {
-    "total_passing": 4522,
+    "total_passing": 4468,
     "total_failing": 1,
     "failing_note": "FAILED tests/test_issue_383_schema_guided_thresholds.py::TestIssue383SchemaGuidedThresholds::test_schema_matches_live_model",
     "exit_code": 2
