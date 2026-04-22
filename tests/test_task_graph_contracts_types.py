@@ -200,7 +200,7 @@ def test_response_shaping_helpers_cover_base_and_profile_filtering() -> None:
 
     shaped = shape_for_profile(
         {
-            "schema_version": "2.1",
+            "schema_version": "2.2",
             "status": "ok",
             "agent_instruction": "next",
             "tasks": ["t1"],
@@ -214,3 +214,4 @@ def test_response_shaping_helpers_cover_base_and_profile_filtering() -> None:
 
     full = shape_for_profile({"status": "ok"}, "unknown")
     assert full["response_profile"] == "full"
+

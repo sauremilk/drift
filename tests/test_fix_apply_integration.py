@@ -96,7 +96,7 @@ def _gcd_task(
 def _mock_fix_plan(tasks: list) -> dict[str, Any]:
     """Return a minimal fix_plan response wrapping *tasks*."""
     return {
-        "schema_version": "2.1",
+        "schema_version": "2.2",
         "tasks": tasks,
         "error": None,
     }
@@ -345,3 +345,4 @@ def test_cli_dry_run_returns_json_with_patches(tmp_path: Path) -> None:
     assert result.exit_code == 0, result.output
     data = json.loads(result.output)
     assert "patches" in data or "tasks" in data  # either fix_apply or fix_plan response accepted
+

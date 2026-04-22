@@ -92,7 +92,7 @@ class TestNudgeAPI:
         """nudge() response has schema_version."""
         self._mock_nudge_deps(monkeypatch, tmp_path)
         result = nudge(tmp_path, changed_files=[])
-        assert result["schema_version"] == "2.1"
+        assert result["schema_version"] == "2.2"
 
     def test_nudge_direction_field(self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
         """nudge() response has direction field."""
@@ -1783,4 +1783,5 @@ class TestPostEditRegressionDetector:
         assert isinstance(result["latency_exceeded"], bool)
         assert isinstance(result["auto_fast_path"], bool)
         assert isinstance(result["baseline_created"], bool)
+
 

@@ -68,7 +68,7 @@ class TestVerifyApi:
         score_after: float = 0.3,
     ) -> dict[str, Any]:
         return {
-            "schema_version": "2.1",
+            "schema_version": "2.2",
             "shadow_clean": shadow_clean,
             "delta": delta,
             "score_after": score_after,
@@ -95,7 +95,7 @@ class TestVerifyApi:
         score_after: float = 0.3,
     ) -> dict[str, Any]:
         return {
-            "schema_version": "2.1",
+            "schema_version": "2.2",
             "type": "diff",
             "delta": delta,
             "score_before": score_before,
@@ -416,3 +416,4 @@ class TestVerifyCommand:
         runner = CliRunner()
         result = runner.invoke(verify_cmd, ["--format", "json", "--exit-zero"])
         assert result.exit_code == 0
+

@@ -174,7 +174,7 @@ def test_safe_main_drift_error_emits_json_payload_when_enabled(
     assert exc_info.value.code == 2
     captured = capsys.readouterr()
     payload = json.loads(captured.err.strip())
-    assert payload["schema_version"] == "2.1"
+    assert payload["schema_version"] == "2.2"
     assert payload["type"] == "error"
     assert payload["error_code"] == "DRIFT-1001"
     assert payload["category"] == "user"
@@ -195,7 +195,7 @@ def test_safe_main_generic_exception_emits_json_payload_when_enabled(
     assert exc_info.value.code == 3
     captured = capsys.readouterr()
     payload = json.loads(captured.err.strip())
-    assert payload["schema_version"] == "2.1"
+    assert payload["schema_version"] == "2.2"
     assert payload["type"] == "error"
     assert payload["error_code"] == "DRIFT-3002"
     assert payload["category"] == "analysis"
@@ -281,7 +281,7 @@ def test_safe_main_scan_output_path_error_is_config_error_json(
         scan_command,
         "api_scan",
         lambda *args, **kwargs: {
-            "schema_version": "2.1",
+            "schema_version": "2.2",
             "accept_change": True,
             "blocking_reasons": [],
         },
@@ -323,7 +323,7 @@ def test_safe_main_fix_plan_invalid_signal_emits_single_json_and_nonzero(
         "api_fix_plan",
         lambda *args, **kwargs: {
             "error": True,
-            "schema_version": "2.1",
+            "schema_version": "2.2",
             "error_code": "DRIFT-1003",
             "message": "Unknown signal: 'INVALID_SIGNAL'",
             "invalid_fields": [
@@ -361,3 +361,4 @@ def test_safe_main_fix_plan_invalid_signal_emits_single_json_and_nonzero(
     assert payload["exit_code"] == 2
     assert payload["message"] == "Unknown signal: 'INVALID_SIGNAL'"
     assert "Usage:" not in stderr
+

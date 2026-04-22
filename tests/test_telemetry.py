@@ -154,7 +154,7 @@ def test_api_explain_emits_telemetry(
     monkeypatch.setenv("DRIFT_TELEMETRY_FILE", str(out))
 
     result = explain("PFS")
-    assert result["schema_version"] == "2.1"
+    assert result["schema_version"] == "2.2"
 
     rows = _read_jsonl(out)
     assert len(rows) == 1
@@ -415,3 +415,4 @@ def test_api_scan_returns_acceptance_fields(monkeypatch) -> None:
     assert result["high_count"] == 1
     assert "existing_high_or_critical_findings" in result["blocking_reasons"]
     assert "drift_trend_degrading" in result["blocking_reasons"]
+

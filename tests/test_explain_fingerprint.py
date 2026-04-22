@@ -102,7 +102,7 @@ class TestExtractCodeContext:
 class TestExplainFindingFromFile:
     def _make_analysis_json(self, tmp_path: Path, findings: list[dict[str, Any]]) -> Path:
         data = {
-            "schema_version": "2.1",
+            "schema_version": "2.2",
             "drift_score": 0.5,
             "findings": findings,
         }
@@ -210,7 +210,7 @@ class TestExplainCLIFingerprint:
         # Use --from-file with an empty findings list to avoid a slow re-scan.
         analysis_file = tmp_path / "empty.json"
         analysis_file.write_text(
-            json.dumps({"schema_version": "2.1", "drift_score": 0.0, "findings": []}),
+            json.dumps({"schema_version": "2.2", "drift_score": 0.0, "findings": []}),
             encoding="utf-8",
         )
         runner = CliRunner()
@@ -240,7 +240,7 @@ class TestExplainCLIFingerprint:
             "score": 0.72,
         }
         analysis_file.write_text(
-            json.dumps({"schema_version": "2.1", "drift_score": 0.4, "findings": [finding]}),
+            json.dumps({"schema_version": "2.2", "drift_score": 0.4, "findings": [finding]}),
             encoding="utf-8",
         )
         runner = CliRunner()
@@ -273,7 +273,7 @@ class TestExplainCLIFingerprint:
             "score": 0.5,
         }
         analysis_file.write_text(
-            json.dumps({"schema_version": "2.1", "drift_score": 0.3, "findings": [finding]}),
+            json.dumps({"schema_version": "2.2", "drift_score": 0.3, "findings": [finding]}),
             encoding="utf-8",
         )
         out_file = tmp_path / "out.json"
@@ -343,3 +343,4 @@ class TestPrintFindingDetailSmoke:
         }
         # Must not raise even with empty finding dict
         _print_finding_detail(result, tmp_path)
+

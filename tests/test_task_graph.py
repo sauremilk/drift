@@ -475,7 +475,7 @@ class TestShapeForProfile:
     @pytest.fixture()
     def full_result(self) -> dict[str, Any]:
         return {
-            "schema_version": "2.1",
+            "schema_version": "2.2",
             "status": "ok",
             "agent_instruction": "Do X",
             "drift_score": 3.5,
@@ -672,3 +672,4 @@ class TestBuildWorkflowPlan:
         # Second fix step should have a precondition
         assert len(fix_steps) == 2
         assert len(fix_steps[1].preconditions) > 0
+
