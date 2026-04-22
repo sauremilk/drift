@@ -1,3 +1,10 @@
+## [Unreleased]
+
+### Fixed
+
+- **Repair PowerShell em-dash terminator in release workflow.** The `Sync version refs` step in `.github/workflows/release.yml` contained a Unicode em-dash (`—`) in a `Write-Output` string that caused a `TerminatorExpectedAtEndOfString` error on Windows runners. Replaced with ASCII hyphen.
+- **Add `@needs_tree_sitter` skip guard for TSB issue-317 test.** `test_issue_317_tsb_message_handler_test_support.py` called `TypeSafetyBypassSignal().analyze(...)` without a skip guard; CI matrix entries without `tree-sitter-typescript` produced 0 findings, causing `assert 0 == 1`. Added skip decorator mirroring the pattern from `test_issue_298`.
+
 ## [2.29.0] – 2026-04-22
 
 Short version: Agent-workflow shortcuts (Makefile targets, companion scripts), `drift adr` subcommand, `TaskSpec.to_patch_intent()`, release version-sync CI step; plus Trend-Gate Enforcement, Fingerprint v2, and queue/session improvements.

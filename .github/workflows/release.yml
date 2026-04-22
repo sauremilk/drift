@@ -114,7 +114,7 @@ jobs:
             git tag -f $tag
             Write-Output "Synced version refs in: $staged"
           } else {
-            Write-Output "Version refs already consistent — no amend needed."
+            Write-Output "Version refs already consistent - no amend needed."
           }
 
       - name: Push release commit and tag

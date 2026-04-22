@@ -2,12 +2,20 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import pytest
+
 from drift.config import DriftConfig
 from drift.ingestion.test_detection import classify_file_context, is_test_file
+from drift.ingestion.ts_parser import tree_sitter_available
 from drift.models import ParseResult, Severity
 from drift.signals.type_safety_bypass import TypeSafetyBypassSignal
 
 ISSUE_317_FILE = Path("extensions/msteams/src/monitor-handler/message-handler.test-support.ts")
+
+needs_tree_sitter = pytest.mark.skipif(
+    not tree_sitter_available(),
+    reason="tree-sitter-typescript not installed",
+)
 
 
 def _write_issue_317_fixture(tmp_path: Path) -> Path:
@@ -30,6 +38,7 @@ def test_issue_317_message_handler_test_support_is_test_context() -> None:
     assert classify_file_context(ISSUE_317_FILE) == "test"
 
 
+@needs_tree_sitter
 def test_issue_317_tsb_excludes_by_default_and_reduces_to_low_when_configured(
     tmp_path: Path,
 ) -> None:
