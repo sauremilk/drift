@@ -2,6 +2,8 @@
 
 ### Added
 
+- **Baseline-Ratchet Pre-Commit-Gate (Paket 2A, ADR-093).** `drift baseline diff` bekommt neues Flag `--fail-on-new N` (Exit 1, wenn neue Findings > N; rückwärtskompatibel, Default unverändert). Neuer Subcommand `drift baseline update --confirm` als expliziter, reviewbarer Alias für `baseline save` (ohne `--confirm` → Exit 2). Neuer Pre-Commit-Hook-Eintrag `drift-baseline-check` in `.pre-commit-hooks.yaml` (`drift baseline diff --fail-on-new 0`). Verhindert stille Baseline-Erosion durch Agenten oder Shell-History. Tests: `tests/test_baseline.py::TestBaselineRatchetADR093` (5 pass). Audit-Artefakte FMEA und Risk-Register aktualisiert.
+
 - **`llms.txt` deterministic autogen (Paket 1C, ADR-092).** Neuer Generator `scripts/generate_llms_txt.py` rendert `llms.txt` vollständig aus `pyproject.toml` (Version) und `src/drift/signal_registry.py` (Signale). Deterministische Sortierung (Gewicht ↓ / Abkürzung ↑), SEO-Overrides (CWE-Tags für MAZ/HSC/ISD, AI-Attribution für PHR) in `_DOC_OVERRIDES`. Modi: `--write` (Default) und `--check` (exit 1 + unified diff). Pre-Push-Hook Schritt `[0/6]` regeneriert und committet bei Drift still (`chore: sync version refs`); Release-Workflow amend+re-tagt; `scripts/check_model_consistency.py` Checks 5+6 delegieren an `--check` (ersetzt 15-Signal-`code_to_key`-Tabelle, deckt jetzt alle 25 Kern-Signale ab). Erste Regeneration nimmt `TSB` (Type Safety Bypass) in die Report-only-Liste auf, das bisher still unterschlagen wurde. Tests: `tests/test_llms_txt_generator.py` (7 pass). Audit-Artefakte FMEA und Risk-Register aktualisiert.
 
 ## [2.32.0] – 2026-04-22

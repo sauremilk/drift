@@ -1,5 +1,28 @@
 # Risk Register
 
+## 2026-05-04 - ADR-093: Baseline-Ratchet (Paket 2A)
+
+- Risk ID: RISK-ADR-093-BASELINE-RATCHET
+- Component: `src/drift/commands/baseline.py` (`diff --fail-on-new`, `update --confirm`), `.pre-commit-hooks.yaml` (`drift-baseline-check`).
+- Type: Process / Gate-Semantik - kein Scoring-Pfad, kein Schema-Feld. Exit-Code-Kontrakt fuer einen bestehenden CLI-Befehl.
+- Description: `drift baseline diff --fail-on-new N` liefert `exit 1`, wenn mehr als N neue Findings seit der Baseline auftreten. `drift baseline update` ist ein absichtlich verbose Alias fuer `baseline save` und verlangt `--confirm`, um stilles Weiterratschen der Baseline durch einen Agenten oder per Shell-History zu verhindern.
+- Severity: MEDIUM - Fehlverhalten zerstoert die Baseline als Erosionsanker und damit den Kern-Nutzen von drift. Kein Datenverlust, kein Security-Impact.
+- Triggers:
+  - Agent ruft `drift baseline update --confirm` automatisch, ohne Maintainer-Freigabe -> Baseline wird ratscht.
+  - Pre-Commit-Hook schlaegt bei legitimem grossen Refactor falsch-positiv -> Entwickler-Frust, Bypass via `SKIP=drift-baseline-check`.
+  - Entwickler startet neue Branch ohne Baseline -> `baseline diff` exitet fair mit 1 und Hinweis auf `baseline save`.
+  - `--fail-on-new` wird mit grossem N in CI konfiguriert -> Gate ist de-facto stumm.
+- Impact without mitigation:
+  - Baseline wird ohne Review weiter gereicht; drift-Ansatz verliert seinen Erosionsanker.
+  - Entwickler schalten Pre-Commit-Hook global aus statt gezielt.
+- Mitigations:
+  - `update` ohne `--confirm` exitet mit 2 und einer klaren Fehlermeldung (ADR-093).
+  - `baseline save` bleibt als separater Befehl fuer CI/Initial-Setup, damit `update --confirm` semantisch wirklich "ich akzeptiere neue Drift" bedeutet.
+  - Pre-Commit-Hook-Dokumentation verweist explizit auf `SKIP=drift-baseline-check` als Eskalationspfad fuer Einzel-Commits.
+  - 5 Vertrags-Tests (`tests/test_baseline.py::TestBaselineRatchetADR093`) sichern Exit-Codes und `--confirm`-Semantik.
+  - Agent-Delegation-Boundaries in `.github/copilot-instructions.md`: `baseline update` verlangt Maintainer-Approval.
+- Residual risk: LOW - Bypass nur via explizitem `SKIP=...` oder bewusstem `--confirm`, beides sichtbar im Git-Log oder in der CI-Config.
+
 ## 2026-05-04 - ADR-092: `llms.txt` autogen aus signal_registry (Paket 1C)
 
 - Risk ID: RISK-ADR-092-LLMS-DISCOVERY

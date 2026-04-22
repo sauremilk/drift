@@ -132,6 +132,16 @@ def save(
     default=None,
     help="Write output to a file instead of stdout.",
 )
+@click.option(
+    "--fail-on-new",
+    type=int,
+    default=None,
+    help=(
+        "Exit with code 1 if the number of NEW findings (not in baseline) exceeds this "
+        "threshold. Enables use as a non-mutating pre-commit gate. "
+        "Example: --fail-on-new 0 blocks any new drift."
+    ),
+)
 def diff(
     repo: Path,
     since: int,
@@ -143,6 +153,7 @@ def diff(
     baseline_file: Path | None,
     output_format: str,
     output: Path | None,
+    fail_on_new: int | None,
 ) -> None:
     """Show only new findings compared to a saved baseline."""
     import json as json_mod
@@ -221,3 +232,102 @@ def diff(
             render_findings(new, max_items=len(new), console=console, repo_root=repo)
         else:
             console.print("\n[bold green]✓ No new findings since baseline.[/bold green]")
+
+    # Ratchet gate (ADR-093): enforce a non-mutating upper bound on new findings.
+    # Must run for both rich and json output modes so the JSON consumer also
+    # benefits from the exit-code contract.
+    if fail_on_new is not None and len(new) > fail_on_new:
+        click.echo(
+            f"drift baseline diff: {len(new)} new finding(s) exceed "
+            f"--fail-on-new {fail_on_new}. "
+            f"Review the diff above. To accept the new findings, run: "
+            f"drift baseline update --confirm",
+            err=True,
+        )
+        raise SystemExit(1)
+
+
+@baseline.command()
+@click.option(
+    "--repo",
+    "-r",
+    type=click.Path(exists=True, file_okay=False, path_type=Path),
+    default=".",
+    help="Path to the repository root.",
+)
+@click.option("--since", "-s", default=90, type=int, help="Days of git history to analyze.")
+@click.option("--config", "-c", type=click.Path(path_type=Path), default=None)
+@click.option("--workers", "-w", default=None, type=int)
+@click.option(
+    "--worker-strategy",
+    type=click.Choice(["fixed", "auto"]),
+    default=None,
+    help="Worker resolution strategy.",
+)
+@click.option(
+    "--load-profile",
+    type=click.Choice(["conservative"]),
+    default=None,
+)
+@click.option("--no-embeddings", is_flag=True, default=False)
+@click.option(
+    "--output",
+    "-o",
+    type=click.Path(path_type=Path),
+    default=None,
+    help=f"Baseline file path (default: {DEFAULT_BASELINE_PATH}).",
+)
+@click.option(
+    "--confirm",
+    is_flag=True,
+    default=False,
+    help="Required acknowledgement that the new drift state is intentional.",
+)
+def update(
+    repo: Path,
+    since: int,
+    config: Path | None,
+    workers: int | None,
+    worker_strategy: str | None,
+    load_profile: str | None,
+    no_embeddings: bool,
+    output: Path | None,
+    confirm: bool,
+) -> None:
+    """Update the saved baseline to the current finding state.
+
+    This is a deliberate alias for ``baseline save`` that refuses to run without
+    ``--confirm``. It exists so an agent (or developer) cannot silently ratchet
+    the baseline via a short command typo — accepting new drift must be an
+    explicit, reviewable act (ADR-093).
+    """
+    if not confirm:
+        click.echo(
+            "drift baseline update: refusing to run without --confirm.\n"
+            "Accepting new drift into the baseline is a deliberate act. "
+            "Re-run as: drift baseline update --confirm",
+            err=True,
+        )
+        raise SystemExit(2)
+
+    from drift.analyzer import analyze_repo
+    from drift.baseline import save_baseline
+    from drift.config import DriftConfig
+
+    cfg = DriftConfig.load(repo, config)
+    if worker_strategy is not None:
+        cfg.performance.worker_strategy = cast(Literal["fixed", "auto"], worker_strategy)
+    if load_profile is not None:
+        cfg.performance.load_profile = cast(Literal["conservative"], load_profile)
+    if no_embeddings:
+        cfg.embeddings_enabled = False
+
+    with console.status("[bold blue]Analyzing repository..."):
+        analysis = analyze_repo(repo, cfg, since_days=since, workers=workers)
+
+    dest = output or (repo / DEFAULT_BASELINE_PATH)
+    save_baseline(analysis, dest)
+    console.print(
+        f"[bold green]✓ Baseline updated:[/bold green] {dest} "
+        f"({len(analysis.findings)} findings, score {analysis.drift_score:.2f})"
+    )

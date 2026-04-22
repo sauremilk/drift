@@ -1,5 +1,12 @@
 # FMEA Matrix
 
+## 2026-05-04 - ADR-093: Baseline-Ratchet (Paket 2A)
+
+| Component | Failure Mode | Cause | Effect | Detection | Mitigation | S | O | D | RPN | Status |
+|---|---|---|---|---|---|---:|---:|---:|---:|---|
+| `drift baseline diff --fail-on-new` Pre-Commit-Gate | Falsch-Positiv: Hook blockt legitimen Refactor, der notwendige Drift erzeugt | Entwickler kennt `SKIP=drift-baseline-check` nicht; Threshold zu eng (`0`) gewaehlt | Entwickler schaltet Pre-Commit global aus statt gezielt; Gate verliert Wirkung | Rueckmeldung ueber Issue/Support; Hook-Beschreibung in `.pre-commit-hooks.yaml` nennt den Eskalationspfad | ADR-093 dokumentiert `SKIP=...`; Hook-Description verlinkt auf `baseline update --confirm`; Threshold `N` kann in `args` angehoben werden | 2 | 3 | 2 | 12 | Mitigated |
+| `drift baseline update` Agent-Delegation | Agent ratscht Baseline still weiter, indem er `update --confirm` autonom ausfuehrt | Fehlende Delegation-Boundary; `--confirm` wird als reines Flag interpretiert, nicht als Approval-Signal | Stille Baseline-Erosion; drift verliert Erosionsanker | `copilot-instructions.md` fuehrt `baseline update` in "Erfordert Maintainer-Approval"; Commit-Message macht Akt sichtbar | Alias-Design (separater Befehl, nicht nur `save --update`) signalisiert Gewicht; `confirm`-Flag ist obligatorisch, Exit 2 bei Fehlen; 5 Contract-Tests | 3 | 2 | 3 | 18 | Mitigated |
+
 ## 2026-05-04 - ADR-092: `llms.txt` autogen aus signal_registry (Paket 1C)
 
 | Component | Failure Mode | Cause | Effect | Detection | Mitigation | S | O | D | RPN | Status |

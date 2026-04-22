@@ -845,3 +845,171 @@ class TestCorruptBaselineCallers:
         )
         assert result.exit_code == 1
         assert "corrupt" in result.output.lower()
+
+
+# ===========================================================================
+# Paket 2A / ADR-093 — Baseline ratchet contracts
+# ===========================================================================
+
+
+class TestBaselineRatchetADR093:
+    """Tests for the baseline ratchet exit-code contract and the
+    ``drift baseline update --confirm`` safety gate (ADR-093)."""
+
+    def _save_baseline_at(self, path: Path, findings: list[Finding]) -> None:
+        save_baseline(_make_analysis(findings), path)
+
+    def test_diff_fail_on_new_zero_passes_when_clean(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+        tmp_path: Path,
+    ) -> None:
+        from drift.cli import main
+
+        repo = tmp_path / "repo"
+        repo.mkdir()
+        bl = tmp_path / "baseline.json"
+        finding = _make_finding(title="Known")
+        self._save_baseline_at(bl, [finding])
+
+        def _fake_analyze(*_a, **_kw):
+            return _make_analysis([finding])
+
+        monkeypatch.setattr("drift.analyzer.analyze_repo", _fake_analyze)
+
+        runner = CliRunner()
+        result = runner.invoke(
+            main,
+            [
+                "baseline", "diff",
+                "--repo", str(repo),
+                "--baseline-file", str(bl),
+                "--fail-on-new", "0",
+            ],
+        )
+        assert result.exit_code == 0, result.output
+
+    def test_diff_fail_on_new_zero_exits_one_on_drift(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+        tmp_path: Path,
+    ) -> None:
+        from drift.cli import main
+
+        repo = tmp_path / "repo"
+        repo.mkdir()
+        bl = tmp_path / "baseline.json"
+        known = _make_finding(title="Known")
+        new = _make_finding(signal=SignalType.MUTANT_DUPLICATE, title="New")
+        self._save_baseline_at(bl, [known])
+
+        def _fake_analyze(*_a, **_kw):
+            return _make_analysis([known, new])
+
+        monkeypatch.setattr("drift.analyzer.analyze_repo", _fake_analyze)
+
+        runner = CliRunner()
+        result = runner.invoke(
+            main,
+            [
+                "baseline", "diff",
+                "--repo", str(repo),
+                "--baseline-file", str(bl),
+                "--fail-on-new", "0",
+            ],
+        )
+        assert result.exit_code == 1
+        # Message is on stderr; CliRunner merges by default.
+        combined = result.output + (result.stderr if result.stderr_bytes else "")
+        assert "--fail-on-new" in combined or "new finding" in combined.lower()
+
+    def test_diff_fail_on_new_respects_threshold(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+        tmp_path: Path,
+    ) -> None:
+        from drift.cli import main
+
+        repo = tmp_path / "repo"
+        repo.mkdir()
+        bl = tmp_path / "baseline.json"
+        known = _make_finding(title="Known")
+        new1 = _make_finding(signal=SignalType.MUTANT_DUPLICATE, title="New1")
+        new2 = _make_finding(signal=SignalType.ARCHITECTURE_VIOLATION, title="New2")
+        self._save_baseline_at(bl, [known])
+
+        def _fake_analyze(*_a, **_kw):
+            return _make_analysis([known, new1, new2])
+
+        monkeypatch.setattr("drift.analyzer.analyze_repo", _fake_analyze)
+
+        runner = CliRunner()
+        # Threshold 2 allows 2 new findings → exit 0.
+        result = runner.invoke(
+            main,
+            [
+                "baseline", "diff",
+                "--repo", str(repo),
+                "--baseline-file", str(bl),
+                "--fail-on-new", "2",
+            ],
+        )
+        assert result.exit_code == 0, result.output
+
+        # Threshold 1 exceeded (2 new > 1) → exit 1.
+        result = runner.invoke(
+            main,
+            [
+                "baseline", "diff",
+                "--repo", str(repo),
+                "--baseline-file", str(bl),
+                "--fail-on-new", "1",
+            ],
+        )
+        assert result.exit_code == 1
+
+    def test_update_refuses_without_confirm(self, tmp_path: Path) -> None:
+        from drift.cli import main
+
+        repo = tmp_path / "repo"
+        repo.mkdir()
+
+        runner = CliRunner()
+        result = runner.invoke(
+            main,
+            ["baseline", "update", "--repo", str(repo)],
+        )
+        assert result.exit_code == 2
+        combined = result.output + (result.stderr if result.stderr_bytes else "")
+        assert "--confirm" in combined
+
+    def test_update_writes_baseline_with_confirm(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+        tmp_path: Path,
+    ) -> None:
+        from drift.cli import main
+
+        repo = tmp_path / "repo"
+        repo.mkdir()
+        out = tmp_path / "baseline.json"
+
+        def _fake_analyze(*_a, **_kw):
+            return _make_analysis([_make_finding(title="X")])
+
+        monkeypatch.setattr("drift.analyzer.analyze_repo", _fake_analyze)
+
+        runner = CliRunner()
+        result = runner.invoke(
+            main,
+            [
+                "baseline", "update",
+                "--repo", str(repo),
+                "--output", str(out),
+                "--confirm",
+            ],
+        )
+        assert result.exit_code == 0, result.output
+        assert out.exists()
+        fps = load_baseline(out)
+        assert len(fps) == 1

@@ -40,3 +40,17 @@
   always_run: true
   verbose: true
   additional_dependencies: [drift-analyzer]
+
+- id: drift-baseline-check
+  name: Drift — Baseline Ratchet (ADR-093)
+  description: >
+    Non-mutating baseline gate. Fails if new drift appears since the last saved
+    baseline (.drift-baseline.json). Never writes or updates the baseline.
+    To accept new drift, run explicitly: drift baseline update --confirm.
+  language: python
+  entry: drift baseline diff
+  args: [--fail-on-new, "0"]
+  types: [python]
+  pass_filenames: false
+  always_run: true
+  additional_dependencies: [drift-analyzer]
