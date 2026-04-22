@@ -1,0 +1,65 @@
+{
+  "feature": "agent_loop_e2e_benchmark_paket_3a",
+  "version": "2.33.0",
+  "paket": "3A",
+  "adrs": ["ADR-089", "ADR-090"],
+  "description": "E2E Agent-Loop-Benchmark validating severity-gate AUTO/REVIEW/BLOCK distribution (ADR-089) and AgentTelemetry schema 2.2 (ADR-090, Paket 3A).",
+  "generated_by": {
+    "script": "scripts/run_agent_loop_benchmark.py",
+    "git_sha": "b4ad9a411",
+    "drift_version": "2.31.0",
+    "timestamp": "2026-04-22T00:00:00+00:00"
+  },
+  "generated_at": "2026-04-22T00:00:00+00:00",
+  "components": [
+    "scripts/run_agent_loop_benchmark.py",
+    "tests/test_agent_loop_benchmark.py",
+    "benchmark_results/agent_loop_benchmark_severity_gate.json"
+  ],
+  "benchmark_results": {
+    "source": "benchmark_results/agent_loop_benchmark_severity_gate.json",
+    "profiles_tested": 3,
+    "all_passed": true,
+    "profiles": [
+      {
+        "name": "drift_self",
+        "contracts_total": 14,
+        "distribution": { "AUTO": 0, "REVIEW": 6, "BLOCK": 8 },
+        "assertions_passed": true
+      },
+      {
+        "name": "high_quality",
+        "contracts_total": 6,
+        "distribution": { "AUTO": 4, "REVIEW": 2, "BLOCK": 0 },
+        "assertions_passed": true
+      },
+      {
+        "name": "legacy_service",
+        "contracts_total": 7,
+        "distribution": { "AUTO": 1, "REVIEW": 3, "BLOCK": 3 },
+        "assertions_passed": true
+      }
+    ]
+  },
+  "test_results": {
+    "file": "tests/test_agent_loop_benchmark.py",
+    "total": 47,
+    "passed": 47,
+    "failed": 0,
+    "markers": ["contract"]
+  },
+  "gate_logic_verified": {
+    "critical_always_block": true,
+    "high_always_block": true,
+    "medium_always_review": true,
+    "low_auto_repair_true_auto": true,
+    "low_auto_repair_false_review": true,
+    "info_auto_repair_true_auto": true,
+    "info_auto_repair_false_review": true
+  },
+  "agent_telemetry_integration": {
+    "schema_version": "2.2",
+    "model_classes": ["AgentAction", "AgentTelemetry", "AgentActionType"],
+    "counters_verified": true
+  }
+}

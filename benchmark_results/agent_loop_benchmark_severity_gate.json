@@ -1,0 +1,234 @@
+{
+  "benchmark": "agent_loop_severity_gate",
+  "paket": "3A",
+  "adrs": [
+    "ADR-089",
+    "ADR-090"
+  ],
+  "generated_at": "2026-04-22T16:13:20.593548+00:00",
+  "all_passed": true,
+  "profiles": [
+    {
+      "name": "drift_self",
+      "contracts_total": 14,
+      "distribution": {
+        "AUTO": 0,
+        "REVIEW": 6,
+        "BLOCK": 8
+      },
+      "assertions_passed": true,
+      "assertion_errors": [],
+      "agent_telemetry": {
+        "schema_version": "2.2",
+        "session_id": "benchmark-drift_self",
+        "total_auto": 0,
+        "total_review": 6,
+        "total_block": 8
+      },
+      "gate_actions": [
+        {
+          "contract_id": "persist-survive-restart",
+          "severity": "critical",
+          "auto_repair_eligible": true,
+          "gate": "BLOCK"
+        },
+        {
+          "contract_id": "persist-concurrent-safety",
+          "severity": "high",
+          "auto_repair_eligible": true,
+          "gate": "BLOCK"
+        },
+        {
+          "contract_id": "persist-input-integrity",
+          "severity": "high",
+          "auto_repair_eligible": true,
+          "gate": "BLOCK"
+        },
+        {
+          "contract_id": "sec-no-plaintext-secrets",
+          "severity": "critical",
+          "auto_repair_eligible": true,
+          "gate": "BLOCK"
+        },
+        {
+          "contract_id": "sec-input-validation",
+          "severity": "high",
+          "auto_repair_eligible": true,
+          "gate": "BLOCK"
+        },
+        {
+          "contract_id": "sec-external-data-validation",
+          "severity": "high",
+          "auto_repair_eligible": true,
+          "gate": "BLOCK"
+        },
+        {
+          "contract_id": "err-user-friendly-messages",
+          "severity": "medium",
+          "auto_repair_eligible": true,
+          "gate": "REVIEW"
+        },
+        {
+          "contract_id": "err-empty-input-resilience",
+          "severity": "high",
+          "auto_repair_eligible": true,
+          "gate": "BLOCK"
+        },
+        {
+          "contract_id": "err-network-data-safety",
+          "severity": "high",
+          "auto_repair_eligible": true,
+          "gate": "BLOCK"
+        },
+        {
+          "contract_id": "ext-python",
+          "severity": "medium",
+          "auto_repair_eligible": false,
+          "gate": "REVIEW"
+        },
+        {
+          "contract_id": "ext-architektonische",
+          "severity": "medium",
+          "auto_repair_eligible": false,
+          "gate": "REVIEW"
+        },
+        {
+          "contract_id": "ext-codebases",
+          "severity": "medium",
+          "auto_repair_eligible": false,
+          "gate": "REVIEW"
+        },
+        {
+          "contract_id": "ext-erosion",
+          "severity": "medium",
+          "auto_repair_eligible": false,
+          "gate": "REVIEW"
+        },
+        {
+          "contract_id": "ext-empfehlungen",
+          "severity": "medium",
+          "auto_repair_eligible": false,
+          "gate": "REVIEW"
+        }
+      ]
+    },
+    {
+      "name": "high_quality",
+      "contracts_total": 6,
+      "distribution": {
+        "AUTO": 4,
+        "REVIEW": 2,
+        "BLOCK": 0
+      },
+      "assertions_passed": true,
+      "assertion_errors": [],
+      "agent_telemetry": {
+        "schema_version": "2.2",
+        "session_id": "benchmark-high_quality",
+        "total_auto": 4,
+        "total_review": 2,
+        "total_block": 0
+      },
+      "gate_actions": [
+        {
+          "contract_id": "hq-1",
+          "severity": "low",
+          "auto_repair_eligible": true,
+          "gate": "AUTO"
+        },
+        {
+          "contract_id": "hq-2",
+          "severity": "low",
+          "auto_repair_eligible": true,
+          "gate": "AUTO"
+        },
+        {
+          "contract_id": "hq-3",
+          "severity": "info",
+          "auto_repair_eligible": true,
+          "gate": "AUTO"
+        },
+        {
+          "contract_id": "hq-4",
+          "severity": "low",
+          "auto_repair_eligible": false,
+          "gate": "REVIEW"
+        },
+        {
+          "contract_id": "hq-5",
+          "severity": "medium",
+          "auto_repair_eligible": true,
+          "gate": "REVIEW"
+        },
+        {
+          "contract_id": "hq-6",
+          "severity": "low",
+          "auto_repair_eligible": true,
+          "gate": "AUTO"
+        }
+      ]
+    },
+    {
+      "name": "legacy_service",
+      "contracts_total": 7,
+      "distribution": {
+        "AUTO": 1,
+        "REVIEW": 3,
+        "BLOCK": 3
+      },
+      "assertions_passed": true,
+      "assertion_errors": [],
+      "agent_telemetry": {
+        "schema_version": "2.2",
+        "session_id": "benchmark-legacy_service",
+        "total_auto": 1,
+        "total_review": 3,
+        "total_block": 3
+      },
+      "gate_actions": [
+        {
+          "contract_id": "ls-1",
+          "severity": "critical",
+          "auto_repair_eligible": false,
+          "gate": "BLOCK"
+        },
+        {
+          "contract_id": "ls-2",
+          "severity": "high",
+          "auto_repair_eligible": false,
+          "gate": "BLOCK"
+        },
+        {
+          "contract_id": "ls-3",
+          "severity": "high",
+          "auto_repair_eligible": true,
+          "gate": "BLOCK"
+        },
+        {
+          "contract_id": "ls-4",
+          "severity": "medium",
+          "auto_repair_eligible": false,
+          "gate": "REVIEW"
+        },
+        {
+          "contract_id": "ls-5",
+          "severity": "medium",
+          "auto_repair_eligible": false,
+          "gate": "REVIEW"
+        },
+        {
+          "contract_id": "ls-6",
+          "severity": "low",
+          "auto_repair_eligible": true,
+          "gate": "AUTO"
+        },
+        {
+          "contract_id": "ls-7",
+          "severity": "low",
+          "auto_repair_eligible": false,
+          "gate": "REVIEW"
+        }
+      ]
+    }
+  ]
+}
