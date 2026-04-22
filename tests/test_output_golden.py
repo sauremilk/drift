@@ -90,6 +90,7 @@ class TestJsonOutputGolden:
             "negative_context",
             "signal_abbrev_map",
             "broad_security_suppressions",
+            "agent_telemetry",
         }
         assert set(data.keys()) == expected_keys
 
