@@ -98,7 +98,7 @@ class EmbeddingCache:  # drift:ignore[DCA]
         if not path.exists():
             return None
         try:
-            return np.frombuffer(path.read_bytes(), dtype=np.float32).copy()
+            return np.frombuffer(path.read_bytes(), dtype=np.float32).copy()  # type: ignore[no-any-return]
         except Exception:
             path.unlink(missing_ok=True)
             return None
@@ -298,8 +298,8 @@ class EmbeddingService:  # drift:ignore[DCA]
     @staticmethod
     def cosine_similarity(a: np.ndarray, b: np.ndarray) -> float:
         """Cosine similarity between two vectors."""
-        norm_a = float(np.linalg.norm(a))
-        norm_b = float(np.linalg.norm(b))
+        norm_a = float(np.linalg.norm(a))  # type: ignore[attr-defined]
+        norm_b = float(np.linalg.norm(b))  # type: ignore[attr-defined]
         if norm_a == 0.0 or norm_b == 0.0:
             return 0.0
         sim = float(np.dot(a, b) / (norm_a * norm_b))
@@ -311,8 +311,8 @@ class EmbeddingService:  # drift:ignore[DCA]
         a_arr = np.asarray(a, dtype=np.float32)
         b_arr = np.asarray(b, dtype=np.float32)
 
-        norm_a = np.linalg.norm(a_arr, axis=1, keepdims=True)
-        norm_b = np.linalg.norm(b_arr, axis=1, keepdims=True)
+        norm_a = np.linalg.norm(a_arr, axis=1, keepdims=True)  # type: ignore[attr-defined]
+        norm_b = np.linalg.norm(b_arr, axis=1, keepdims=True)  # type: ignore[attr-defined]
 
         a_norm = np.divide(a_arr, norm_a, out=np.zeros_like(a_arr), where=norm_a != 0.0)
         b_norm = np.divide(b_arr, norm_b, out=np.zeros_like(b_arr), where=norm_b != 0.0)

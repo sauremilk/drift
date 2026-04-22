@@ -53,7 +53,7 @@ class _DocstringInserter:
 
         if not isinstance(node, (cst.FunctionDef,)):
             return False
-        return node.name.value == self._symbol
+        return bool(node.name.value == self._symbol)
 
     def _already_has_docstring(self, func_node: object) -> bool:
         """Return True when the function body starts with a string expression."""
