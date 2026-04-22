@@ -1,5 +1,9 @@
 ## [Unreleased]
 
+### Added
+
+- **`llms.txt` deterministic autogen (Paket 1C, ADR-092).** Neuer Generator `scripts/generate_llms_txt.py` rendert `llms.txt` vollständig aus `pyproject.toml` (Version) und `src/drift/signal_registry.py` (Signale). Deterministische Sortierung (Gewicht ↓ / Abkürzung ↑), SEO-Overrides (CWE-Tags für MAZ/HSC/ISD, AI-Attribution für PHR) in `_DOC_OVERRIDES`. Modi: `--write` (Default) und `--check` (exit 1 + unified diff). Pre-Push-Hook Schritt `[0/6]` regeneriert und committet bei Drift still (`chore: sync version refs`); Release-Workflow amend+re-tagt; `scripts/check_model_consistency.py` Checks 5+6 delegieren an `--check` (ersetzt 15-Signal-`code_to_key`-Tabelle, deckt jetzt alle 25 Kern-Signale ab). Erste Regeneration nimmt `TSB` (Type Safety Bypass) in die Report-only-Liste auf, das bisher still unterschlagen wurde. Tests: `tests/test_llms_txt_generator.py` (7 pass). Audit-Artefakte FMEA und Risk-Register aktualisiert.
+
 ## [2.32.0] – 2026-04-22
 
 Short version: Drift-Retrieval-RAG MVP (ADR-091), Agent-Telemetry Schema 2.2 (ADR-090), QA 2026 Pakete 1A/1B/2B/3A (ADR-089), K2 Outcome-Feedback-Ledger (ADR-088), K1 Blast-Radius-Engine (ADR-087), agent-workflow shortcuts.

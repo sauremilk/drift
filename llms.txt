@@ -2,7 +2,7 @@
 
 > Catches what AI coding tools break silently — structural erosion across files that passes all your tests. Drift is a quality control layer for AI-generated Python code: pattern fragmentation, architecture violations, mutant duplicates, and 21 more structural signals. No LLM in the detection pipeline.
 
-Release status: v2.30.0
+Release status: v2.32.0
 
 Package: drift-analyzer
 Install: pip install -q drift-analyzer  (add -q for quiet output, hiding verbose dependency chains)
@@ -70,18 +70,18 @@ Full study: docs/STUDY.md
 ## Signals
 
 ### Scoring-active (19, contribute to composite drift score)
-- PFS: Pattern Fragmentation (weight 0.16)
 - AVS: Architecture Violations (weight 0.16)
+- PFS: Pattern Fragmentation (weight 0.16)
 - MDS: Mutant Duplicates (weight 0.13)
 - EDS: Explainability Deficit (weight 0.09)
 - SMS: System Misalignment (weight 0.08)
-- DIA: Doc-Implementation Drift (weight 0.04)
 - BEM: Broad Exception Monoculture (weight 0.04)
-- TPD: Test Polarity Deficit (weight 0.04)
+- DIA: Doc-Implementation Drift (weight 0.04)
 - NBV: Naming Contract Violation (weight 0.04)
-- GCD: Guard Clause Deficit (weight 0.03)
+- TPD: Test Polarity Deficit (weight 0.04)
 - BAT: Bypass Accumulation (weight 0.03)
 - ECM: Exception Contract Drift (weight 0.03)
+- GCD: Guard Clause Deficit (weight 0.03)
 - MAZ: Missing Authorization (weight 0.02, CWE-862)
 - PHR: Phantom Reference (weight 0.02, AI hallucination indicator)
 - COD: Cohesion Deficit (weight 0.01)
@@ -90,12 +90,13 @@ Full study: docs/STUDY.md
 - CCC: Co-Change Coupling (weight 0.005)
 - FOE: Fan-Out Explosion (weight 0.005)
 
-### Report-only (5, weight 0.0, findings shown but not scored)
-- TVS: Temporal Volatility (weight 0.0, report-only — excluded from composite score)
-- TSA: TypeScript Architecture — TS/JS layer leaks, cycles, cross-package imports
-- CXS: Cognitive Complexity — deeply nested control flow
+### Report-only (6, weight 0.0, findings shown but not scored)
 - CIR: Circular Import — circular dependency chains
+- CXS: Cognitive Complexity — deeply nested control flow
 - DCA: Dead Code Accumulation — unreferenced symbols
+- TSA: TypeScript Architecture — TS/JS layer leaks, cycles, cross-package imports
+- TSB: Type Safety Bypass — as any / @ts-ignore / double casts
+- TVS: Temporal Volatility (weight 0.0, report-only — excluded from composite score)
 
 ## Docs
 

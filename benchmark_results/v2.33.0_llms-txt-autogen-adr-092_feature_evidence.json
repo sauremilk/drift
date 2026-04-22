@@ -1,0 +1,29 @@
+{
+  "version": "2.33.0",
+  "date": "2026-04-22",
+  "feature": "llms txt autogen adr 092",
+  "description": "Feature evidence for llms txt autogen adr 092 (v2.33.0).",
+  "generated_by": {
+    "script": "scripts/generate_feature_evidence.py",
+    "git_sha": "829b3725b049bef324a5bb06d4b6ea61a5800c43",
+    "drift_version": "0.0.0",
+    "timestamp": "2026-04-22T16:30:24.743317+00:00"
+  },
+  "self_analysis": {
+    "error": "JSON parse error: Extra data: line 100133 column 1 (char 4010364)"
+  },
+  "tests": {
+    "total_passing": 0,
+    "total_failing": 1,
+    "failing_note": "see pytest output",
+    "exit_code": 2
+  },
+  "precision_recall_suite": {
+    "total_tests": 207,
+    "passing": 207,
+    "failing": 0,
+    "exit_code": 0,
+    "source": "live: pytest tests/test_precision_recall.py -v --tb=short"
+  },
+  "audit_artifacts_updated": []
+}

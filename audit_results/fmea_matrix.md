@@ -1,5 +1,12 @@
 # FMEA Matrix
 
+## 2026-05-04 - ADR-092: `llms.txt` autogen aus signal_registry (Paket 1C)
+
+| Component | Failure Mode | Cause | Effect | Detection | Mitigation | S | O | D | RPN | Status |
+|---|---|---|---|---|---|---:|---:|---:|---:|---|
+| `scripts/generate_llms_txt.py` render pipeline | Discovery-Drift: `llms.txt` auf Platte divergiert still von `signal_registry` (fehlendes Signal, veraltetes Gewicht, falsche Version) | Neues Signal oder Gewichtsänderung ohne Regeneration; Cherry-Pick-Merge umgeht Pre-Push-Hook; Maintainer editiert die Datei manuell | Öffentliche LLM/Agent-Konsumenten nehmen unvollständiges oder veraltetes Signal-Inventar wahr; Fact-Grounding (ADR-091) zitiert eine Datei, die nicht mehr dem Quellcode entspricht | `tests/test_llms_txt_generator.py` (7 Tests: `--check`, Idempotenz, Versions-Gleichheit, vollständige Abkürzungs-Abdeckung, Counts, Gewicht-Roundtrip); `scripts/check_model_consistency.py` delegiert Check 5 an `--check`; Pre-Push-Hook Schritt `[0/6]` erkennt Drift | Generator ist deterministisch (Sortierung Gewicht↓ / Abkürzung↑); Pre-Push-Hook auto-regeneriert und committet in `chore: sync version refs`; Release-Workflow amend+re-tagt; CI-Gate via `check_model_consistency.py` blockiert auf `main` | 2 | 3 | 2 | 12 | Mitigated |
+| `scripts/generate_llms_txt.py` `_DOC_OVERRIDES` | SEO-Drift: CWE-Tags oder AI-Attribution gehen verloren, weil neues Signal Security-Kategorie hat, aber kein Override-Eintrag existiert | Override-Tabelle wird bei Registry-Erweiterung vergessen; es gibt keinen Registry-Flag für CWE | Sicherheits-Signale ohne CWE-Tag wirken generisch, erschweren Audits und externe Tooling-Mapping | Manuelles Review bei Signal-PRs (`drift-signal-development-full-lifecycle` Skill enthält llms.txt-Schritt); Test 6 (Counts) erkennt fehlende Zeilen, aber nicht fehlendes Extra-Label | ADR-092 dokumentiert Override-Konvention; Generator fällt sichtbar auf Registry-Name zurück, nicht auf leeres Feld; Policy-Gate bei Signal-Einführung erfordert Review der Discovery-Oberfläche | 2 | 3 | 3 | 18 | Accepted |
+
 ## 2026-04-27 - ADR-091: Drift-Retrieval-RAG (drift_retrieve / drift_cite)
 
 | Component | Failure Mode | Cause | Effect | Detection | Mitigation | S | O | D | RPN | Status |

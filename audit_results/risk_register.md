@@ -1,5 +1,30 @@
 # Risk Register
 
+## 2026-05-04 - ADR-092: `llms.txt` autogen aus signal_registry (Paket 1C)
+
+- Risk ID: RISK-ADR-092-LLMS-DISCOVERY
+- Component: `scripts/generate_llms_txt.py`, `llms.txt`, `scripts/check_model_consistency.py` (Checks 5+6 delegiert), `.githooks/pre-push` Schritt `[0/6]`, `.github/workflows/release.yml` Schritt "Sync version refs".
+- Type: Documentation / Discovery-Surface — keine neue Trust-Boundary, kein externer Input, kein Scoring-Pfad. Datei ist Public-Read-Only Discovery-Oberfläche für LLM-Konsumenten.
+- Description: `llms.txt` wird deterministisch aus `pyproject.toml` (Version) und `src/drift/signal_registry.py` (Signale) regeneriert. Pre-Push-Hook und Release-Workflow rufen den Generator auf; Drift auf `main` wird durch `check_model_consistency.py` geblockt.
+- Severity: MEDIUM — Die Datei wird von externen Agenten, Skills und LLM-Tools als Ground-Truth-Inventar der drift-Signale konsumiert. Drift zwischen Datei und Registry unterläuft ADR-091-Grounding und die öffentliche Dokumentation.
+- Triggers:
+  - Neues Signal in `signal_registry.py` registriert, ohne `scripts/generate_llms_txt.py --write` auszuführen.
+  - Maintainer editiert `llms.txt` manuell (z. B. um ein SEO-Label zu ändern) und die Änderung geht bei der nächsten Regeneration verloren.
+  - Security-Signal bekommt CWE-Tag im Code, aber `_DOC_OVERRIDES`-Eintrag im Generator wird vergessen.
+  - `DRIFT_SKIP_VERSION_SYNC=1` Bypass bleibt als Default-Env gesetzt, Pre-Push-Hook repariert nicht mehr.
+- Impact without mitigation:
+  - Öffentliche Discovery-Datei listet weniger Signale als tatsächlich existieren (TSB-Fall vor Paket 1C).
+  - Weight-Tabelle in `llms.txt` widerspricht `SignalWeights`-Defaults → externe Studien zitieren falsche Gewichtung.
+  - Release-Notes geben neuen Tag bekannt, während `llms.txt` noch den vorherigen `Release status` zeigt.
+- Mitigations:
+  - Deterministischer Generator: gleiche Inputs → byte-identische Ausgabe; keine editorialen Tie-Breaks im Code.
+  - Pre-Push-Hook Schritt `[0/6]` repariert und committet still (ein `chore: sync version refs` pro Push).
+  - `check_model_consistency.py` ruft `--check` per Subprocess → CI-Gate identisch zum lokalen Generator.
+  - 7 Regressionstests in `tests/test_llms_txt_generator.py` decken `--check` exit-Verhalten, Idempotenz, Versions-Rundlauf, vollständige Abkürzungs-Abdeckung, Counts und Gewicht-Roundtrip ab.
+  - Release-Workflow amend+re-tagt nur, wenn tatsächlich Dateien geändert wurden; keine leeren Re-Tags.
+  - ADR-092 dokumentiert Scope (nur `llms.txt`, nicht `README.md` / `docs/`) und Override-Konvention für CWE-Footnotes.
+- Residual Risk: LOW — SEO-tuned Prose-Edits (Tagline, Use-Cases, Keywords) bleiben manuell und sind nicht durch Tests geschützt. Akzeptabel, weil diese Bereiche Policy-relevant sind und Review verdienen.
+
 ## 2026-04-27 - ADR-091: Drift-Retrieval-RAG
 
 - Risk ID: RISK-ADR-091-RETRIEVAL-CORPUS
