@@ -28,6 +28,15 @@ on:
       - "drift.output.schema.json"
       - "drift.schema.json"
       - "decisions/**"
+  # Reusable trigger so downstream repos can `uses:` this workflow
+  # under their own approval-gate configuration.
+  workflow_call:
+    inputs:
+      approval-label:
+        description: PR label that grants BLOCK override.
+        required: false
+        type: string
+        default: "drift/approved"
 
 permissions:
   contents: read
@@ -48,6 +57,8 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
+          cache: pip
+          cache-dependency-path: pyproject.toml
 
       - name: Install drift from workspace
         run: |
@@ -104,6 +115,22 @@ jobs:
                   out.write(f"block_findings={len(block_findings)}\n")
                   out.write(f"approved={'true' if approved else 'false'}\n")
                   out.write(f"needs_block={'true' if needs_block else 'false'}\n")
+
+          # Write a compact summary visible in the GitHub UI without
+          # forcing the reviewer to download the artifact.
+          summary_path = os.environ.get("GITHUB_STEP_SUMMARY")
+          if summary_path:
+              with open(summary_path, "a", encoding="utf-8") as sf:
+                  sf.write("## Drift Agent Approval Gate\n\n")
+                  sf.write(f"| metric | value |\n| --- | --- |\n")
+                  sf.write(f"| BLOCK agent actions | {total_block} |\n")
+                  sf.write(f"| BLOCK-severity findings | {len(block_findings)} |\n")
+                  sf.write(f"| schema_version | {telemetry.get('schema_version')} |\n")
+                  sf.write(f"| approved label present | {approved} |\n")
+                  if needs_block and not approved:
+                      sf.write("\n**Result:** BLOCK \u2014 apply `drift/approved` to override.\n")
+                  else:
+                      sf.write("\n**Result:** pass.\n")
 
           if needs_block and not approved:
               print("::error::Drift agent gate BLOCK: maintainer must apply the 'drift/approved' label.")

@@ -331,3 +331,122 @@ def update(
         f"[bold green]✓ Baseline updated:[/bold green] {dest} "
         f"({len(analysis.findings)} findings, score {analysis.drift_score:.2f})"
     )
+
+
+@baseline.command()
+@click.option(
+    "--repo",
+    "-r",
+    type=click.Path(exists=True, file_okay=False, path_type=Path),
+    default=".",
+    help="Path to the repository root.",
+)
+@click.option("--since", "-s", default=90, type=int, help="Days of git history to analyze.")
+@click.option("--config", "-c", type=click.Path(path_type=Path), default=None)
+@click.option("--workers", "-w", default=None, type=int)
+@click.option("--no-embeddings", is_flag=True, default=False)
+@click.option(
+    "--baseline-file",
+    "-b",
+    type=click.Path(path_type=Path),
+    default=None,
+    help=f"Baseline file to inspect (default: {DEFAULT_BASELINE_PATH}).",
+)
+@click.option(
+    "--format",
+    "-f",
+    "output_format",
+    type=click.Choice(["rich", "json"]),
+    default="rich",
+)
+def status(
+    repo: Path,
+    since: int,
+    config: Path | None,
+    workers: int | None,
+    no_embeddings: bool,
+    baseline_file: Path | None,
+    output_format: str,
+) -> None:
+    """Print a one-shot summary of baseline vs. current findings.
+
+    Pure read-only: unlike ``baseline diff`` this command never exits
+    non-zero based on drift counts, so it is safe to call from
+    dashboards, CI notifications or the ``drift info`` aggregator.
+    Useful during local development to answer "how close am I to the
+    baseline right now?" without parsing JSON.
+    """
+    import json as json_mod
+
+    from drift.analyzer import analyze_repo
+    from drift.baseline import baseline_diff, load_baseline
+    from drift.config import DriftConfig
+
+    bl_path = baseline_file or (repo / DEFAULT_BASELINE_PATH)
+    bl_exists = bl_path.exists()
+
+    cfg = DriftConfig.load(repo, config)
+    if no_embeddings:
+        cfg.embeddings_enabled = False
+
+    with console.status("[bold blue]Analyzing repository..."):
+        analysis = analyze_repo(repo, cfg, since_days=since, workers=workers)
+
+    if bl_exists:
+        try:
+            fingerprints = load_baseline(bl_path)
+        except Exception:  # noqa: BLE001 — best-effort status command
+            fingerprints = []
+            bl_exists = False
+        new, known = baseline_diff(analysis.findings, fingerprints) if fingerprints else (
+            analysis.findings,
+            [],
+        )
+    else:
+        fingerprints = []
+        new, known = analysis.findings, []
+
+    if output_format == "json":
+        click.echo(
+            json_mod.dumps(
+                {
+                    "baseline_exists": bl_exists,
+                    "baseline_path": str(bl_path),
+                    "baseline_findings": len(fingerprints),
+                    "total_findings": len(analysis.findings),
+                    "known_findings": len(known),
+                    "new_findings": len(new),
+                    "drift_score": analysis.drift_score,
+                },
+                indent=2,
+            )
+        )
+        return
+
+    if not bl_exists:
+        console.print(
+            f"[bold yellow]! No baseline at[/bold yellow] {bl_path}\n"
+            f"  Run [bold]drift baseline save[/bold] to establish one."
+        )
+        console.print(
+            f"  Current state: {len(analysis.findings)} findings, "
+            f"score {analysis.drift_score:.2f}"
+        )
+        return
+
+    delta = len(new)
+    if delta == 0:
+        marker = "[bold green]✓ clean[/bold green]"
+    elif delta <= 5:
+        marker = f"[bold yellow]{delta} new[/bold yellow]"
+    else:
+        marker = f"[bold red]{delta} new[/bold red]"
+
+    console.print(f"\n[bold]Baseline status[/bold] ({bl_path.name}) — {marker}")
+    console.print(
+        f"  total: {len(analysis.findings)}  "
+        f"known: {len(known)}  "
+        f"new: {delta}  "
+        f"score: {analysis.drift_score:.2f}"
+    )
+

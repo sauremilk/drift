@@ -103,24 +103,37 @@ def _run_gh(args: list[str]) -> tuple[int, str]:
 
 
 def _existing_open_issues(repo: str, labels: str) -> list[dict]:
-    """Return list of open issues that carry at least one of the labels."""
-    rc, out = _run_gh(
-        [
-            "issue", "list",
-            "--repo", repo,
-            "--state", "open",
-            "--label", labels.split(",")[0].strip(),
-            "--limit", "200",
-            "--json", "number,title,body",
-        ]
-    )
-    if rc != 0:
-        print(f"::error::gh issue list failed: {out}", file=sys.stderr)
-        return []
-    try:
-        return json.loads(out or "[]")
-    except json.JSONDecodeError:
-        return []
+    """Return deduplicated open issues carrying at least one of the labels.
+
+    Scans *every* label in the comma-separated list so a renamed primary
+    label does not break dedup (Paket 2C+ automation hardening).
+    """
+    seen: dict[int, dict] = {}
+    for raw_label in (s.strip() for s in labels.split(",") if s.strip()):
+        rc, out = _run_gh(
+            [
+                "issue", "list",
+                "--repo", repo,
+                "--state", "open",
+                "--label", raw_label,
+                "--limit", "200",
+                "--json", "number,title,body",
+            ]
+        )
+        if rc != 0:
+            print(
+                f"::warning::gh issue list failed for label '{raw_label}': {out}",
+                file=sys.stderr,
+            )
+            continue
+        try:
+            for issue in json.loads(out or "[]"):
+                num = issue.get("number")
+                if isinstance(num, int):
+                    seen[num] = issue
+        except json.JSONDecodeError:
+            continue
+    return list(seen.values())
 
 
 def _is_duplicate(finding_id: str, issues: list[dict]) -> bool:
@@ -138,6 +151,16 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--repo", required=True, help="owner/repo to file issues in.")
     ap.add_argument("--report", required=True, help="Path to drift JSON report.")
     ap.add_argument("--labels", default=DEFAULT_LABELS, help="Comma-separated labels.")
+    ap.add_argument(
+        "--max-issues",
+        type=int,
+        default=10,
+        help=(
+            "Flood guard: refuse to file more than N issues in a single run. "
+            "New findings beyond the cap are skipped with a warning, the "
+            "script still exits 0 to keep CI productive (Paket 2C+)."
+        ),
+    )
     ap.add_argument("--dry-run", action="store_true", help="Do not call gh.")
     args = ap.parse_args(argv)
 
@@ -162,13 +185,18 @@ def main(argv: list[str] | None = None) -> int:
         return 0
 
     open_issues = [] if args.dry_run else _existing_open_issues(args.repo, args.labels)
-    filed, skipped, failed = 0, 0, 0
+    filed, skipped, failed, capped = 0, 0, 0, 0
 
     for f in findings:
         fid = _finding_id(f)
         if _is_duplicate(fid, open_issues):
             skipped += 1
             print(f"skip (dup): {fid}")
+            continue
+
+        if args.max_issues is not None and filed >= args.max_issues:
+            capped += 1
+            print(f"::warning::flood guard: --max-issues {args.max_issues} reached; skipping {fid}")
             continue
 
         title = _issue_title(f)
@@ -195,7 +223,7 @@ def main(argv: list[str] | None = None) -> int:
             failed += 1
             print(f"::warning::gh issue create failed for {fid}: {out}", file=sys.stderr)
 
-    print(f"summary: filed={filed} skipped={skipped} failed={failed}")
+    print(f"summary: filed={filed} skipped={skipped} capped={capped} failed={failed}")
     return 1 if failed else 0
 
 
