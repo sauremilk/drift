@@ -193,7 +193,7 @@ def ci(
 def _trend_gate_enabled(cfg, override: bool | None) -> bool:
     if override is not None:
         return override
-    return cfg.gate.trend.enabled
+    return bool(cfg.gate.trend.enabled)
 
 
 def _enforce_trend_gate(
@@ -205,10 +205,11 @@ def _enforce_trend_gate(
     exit_zero: bool,
 ) -> None:
     from drift.quality_gate import evaluate_trend_gate
-    from drift.trend_history import load_trend_history
+    from drift.trend_history import load_history, snapshot_scope
 
     gate_cfg = cfg.gate.trend
-    snapshots = load_trend_history(repo)
+    history_file = repo / cfg.cache_dir / "history.json"
+    snapshots = [s for s in load_history(history_file) if snapshot_scope(s) == "diff"]
     decision = evaluate_trend_gate(
         snapshots=snapshots,
         window_commits=gate_cfg.window_commits,
