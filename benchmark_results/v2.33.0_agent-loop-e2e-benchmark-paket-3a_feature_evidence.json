@@ -1,16 +1,16 @@
 {
   "version": "2.33.0",
   "date": "2026-04-22",
-  "feature": "E2E agent-loop benchmark severity-gate distribution (ADR-089/ADR-090 Paket 3A)",
-  "description": "Feature evidence for E2E agent-loop benchmark severity-gate distribution (ADR-089/ADR-090 Paket 3A) (v2.33.0).",
+  "feature": "agent loop e2e benchmark paket 3a",
+  "description": "Feature evidence for agent loop e2e benchmark paket 3a (v2.33.0).",
   "generated_by": {
     "script": "scripts/generate_feature_evidence.py",
-    "git_sha": "068ec1109571aac3182f3c700e3ded645e687e0b",
+    "git_sha": "829b3725b049bef324a5bb06d4b6ea61a5800c43",
     "drift_version": "0.0.0",
-    "timestamp": "2026-04-22T16:19:32.135579+00:00"
+    "timestamp": "2026-04-22T16:30:38.078766+00:00"
   },
   "self_analysis": {
-    "error": "JSON parse error: Extra data: line 100082 column 1 (char 4006806)"
+    "error": "JSON parse error: Extra data: line 100133 column 1 (char 4010357)"
   },
   "audit_artifacts_updated": []
 }

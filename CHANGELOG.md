@@ -1,5 +1,9 @@
 ## [Unreleased]
 
+## [2.32.0] – 2026-04-22
+
+Short version: Drift-Retrieval-RAG MVP (ADR-091), Agent-Telemetry Schema 2.2 (ADR-090), QA 2026 Pakete 1A/1B/2B/3A (ADR-089), K2 Outcome-Feedback-Ledger (ADR-088), K1 Blast-Radius-Engine (ADR-087), agent-workflow shortcuts.
+
 ### Added
 
 - **Drift-Retrieval-RAG MVP (ADR-091).** Neues Paket `src/drift/retrieval/` plus zwei MCP-Tools `drift_retrieve` und `drift_cite`, die Coding-Agenten zwingen, Aussagen über drift selbst (Policy, Signale, ADRs, Audit-Artefakte, Signal-Rationale, Benchmark-Evidence) gegen einen verifizierten, SHA-verankerten Fact-Korpus zu grounden. Lexical BM25 Okapi (`k1=1.5`, `b=0.75`, deterministischer Tie-Break nach `fact_id`), keine Embeddings, keine Netz-I/O, keine LLMs — 1318 Chunks über 164 Sources werden auf MVP-Corpus (drift selbst) in Cold-Start ~142 ms indexiert, Warm-Retrieve p50 = 0.35 ms. Stabile Fact-IDs (`POLICY#S<n>.p<m>`, `ADR-<nnn>#<section>`, `AUDIT/<file>#<row>`, `SIGNAL/<id>#<field>`, `EVIDENCE/v<version>#<key>`) mit append-only Migration-Registry `decisions/fact_id_migrations.jsonl` für zyklus-sichere transitive Auflösung. `corpus_sha256` in jeder Response als Reproduzierbarkeits-Anker; 3-Layer-Cache (Memory → Disk → Rebuild) unter `.drift-cache/retrieval/` mit mtime- und SHA-Vergleich. Grounding-Contract als Instruction `.github/instructions/drift-rag-grounding.instructions.md` (soft gate, Phase-4 demarkiert für harte CI-Erzwingung). Tests: `tests/test_retrieval_corpus.py` (12), `tests/test_retrieval_search.py` (8), `tests/test_mcp_retrieval_tools.py` (8) — 27 pass, 1 skip. Gold-Set Precision@5 = 100% (15/15 Queries, Threshold ≥ 80%). Feature-Evidence: `benchmark_results/v_next_drift_retrieval_rag_feature_evidence.json`. Audit-Artefakte FMEA, Risk-Register, STRIDE und Fault-Trees aktualisiert gemäß POLICY §18.
