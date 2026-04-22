@@ -63,7 +63,7 @@ def test_validate_outputs_json(tmp_path: Path) -> None:
     result = runner.invoke(main, ["validate", "--repo", str(tmp_path)])
     assert result.exit_code == 0
     payload = json.loads(result.output)
-    assert payload["schema_version"] == "2.1"
+    assert payload["schema_version"] == "2.2"
     assert "valid" in payload
     assert "git_available" in payload
 
@@ -133,7 +133,7 @@ def test_scan_outputs_json(monkeypatch, tmp_path: Path) -> None:
     result = runner.invoke(main, ["scan", "--repo", str(tmp_path), "--max-findings", "1"])
     assert result.exit_code == 0
     payload = json.loads(result.output)
-    assert payload["schema_version"] == "2.1"
+    assert payload["schema_version"] == "2.2"
     assert "accept_change" in payload
     assert "blocking_reasons" in payload
 
