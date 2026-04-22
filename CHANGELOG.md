@@ -1,5 +1,7 @@
 ## [2.29.0] – 2026-04-22
 
+Short version: Agent-workflow shortcuts (Makefile targets, companion scripts), `drift adr` subcommand, `TaskSpec.to_patch_intent()`, release version-sync CI step; plus Trend-Gate Enforcement, Fingerprint v2, and queue/session improvements.
+
 ### Added
 
 - **Agent-Workflow-Shortcuts, `drift adr` Subcommand, und Release-Version-Sync.** Operative Tooling-Erweiterungen fuer agentengesteuerte Entwicklung.
