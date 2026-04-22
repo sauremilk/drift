@@ -1,0 +1,39 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://drift.example.com/schemas/finding_normalized.schema.json",
+  "title": "Drift Normalized Review Finding",
+  "description": "Schema for review findings after normalization by scripts/normalize_findings.py.",
+  "type": "object",
+  "required": ["severity", "location", "reproduction", "proposed_action"],
+  "additionalProperties": false,
+  "properties": {
+    "severity": {
+      "type": "string",
+      "enum": ["critical", "high", "medium", "low", "info"],
+      "description": "Risk-weighted severity. 'critical' blocks release."
+    },
+    "location": {
+      "type": "string",
+      "minLength": 1,
+      "description": "File path with optional :line suffix, or a fully qualified symbol."
+    },
+    "reproduction": {
+      "type": "string",
+      "minLength": 1,
+      "description": "How a reviewer can observe the finding (command, steps, or diff pointer)."
+    },
+    "proposed_action": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Concrete next step that resolves or mitigates the finding."
+    },
+    "free_text": {
+      "type": "string",
+      "description": "Optional reviewer prose for nuance that does not fit the structured slots."
+    },
+    "id": {
+      "type": "string",
+      "description": "Stable identifier assigned during normalization."
+    }
+  }
+}

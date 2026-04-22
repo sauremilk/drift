@@ -1,0 +1,220 @@
+# drift-label-feedback.yml
+#
+# Purpose:  Translate GitHub PR labels into drift feedback verdicts and
+#           re-run calibration automatically.  This workflow is the only
+#           layer with access to GitHub label events — it has no CLI or
+#           MCP equivalent.
+#
+# Trigger:  pull_request_target › labeled
+#           Active when label is one of: drift-fp, drift-tp, drift-wontfix
+#
+# Deps:     drift feedback mark (--mark tp|fp|fn, --signal, --file)
+#           drift calibrate run
+#           Marker format in PR comments: <!-- drift-signal: SIGNAL | FILE -->
+#
+# Security: pull_request_target runs against base repo code (safe for write
+#           permissions).  Signal and file values extracted from comments are
+#           validated against an allow-list regex before shell use.
+#
+# Note:     The calibration commit targets main.  If main has branch-protection
+#           rules requiring reviews, the push step will fail gracefully
+#           (continue-on-error: true).  The feedback event is still recorded
+#           locally; only the commit-back is skipped.
+
+name: Drift — Label Feedback
+
+on:
+  pull_request_target:
+    types: [labeled]
+
+permissions:
+  pull-requests: write
+  contents: write
+
+concurrency:
+  group: "drift-label-feedback-${{ github.event.pull_request.number }}"
+  cancel-in-progress: false
+
+jobs:
+  record-feedback:
+    name: Record drift feedback from label
+    if: >
+      github.event.label.name == 'drift-fp' ||
+      github.event.label.name == 'drift-tp' ||
+      github.event.label.name == 'drift-wontfix'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout base branch
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Python
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065  # v5.6.0
+        with:
+          python-version: "3.12"
+          cache: "pip"
+
+      - name: Install drift-analyzer
+        run: pip install --quiet drift-analyzer
+
+      # Search PR comments for the signal marker.
+      # Extended marker format: <!-- drift-signal: SIGNAL_NAME | file/path.py -->
+      # The file component is required for `drift feedback mark --file`.
+      # Both values are validated against a strict allow-list regex before use.
+      - name: Extract signal marker from PR comments
+        id: extract-marker
+        uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea  # v7.0.1
+        with:
+          script: |
+            const prNumber = context.payload.pull_request.number;
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: prNumber,
+              per_page: 100,
+            });
+
+            // Search comments in reverse order (newest first)
+            const reversed = [...comments].reverse();
+            const markerRe = /<!--\s*drift-signal:\s*([A-Za-z0-9_]+)\s*\|\s*([A-Za-z0-9_.\/\-]+)\s*-->/;
+
+            for (const c of reversed) {
+              const m = markerRe.exec(c.body || '');
+              if (m) {
+                const signal = m[1];
+                const file   = m[2];
+
+                // Reject path traversal and absolute paths
+                if (file.includes('..') || file.startsWith('/')) {
+                  core.setFailed(`Rejected unsafe file path in marker: ${file}`);
+                  return;
+                }
+
+                core.setOutput('found',  'true');
+                core.setOutput('signal', signal);
+                core.setOutput('file',   file);
+                core.info(`Marker found — signal: ${signal}, file: ${file}`);
+                return;
+              }
+            }
+
+            core.setOutput('found', 'false');
+            core.info('No drift-signal marker found in PR comments.');
+
+      # If no marker is present: post a helper comment and exit cleanly.
+      - name: Post missing-marker comment
+        if: steps.extract-marker.outputs.found == 'false'
+        uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea  # v7.0.1
+        with:
+          script: |
+            const label = context.payload.label.name;
+            const prNumber = context.payload.pull_request.number;
+            const body = [
+              `<!-- drift-label-feedback-hint -->`,
+              `**drift feedback — no signal marker found**`,
+              ``,
+              `The label \`${label}\` was applied, but no drift-signal marker was found`,
+              `in any PR comment. To apply feedback, add a comment containing:`,
+              ``,
+              `\`\`\``,
+              `<!-- drift-signal: SIGNAL_NAME | path/to/file.py -->`,
+              `\`\`\``,
+              ``,
+              `Replace \`SIGNAL_NAME\` with the signal abbreviation (e.g. \`PFS\`, \`AVS\`)`,
+              `and \`path/to/file.py\` with the file the finding relates to.`,
+              `Then re-apply the label to trigger this workflow again.`,
+              ``,
+              `<sub>Posted by drift-label-feedback</sub>`,
+            ].join('\n');
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: prNumber,
+              body,
+            });
+
+      # Record TP or FP feedback via drift CLI.
+      # drift-wontfix has no CLI equivalent (allowed values: tp, fp, fn).
+      - name: Record feedback verdict (tp / fp)
+        if: >
+          steps.extract-marker.outputs.found == 'true' &&
+          (github.event.label.name == 'drift-tp' || github.event.label.name == 'drift-fp')
+        env:
+          DRIFT_LABEL: ${{ github.event.label.name }}
+          DRIFT_SIGNAL: ${{ steps.extract-marker.outputs.signal }}
+          DRIFT_FILE: ${{ steps.extract-marker.outputs.file }}
+          DRIFT_PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          # Map label to --mark value
+          if [ "${DRIFT_LABEL}" = "drift-tp" ]; then
+            MARK="tp"
+          else
+            MARK="fp"
+          fi
+
+          drift feedback mark \
+            --repo . \
+            --mark "${MARK}" \
+            --signal "${DRIFT_SIGNAL}" \
+            --file "${DRIFT_FILE}" \
+            --reason "Applied via label ${DRIFT_LABEL} on PR #${DRIFT_PR_NUMBER}"
+
+      # wontfix: no CLI equivalent — acknowledge and continue to calibration.
+      - name: Acknowledge wontfix label (no CLI equivalent)
+        if: >
+          steps.extract-marker.outputs.found == 'true' &&
+          github.event.label.name == 'drift-wontfix'
+        uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea  # v7.0.1
+        with:
+          script: |
+            const prNumber = context.payload.pull_request.number;
+            const signal = '${{ steps.extract-marker.outputs.signal }}';
+            const file   = '${{ steps.extract-marker.outputs.file }}';
+            const body = [
+              `<!-- drift-label-feedback-wontfix -->`,
+              `**drift feedback — wontfix acknowledged**`,
+              ``,
+              `Signal \`${signal}\` in \`${file}\` marked as wontfix.`,
+              `No feedback record was created — the drift CLI supports \`tp\`, \`fp\`,`,
+              `and \`fn\` verdicts only. Calibration will run to incorporate any`,
+              `existing feedback events.`,
+              ``,
+              `<sub>Posted by drift-label-feedback</sub>`,
+            ].join('\n');
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: prNumber,
+              body,
+            });
+
+      # Re-run calibration so the new feedback event takes effect immediately.
+      - name: Run drift calibration
+        if: steps.extract-marker.outputs.found == 'true'
+        run: drift calibrate run --repo .
+
+      # Commit updated calibration artefacts back to main.
+      # [skip ci] prevents an infinite trigger loop.
+      #
+      # Note: If main has branch-protection rules requiring reviews this push
+      # will be rejected by GitHub.  The step is marked continue-on-error so
+      # the recorded feedback event is not lost — only the commit-back fails.
+      - name: Commit calibration profile to main
+        if: steps.extract-marker.outputs.found == 'true'
+        continue-on-error: true  # Graceful degradation if branch-protection blocks push
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git add .drift/calibration_status.json drift.yaml 2>/dev/null || true
+
+          if git diff --cached --quiet; then
+            echo "No calibration changes to commit."
+          else
+            git commit -m "chore(drift): update calibration profile [skip ci]"
+            git push origin HEAD:main
+          fi
