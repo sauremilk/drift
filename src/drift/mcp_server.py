@@ -1904,6 +1904,10 @@ async def drift_retrieve(
             ),
         ),
     ] = None,
+    session_id: Annotated[
+        str | None,
+        Field(description="Optional session ID for telemetry and context tracking (ADR-022)."),
+    ] = None,
 ) -> str:
     """Retrieve verified fact chunks from drift's own documentation corpus.
 
