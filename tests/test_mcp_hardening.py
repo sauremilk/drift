@@ -537,6 +537,48 @@ class TestMcpSessionIntegration:
         assert result["error_code"] == "DRIFT-4000"
         assert result.get("pass") is None
 
+    def test_session_start_autopilot_surfaces_intent_capture_for_high_ai_ratio(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+        tmp_path: Path,
+    ) -> None:
+        """Autopilot result must include intent_capture_hint when ai_ratio > 0.7."""
+        import drift.analyzer as analyzer_module
+        from drift import mcp_server
+
+        (tmp_path / "module.py").write_text(
+            "def ping() -> int:\n    return 1\n", encoding="utf-8"
+        )
+
+        original_analyze_repo = analyzer_module.analyze_repo
+
+        def _high_ai_analyze_repo(*args: object, **kwargs: object):
+            result = original_analyze_repo(*args, **kwargs)
+            result.ai_attributed_ratio = 0.85
+            return result
+
+        monkeypatch.setattr(analyzer_module, "analyze_repo", _high_ai_analyze_repo)
+
+        raw = _run_tool(
+            mcp_server.drift_session_start(
+                path=str(tmp_path),
+                autopilot=True,
+                autopilot_payload="full",
+            )
+        )
+        result = json.loads(raw)
+
+        assert result["status"] == "ok"
+        assert "intent_capture_hint" in result, (
+            "Expected intent_capture_hint for high AI ratio"
+        )
+        hint = result["intent_capture_hint"]
+        assert hint["reason"] == "high_ai_attributed_ratio"
+        assert hint["ai_attributed_ratio"] == pytest.approx(0.85, abs=0.01)
+        assert hint["suggested_tool"] == "drift_capture_intent"
+        assert "drift_capture_intent" in result["agent_instruction"]
+        assert result["recommended_next_actions"][0].startswith("drift_capture_intent")
+
 
 class TestMcpStrictGuardrails:
     """Regression tests for opt-in strict MCP orchestration guardrails (#202)."""

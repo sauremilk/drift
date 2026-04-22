@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+import pytest
 from click.testing import CliRunner
 
 from drift.api import brief as api_brief
@@ -95,6 +96,58 @@ class TestApiBrief:
     def test_max_guardrails_limits_output(self, tmp_repo: Path) -> None:
         result = api_brief(tmp_repo, task="refactor services", max_guardrails=2)
         assert len(result["guardrails"]) <= 2
+
+    def test_high_ai_ratio_surfaces_intent_capture_hint(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+        tmp_repo: Path,
+    ) -> None:
+        """When ai_attributed_ratio > 0.7, brief must expose intent_capture_hint."""
+        import drift.analyzer as analyzer_module
+
+        original_analyze_repo = analyzer_module.analyze_repo
+
+        def _high_ai_analyze_repo(*args: object, **kwargs: object):
+            result = original_analyze_repo(*args, **kwargs)
+            result.ai_attributed_ratio = 0.85
+            return result
+
+        monkeypatch.setattr(analyzer_module, "analyze_repo", _high_ai_analyze_repo)
+
+        result = api_brief(tmp_repo, task="add caching to api")
+
+        assert "intent_capture_hint" in result, "Expected intent_capture_hint for ai_ratio=0.85"
+        hint = result["intent_capture_hint"]
+        assert hint["reason"] == "high_ai_attributed_ratio"
+        assert hint["ai_attributed_ratio"] == pytest.approx(0.85, abs=0.01)
+        assert hint["threshold"] == 0.7
+        assert hint["suggested_tool"] == "drift_capture_intent"
+        assert "drift_capture_intent" in result["recommended_next"]
+        assert result["recommended_next"][0] == "drift_capture_intent"
+        assert "agent_instruction" in result
+        assert "drift_capture_intent" in result["agent_instruction"]
+
+    def test_below_threshold_ai_ratio_no_intent_hint(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+        tmp_repo: Path,
+    ) -> None:
+        """When ai_attributed_ratio <= 0.7, no intent_capture_hint should be added."""
+        import drift.analyzer as analyzer_module
+
+        original_analyze_repo = analyzer_module.analyze_repo
+
+        def _low_ai_analyze_repo(*args: object, **kwargs: object):
+            result = original_analyze_repo(*args, **kwargs)
+            result.ai_attributed_ratio = 0.5
+            return result
+
+        monkeypatch.setattr(analyzer_module, "analyze_repo", _low_ai_analyze_repo)
+
+        result = api_brief(tmp_repo, task="add caching to api")
+
+        assert "intent_capture_hint" not in result
+        assert result.get("recommended_next", [""])[0] != "drift_capture_intent"
 
 
 # ---------------------------------------------------------------------------

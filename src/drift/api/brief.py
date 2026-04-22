@@ -263,6 +263,7 @@ def _build_brief_result(
             "severity": analysis.severity.value,
             "top_signals": top_sigs,
             "finding_count": len(scoped_findings),
+            "ai_attributed_ratio": round(analysis.ai_attributed_ratio, 3),
         },
         guardrails=[g.to_dict() for g in guardrails],
         guardrails_prompt_block=prompt_block,
@@ -312,6 +313,31 @@ def _build_brief_result(
         }
         result["done_when"] = "user confirms scope"
         result["blocking"] = True
+
+    # Intent capture hint for high-AI-attributed-ratio repositories (Issue 537)
+    _ai_ratio = round(getattr(analysis, "ai_attributed_ratio", 0.0), 3)
+    if _ai_ratio > 0.7:
+        result["intent_capture_hint"] = {
+            "reason": "high_ai_attributed_ratio",
+            "ai_attributed_ratio": _ai_ratio,
+            "threshold": 0.7,
+            "suggested_tool": "drift_capture_intent",
+            "suggested_command": "drift intent run",
+            "message": (
+                f"AI-attributed commit ratio is {_ai_ratio:.0%} (>70%). "
+                "Consider capturing intent before making code changes: "
+                "drift_capture_intent(path='.')"
+            ),
+        }
+        result["recommended_next"] = (
+            ["drift_capture_intent"] + result.get("recommended_next", [])
+        )
+        if not result.get("blocking"):
+            result["agent_instruction"] = (
+                f"AI-attributed commit ratio is {_ai_ratio:.0%} (>70%). "
+                "Run drift_capture_intent before making code changes to "
+                "ensure intent traceability."
+            )
 
     return result
 

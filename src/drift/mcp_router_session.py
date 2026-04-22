@@ -480,6 +480,32 @@ async def run_session_start(
             "params": {"session_id": session_id},
         }
 
+        # Intent capture hint for high-AI-attributed-ratio repositories (Issue 537)
+        _ai_ratio = float(scan_result.get("ai_ratio", 0.0))
+        if _ai_ratio > 0.7:
+            result["intent_capture_hint"] = {
+                "reason": "high_ai_attributed_ratio",
+                "ai_attributed_ratio": round(_ai_ratio, 3),
+                "threshold": 0.7,
+                "suggested_tool": "drift_capture_intent",
+                "suggested_command": "drift intent run",
+                "message": (
+                    f"AI-attributed commit ratio is {_ai_ratio:.0%} (>70%). "
+                    "Consider capturing intent before making code changes: "
+                    "drift_capture_intent(path='.')"
+                ),
+            }
+            result["agent_instruction"] = (
+                f"Autopilot ready. AI-attributed commit ratio is {_ai_ratio:.0%} (>70%) — "
+                "run drift_capture_intent(path='.') before code changes. "
+                "Next: drift_fix_plan(session_id)."
+            )
+            result["recommended_next_actions"] = [
+                'drift_capture_intent(path=".")',
+                f'drift_fix_plan(session_id="{session_id}", max_tasks=1)',
+                f'drift_session_status(session_id="{session_id}")',
+            ]
+
     raw = json.dumps(result, default=str)
     return _enrich_response_with_session(raw, session, "drift_session_start")
 
