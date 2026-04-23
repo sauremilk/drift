@@ -59,4 +59,4 @@ When there is tension between adding more surface area and making findings more 
 
 Update 2026-04-21: Hybrid-Positionierung per ADR-084 Option C freigegeben.
 Nische bleibt Go-to-Market; agenten-native Evolution ist der explizite
-Folge-Pfad. Siehe [`docs/PRODUCT_STRATEGY.md` Abschnitt "Evolutions-Perspektive (ADR-084 Option C)"](../docs/PRODUCT_STRATEGY.md) für Details.
+Folge-Pfad. Siehe [`docs/PRODUCT_STRATEGY.md` Abschnitt "Evolutions-Perspektive (ADR-084 Option C)"](https://github.com/mick-gsk/drift/blob/main/docs/PRODUCT_STRATEGY.md) für Details.

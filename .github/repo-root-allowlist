@@ -58,6 +58,10 @@ uv.lock
 work_artifacts
 .drift-intent.yaml
 drift.intent.json
+playground
+site
+BREAKING_CHANGES.md
+_typos.toml
 .gitattributes
 .importlinter
 vulture_whitelist.py
