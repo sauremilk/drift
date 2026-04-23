@@ -2,9 +2,10 @@
 
 from __future__ import annotations
 
+import contextlib
 import json
 import tempfile
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -270,7 +271,7 @@ def _build_nudge_summary(
 
     return {
         "schema_version": "1",
-        "timestamp": datetime.now(tz=timezone.utc).isoformat(),
+        "timestamp": datetime.now(tz=UTC).isoformat(),
         "changed_files": changed_files,
         "initial": initial,
         "direction": result.get("direction") if not error else None,
@@ -303,10 +304,8 @@ def _write_nudge_json(summary: dict[str, Any], output_path: Path) -> None:
         Path(tmp_name).replace(output_path)
     except Exception:  # noqa: BLE001
         # Best-effort cleanup; do not propagate — watcher must not crash.
-        try:
+        with contextlib.suppress(OSError):
             Path(tmp_name).unlink(missing_ok=True)
-        except OSError:
-            pass
         raise
 
 
