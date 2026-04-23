@@ -78,3 +78,7 @@ drift.intent.report.md
 drift.agent.prompt.md
 blast_reports/
 tmplw89iq73.json
+
+# Node.js
+node_modules/
+playground/dist/

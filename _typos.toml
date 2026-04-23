@@ -1,0 +1,37 @@
+# Drift typos configuration.
+# https://github.com/crate-ci/typos
+#
+# Run manually: typos .
+# Integrated via pre-commit (see .pre-commit-config.yaml)
+
+[default.extend-words]
+# Domain-specific tokens that typos would otherwise flag as misspellings.
+# Format: flagged = "accepted"  (same value on both sides = keep as-is)
+#
+# Mathematical / formal usage
+iff = "iff"  # "if and only if" (formal logic in docstrings/comments)
+
+[files]
+# Skip generated, corpus, binary, and volatile files that are not
+# hand-authored and would produce noise rather than signal.
+extend-exclude = [
+    "*.lock",
+    "*.json",
+    "benchmark_results/",
+    "work_artifacts/",
+    "benchmarks/corpus/",
+    "site/",
+    "docs-site/",
+    ".venv/",
+    ".hypothesis/",
+    ".drift-cache/",
+    ".mypy_cache/",
+    ".pytest_cache/",
+    ".ruff_cache/",
+    "dist/",
+    "build/",
+    "tagesplanung/",
+    "master-backlog/",
+    "community_flywheel_output/",
+    "blast_reports/",
+]

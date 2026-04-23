@@ -6,6 +6,7 @@ on:
     paths:
       - "docs-site/**"
       - "mkdocs.yml"
+      - "playground/**"
       - ".github/workflows/docs.yml"
 
 permissions:
@@ -39,6 +40,20 @@ jobs:
         env:
           CI: "true"
         run: mkdocs build --strict
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: playground/package-lock.json
+
+      - name: Build playground
+        run: |
+          cd playground
+          npm ci
+          npm run build
+          cp -r dist ../site/playground
 
       - uses: actions/upload-pages-artifact@v3
         with:
