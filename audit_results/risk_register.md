@@ -1,5 +1,21 @@
 # Risk Register
 
+## 2026-04-23 - CI/Security-Hygiene Stabilization (ingestion API client hardening)
+
+- Risk ID: RISK-2026-04-23-INGESTION-API-CALLS
+- Component: `src/drift/ingestion/github_api.py`, `src/drift/incremental.py`, `src/drift/mcp_orchestration.py`, `scripts/fetch_github_usage.py`, `scripts/fetch_pypistats.py`.
+- Type: Security hygiene / static-analysis policy compliance (Bandit medium/high gate).
+- Description: Security-Hygiene pipeline previously failed on SHA1 usage and unannotated `urlopen` calls. Hash-based deterministic IDs were migrated to SHA256 and trusted fixed-endpoint HTTP calls now carry explicit, reviewable `# nosec B310` rationale markers.
+- Severity: MEDIUM - CI blocking issue with low runtime exploitability in current code paths.
+- Triggers:
+  - Future reintroduction of SHA1 (`hashlib.sha1`) in scanned paths.
+  - New `urllib.request.urlopen` calls without endpoint rationale/guarding.
+- Mitigations:
+  - SHA256 in deterministic digest paths (`incremental`, `mcp_orchestration`).
+  - Explicit `# nosec B310` annotations on fixed trusted endpoints in calibration scripts and ingestion client.
+  - Local verification via `python -m bandit -r src/drift scripts -ll --quiet` before push.
+- Residual risk: LOW - findings now require either policy bypass or deliberate insecure code reintroduction.
+
 ## 2025-11-23 - ADR-097: Drift Self-Improvement Loop (DSOL)
 
 - Risk ID: RISK-ADR-097-DSOL
