@@ -36,7 +36,6 @@ from drift.config._schema import (
     ScoringConfig as ScoringConfig,
 )
 
-
 _DETECT_EXCLUDE_DIRS: frozenset[str] = frozenset(
     {
         "node_modules", "__pycache__", "venv", ".venv", ".git",

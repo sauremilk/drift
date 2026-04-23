@@ -632,7 +632,10 @@ def _print_init_summary(created: int, profile: str, full: bool) -> None:
     "--auto",
     is_flag=True,
     default=False,
-    help="Auto-detect profile from repo characteristics and write config (no prompts, CI-friendly).",
+    help=(
+        "Auto-detect profile from repo characteristics"
+        " and write config (no prompts, CI-friendly)."
+    ),
 )
 @click.option(
     "--repo",

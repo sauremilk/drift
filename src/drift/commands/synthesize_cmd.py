@@ -26,7 +26,11 @@ from drift.commands import console
 from drift.commands._io import _emit_machine_output
 
 
-@click.command("synthesize", short_help="Synthesize skill drafts from recurring findings.")
+@click.command(
+    "synthesize",
+    short_help="Synthesize skill drafts from recurring findings.",
+    hidden=True,
+)
 @click.option(
     "--repo",
     "path",

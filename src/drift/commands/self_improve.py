@@ -12,7 +12,7 @@ from drift.self_improvement import close_proposal, run_cycle
 from drift.self_improvement.engine import DEFAULT_CLOSED_LOG, ImprovementReport
 
 
-@click.group(name="self-improve")
+@click.group(name="self-improve", hidden=True)
 def self_improve() -> None:
     """Drift Self-Improvement Loop (DSOL).
 

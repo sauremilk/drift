@@ -1,6 +1,0 @@
-{
-    "evidence":  "Test coverage in tests/test_scan_diversity.py",
-    "timestamp":  "2026-03-30T12:29:18Z",
-    "version":  "1.1.6",
-    "feature":  "strategy parameter for scan command"
-}

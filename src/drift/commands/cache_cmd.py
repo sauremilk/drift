@@ -9,7 +9,7 @@ import click
 from drift.commands import make_console
 
 
-@click.group("cache")
+@click.group("cache", hidden=True)
 def cache() -> None:
     """Manage the drift parse and signal cache."""
 

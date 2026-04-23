@@ -1,6 +1,0 @@
-{
-    "evidence": "Regression coverage in tests/test_output_minimal_and_signal_labels.py for analyze/check --no-color console selection",
-    "timestamp": "2026-03-30T14:20:00Z",
-    "version": "1.1.7",
-    "feature": "no-color CLI output and branded documentation refresh"
-}

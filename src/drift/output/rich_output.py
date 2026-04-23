@@ -500,7 +500,8 @@ def _render_first_run_next_steps(
                 f" ({auto_detected_file_count} .py-Dateien erkannt).[/dim]\n\n"
             )
         lines = [
-            profile_hint + f"[bold]{total}[/bold] Befunde erkannt{dash}oben sind die wichtigsten 3.",
+            profile_hint
+            + f"[bold]{total}[/bold] Befunde erkannt{dash}oben sind die wichtigsten 3.",
             "",
             f"[bold]1.[/bold] drift init --auto     {dash}Konfiguration sichern (kein Prompt)",
             f"[bold]2.[/bold] drift analyze         {dash}Alle Befunde anzeigen",
@@ -527,7 +528,8 @@ def _render_first_run_next_steps(
                 f" ({auto_detected_file_count} .py files detected).[/dim]\n\n"
             )
         lines = [
-            profile_hint + f"[bold]{total}[/bold] findings detected{dash}the top 3 are shown above.",
+            profile_hint
+            + f"[bold]{total}[/bold] findings detected{dash}the top 3 are shown above.",
             "",
             f"[bold]1.[/bold] drift init --auto     {dash}lock in config (no prompts)",
             f"[bold]2.[/bold] drift analyze         {dash}see all findings",

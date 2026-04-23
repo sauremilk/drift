@@ -150,12 +150,21 @@ class SuggestingGroup(click.Group):
                 "copilot-context",
                 "export-context",
                 "session-report",
+                "context",
+                "generate-skills",
+                "patch",
             ),
         ),
-        ("CI & Automation", ("ci", "badge", "baseline", "validate", "verify", "import")),
+        (
+            "CI & Automation",
+            ("ci", "badge", "baseline", "validate", "verify", "import", "adr", "gate"),
+        ),
         (
             "Configuration",
-            ("init", "config", "preset", "calibrate", "feedback", "suppress", "completions"),
+            (
+                "init", "config", "preset", "calibrate", "feedback",
+                "suppress", "completions", "intent",
+            ),
         ),
         ("Measurement", ("self", "precision", "roi-estimate", "start")),
     )
