@@ -214,12 +214,6 @@
           "description": "Optional team-shared feedback JSONL path (relative to repo root). When set, mark/calibrate commands read and write this path instead of calibration.feedback_path.",
           "title": "Shared Feedback Path"
         },
-        "threshold_adaptation_enabled": {
-          "default": false,
-          "description": "Enable adaptive threshold adjustment per signal based on feedback metrics.  Experimental \u2014 disabled by default.",
-          "title": "Threshold Adaptation Enabled",
-          "type": "boolean"
-        },
         "weak_fp_window_days": {
           "default": 60,
           "description": "Days without a defect-fix \u2192 weak FP evidence.",
