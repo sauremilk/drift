@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
 from drift.models import Finding, LogicalLocation, Severity
@@ -200,3 +201,66 @@ class TestCalibratedEffortWiring:
         )
         # outcome says "high"(2) vs actual low(0) → diff=2 → 0.0
         assert result.breakdown["effort_accuracy"] == 0.0
+
+
+# ---------------------------------------------------------------------------
+# RewardLogEntry / append_reward_log tests
+# ---------------------------------------------------------------------------
+
+
+class TestRewardLog:
+    def test_append_creates_file_and_writes_json_line(self, tmp_path):
+        from drift.reward_chain import RewardLogEntry, append_reward_log
+
+        entry = RewardLogEntry(
+            ts="2024-01-01T00:00:00+00:00",
+            signal_type="pattern_fragmentation",
+            finding_id="abc123",
+            total=0.75,
+            breakdown={"fix_speed": 0.8, "specificity": 0.7},
+            confidence=0.9,
+            recommendation_id="rec-1",
+        )
+        log_path = tmp_path / ".drift" / "reward_log.jsonl"
+        append_reward_log(log_path, entry)
+
+        assert log_path.exists()
+        rows = [json.loads(line) for line in log_path.read_text(encoding="utf-8").splitlines()]
+        assert len(rows) == 1
+        assert rows[0]["signal_type"] == "pattern_fragmentation"
+        assert rows[0]["total"] == 0.75
+        assert rows[0]["recommendation_id"] == "rec-1"
+
+    def test_append_accumulates_multiple_entries(self, tmp_path):
+        from drift.reward_chain import RewardLogEntry, append_reward_log
+
+        log_path = tmp_path / "reward_log.jsonl"
+        for i in range(3):
+            entry = RewardLogEntry(
+                ts=f"2024-01-0{i + 1}T00:00:00+00:00",
+                signal_type="pfs",
+                finding_id=f"f{i}",
+                total=float(i) * 0.1,
+                breakdown={},
+                confidence=0.5,
+            )
+            append_reward_log(log_path, entry)
+
+        rows = [json.loads(line) for line in log_path.read_text(encoding="utf-8").splitlines()]
+        assert len(rows) == 3
+
+    def test_missing_recommendation_id_written_as_null(self, tmp_path):
+        from drift.reward_chain import RewardLogEntry, append_reward_log
+
+        entry = RewardLogEntry(
+            ts="2024-01-01T00:00:00+00:00",
+            signal_type="eds",
+            finding_id="x",
+            total=0.5,
+            breakdown={},
+            confidence=0.6,
+        )
+        log_path = tmp_path / "r.jsonl"
+        append_reward_log(log_path, entry)
+        row = json.loads(log_path.read_text(encoding="utf-8").strip())
+        assert row["recommendation_id"] is None

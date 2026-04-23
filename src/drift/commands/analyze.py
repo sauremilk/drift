@@ -213,10 +213,17 @@ def _refine_recommendations_with_are(
     """Apply Adaptive Recommendation Engine calibration if enabled in config."""
     if not cfg.recommendations.enabled or not recs:  # type: ignore[union-attr, attr-defined]
         return recs
+    from datetime import UTC
+    from datetime import datetime as _datetime
+
     from drift.calibration.recommendation_calibrator import load_calibration
     from drift.outcome_tracker import Outcome, OutcomeTracker, compute_fingerprint
     from drift.recommendation_refiner import refine
-    from drift.reward_chain import compute_reward
+    from drift.reward_chain import (
+        RewardLogEntry,
+        append_reward_log,
+        compute_reward,
+    )
 
     repo_root = Path(repo)
     outcome_path = repo_root / cfg.recommendations.outcome_path  # type: ignore[union-attr, attr-defined]
@@ -250,6 +257,19 @@ def _refine_recommendations_with_are(
             all_outcomes=outcomes,
             calibrated_effort=effort_map.get(primary_finding.signal_type),
         )  # type: ignore[arg-type]
+        reward_log_path = repo_root / ".drift" / "reward_log.jsonl"
+        append_reward_log(
+            reward_log_path,
+            RewardLogEntry(
+                ts=_datetime.now(UTC).isoformat(),
+                signal_type=str(primary_finding.signal_type),
+                finding_id=str(primary_finding.id) if primary_finding.id else "",
+                recommendation_id=str(rec.id) if rec.id else None,  # type: ignore[union-attr]
+                total=reward.total,
+                breakdown=reward.breakdown,
+                confidence=reward.confidence,
+            ),
+        )
         refined_recs.append(refine(rec, primary_finding, reward))  # type: ignore[arg-type]
     return refined_recs  # type: ignore[return-value]
 

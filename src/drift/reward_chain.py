@@ -6,8 +6,10 @@ four sub-scores — without any LLM call or network request (F-10).
 
 from __future__ import annotations
 
+import json
 import re
 from dataclasses import dataclass, field
+from pathlib import Path
 
 from drift.models import Finding
 from drift.outcome_tracker import Outcome
@@ -204,3 +206,37 @@ def compute_reward(
         breakdown=breakdown,
         confidence=round(confidence, 4),
     )
+
+
+# ---------------------------------------------------------------------------
+# Reward log persistence
+# ---------------------------------------------------------------------------
+
+
+@dataclass(frozen=True)
+class RewardLogEntry:
+    """Single row written to .drift/reward_log.jsonl."""
+
+    ts: str
+    signal_type: str
+    finding_id: str
+    total: float
+    breakdown: dict
+    confidence: float
+    recommendation_id: str | None = None
+
+
+def append_reward_log(path: Path, entry: RewardLogEntry) -> None:
+    """Append *entry* as one JSON line to *path*, creating it if absent."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    row = {
+        "ts": entry.ts,
+        "signal_type": entry.signal_type,
+        "finding_id": entry.finding_id,
+        "recommendation_id": entry.recommendation_id,
+        "total": entry.total,
+        "breakdown": entry.breakdown,
+        "confidence": entry.confidence,
+    }
+    with path.open("a", encoding="utf-8") as fh:
+        fh.write(json.dumps(row) + "\n")
