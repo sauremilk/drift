@@ -139,7 +139,9 @@ def analyze_adr_impacts(
     """Ermittle ADR-Invalidierungen (strukturiert + Fallback)."""
     if not changed_files:
         return [], []
-    decisions_dir = repo_path / "decisions"
+    decisions_dir = repo_path / "docs" / "decisions"
+    if not decisions_dir.is_dir():
+        decisions_dir = repo_path / "decisions"
     if not decisions_dir.is_dir():
         return [], ["Kein decisions/-Verzeichnis — ADR-Analyse übersprungen."]
     adrs = load_all_adrs(decisions_dir)
