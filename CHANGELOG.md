@@ -1,5 +1,13 @@
 ## [Unreleased]
 
+## [2.34.1] – 2026-04-23
+
+Short version: Workflow-Dokumentation aktualisiert (neue Action- und CLI-Workflows in README).
+
+### Changed
+
+- Dokumentation: Workflow-Tabelle in `.github/workflows/README.md` um neue Workflows ergänzt (`release-action.yml`, `action-smoke.yml`, `doc-consistency.yml`, `drift-baseline-persist.yml`, `self-improvement-loop.yml`, u.a.); neue "Action vs CLI"-Testmatrix hinzugefügt.
+
 ## [2.34.0] – 2026-04-23
 
 Short version: Drift Self-Improvement Loop (ADR-097), CI/security-hygiene stabilization for context mapping import + Bandit/model-consistency reliability.
