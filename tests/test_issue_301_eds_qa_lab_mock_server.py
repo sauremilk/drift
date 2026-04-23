@@ -25,14 +25,14 @@ def _make_fn(*, file_path: Path) -> FunctionInfo:
     )
 
 
-def test_issue_302_qa_lab_mock_server_is_test_context() -> None:
+def test_issue_301_qa_lab_mock_server_is_test_context() -> None:
     file_path = Path("extensions/qa-lab/src/mock-openai-server.ts")
     assert is_test_file(file_path)
     assert classify_file_context(file_path) == "test"
     assert not is_test_file(Path("extensions/qa-lab/src/index.ts"))
 
 
-def test_issue_302_eds_marks_qa_lab_mock_server_as_test_context() -> None:
+def test_issue_301_eds_marks_qa_lab_mock_server_as_test_context() -> None:
     file_path = Path("extensions/qa-lab/src/mock-openai-server.ts")
     parse_result = ParseResult(
         file_path=file_path,

@@ -512,6 +512,125 @@ versioned release so that the changelog stays clean and users can pin specific v
 
 Use the [issue templates](.github/ISSUE_TEMPLATE/) — they help reproduce problems quickly.
 
+---
+
+## Adding a new signal
+
+This walkthrough shows how to add a detection signal from scratch. Use an existing signal
+(e.g. [`src/drift/signals/broad_exception_monoculture.py`](src/drift/signals/broad_exception_monoculture.py))
+as a reference implementation.
+
+### 1. Create the signal module
+
+```python
+# src/drift/signals/my_new_signal.py
+"""One-sentence description of what this signal detects."""
+from __future__ import annotations
+
+from drift.config import DriftConfig
+from drift.models import CommitInfo, FileHistory, Finding, ParseResult, Severity, SignalType
+from drift.signals.base import BaseSignal
+
+
+class MyNewSignal(BaseSignal):
+    """Detects <pattern> which indicates <architectural risk>."""
+
+    signal_type = SignalType.MY_NEW_SIGNAL  # add to SignalType enum first
+
+    def analyze(
+        self,
+        parse_results: list[ParseResult],
+        file_histories: dict[str, FileHistory],
+        config: DriftConfig,
+        commit_infos: list[CommitInfo] | None = None,
+    ) -> list[Finding]:
+        findings = []
+        for result in parse_results:
+            for fn in result.functions:
+                if self._is_violation(fn):
+                    findings.append(
+                        Finding(
+                            signal_type=self.signal_type,
+                            file_path=result.file_path,
+                            function_name=fn.name,
+                            start_line=fn.start_line,
+                            end_line=fn.end_line,
+                            severity=Severity.MEDIUM,
+                            message="Description of the finding.",
+                            suggestion="How to fix it.",
+                        )
+                    )
+        return findings
+
+    def _is_violation(self, fn: object) -> bool:  # replace object with FunctionInfo
+        ...
+```
+
+### 2. Register metadata in the registry
+
+Open [`src/drift/signal_registry.py`](src/drift/signal_registry.py) and add a
+`SignalMeta` entry to the `_CORE_SIGNALS` list:
+
+```python
+SignalMeta(
+    signal_id="my_new_signal",
+    abbrev="MNS",                     # unique 2–4 char abbreviation
+    signal_name="My New Signal",
+    category="structural_risk",       # or architecture_boundary / style_hygiene / security
+    default_weight=0.5,
+    repair_level="plannable",
+),
+```
+
+Also add `MY_NEW_SIGNAL = "my_new_signal"` to the `SignalType` enum in
+[`src/drift/models/_enums.py`](src/drift/models/_enums.py).
+
+### 3. Wire the signal into the pipeline
+
+Add the signal class to the mapping in
+[`src/drift/pipeline.py`](src/drift/pipeline.py) (search for `_build_signal_map`
+or the dict that maps `SignalType → BaseSignal`).
+
+### 4. Add negative-context coverage
+
+Open [`src/drift/negative_context/core.py`](src/drift/negative_context/core.py)
+and add a generator for the new signal, or add it to `_FALLBACK_ONLY_SIGNALS` with a
+comment explaining why a dedicated generator is not needed.
+
+### 5. Write the tests
+
+```
+tests/test_my_new_signal.py          # unit tests with synthetic ParseResult fixtures
+tests/test_issue_NNN_<description>.py  # regression test if this fixes a bug
+```
+
+Minimal unit test pattern:
+
+```python
+from drift.signals.my_new_signal import MyNewSignal
+
+def test_detects_violation() -> None:
+    signal = MyNewSignal()
+    findings = signal.analyze([<parse_result_with_violation>], {}, DriftConfig())
+    assert len(findings) == 1
+    assert findings[0].severity == Severity.MEDIUM
+
+def test_clean_code_no_findings() -> None:
+    signal = MyNewSignal()
+    findings = signal.analyze([<clean_parse_result>], {}, DriftConfig())
+    assert findings == []
+```
+
+### 6. Run the gates
+
+```bash
+pytest tests/test_my_new_signal.py -v
+pytest tests/test_negative_context.py -v   # verifies negative-context coverage
+make check                                  # full lint + typecheck + quick tests
+```
+
+---
+
 ## Code of Conduct
 
 Please follow the [Code of Conduct](CODE_OF_CONDUCT.md) in all project spaces.

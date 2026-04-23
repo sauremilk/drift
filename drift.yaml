@@ -1,3 +1,8 @@
+# Drift configuration for the drift repo itself.
+# This file is auto-loaded by drift when running in this directory.
+# For a minimal starter config, see drift.example.yaml.
+# For strict CI enforcement (fail on medium+), see drift.strict.yaml.
+
 exclude:
   - ".venv/**"
   - ".venv-1/**"

@@ -565,7 +565,34 @@ Full methodology: [Benchmarking & Trust](https://mick-gsk.github.io/drift/benchm
 
 ---
 
-## 🔧 Sustainability
+## � What drift is — and what it is not
+
+**Drift detects architectural erosion:** structural patterns that accumulate silently across
+many commits and that static analysis, linters, and type checkers cannot see because they
+only look at individual files in isolation.
+
+**Drift is NOT a replacement for:**
+
+| Tool | What it does | Why drift doesn't replace it |
+|---|---|---|
+| **ruff / flake8 / pylint** | Style, syntax, import order, per-file lint rules | Drift does not enforce code style. Run your linter as-is. |
+| **mypy / pyright** | Type correctness | Drift does not check types. |
+| **Semgrep / Bandit** | Security vulnerability patterns, taint analysis | Drift does not scan for CVEs or injection vectors. |
+| **SonarQube / SonarLint** | Code quality metrics, duplication, test coverage gaps | Drift measures cross-file structural coherence, not coverage or per-function quality. |
+| **pytest / coverage.py** | Test execution and coverage measurement | Drift does not run tests. |
+
+**What drift adds on top of those tools:** It detects whether the *structure* of your
+codebase is drifting away from its intended architecture — specifically the patterns that
+emerge from AI-assisted development (Cursor, Copilot, Claude) when no human has reviewed
+the cumulative effect of 50+ small PRs.
+
+> **Primary target:** teams and solo developers using AI coding tools (Cursor, GitHub
+> Copilot, Claude Code) where agent-generated code accumulates faster than architectural
+> review can keep up.
+
+---
+
+## �🔧 Sustainability
 
 Drift is maintained by [Mick Gottschalk](https://github.com/mick-gsk) as an independent open-source project.
 
