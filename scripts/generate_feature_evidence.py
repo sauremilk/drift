@@ -112,7 +112,11 @@ def run_self_analysis() -> dict:
 
     try:
         result = _run(
-            [python, "-m", "drift", "analyze", "--repo", ".", "--format", "json", "--exit-zero"],
+            [
+                python, "-m", "drift", "analyze",
+                "--repo", ".", "--path", "src/drift",
+                "--format", "json", "--exit-zero",
+            ],
             timeout=300,
         )
         raw = result.stdout + result.stderr
@@ -137,7 +141,7 @@ def run_self_analysis() -> dict:
             "analysis_status": data.get("analysis_status", {}).get("status", "unknown")
             if isinstance(data.get("analysis_status"), dict)
             else data.get("analysis_status", "unknown"),
-            "source": "live: drift analyze --repo . --format json --exit-zero",
+            "source": "live: drift analyze --repo . --path src/drift --format json --exit-zero",
         }
     except json.JSONDecodeError as exc:
         return {"error": f"JSON parse error: {exc}"}
