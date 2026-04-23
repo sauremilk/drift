@@ -2,6 +2,8 @@
 
 ## [2.39.0] - 2026-04-23
 
+Short version: Hybrid MCTS+GA autonomous code quality loop in `scripts/quality_loop/`.
+
 ### Added
 - implement hybrid MCTS+GA autonomous code quality loop (`scripts/quality_loop/`): MCTS-based patch exploration with GA crossover/mutation, drift analysis as fitness function. Tests in `tests/test_quality_loop/`. Evidence: `benchmark_results/v2.38.0_quality-loop_feature_evidence.json`.
 
