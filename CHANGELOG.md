@@ -1,6 +1,6 @@
 ## [Unreleased]
 
-## [2.34.2] – 2026-04-23
+## [2.38.0] – 2026-04-23
 
 Short version: DSOL v2 — score-gated write-back mit Convergence-Check (ADR-098), CI/Workflow-Stabilisierung.
 

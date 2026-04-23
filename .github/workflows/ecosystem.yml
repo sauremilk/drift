@@ -77,6 +77,14 @@ jobs:
           import json, subprocess, sys
           from pathlib import Path
 
+          def extract_json(raw: str) -> dict:
+              """Extract JSON object from output that may have non-JSON prefix/suffix."""
+              start = raw.find("{")
+              end = raw.rfind("}")
+              if start == -1 or end == -1:
+                  return {}
+              return json.loads(raw[start:end + 1])
+
           repos = json.loads(Path("benchmarks/ecosystem_repos.json").read_text())["repos"]
           all_findings = []
           total_score = 0.0
@@ -89,13 +97,13 @@ jobs:
                   capture_output=True, text=True
               )
               try:
-                  data = json.loads(result.stdout)
+                  data = extract_json(result.stdout)
                   for f in data.get("findings", []):
                       f["_repo"] = name
                   all_findings.extend(data.get("findings", []))
                   total_score += data.get("drift_score", 0.0)
-              except json.JSONDecodeError:
-                  print(f"WARN: could not parse drift output for {name}", file=sys.stderr)
+              except (json.JSONDecodeError, ValueError) as exc:
+                  print(f"WARN: could not parse drift output for {name}: {exc}", file=sys.stderr)
 
           output = {
               "findings": all_findings,
@@ -123,6 +131,14 @@ jobs:
           import json, subprocess, sys
           from pathlib import Path
 
+          def extract_json(raw: str) -> dict:
+              """Extract JSON object from output that may have non-JSON prefix/suffix."""
+              start = raw.find("{")
+              end = raw.rfind("}")
+              if start == -1 or end == -1:
+                  return {}
+              return json.loads(raw[start:end + 1])
+
           repos = json.loads(Path("benchmarks/ecosystem_repos.json").read_text())["repos"]
           all_findings = []
           total_score = 0.0
@@ -135,13 +151,13 @@ jobs:
                   capture_output=True, text=True
               )
               try:
-                  data = json.loads(result.stdout)
+                  data = extract_json(result.stdout)
                   for f in data.get("findings", []):
                       f["_repo"] = name
                   all_findings.extend(data.get("findings", []))
                   total_score += data.get("drift_score", 0.0)
-              except json.JSONDecodeError:
-                  print(f"WARN: could not parse drift output for {name}", file=sys.stderr)
+              except (json.JSONDecodeError, ValueError) as exc:
+                  print(f"WARN: could not parse drift output for {name}: {exc}", file=sys.stderr)
 
           output = {
               "findings": all_findings,

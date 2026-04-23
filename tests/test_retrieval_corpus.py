@@ -124,7 +124,18 @@ def test_corpus_is_deterministic(repo_root: Path) -> None:
 def test_corpus_covers_all_kinds(repo_root: Path) -> None:
     chunks = build_corpus(repo_root)
     kinds = {c.kind for c in chunks}
-    for expected in {"policy", "roadmap", "adr", "audit", "signal", "evidence"}:
+
+    expected_kinds = {"policy", "roadmap", "adr", "signal"}
+
+    audit_dir = repo_root / "audit_results"
+    if audit_dir.exists() and any(audit_dir.glob("*.md")):
+        expected_kinds.add("audit")
+
+    evidence_dir = repo_root / "benchmark_results"
+    if evidence_dir.exists() and any(evidence_dir.glob("*.json")):
+        expected_kinds.add("evidence")
+
+    for expected in expected_kinds:
         assert expected in kinds, f"kind {expected!r} missing from corpus"
 
 

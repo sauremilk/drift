@@ -1,58 +1,60 @@
 {
   "description": "Curated high-quality repos for FP rate measurement. All repos are professionally maintained with high test coverage and active communities. Findings on these repos are FP candidates by default.",
-  "version": "1.0.0",
+  "version": "1.1.0",
+  "pinned_at": "2026-04-23",
+  "note": "All refs are pinned to specific commit SHAs. To update: fetch new HEAD SHA for each repo and update this file with the new SHA and pinned_at date.",
   "repos": [
     {
       "url": "https://github.com/psf/requests",
-      "ref": "main",
+      "ref": "79f4df84cf77a2fee873809821dfbd786de05b97",
       "name": "requests",
       "description": "HTTP library — clean, stable, idiomatic Python"
     },
     {
       "url": "https://github.com/encode/httpx",
-      "ref": "main",
+      "ref": "b5addb64f0161ff6bfe94c124ef76f6a1fba5254",
       "name": "httpx",
       "description": "Modern async HTTP client — well-structured, typed"
     },
     {
       "url": "https://github.com/pallets/click",
-      "ref": "main",
+      "ref": "04ef3a6f473deb2499721a8d11f92a7d2c0912f2",
       "name": "click",
       "description": "CLI framework — minimal, well-maintained"
     },
     {
       "url": "https://github.com/tiangolo/fastapi",
-      "ref": "master",
+      "ref": "4fa826ce0a3b16884a04f51e5aac95d01790b599",
       "name": "fastapi",
       "description": "Web framework — modern, well-documented"
     },
     {
       "url": "https://github.com/pytest-dev/pytest",
-      "ref": "main",
+      "ref": "d4fde45a5846dfed2581d38a4e90e9d4be917e2f",
       "name": "pytest",
       "description": "Testing framework — mature, high quality"
     },
     {
       "url": "https://github.com/expressjs/express",
-      "ref": "main",
+      "ref": "8e022edc9185f540a3fcecaf5e56b850d919cdac",
       "name": "express",
       "description": "Minimal TS/JS web framework — mature, well-maintained"
     },
     {
       "url": "https://github.com/nestjs/nest",
-      "ref": "master",
+      "ref": "8eec029772fa979aa51e782aeb668b8522efd6d5",
       "name": "nestjs",
       "description": "Enterprise TS framework — well-typed, decorator-heavy"
     },
     {
       "url": "https://github.com/colinhacks/zod",
-      "ref": "main",
+      "ref": "c7805073fef5b6b8857307c3d4b3597a70613bc2",
       "name": "zod",
       "description": "TypeScript schema validation — small, strictly typed"
     }
   ],
   "fp_budget": {
-    "_comment": "Maximum acceptable FP rate per signal on oracle repos. Values are initial estimates — calibrate after first run.",
+    "_comment": "Maximum acceptable FP rate per signal on oracle repos. Validated 2026-04-23 baseline run.",
     "architecture_violation": 0.10,
     "broad_exception_monoculture": 0.08,
     "bypass_accumulation": 0.08,

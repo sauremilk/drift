@@ -123,9 +123,9 @@ def test_bench_signal_count(benchmark) -> None:
 def test_bench_composite_score_micro(benchmark) -> None:
     """Micro-benchmark: composite_score on a realistic finding set."""
     from drift.config._schema import SignalWeights
+    from drift.models import Severity
     from drift.models._enums import SignalType
     from drift.models._findings import Finding
-    from drift.models import Severity
     from drift.scoring.engine import assign_impact_scores, composite_score, compute_signal_scores
 
     weights = SignalWeights()
