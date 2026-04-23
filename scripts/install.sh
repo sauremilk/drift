@@ -1,5 +1,5 @@
 #!/bin/sh
-# Install drift-analyzer — works on macOS, Linux, and WSL.
+# Install drift-analyzer - works on macOS, Linux, and WSL.
 # Usage:
 #   curl -fsSL https://raw.githubusercontent.com/mick-gsk/drift/main/scripts/install.sh | sh
 #   curl -fsSL https://raw.githubusercontent.com/mick-gsk/drift/main/scripts/install.sh | sh -s -- --version 2.5.1

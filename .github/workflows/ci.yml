@@ -214,6 +214,7 @@ jobs:
               exit 1
             }
           }
+          & $env:PYTHON_BIN -m pip install pip-audit
 
       - name: Dependency vulnerability audit
         # Fails on any known vulnerability with a fix available.

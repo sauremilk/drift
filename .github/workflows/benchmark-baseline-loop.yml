@@ -67,9 +67,9 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git pull --rebase --autostash origin main
           git add benchmark_results/perf_baseline_latest.json
           git diff --cached --quiet && echo "No changes to commit." && exit 0
-          git pull --rebase origin main
           git commit -m "chore(baseline): update KPI snapshot after release [skip ci]"
           git push origin main
 
@@ -118,9 +118,9 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git pull --rebase --autostash origin main
           git add benchmark_results/perf_baseline_latest.json benchmark_results/mutation_benchmark.json
           git diff --cached --quiet && echo "No changes to commit." && exit 0
-          git pull --rebase origin main
           git commit -m "chore(baseline): update weekly mutation benchmark baseline [skip ci]"
           git push origin main
 

@@ -47,6 +47,22 @@ jobs:
         shell: pwsh
         run: pre-commit run --all-files detect-secrets
 
+      - name: Normalize shell files to LF for shellcheck
+        shell: pwsh
+        run: |
+          python -c @'
+          from pathlib import Path
+
+          targets = [Path('.shellcheckrc')] + list(Path('scripts').rglob('*.sh'))
+          for path in targets:
+              if not path.exists():
+                  continue
+              text = path.read_text(encoding='utf-8')
+              normalized = text.replace('\r\n', '\n')
+              if normalized != text:
+                  path.write_text(normalized, encoding='utf-8', newline='\n')
+          '@
+
       - name: Lint shell scripts
         shell: pwsh
         run: pre-commit run --all-files shellcheck
