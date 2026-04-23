@@ -168,7 +168,8 @@ def diff(
         console.print(
             f"[bold red]✗ Baseline not found:[/bold red] {bl_path}\n"
             f"  Run this command first, then re-run baseline diff:\n"
-            f"  [bold]drift baseline save --output {bl_path}[/bold]"
+            f"  [bold]drift baseline save --output {bl_path}[/bold]",
+            soft_wrap=True,
         )
         raise SystemExit(1)
 

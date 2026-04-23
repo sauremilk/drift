@@ -1,0 +1,26 @@
+# Force LF line endings in the working tree for shell scripts and config files
+# that must not have CRLF when checked out on Windows.
+*.sh            text eol=lf
+.shellcheckrc   text eol=lf
+*.py            text eol=lf
+*.yml           text eol=lf
+*.yaml          text eol=lf
+*.json          text eol=lf
+*.md            text eol=lf
+*.toml          text eol=lf
+*.txt           text eol=lf
+*.cfg           text eol=lf
+*.ini           text eol=lf
+*.in            text eol=lf
+Makefile        text eol=lf
+
+# Binary files — no conversion
+*.png           binary
+*.jpg           binary
+*.jpeg          binary
+*.gif           binary
+*.ico           binary
+*.woff          binary
+*.woff2         binary
+*.ttf           binary
+*.eot           binary

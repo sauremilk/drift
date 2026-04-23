@@ -1,5 +1,11 @@
 ## [Unreleased]
 
+### Fixed
+
+- **shellcheck SC1017/SC1134 auf Windows-Runner.** Normalisierung auf Binary-Modus umgestellt; `.gitattributes` mit `eol=lf` fuer alle Text-Dateien ergaenzt.
+- **Vendored Shell-Skripte von shellcheck excludiert.** Exclude-Pattern in `.pre-commit-config.yaml` um `demos/.tools/` erweitert.
+- **Baseline-Test Rich word-wrap.** `soft_wrap=True` in `baseline.py` verhindert mid-word-Umbruch bei langen Pfaden.
+
 ## [2.34.1] – 2026-04-23
 
 Short version: Workflow-Dokumentation aktualisiert (neue Action- und CLI-Workflows in README).

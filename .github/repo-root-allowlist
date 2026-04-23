@@ -68,5 +68,6 @@ drift.agent.prompt.md
 drift.intent.json
 drift.intent.report.json
 drift.intent.report.md
+.gitattributes
 .importlinter
 vulture_whitelist.py

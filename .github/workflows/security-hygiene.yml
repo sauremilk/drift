@@ -57,10 +57,10 @@ jobs:
           for path in targets:
               if not path.exists():
                   continue
-              text = path.read_text(encoding='utf-8')
-              normalized = text.replace('\r\n', '\n')
-              if normalized != text:
-                  path.write_text(normalized, encoding='utf-8', newline='\n')
+              data = path.read_bytes()
+              normalized = data.replace(b'\r\n', b'\n')
+              if normalized != data:
+                  path.write_bytes(normalized)
           '@
 
       - name: Lint shell scripts
