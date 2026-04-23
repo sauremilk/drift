@@ -68,7 +68,7 @@ jobs:
       # Both values are validated against a strict allow-list regex before use.
       - name: Extract signal marker from PR comments
         id: extract-marker
-        uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea  # v7.0.1
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3  # v9.0.0
         with:
           script: |
             const prNumber = context.payload.pull_request.number;
@@ -109,7 +109,7 @@ jobs:
       # If no marker is present: post a helper comment and exit cleanly.
       - name: Post missing-marker comment
         if: steps.extract-marker.outputs.found == 'false'
-        uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea  # v7.0.1
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3  # v9.0.0
         with:
           script: |
             const label = context.payload.label.name;
@@ -169,7 +169,7 @@ jobs:
         if: >
           steps.extract-marker.outputs.found == 'true' &&
           github.event.label.name == 'drift-wontfix'
-        uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea  # v7.0.1
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3  # v9.0.0
         with:
           script: |
             const prNumber = context.payload.pull_request.number;

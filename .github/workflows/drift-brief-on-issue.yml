@@ -59,7 +59,7 @@ jobs:
       # the issue body.  Passed as an env var to avoid shell-injection.
       - name: Build task string
         id: build-task
-        uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea  # v7.0.1
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3  # v9.0.0
         with:
           script: |
             const title = context.payload.issue.title || '';
@@ -89,7 +89,7 @@ jobs:
       # Post (or update) the brief as an issue comment.
       # The HTML marker <!-- drift-brief --> prevents duplicate comments.
       - name: Post brief comment
-        uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea  # v7.0.1
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3  # v9.0.0
         env:
           BRIEF_EXIT: ${{ steps.run-brief.outputs.brief-exit }}
           BRIEF_FILE: ${{ steps.run-brief.outputs.brief-file }}

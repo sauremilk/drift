@@ -18,7 +18,7 @@ jobs:
     timeout-minutes: 5
     steps:
       - name: Reserve eligible issues for first claimant
-        uses: actions/github-script@v7
+        uses: actions/github-script@v9
         with:
           script: |
             const issue = context.payload.issue;
