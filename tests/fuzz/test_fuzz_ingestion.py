@@ -17,7 +17,6 @@ from hypothesis import strategies as st
 
 from drift.ingestion.ast_parser import parse_python_file
 
-
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
@@ -97,3 +96,51 @@ def test_parse_python_file_valid_syntax_no_errors(source: str) -> None:
 
     # Valid Python should parse without errors
     assert result.parse_errors == []
+
+
+# ---------------------------------------------------------------------------
+# TypeScript parser fuzz tests
+# ---------------------------------------------------------------------------
+
+
+_ts_text = st.text(
+    alphabet=st.characters(blacklist_categories=("Cs",)),  # no surrogates
+    max_size=4_096,
+)
+
+
+@pytest.mark.fuzz
+@given(source=_ts_text)
+def test_parse_typescript_file_never_crashes(source: str) -> None:
+    """parse_typescript_file must never raise on arbitrary text written to a .ts file."""
+    from drift.ingestion.ts_parser import parse_typescript_file
+
+    with tempfile.TemporaryDirectory() as tmp:
+        repo = Path(tmp)
+        src_file = repo / "fuzz_target.ts"
+        src_file.write_text(source, encoding="utf-8")
+
+        result = parse_typescript_file(Path("fuzz_target.ts"), repo)
+
+    assert result.file_path is not None
+    assert result.language in ("typescript", "tsx", "javascript")
+    assert isinstance(result.parse_errors, list)
+    for err in result.parse_errors:
+        assert isinstance(err, str)
+
+
+@pytest.mark.fuzz
+@given(source=_ts_text)
+def test_parse_typescript_file_line_count_non_negative(source: str) -> None:
+    """Parsed TypeScript line_count must always be >= 0."""
+    from drift.ingestion.ts_parser import parse_typescript_file
+
+    with tempfile.TemporaryDirectory() as tmp:
+        repo = Path(tmp)
+        src_file = repo / "fuzz_lc.ts"
+        src_file.write_text(source, encoding="utf-8")
+
+        result = parse_typescript_file(Path("fuzz_lc.ts"), repo)
+
+    assert result.line_count >= 0
+

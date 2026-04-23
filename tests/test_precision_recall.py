@@ -118,10 +118,29 @@ def test_precision_recall_report(tmp_path: Path) -> None:
     # Recall gates prevent silent regressions where a signal stops detecting
     # known-positive fixtures while aggregate F1 still stays above threshold.
     per_signal_recall: dict[SignalType, float] = {
+        # Security signals — high-stakes, stricter recall floor
         SignalType.HARDCODED_SECRET: 0.50,
         SignalType.MISSING_AUTHORIZATION: 0.50,
         SignalType.INSECURE_DEFAULT: 0.50,
+        # Cross-file / reference signals
         SignalType.PHANTOM_REFERENCE: 0.40,
+        # High-confidence architecture signals
+        SignalType.PATTERN_FRAGMENTATION: 0.50,
+        SignalType.EXPLAINABILITY_DEFICIT: 0.50,
+        SignalType.SYSTEM_MISALIGNMENT: 0.50,
+        # Medium-confidence structural signals
+        SignalType.MUTANT_DUPLICATE: 0.40,
+        SignalType.BROAD_EXCEPTION_MONOCULTURE: 0.40,
+        SignalType.GUARD_CLAUSE_DEFICIT: 0.40,
+        SignalType.NAMING_CONTRACT_VIOLATION: 0.40,
+        SignalType.BYPASS_ACCUMULATION: 0.40,
+        # Lower-confidence / noisier signals — conservative floor
+        SignalType.TEST_POLARITY_DEFICIT: 0.35,
+        SignalType.ARCHITECTURE_VIOLATION: 0.35,
+        SignalType.DOC_IMPL_DRIFT: 0.35,
+        SignalType.TEMPORAL_VOLATILITY: 0.35,
+        SignalType.COHESION_DEFICIT: 0.35,
+        SignalType.CO_CHANGE_COUPLING: 0.35,
     }
     for sig, min_recall in per_signal_recall.items():
         # Only enforce if the signal has any TP+FN observations
