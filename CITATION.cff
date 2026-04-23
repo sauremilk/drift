@@ -9,7 +9,7 @@ authors:
 repository-code: "https://github.com/mick-gsk/drift"
 url: "https://mick-gsk.github.io/drift/"
 license: MIT
-version: "2.37.1"
+version: "2.37.2"
 date-released: "2026-04-23"
 keywords:
   - static-analysis
