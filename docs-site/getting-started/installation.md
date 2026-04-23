@@ -96,10 +96,10 @@ pip install drift-analyzer
 pipx install drift-analyzer
 
 # GitHub Action
-- uses: mick-gsk/drift@v2.9.15
+- uses: mick-gsk/drift@v2
 
 # Docker
-docker run ghcr.io/mick-gsk/drift:v2.9.15 analyze --repo /src
+docker run ghcr.io/mick-gsk/drift:latest analyze --repo /src
 
 # pre-commit
 repos:

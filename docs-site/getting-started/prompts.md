@@ -107,7 +107,7 @@ Create a GitHub Actions workflow file (.github/workflows/drift.yml) that:
 2. Uploads findings as SARIF to GitHub Code Scanning
 3. Uses report-only mode (fail-on: none) for now
 
-Use the official drift GitHub Action (mick-gsk/drift@v1).
+Use the official drift GitHub Action (mick-gsk/drift@v2).
 ```
 
 ### MCP integration
@@ -194,7 +194,7 @@ jobs:
         with:
           fetch-depth: 50
 
-      - uses: mick-gsk/drift@v1
+      - uses: mick-gsk/drift@v2
         with:
           fail-on: none          # report-only — change to 'high' when ready
           upload-sarif: true     # findings appear as PR annotations

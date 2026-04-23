@@ -128,7 +128,7 @@ Copilot) should enforce structural constraints autonomously.
 
 ```yaml
 # .github/workflows/drift.yml
-- uses: mick-gsk/drift@v1
+- uses: mick-gsk/drift@v2
   with:
     fail-on: none          # start report-only
     upload-sarif: "true"   # PR annotations

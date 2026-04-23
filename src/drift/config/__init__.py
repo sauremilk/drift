@@ -14,6 +14,9 @@ from drift.config._loader import (
 from drift.config._loader import (
     build_config_json_schema as build_config_json_schema,
 )
+from drift.config._loader import (
+    detect_repo_profile as detect_repo_profile,
+)
 from drift.config._schema import (
     AgentEffectivenessThresholds as AgentEffectivenessThresholds,
 )

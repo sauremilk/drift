@@ -61,7 +61,7 @@ is the right tool:
 | Setup | Server required (SonarQube Server or SonarCloud) | `pip install drift-analyzer` |
 | Config | Project key, token, sonar-project.properties | Optional `drift.yaml` (zero-config works) |
 | First run | Minutes to hours | `drift analyze --repo .` in seconds |
-| CI integration | sonarqube-scan GitHub Action | `uses: mick-gsk/drift@v1` |
+| CI integration | sonarqube-scan GitHub Action | `uses: mick-gsk/drift@v2` |
 | Output formats | Web UI, PR decoration | Rich terminal, JSON, SARIF, JUnit, CSV, markdown |
 | Deterministic | Yes | Yes |
 | LLM in pipeline | No | No |

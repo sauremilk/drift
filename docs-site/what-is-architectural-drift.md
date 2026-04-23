@@ -75,7 +75,7 @@ Drift is **deterministic**. Same repository, same commit, same results — every
 
 **In CI** — Block PRs that introduce new structural problems:
 ```yaml
-- uses: mick-gsk/drift@main
+- uses: mick-gsk/drift@v2
   with:
     fail-on: high
     comment: true

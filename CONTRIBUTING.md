@@ -307,6 +307,24 @@ The **negative-pattern library** under `data/negative-patterns/` is a standalone
 
 See [data/negative-patterns/README.md](data/negative-patterns/README.md) for full details including schema documentation.
 
+## Root configuration files
+
+The repository root contains several configuration files that may be unfamiliar to new contributors:
+
+| File | Purpose | Owner |
+|---|---|---|
+| `drift.yaml` | Production config for this repo (auto-loaded by `drift`) | Committed; edit to tune analysis |
+| `drift.strict.yaml` | CI strict-mode override used in `.github/workflows/` | Committed; `fail_on: medium`, no path_overrides |
+| `drift.example.yaml` | Minimal starter config to copy into external projects | Committed; do not modify |
+| `drift.schema.json` | JSON Schema for `drift.yaml` (generated from Pydantic models) | Committed; regenerate with `make schema` |
+| `drift.output.schema.json` | JSON Schema for `drift analyze --format json` output | Committed; regenerate with `make schema` |
+| `src/drift/intent/data/baselines.yaml` | Package-data: baseline intent contracts loaded by `drift intent` | Committed; edit to add baseline contracts per category |
+| `drift.intent.json` | Example output of `drift intent capture` for this repo | Committed as demo; regenerated with `drift intent capture` |
+
+`drift.intent.baselines.yaml` is loaded at runtime from `src/drift/intent/registry.py` via `importlib.resources`.
+If you add a new intent category, add its baseline contracts there.
+The generated report files (`drift.intent.report.json`, `drift.intent.report.md`) are excluded from version control.
+
 ## Code conventions
 
 - Python 3.11+, type annotations everywhere
@@ -481,7 +499,7 @@ who can push directly to `main`.
 
 ### GitHub Actions Major-Version-Tag
 
-Because Drift is a GitHub Action (`uses: mick-gsk/drift@v1`), there is one additional convention:
+Because Drift is a GitHub Action (`uses: mick-gsk/drift@v2`), there is one additional convention:
 the **major-version tag** (`v1`, `v2`) acts as a moving pointer. This means:
 
 - Users reference `@v1` and automatically receive all minor/patch updates

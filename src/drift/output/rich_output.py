@@ -476,6 +476,8 @@ def _render_first_run_next_steps(
     *,
     console: Console,
     language: str | None = None,
+    auto_detected_profile: str | None = None,
+    auto_detected_file_count: int = 0,
 ) -> None:
     """Render a compact next-steps panel for first-run mode."""
     is_german = (language or "").lower().startswith("de")
@@ -491,10 +493,16 @@ def _render_first_run_next_steps(
 
     if is_german:
         title = "Naechste Schritte"
+        profile_hint = ""
+        if auto_detected_profile:
+            profile_hint = (
+                f"[dim]Profil [bold]{auto_detected_profile}[/bold] automatisch angewendet"
+                f" ({auto_detected_file_count} .py-Dateien erkannt).[/dim]\n\n"
+            )
         lines = [
-            f"[bold]{total}[/bold] Befunde erkannt{dash}oben sind die wichtigsten 3.",
+            profile_hint + f"[bold]{total}[/bold] Befunde erkannt{dash}oben sind die wichtigsten 3.",
             "",
-            f"[bold]1.[/bold] drift setup          {dash}Konfiguration erstellen",
+            f"[bold]1.[/bold] drift init --auto     {dash}Konfiguration sichern (kein Prompt)",
             f"[bold]2.[/bold] drift analyze         {dash}Alle Befunde anzeigen",
             f"[bold]3.[/bold] drift mcp --serve     {dash}KI-Agent-Integration starten",
             f"[bold]4.[/bold] drift check --fail-on high  {dash}Als CI-Gate verwenden",
@@ -512,10 +520,16 @@ def _render_first_run_next_steps(
                 " — in CI: fetch-depth: 0 setzen.[/dim]"
             )
     else:
+        profile_hint = ""
+        if auto_detected_profile:
+            profile_hint = (
+                f"[dim]Profile [bold]{auto_detected_profile}[/bold] auto-applied"
+                f" ({auto_detected_file_count} .py files detected).[/dim]\n\n"
+            )
         lines = [
-            f"[bold]{total}[/bold] findings detected{dash}the top 3 are shown above.",
+            profile_hint + f"[bold]{total}[/bold] findings detected{dash}the top 3 are shown above.",
             "",
-            f"[bold]1.[/bold] drift setup          {dash}generate a config file",
+            f"[bold]1.[/bold] drift init --auto     {dash}lock in config (no prompts)",
             f"[bold]2.[/bold] drift analyze         {dash}see all findings",
             f"[bold]3.[/bold] drift mcp --serve     {dash}start AI agent integration",
             f"[bold]4.[/bold] drift check --fail-on high  {dash}use as CI gate",
@@ -1108,6 +1122,8 @@ def render_full_report(
     language: str | None = None,
     group_by: str | None = None,
     first_run: bool = False,
+    auto_detected_profile: str | None = None,
+    auto_detected_file_count: int = 0,
 ) -> None:
     """Render the complete analysis report."""
     if console is None:
@@ -1117,7 +1133,13 @@ def render_full_report(
     console.print()
 
     if first_run:
-        _render_first_run_next_steps(analysis, console=console, language=language)
+        _render_first_run_next_steps(
+            analysis,
+            console=console,
+            language=language,
+            auto_detected_profile=auto_detected_profile,
+            auto_detected_file_count=auto_detected_file_count,
+        )
         return
 
     render_module_table(analysis, console)

@@ -70,7 +70,7 @@ As a transparency note — I also run drift on its own codebase:
 Start with a non-blocking phase:
 
 ```yaml
-- uses: mick-gsk/drift@v1
+- uses: mick-gsk/drift@v2
   with:
     fail-on: none
     upload-sarif: "true"
@@ -79,7 +79,7 @@ Start with a non-blocking phase:
 Then tighten only after calibration:
 
 ```yaml
-- uses: mick-gsk/drift@v1
+- uses: mick-gsk/drift@v2
   with:
     fail-on: high
     upload-sarif: "true"

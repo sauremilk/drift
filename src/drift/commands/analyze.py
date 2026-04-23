@@ -141,6 +141,12 @@ def _render_analysis_details(
         and not (repo / "drift.yaml").exists()
         and not (repo / ".drift").exists()
     )
+    auto_detected_profile: str | None = None
+    auto_detected_file_count: int = 0
+    if is_first_run:
+        from drift.config import detect_repo_profile
+
+        auto_detected_profile, auto_detected_file_count = detect_repo_profile(repo)
     render_or_emit_output(
         analysis=analysis,
         output_format=output_format,
@@ -156,6 +162,8 @@ def _render_analysis_details(
         sort_by=sort_by,
         explain=explain,
         first_run=is_first_run,
+        auto_detected_profile=auto_detected_profile,
+        auto_detected_file_count=auto_detected_file_count,
     )
     if show_suppressed and analysis.suppressed_count:  # type: ignore[union-attr, attr-defined]
         effective_console.print(

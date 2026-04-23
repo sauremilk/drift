@@ -15,8 +15,15 @@ class DriftAnalyzer < Formula
 
   desc "Catches structural erosion from AI-generated code that passes all your tests"
   homepage "https://github.com/mick-gsk/drift"
-  url "https://pypi.io/packages/source/d/drift-analyzer/drift_analyzer-2.5.1.tar.gz"
+  url "https://pypi.io/packages/source/d/drift-analyzer/drift_analyzer-2.35.1.tar.gz"
   # sha256 "UPDATE_WITH_REAL_SHA256"
+  #
+  # To update this formula for a new release:
+  #   1. Change the version and url above
+  #   2. Run: curl -sL <url> | shasum -a 256
+  #   3. Replace the sha256 placeholder with the real value
+  #   4. Update resource versions and their sha256 values accordingly
+  # Or run: python scripts/update_formula.py --version X.Y.Z
   license "MIT"
 
   depends_on "python@3.13"

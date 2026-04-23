@@ -10,7 +10,7 @@
 #         - uses: actions/checkout@v4
 #           with:
 #             fetch-depth: 0       # full history for temporal signals
-#         - uses: mick-gsk/drift@main
+#         - uses: mick-gsk/drift@v2
 #           with:
 #             fail-on: high
 #             comment: true

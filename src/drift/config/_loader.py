@@ -37,6 +37,69 @@ from drift.config._schema import (
 )
 
 
+_DETECT_EXCLUDE_DIRS: frozenset[str] = frozenset(
+    {
+        "node_modules", "__pycache__", "venv", ".venv", ".git",
+        "dist", "build", ".tox", ".nox", "site-packages", "tests",
+        "test", "docs", "docs_src", "examples", "benchmarks",
+        "benchmark_results", "site", ".pixi", ".conda",
+    }
+)
+
+_AI_PACKAGES: frozenset[str] = frozenset(
+    {
+        "openai", "langchain", "anthropic", "transformers",
+        "llama_index", "llama-index", "litellm", "autogen",
+        "crewai", "haystack-ai",
+    }
+)
+
+
+def detect_repo_profile(repo_path: Path) -> tuple[str, int]:
+    """Auto-detect the most appropriate drift profile for a repository.
+
+    Returns ``(profile_name, python_file_count)``.  Used on first run when no
+    drift.yaml exists so that the initial analysis applies sensible signal
+    weights instead of the generic defaults, reducing noise on small repos.
+
+    Decision rules (no side effects — pure read-only scan):
+    - file_count < 50 **or** AI-heavy deps found → ``"vibe-coding"``
+    - file_count > 500 **and** CI directory present → ``"strict"``
+    - otherwise → ``"default"``
+    """
+    file_count = 0
+    try:
+        for entry in repo_path.rglob("*.py"):
+            try:
+                relative = entry.relative_to(repo_path)
+            except ValueError:
+                continue
+            if not any(part in _DETECT_EXCLUDE_DIRS for part in relative.parts):
+                file_count += 1
+    except (PermissionError, OSError):
+        pass
+
+    is_ai_heavy = False
+    for dep_file in ("requirements.txt", "pyproject.toml"):
+        dep_path = repo_path / dep_file
+        if dep_path.exists():
+            try:
+                content = dep_path.read_text(encoding="utf-8").lower()
+                if any(pkg in content for pkg in _AI_PACKAGES):
+                    is_ai_heavy = True
+                    break
+            except (OSError, UnicodeDecodeError):
+                pass
+
+    has_ci = (repo_path / ".github" / "workflows").is_dir()
+
+    if file_count < 50 or is_ai_heavy:
+        return ("vibe-coding", file_count)
+    if file_count > 500 and has_ci:
+        return ("strict", file_count)
+    return ("default", file_count)
+
+
 def _default_includes() -> list[str]:
     """Return default include patterns, auto-extending for TypeScript when available."""
     patterns = ["**/*.py", "**/*.pyi"]
@@ -381,7 +444,9 @@ class DriftConfig(BaseModel):
                     context=validation_context,
                 ) from exc
 
-        return cls()
+        detected_profile, _ = detect_repo_profile(repo_path)
+        auto_data = cls._apply_extends({"extends": detected_profile})
+        return cls.model_validate(auto_data)
 
     def severity_gate(self) -> str:
         return self.fail_on

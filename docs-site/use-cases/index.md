@@ -116,7 +116,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - uses: mick-gsk/drift@v1
+      - uses: mick-gsk/drift@v2
         with:
           fail-on: none
           upload-sarif: "true"

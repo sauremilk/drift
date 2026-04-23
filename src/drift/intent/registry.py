@@ -14,15 +14,27 @@ _cache: dict[str, list[Contract]] = {}
 
 
 def _locate_baselines(repo_path: Path) -> Path | None:
-    """Find the baselines file, checking repo root then package data."""
+    """Find user-override baselines file in repo root (highest priority)."""
     candidate = repo_path / _BASELINES_FILENAME
     if candidate.exists():
         return candidate
-    # Fallback: shipped with package
-    pkg = Path(__file__).parent.parent.parent.parent / _BASELINES_FILENAME
-    if pkg.exists():
-        return pkg
     return None
+
+
+def _get_baselines_text(repo_path: Path) -> str | None:
+    """Return baselines YAML text: user-repo override takes priority, then package data."""
+    path = _locate_baselines(repo_path)
+    if path is not None:
+        return path.read_text(encoding="utf-8")
+    # Fallback: file shipped as package data under drift.intent.data
+    try:
+        from importlib.resources import files  # Python 3.9+
+
+        return files("drift.intent.data").joinpath("baselines.yaml").read_text(
+            encoding="utf-8"
+        )
+    except Exception:  # pragma: no cover
+        return None
 
 
 def load_baselines(
@@ -56,11 +68,9 @@ def load_baselines(
             return [c for c in contracts if c.category == category]
         return list(contracts)
 
-    baselines_path = _locate_baselines(repo_path)
-    if baselines_path is None:
+    raw = _get_baselines_text(repo_path)
+    if raw is None:
         return []
-
-    raw = baselines_path.read_text(encoding="utf-8")
     data: dict[str, Any] = yaml.safe_load(raw) or {}
 
     contracts: list[Contract] = []  # type: ignore[no-redef]

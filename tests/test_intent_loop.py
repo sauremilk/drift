@@ -27,17 +27,17 @@ class FakeFinding:
 @pytest.fixture
 def intent_repo(tmp_path: Path) -> Path:
     """Create a temporary repo with the baselines YAML."""
-    # Copy baseline YAML from workspace root
-    baselines_src = Path(__file__).resolve().parent.parent / "drift.intent.baselines.yaml"
-    if baselines_src.exists():
-        (tmp_path / "drift.intent.baselines.yaml").write_text(
-            baselines_src.read_text(encoding="utf-8"), encoding="utf-8"
+    # Load baseline YAML from package data (canonical location after B1 move)
+    try:
+        from importlib.resources import files
+
+        baselines_text = files("drift.intent.data").joinpath("baselines.yaml").read_text(
+            encoding="utf-8"
         )
-    else:
-        # Inline minimal baselines for CI where root file may not be found
-        (tmp_path / "drift.intent.baselines.yaml").write_text(
-            _MINIMAL_BASELINES, encoding="utf-8"
-        )
+    except Exception:
+        # Inline minimal baselines as CI fallback
+        baselines_text = _MINIMAL_BASELINES
+    (tmp_path / "drift.intent.baselines.yaml").write_text(baselines_text, encoding="utf-8")
     return tmp_path
 
 

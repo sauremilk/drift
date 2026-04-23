@@ -115,6 +115,8 @@ def render_or_emit_output(
     sort_by: str = "impact",
     explain: bool = False,
     first_run: bool = False,
+    auto_detected_profile: str | None = None,
+    auto_detected_file_count: int = 0,
 ) -> None:
     """Route analysis output to the appropriate format renderer."""
     if output_format == "json":
@@ -229,4 +231,6 @@ def render_or_emit_output(
         explain=explain,
         group_by=group_by,
         first_run=first_run,
+        auto_detected_profile=auto_detected_profile,
+        auto_detected_file_count=auto_detected_file_count,
     )

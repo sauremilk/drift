@@ -629,6 +629,12 @@ def _print_init_summary(created: int, profile: str, full: bool) -> None:
     help="Ask 3 simple questions to choose the best profile (like drift setup).",
 )
 @click.option(
+    "--auto",
+    is_flag=True,
+    default=False,
+    help="Auto-detect profile from repo characteristics and write config (no prompts, CI-friendly).",
+)
+@click.option(
     "--repo",
     "-r",
     type=click.Path(exists=True, file_okay=False, path_type=Path),
@@ -648,6 +654,7 @@ def init(
     dry_run: bool,
     json_output: bool,
     interactive: bool,
+    auto: bool,
     repo: Path,
 ) -> None:
     """Scaffold drift configuration and CI integration.
@@ -658,6 +665,7 @@ def init(
     \b
     Examples:
       drift init                          # default profile, config only
+      drift init --auto                   # auto-detect profile, no prompts
       drift init --profile vibe-coding    # AI-optimised weights
             drift init --full                   # config + CI + hooks + MCP + Claude
       drift init -p vibe-coding --ci      # vibe-coding config + CI workflow
@@ -698,10 +706,23 @@ def init(
         console.print()
 
     _no_config = not (repo / "drift.yaml").exists()
-    if _no_config and not json_output and not dry_run and sys.stdin.isatty():
+    if _no_config and not json_output and not dry_run and sys.stdin.isatty() and not auto:
         interactive = True
         console.print("[dim]No drift.yaml found — running interactive setup.[/dim]")
         console.print()
+
+    if auto:
+        from drift.config import detect_repo_profile
+
+        _auto_profile, _auto_file_count = detect_repo_profile(repo)
+        profile = _auto_profile
+        if not json_output and not dry_run:
+            console.print(
+                f"[dim]Auto-detected profile: [bold]{profile}[/bold]"
+                f" ({_auto_file_count} .py files found).[/dim]"
+            )
+            console.print()
+        interactive = False
 
     profile = _run_interactive_profile_setup(profile, interactive, json_output)
     prof = get_profile(profile)

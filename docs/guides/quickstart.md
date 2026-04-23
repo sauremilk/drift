@@ -237,7 +237,7 @@ Das `--fail-on`-Flag bestimmt die Aggressivität. Ein guter Einstiegspunkt ist `
 
 ```yaml
 # Beispiel-Output
-- uses: mick-gsk/drift@v1
+- uses: mick-gsk/drift@v2
   with:
     fail-on: "high"
     comment: "true"

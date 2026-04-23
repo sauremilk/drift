@@ -57,7 +57,7 @@ Key features:
 
 Package: pip install drift-analyzer
 CLI:    drift analyze --repo .
-CI:     uses: mick-gsk/drift@v1 (GitHub Action, report-only by default)
+CI:     uses: mick-gsk/drift@v2 (GitHub Action, report-only by default)
 Hook:   pre-commit hook available
 
 https://github.com/mick-gsk/drift
@@ -276,7 +276,7 @@ drift analyze --repo .
 - `drift scan` / `drift diff` — agent-native workflows
 - `drift baseline` — incremental adoption
 - `drift timeline` / `drift trend` — track drift over time
-- GitHub Action: uses: mick-gsk/drift@v1
+- GitHub Action: uses: mick-gsk/drift@v2
 
 → https://github.com/mick-gsk/drift
 ```
@@ -435,7 +435,7 @@ drift trend --repo .
 ## CI integration
 
 ```yaml
-- uses: mick-gsk/drift@v1
+- uses: mick-gsk/drift@v2
   with:
     fail-on: none
     upload-sarif: "true"

@@ -73,6 +73,7 @@ _selfcheck.json
 
 # Generated tool outputs — not tracked in version control
 arch_graph.json
+drift.intent.baselines.yaml
 drift.intent.report.json
 drift.intent.report.md
 drift.agent.prompt.md

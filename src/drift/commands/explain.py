@@ -953,6 +953,10 @@ def _print_signal_detail(info: dict[str, Any]) -> None:
         body.append(f"{related_str}\n", style="dim")
         body.append("[dim](run drift explain <ABBR> for details)[/dim]\n")
 
+    docs_url = f"https://mick-gsk.github.io/drift/reference/signals/{abbr.lower()}/"
+    body.append("\nDocs\n", style="bold underline")
+    body.append(f"{docs_url}\n", style="dim blue underline")
+
     title_suffix = "  [yellow]\u2605 AI signal[/yellow]" if meta.get("ai_star") else ""
     console.print(
         Panel(

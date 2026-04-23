@@ -4,15 +4,14 @@
 
 # Drift
 
-**Your architecture is drifting. Your linter won't tell you. Drift will.**
+**Drift measures what your linter cannot: cross-file structural coherence — the layer where pattern fragmentation, boundary violations, and duplicate divergence accumulate across commits.**
 
-19 scoring + 5 report-only signals · 77–95 % real-world precision · deterministic, no LLM · ~30 s for a 2 900-file codebase
-
-→ **Vibe-coder / Cursor / Claude user?** [Start here](examples/vibe-coding/README.md) · → **CI & team rollout?** [Team rollout guide](https://mick-gsk.github.io/drift/getting-started/team-rollout/) · → **Evaluating signals?** [Benchmarks & study](docs/STUDY.md)
+77–95 % real-world precision · ~30 s for a 2 900-file codebase · 24 signals · deterministic, no LLM
 
 ```bash
 pip install drift-analyzer
-drift setup          # 3-question wizard: picks the right profile for your project
+drift analyze        # auto-detects the right profile on first run (no config needed)
+drift init --auto    # lock in the auto-detected config (no prompts, CI-friendly)
 drift status         # traffic-light health check — your daily entry point
 ```
 
@@ -21,6 +20,8 @@ drift status         # traffic-light health check — your daily entry point
 > **Shortcut:** bare `drift` (no subcommand) runs `drift status` automatically.
 
 <img src="https://raw.githubusercontent.com/mick-gsk/drift/main/demos/demo.gif" alt="drift analyze — Rich terminal output showing structural findings" width="720">
+
+**Using AI coding tools?** [Start here](examples/vibe-coding/README.md) · **CI & team rollout?** [Team rollout guide](https://mick-gsk.github.io/drift/getting-started/team-rollout/) · **Benchmarks & evidence?** [Study](docs/STUDY.md)
 
 [![CI](https://github.com/mick-gsk/drift/actions/workflows/ci.yml/badge.svg)](https://github.com/mick-gsk/drift/actions/workflows/ci.yml)
 [![Drift Score](https://img.shields.io/badge/drift%20score-0.39-brightgreen?style=flat)](benchmark_results/drift_self.json)
@@ -45,16 +46,16 @@ uvx drift-analyzer analyze --repo .
 ```
 
 > One command. No pre-install. Results in ~30 seconds.
-> No config? Run `drift setup` after install — or: `drift init --profile vibe-coding` for an AI-optimised first run.
+> No config? `drift analyze` auto-applies the best profile on first run. To save it: `drift init --auto` (no prompts).
 >
-> **What does `drift setup` do?** Asks 3 questions (project type, AI usage, strictness) and writes a tuned `drift.yaml`.
+> **What does `drift init --auto` do?** Detects your repo size and dependencies, picks the right profile (`vibe-coding` / `default` / `strict`), and writes `drift.yaml` — no questions asked.
 > The `vibe-coding` profile raises tolerance for missing tests and anti-pattern fixtures — common in AI-prototyped code.
 
 🌐 **No install at all?** [Analyze any public repo in your browser →](https://mick-gsk.github.io/drift/prove-it/)
 
 > [!TIP]
 > **Best fit:** Python repos with 20+ files and active AI-assisted development. TypeScript/TSX repo? `pip install 'drift-analyzer[typescript]'` — 17/24 signals supported.
-> Tiny repos produce noisy scores. Drift does not replace your linter, type checker, or security scanner — it covers the layer they cannot: cross-file structural coherence over time.
+> Tiny repos produce noisy scores. Drift does not replace your linter, type checker, or security scanner.
 
 **Recommended install:** `pipx install drift-analyzer` (isolated CLI) · Python 3.11+ · also via [pip, Homebrew, Docker, GitHub Action, pre-commit →](https://mick-gsk.github.io/drift/getting-started/installation/)
 
@@ -72,7 +73,7 @@ uvx drift-analyzer analyze --repo .
 ## 🤔 Why drift?
 
 Most linters catch single-file style issues. Drift catches what they miss:
-cross-file structural drift that accumulates silently during AI-assisted development.
+cross-file structural drift that accumulates silently — in any codebase, at any scale.
 
 <table>
 <tr><th>Without Drift</th><th>With Drift</th></tr>
@@ -101,8 +102,12 @@ cross-file structural drift that accumulates silently during AI-assisted develop
 > 🧠 **Over time** — Adaptive calibration reweights signals via feedback, git outcome correlation, and GitHub label correlation
 > 📚 **Negative context library** — `drift_nudge` delivers structured anti-patterns (canonical alternatives + CWE tags) directly into your agent's context — no manual guardrail writing needed
 
-> [!NOTE]
-> **Origin note:** Drift was originally designed to detect cross-file structural erosion in any codebase (v0.1, March 2026). The vibe-coding framing — and the dedicated `vibe-coding` profile — were added in v1.1.11 when it became clear that AI-assisted codebases exhibit these erosion patterns disproportionately. The underlying signals are the same; the profile adjusts weights and thresholds for AI-heavy development styles.
+<details>
+<summary>Origin note — why the vibe-coding framing exists</summary>
+
+Drift was originally designed to detect cross-file structural erosion in any codebase (v0.1, March 2026). The vibe-coding framing — and the dedicated `vibe-coding` profile — were added in v1.1.11 when it became clear that AI-assisted codebases exhibit these erosion patterns disproportionately. The underlying signals are the same; the profile adjusts weights and thresholds for AI-heavy development styles.
+
+</details>
 
 ---
 
@@ -196,7 +201,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0       # full history for temporal signals
-      - uses: mick-gsk/drift@v1
+      - uses: mick-gsk/drift@v2
         with:
           fail-on: none        # report-only — tighten once you trust the output
           upload-sarif: "true" # findings appear as PR annotations

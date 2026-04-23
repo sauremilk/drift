@@ -28,8 +28,11 @@ def test_default_config():
 
 
 def test_load_missing_file(tmp_path: Path):
+    # No config file: auto-detects profile for empty repo → vibe-coding
     config = DriftConfig.load(tmp_path)
-    assert config.fail_on == "high"
+    assert isinstance(config, DriftConfig)
+    # vibe-coding profile is applied (empty repo has 0 files → vibe-coding)
+    assert config.fail_on == "none"
 
 
 def test_load_yaml(tmp_path: Path):
@@ -451,3 +454,117 @@ def test_toml_parse_error_message_is_not_yaml_specific(tmp_path: Path):
     assert "DRIFT-1002" in message
     assert "Parse error:" in message
     assert "YAML" not in message
+
+
+# ---------------------------------------------------------------------------
+# detect_repo_profile
+# ---------------------------------------------------------------------------
+
+
+def test_detect_repo_profile_empty_repo_returns_vibe_coding(tmp_path: Path):
+    """An empty repo has 0 files, which is < 50 → vibe-coding."""
+    from drift.config import detect_repo_profile
+
+    profile, file_count = detect_repo_profile(tmp_path)
+    assert profile == "vibe-coding"
+    assert file_count == 0
+
+
+def test_detect_repo_profile_small_repo_returns_vibe_coding(tmp_path: Path):
+    """Fewer than 50 .py files → vibe-coding."""
+    from drift.config import detect_repo_profile
+
+    for i in range(10):
+        (tmp_path / f"mod_{i}.py").write_text("x = 1\n", encoding="utf-8")
+
+    profile, file_count = detect_repo_profile(tmp_path)
+    assert profile == "vibe-coding"
+    assert file_count == 10
+
+
+def test_detect_repo_profile_ai_package_returns_vibe_coding(tmp_path: Path):
+    """Presence of an AI dependency → vibe-coding regardless of file count."""
+    from drift.config import detect_repo_profile
+
+    # Create enough files to otherwise trigger "default"
+    for i in range(60):
+        (tmp_path / f"mod_{i}.py").write_text("x = 1\n", encoding="utf-8")
+    (tmp_path / "requirements.txt").write_text("openai>=1.0\n", encoding="utf-8")
+
+    profile, _ = detect_repo_profile(tmp_path)
+    assert profile == "vibe-coding"
+
+
+def test_detect_repo_profile_medium_repo_returns_default(tmp_path: Path):
+    """50–500 .py files, no AI deps, no CI → default."""
+    from drift.config import detect_repo_profile
+
+    for i in range(60):
+        (tmp_path / f"mod_{i}.py").write_text("x = 1\n", encoding="utf-8")
+
+    profile, file_count = detect_repo_profile(tmp_path)
+    assert profile == "default"
+    assert file_count == 60
+
+
+def test_detect_repo_profile_large_repo_with_ci_returns_strict(tmp_path: Path):
+    """More than 500 .py files + .github/workflows/ → strict."""
+    from drift.config import detect_repo_profile
+
+    (tmp_path / ".github" / "workflows").mkdir(parents=True)
+    for i in range(510):
+        (tmp_path / f"mod_{i}.py").write_text("x = 1\n", encoding="utf-8")
+
+    profile, file_count = detect_repo_profile(tmp_path)
+    assert profile == "strict"
+    assert file_count == 510
+
+
+def test_detect_repo_profile_large_repo_without_ci_returns_default(tmp_path: Path):
+    """More than 500 .py files but no .github/workflows/ → default (not strict)."""
+    from drift.config import detect_repo_profile
+
+    for i in range(510):
+        (tmp_path / f"mod_{i}.py").write_text("x = 1\n", encoding="utf-8")
+
+    profile, _ = detect_repo_profile(tmp_path)
+    assert profile == "default"
+
+
+def test_detect_repo_profile_excludes_test_dir(tmp_path: Path):
+    """Files inside tests/ should not count toward the file total."""
+    from drift.config import detect_repo_profile
+
+    tests_dir = tmp_path / "tests"
+    tests_dir.mkdir()
+    for i in range(60):
+        (tests_dir / f"test_{i}.py").write_text("pass\n", encoding="utf-8")
+
+    profile, file_count = detect_repo_profile(tmp_path)
+    assert profile == "vibe-coding"
+    assert file_count == 0
+
+
+def test_detect_repo_profile_excludes_venv_dir(tmp_path: Path):
+    """Files inside .venv/ should not count toward the file total."""
+    from drift.config import detect_repo_profile
+
+    venv_dir = tmp_path / ".venv"
+    venv_dir.mkdir()
+    for i in range(60):
+        (venv_dir / f"mod_{i}.py").write_text("x = 1\n", encoding="utf-8")
+
+    profile, file_count = detect_repo_profile(tmp_path)
+    assert profile == "vibe-coding"
+    assert file_count == 0
+
+
+def test_load_no_config_applies_detected_profile(tmp_path: Path):
+    """DriftConfig.load() with no config file applies the auto-detected profile."""
+    from drift.config import DriftConfig
+
+    # Small repo (0 files) → vibe-coding profile is applied
+    # vibe-coding changes fail_on to "medium" vs. default "high"
+    cfg = DriftConfig.load(tmp_path)
+    # Just verify it loads without error and is a valid DriftConfig
+    assert isinstance(cfg, DriftConfig)

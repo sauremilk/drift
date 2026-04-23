@@ -45,7 +45,7 @@ jobs:
         with:
           fetch-depth: 0
 
-      - uses: mick-gsk/drift@v1
+      - uses: mick-gsk/drift@v2
         with:
           fail-on: none           # report-only, no build failures
           upload-sarif: "true"    # findings appear as PR annotations
@@ -66,7 +66,7 @@ Once the team understands the output, begin with a narrow gate:
 **Week 3+ — gate on high-severity only:**
 
 ```yaml
-      - uses: mick-gsk/drift@v1
+      - uses: mick-gsk/drift@v2
         with:
           fail-on: high           # block only high-severity findings
           upload-sarif: "true"
