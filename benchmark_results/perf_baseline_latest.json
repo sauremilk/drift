@@ -1,17 +1,26 @@
 {
   "_metadata": {
-    "note": "Initial stub — updated by benchmark-baseline-loop.yml on first run",
-    "generated_at": "2026-04-23T00:00:00Z",
-    "generated_by": "initial_seed",
-    "sha": "initial",
+    "generated_at": "2026-04-23T07:01:26.836849+00:00",
+    "generated_by": "benchmark-baseline-loop",
+    "sha": "85b944eec6ed9965a0c50901d8cd2634dfc2e166",
     "ref": "main"
   },
-  "version": null,
-  "sha": null,
-  "drift_score": null,
-  "grade": null,
-  "findings_count": null,
-  "overall_recall": null,
-  "precision_lenient_avg": null,
-  "precision_by_signal": {}
+  "version": "2.34.1",
+  "sha": "85b944eec6ed9965a0c50901d8cd2634dfc2e166",
+  "drift_score": 0.397,
+  "grade": "B",
+  "findings_count": 810,
+  "overall_recall": 0.96875,
+  "precision_lenient_avg": 0.9374727668845316,
+  "precision_by_signal": {
+    "architecture_violation": 0.8,
+    "doc_impl_drift": 0.6666666666666666,
+    "explainability_deficit": 1.0,
+    "mutant_duplicate": 0.9705882352941176,
+    "pattern_fragmentation": 1.0,
+    "temporal_volatility": 1.0,
+    "guard_clause_deficit": 1.0,
+    "test_polarity_deficit": 1.0,
+    "system_misalignment": 1.0
+  }
 }
