@@ -126,12 +126,12 @@ for _fname, _content in _playground_files.items():
         _fh.write(_content)
 
 # Run drift analysis.
-# Git-history signals (TVS, SMS, CCS) are excluded because the browser
-# has no access to a git repository. The remaining ~19 signals run normally.
+# Git-history signals (TVS, SMS) are excluded because the browser
+# has no access to a git repository. All other signals run normally.
 from drift.api import scan as _drift_scan
 _result = _drift_scan(
     path=_work_dir,
-    exclude_signals=["TVS", "SMS", "CCS"],
+    exclude_signals=["TVS", "SMS"],
     max_findings=30,
 )
 

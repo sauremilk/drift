@@ -22,5 +22,5 @@ Run drift against Python code directly in your browser — no Python installatio
 
 The playground uses [Pyodide](https://pyodide.org/) to run CPython 3.11 in the browser. On first load it downloads the Python runtime (~20 MB, cached by the browser) and installs `drift-analyzer` via `micropip`. Subsequent visits start in seconds.
 
-!!! note "Three signals excluded"
-    `TVS`, `SMS`, and `CCS` require git history, which is not available in the browser. All other 21 signals run normally.
+!!! note "Two signals excluded"
+    `TVS` and `SMS` require git history, which is not available in the browser. All other 23 signals run normally.
