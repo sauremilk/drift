@@ -5,13 +5,9 @@ description: "Run drift against Python code directly in your browser — no inst
 
 # Interactive Playground
 
-<meta http-equiv="refresh" content="0; url=https://mick-gsk.github.io/drift/playground/">
-
 Run drift against Python code directly in your browser — no Python installation, no sign-up.
 
 **[→ Open the Playground](https://mick-gsk.github.io/drift/playground/)**
-
-The playground loads automatically. If it doesn't redirect, click the link above.
 
 ---
 

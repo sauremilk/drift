@@ -54,6 +54,7 @@ jobs:
           npm ci
           npm test
           npm run build
+          rm -rf ../site/playground
           cp -r dist ../site/playground
 
       - uses: actions/upload-pages-artifact@v3
