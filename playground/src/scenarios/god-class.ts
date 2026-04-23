@@ -37,7 +37,7 @@ class ApplicationManager:
         self.db_port = 5432
         self.db_name = "appdb"
         self.db_user = "admin"
-        self.db_password = "secret"  # noqa: S105
+        self.db_password = "secret"  # noqa: S105  # pragma: allowlist secret
         self.db_connection: Any = None
 
         # Runtime state
@@ -205,7 +205,7 @@ class ApplicationManager:
         if user:
             self.send_email(
                 user["email"], "Order Confirmed",
-                f"Order #{order['id']} total: ${order['total']:.2f}",
+                f"Order #{order['id']} total: \${order['total']:.2f}",
             )
 
     def send_bulk_email(self, template: dict[str, str]) -> None:

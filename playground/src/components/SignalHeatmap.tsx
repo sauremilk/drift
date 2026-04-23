@@ -32,7 +32,7 @@ export function SignalHeatmap({ signals, selectedAbbrev, onSelect }: SignalHeatm
             <button
               key={sig.abbrev}
               onClick={() => onSelect(sig.abbrev)}
-              title={`${sig.name} — ${isPass ? 'pass' : `${sig.findingCount} finding${sig.findingCount !== 1 ? 's' : ''}`}`}
+              title={`${sig.name} — ${isPass ? 'pass' : `${sig.findings.length} finding${sig.findings.length !== 1 ? 's' : ''}`}`}
               className={`group flex flex-col items-start gap-1 rounded-md border p-2.5 text-left transition-all duration-150 ${
                 isSelected ? 'ring-1 ring-drift-accent/60' : 'hover:brightness-110'
               }`}
@@ -53,7 +53,7 @@ export function SignalHeatmap({ signals, selectedAbbrev, onSelect }: SignalHeatm
                   className="mt-0.5 text-xs font-medium"
                   style={{ color: textColor }}
                 >
-                  {sig.findingCount} {SEVERITY_LABEL[sig.severity as keyof typeof SEVERITY_LABEL]}
+                  {sig.findings.length} {SEVERITY_LABEL[sig.severity as keyof typeof SEVERITY_LABEL]}
                 </span>
               )}
             </button>

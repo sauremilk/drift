@@ -61,7 +61,7 @@ _SIGNAL_LABELS: dict[str, str] = {
     SignalType.COHESION_DEFICIT: "COD",
     SignalType.MISSING_AUTHORIZATION: "MAZ",
     SignalType.INSECURE_DEFAULT: "ISD",
-    SignalType.HARDCODED_SECRET: "HSC",
+    SignalType.HARDCODED_SECRET: "HSC",  # pragma: allowlist secret
     SignalType.PHANTOM_REFERENCE: "PHR",
     SignalType.TYPE_SAFETY_BYPASS: "TSB",
     SignalType.FAN_OUT_EXPLOSION: "FOE",
