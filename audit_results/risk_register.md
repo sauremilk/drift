@@ -1,4 +1,4 @@
-# Risk Register
+﻿# Risk Register
 
 ## 2026-04-23 - CI/Security-Hygiene Stabilization (ingestion API client hardening)
 
@@ -76,7 +76,7 @@
   - Tampering an `agent_telemetry` wird erst nachgelagert sichtbar.
 - Mitigations:
   - Workflow failt hart (exit 1) bei BLOCK ohne `drift/approved`-Label.
-  - CODEOWNERS schuetzt Agent-Prompt, Schemas, signal_registry, handoff, Workflow selbst und `decisions/`.
+  - CODEOWNERS schuetzt Agent-Prompt, Schemas, signal_registry, handoff, Workflow selbst und `docs/decisions/`.
   - Schema-Validierung erzwingt Struktur von `agent_telemetry`.
   - `verify_gate_not_bypassed.py --all-artifacts` laeuft als letzter Schritt (soft-fail bei Exit 2, hart bei 1/3).
   - 13 Vertrags-Tests (`tests/test_drift_agent_gate_workflow.py`) sichern Trigger/Permissions/CODEOWNERS/ADR-Status ab.
@@ -133,7 +133,7 @@
 ## 2026-04-27 - ADR-091: Drift-Retrieval-RAG
 
 - Risk ID: RISK-ADR-091-RETRIEVAL-CORPUS
-- Component: `src/drift/retrieval/{corpus_builder,cache,index,search,fact_ids,models}.py`, `src/drift/mcp_router_retrieval.py`, neue MCP-Tools `drift_retrieve` / `drift_cite`, `.github/instructions/drift-rag-grounding.instructions.md`, `decisions/fact_id_migrations.jsonl`.
+- Component: `src/drift/retrieval/{corpus_builder,cache,index,search,fact_ids,models}.py`, `src/drift/mcp_router_retrieval.py`, neue MCP-Tools `drift_retrieve` / `drift_cite`, `.github/instructions/drift-rag-grounding.instructions.md`, `docs/decisions/fact_id_migrations.jsonl`.
 - Type: Trust-Boundary (neu): Corpus-Loader liest Repo-eigene Markdown-, JSON- und Python-Quellen und emittiert daraus SHA-verankerte Fact-Chunks, die von Coding-Agenten als Ground-Truth zitiert werden.
 - Description: Lexical-BM25-Retrieval über POLICY, ROADMAP, ADRs, Audit-Artefakte, Signal-Docstrings und benchmark-evidence; exponiert als zwei MCP-Tools. Kein LLM, keine Embeddings, keine Net-I/O. MVP ist Instruction-Level Grounding (soft gate), keine harte CI-Erzwingung.
 - Severity: MEDIUM — Soft-Gate erzeugt ein neues Vertrauensartefakt (`fact_id` + `sha256`) ohne direkten Scoring- oder Weight-Update-Pfad; Hauptrisiko ist Grounding-Illusion durch Staleness, Fact-ID-Drift oder manipulierten Corpus.
@@ -222,7 +222,7 @@
 - Description: Die Engine berechnet deterministisch, welche ADRs (via `scope:`-Glob oder Text-Fallback), Guard-Skills (via `applies_to:` oder Namenskonvention), Arch-Module und Policy-Gates durch einen Diff invalidiert werden, und blockiert Push, wenn kritische Impacts ohne Maintainer-Ack vorliegen.
 - Severity: MEDIUM — Gate greift nur vor Push. Degraded-Pfade (fehlender ArchGraph, fehlendes Git, fehlendes Frontmatter) werden als Warnings durchgelassen, hartes Block nur bei `criticality: critical` + fehlendem Ack.
 - Triggers:
-  - Änderungen in `src/drift/**`, `decisions/**`, `POLICY.md`, `.github/skills/**`.
+  - Änderungen in `src/drift/**`, `docs/decisions/**`, `POLICY.md`, `.github/skills/**`.
   - Kritische ADR-Scope-Matches ohne `blast_reports/acks/<sha>.yaml`.
 - Impact without mitigation: Strukturelle Erosion durch unbemerkte ADR-Invalidierung; Policy-/Audit-Artefakt-Drift nach Signal-Änderungen.
 - Mitigations:
@@ -376,7 +376,7 @@
   real agent sessions. Accepted pending field-test evidence; adjustable via constants in
   `src/drift/mcp_orchestration.py` (`_BRIEF_STALE_DELTA`, `_BRIEF_STALE_TOOL_CALLS`, `_BRIEF_STALE_SECONDS`).
 - Status: Accepted-with-mitigations
-- Evidenz: `benchmark_results/v2.26.0_feature_evidence.json`, `decisions/ADR-080-strict-mode-default.md`.
+- Evidenz: `benchmark_results/v2.26.0_feature_evidence.json`, `docs/decisions/ADR-080-strict-mode-default.md`.
 
 ## 2026-04-21 - v2.25.0: Brief-staleness, session score fields, SG hardening, mypy/ruff fixes
 
@@ -2413,7 +2413,7 @@
 ## 2026-04-08 - DIA FTA v2 refinement: eliminate remaining 2 self-analysis FPs
 
 - Risk ID: RISK-SIG-2026-04-08-191
-- Component: src/drift/signals/doc_impl_drift.py, decisions/ADR-017-dia-false-positive-reduction.md
+- Component: src/drift/signals/doc_impl_drift.py, docs/decisions/ADR-017-dia-false-positive-reduction.md
 - Type: Signal quality (final FP elimination in self-analysis)
 - Description: Two residual DIA FPs from FTA v2 remain on self-analysis:
   1. `services/` extracted from ADR-017 inline codespan (illustrative example, not architectural claim). Root cause: ADR scanning uses `trust_codespans=True`, which extracts example refs.

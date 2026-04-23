@@ -17,7 +17,7 @@ Du evaluierst Drift als Kontext-Generierungs- und Tool-Integrationsschicht für 
 - **Bewertungssystem:** `.github/prompts/_partials/bewertungs-taxonomie.md`
 - **Issue-Filing:** `.github/prompts/_partials/issue-filing.md`
 - **Verwandte Prompts:** `drift-agent-workflow-test.prompt.md` (Phase 7c testet copilot-context/export-context)
-- **ADR:** `.internal/decisions/ADR-002-export-context-format-semantics.md` (Format-Semantik-Entscheidung)
+- **ADR:** `.internal/docs/decisions/ADR-002-export-context-format-semantics.md` (Format-Semantik-Entscheidung)
 - **Implementierung:** `src/drift/negative_context_export.py` (Export-Logik)
 
 ## Arbeitsmodus

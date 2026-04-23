@@ -179,7 +179,7 @@ Vor jedem Push sicherstellen: `make check` lokal bestanden.
 
 ## Gate 9 — Blast-Radius-Gate (ADR-087)
 
-**Auslöser:** Push berührt `src/drift/**`, `decisions/**`, `POLICY.md` oder `.github/skills/**`.
+**Auslöser:** Push berührt `src/drift/**`, `docs/decisions/**`, `POLICY.md` oder `.github/skills/**`.
 
 **Schritte:**
 1. Hook ermittelt den Diff zwischen Remote- und Local-SHA.

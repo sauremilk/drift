@@ -119,7 +119,7 @@ drift_session_end(
     session_id="<sid>",
     session_md_path="work_artifacts/session_<id8>.md",
     evidence_path="benchmark_results/v<ver>_<slug>_feature_evidence.json",
-    adr_path="decisions/ADR-<NNN>-<slug>.md",
+    adr_path="docs/decisions/ADR-<NNN>-<slug>.md",
 )
 ```
 
@@ -158,7 +158,7 @@ a valid `bypass_reason` is supplied.
 
 ## References
 
-- `decisions/ADR-079-session-handover-artifact-gate.md`
+- `docs/decisions/ADR-079-session-handover-artifact-gate.md`
 - `.github/prompts/_partials/session-handover-contract.md`
 - `docs/session_handover_template.md`
 - `src/drift/session_handover.py`

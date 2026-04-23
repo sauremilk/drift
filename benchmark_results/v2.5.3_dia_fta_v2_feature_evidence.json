@@ -19,7 +19,7 @@
     {
       "id": "dia-adr-fenced-code-block",
       "description": "ADR-017 illustrative path examples moved from inline codespans to fenced code blocks; DIA already skips block_code tokens, so trust_codespans=True no longer extracts example refs as phantom dirs",
-      "change": "decisions/ADR-017-dia-false-positive-reduction.md: CS-2 example wrapped in fenced code block",
+      "change": "docs/decisions/ADR-017-dia-false-positive-reduction.md: CS-2 example wrapped in fenced code block",
       "fault_tree_ref": "IE-5a / BE-9a (audit_results/fault_trees.md)",
       "risk_register_ref": "RISK-SIG-2026-04-08-191 (audit_results/risk_register.md)",
       "tests": [

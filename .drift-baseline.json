@@ -1,4 +1,4 @@
-{
+﻿{
   "baseline_version": 1,
   "drift_version": "2.6.1",
   "created_at": "2026-04-08T05:33:53.943064+00:00",
@@ -1658,7 +1658,7 @@
       "fingerprint": "6c2de1e178e407dc",
       "signal": "doc_impl_drift",
       "severity": "medium",
-      "file": "decisions/ADR-017-dia-false-positive-reduction.md",
+      "file": "docs/decisions/ADR-017-dia-false-positive-reduction.md",
       "start_line": 1,
       "title": "ADR references missing directory: services/"
     },

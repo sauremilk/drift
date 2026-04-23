@@ -3,7 +3,7 @@
 
 Prüft vor jedem Push:
 
-1. **Trigger**: Umfasst der Push-Range Pfade in ``src/drift/**``, ``decisions/**``,
+1. **Trigger**: Umfasst der Push-Range Pfade in ``src/drift/**``, ``docs/decisions/**``,
    ``POLICY.md`` oder ``.github/skills/**``? Wenn nein → ``exit 0``.
 2. **Report-Existenz**: Existiert ``blast_reports/*_<short_sha>.json`` für den
    HEAD-SHA? Wenn nein → Gate schreibt einen Report live, falls ``DRIFT_BLAST_LIVE``
@@ -34,7 +34,7 @@ from pathlib import Path
 
 _TRIGGER_GLOBS = (
     "src/drift/**",
-    "decisions/**",
+    "docs/decisions/**",
     "POLICY.md",
     ".github/skills/**",
 )

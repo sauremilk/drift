@@ -76,7 +76,7 @@
     "tests/test_session_handover.py",
     "tests/test_session_end_gate.py",
     "tests/test_session_handover_llm.py",
-    "decisions/ADR-079-session-handover-artifact-gate.md",
+    "docs/decisions/ADR-079-session-handover-artifact-gate.md",
     "docs/session_handover_template.md",
     ".github/prompts/_partials/session-handover-contract.md",
     ".github/skills/drift-session-handover-authoring/SKILL.md",

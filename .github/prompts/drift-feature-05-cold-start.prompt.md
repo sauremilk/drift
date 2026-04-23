@@ -38,7 +38,7 @@ Warm-Call-Latenz oder Korrektheit zu verschlechtern.
 
 ## Erfolgskriterien
 
-- Sub-ADR unter `decisions/ADR-NNN-drift-nudge-cold-start.md`
+- Sub-ADR unter `docs/decisions/ADR-NNN-drift-nudge-cold-start.md`
   als `proposed` existiert und benennt Ursache, Fix-Strategie,
   erwartete Seiteneffekte.
 - Profiling-Evidenz (py-spy / cProfile / built-in Timer) vor und
@@ -76,7 +76,7 @@ Warm-Call-Latenz oder Korrektheit zu verschlechtern.
 ### Phase 2 — Sub-ADR drafen
 
 - Nächste freie ADR-Nummer wählen (derzeit ab 085).
-- Template: `decisions/templates/adr-template.md`.
+- Template: `docs/decisions/templates/adr-template.md`.
 - Kontext zitiert Phase-1-Profil-Evidenz und
   `benchmark_results/mcp_performance_smoke.json` Baseline.
 - Entscheidung beschreibt exakten Fix (z. B. "Lazy-Init des
@@ -145,7 +145,7 @@ work_artifacts/feature_05_<YYYY-MM-DD>/
     profile_before.md
     profile_after.md
     run.md
-decisions/ADR-NNN-drift-nudge-cold-start.md
+docs/decisions/ADR-NNN-drift-nudge-cold-start.md
 benchmark_results/cold_start_vX.Y.Z.json
 benchmark_results/vX.Y.Z_feature_evidence.json
 tests/test_nudge_cold_start.py

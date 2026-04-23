@@ -20,7 +20,6 @@ Exit codes:
 from __future__ import annotations
 
 import json
-import os
 import re
 import sys
 from pathlib import Path
@@ -101,9 +100,11 @@ def validate_gate(gate: dict[str, str | bool], repo_root: Path | None = None) ->
     # Check affected_layers consistency (if provided via task_spec enrichment)
     affected_layers = g.get("affected_layers", [])
     if isinstance(affected_layers, str):
-        affected_layers = [l.strip() for l in affected_layers.split(",")]
+        affected_layers = [item.strip() for item in affected_layers.split(",")]
 
-    betrifft_signal = str(g.get("betrifft_signal_architektur", g.get("betrifft_signal", ""))).lower()
+    betrifft_signal = str(
+        g.get("betrifft_signal_architektur", g.get("betrifft_signal", ""))
+    ).lower()
     if affected_layers:
         has_signal_layers = bool(AUDIT_LAYERS & set(affected_layers))
         if has_signal_layers and "nein" in betrifft_signal:
@@ -116,13 +117,13 @@ def validate_gate(gate: dict[str, str | bool], repo_root: Path | None = None) ->
     if affected_layers and (ADR_LAYERS & set(affected_layers)):
         requires_adr = g.get("requires_adr", True)
         if requires_adr:
-            decisions_dir = root / "decisions"
+            decisions_dir = root / "docs" / "decisions"
             if decisions_dir.is_dir():
                 adrs = list(decisions_dir.glob("ADR-*.md"))
                 if not adrs:
                     issues.append(
                         "Task affects signal/scoring/output layers but no ADRs found "
-                        "under decisions/. ADR required before implementation."
+                        "under docs/decisions/. ADR required before implementation."
                     )
 
     # Check audit artifacts exist when signal work is declared

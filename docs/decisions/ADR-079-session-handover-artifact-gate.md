@@ -20,7 +20,7 @@ Gleichzeitig bestehen im Repo bereits drei etablierte Handover-Artefakttypen:
 
 - `benchmark_results/v<Version>_<slug>_feature_evidence.json` (siehe
   [drift-evidence-artifact-authoring](../.github/skills/drift-evidence-artifact-authoring/SKILL.md))
-- ADR-Drafts unter `decisions/ADR-<NNN>-<slug>.md` (siehe
+- ADR-Drafts unter `docs/decisions/ADR-<NNN>-<slug>.md` (siehe
   [drift-adr-workflow](../.github/skills/drift-adr-workflow/SKILL.md))
 - `audit_results/*.md` Pflichtupdates nach POLICY §18
 
@@ -113,7 +113,7 @@ prominenter Warn-Log und Telemetrie-Event (`session_end.bypass`) festgehalten.
   kann, wenn Trace nicht die autoritative Quelle bleibt.
 - **Alternative C: Server generiert Artefakte auto-vorbefüllt.** Verworfen.
   Vorbefüllte ADRs mit leerem Kontext sind genau die Placeholder-Falle, die L3
-  verhindern soll. Zusätzlich wäre Code-Write in `decisions/` und `audit_results/`
+  verhindern soll. Zusätzlich wäre Code-Write in `docs/decisions/` und `audit_results/`
   aus dem MCP-Pfad zu invasiv.
 
 ## Konsequenzen

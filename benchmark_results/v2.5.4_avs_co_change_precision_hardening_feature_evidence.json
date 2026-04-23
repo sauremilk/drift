@@ -3,7 +3,7 @@
   "date": "2026-04-07",
   "change_type": "fix",
   "title": "AVS co_change Precision Hardening via FTA-driven Three-MCS Fix (ADR-018)",
-  "adr": "decisions/ADR-018-avs-co-change-precision-hardening.md",
+  "adr": "docs/decisions/ADR-018-avs-co-change-precision-hardening.md",
   "features": [
     {
       "id": "avs-mcs1-same-directory-guard",

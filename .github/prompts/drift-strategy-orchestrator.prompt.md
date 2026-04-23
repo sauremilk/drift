@@ -19,7 +19,7 @@ nächsten Schritt und produziert ein datiertes Artefakt unter
 
 ## Relevante Referenzen
 
-- **Strategie-ADR:** [`decisions/ADR-084-positionierung-vibe-coding-tool.md`](../../decisions/ADR-084-positionierung-vibe-coding-tool.md)
+- **Strategie-ADR:** [`docs/decisions/ADR-084-positionierung-vibe-coding-tool.md`](../../docs/decisions/ADR-084-positionierung-vibe-coding-tool.md)
 - **Validierungs-Experiment:** [`master-backlog/04-audience-validation-experiment.md`](../../master-backlog/04-audience-validation-experiment.md)
 - **Gated Items:** `master-backlog/05-drift-nudge-cold-start.md` bis `11-cloud-trend-storage.md`
 - **Strategische Epochen:** [`ROADMAP.md`](../../ROADMAP.md) Sektion "Strategische Epochen"

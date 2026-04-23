@@ -1,4 +1,4 @@
----
+﻿---
 name: drift-signal-development-full-lifecycle
 description: "End-to-end Drift workflow for adding or materially changing a signal. Use when designing a signal, implementing BaseSignal logic, adding weights, creating fixtures, updating audits, and validating precision/recall before commit. Keywords: signal development, BaseSignal, register_signal, incremental_scope, signal design, precision recall, mutation benchmark, audit_results, ADR."
 argument-hint: "Describe the signal change and whether it is a new signal, a major heuristic change, or a calibration pass."
@@ -33,7 +33,7 @@ Before coding:
 
 - decide whether the task is a new signal, a material heuristic change, or a calibration pass
 - draft or update the ADR using the `drift-adr-workflow` skill
-- use `decisions/templates/signal-design-template.md` for signal-centric decisions
+- use `docs/decisions/templates/signal-design-template.md` for signal-centric decisions
 
 If a calibration materially changes signal behavior, scoring implications, or reviewer trust expectations, treat it as ADR-worthy even when it is framed as precision/recall hardening.
 
@@ -176,7 +176,7 @@ Do not skip directly from local signal code to push logic.
 - `.github/skills/drift-risk-audit-artifact-updates/SKILL.md`
 - `.github/skills/drift-ground-truth-fixture-development/SKILL.md`
 - `.github/skills/drift-commit-push/SKILL.md`
-- `decisions/templates/signal-design-template.md`
+- `docs/decisions/templates/signal-design-template.md`
 - `src/drift/signals/base.py`
 - `src/drift/config.py`
 - `tests/fixtures/ground_truth.py`

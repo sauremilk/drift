@@ -47,7 +47,7 @@
   },
   "mcp_tools_added": ["drift_retrieve", "drift_cite"],
   "instruction_added": ".github/instructions/drift-rag-grounding.instructions.md",
-  "migration_registry_path": "decisions/fact_id_migrations.jsonl",
+  "migration_registry_path": "docs/decisions/fact_id_migrations.jsonl",
   "notes": [
     "Lexical-only MVP (BM25 Okapi k1=1.5 b=0.75). No semantic/embedding layer; ADR-091 documents Phase-2 hook if ADR-031's demarcation is revisited.",
     "Instruction-level grounding via .github/instructions/drift-rag-grounding.instructions.md — no hard CI enforcement in MVP (soft gate).",

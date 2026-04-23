@@ -1,7 +1,7 @@
 # 10 — Agent-Framework SDK Bindings (Epoche C, Platzhalter)
 
 > **Status:** proposed-stub — **Platzhalter, nicht priorisiert,
-> erfordert Epoche-B-Abschluss (nicht Option-C-Beschluss) gemäß [ADR-084](../decisions/ADR-084-positionierung-vibe-coding-tool.md).**
+> erfordert Epoche-B-Abschluss (nicht Option-C-Beschluss) gemäß [ADR-084](../docs/decisions/ADR-084-positionierung-vibe-coding-tool.md).**
 > **Erstellt:** 2026-04-21
 
 Direkte SDK-Bindings für LangGraph, Claude Tools, OpenAI Assistants,

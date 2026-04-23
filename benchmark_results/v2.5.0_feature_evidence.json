@@ -11,7 +11,7 @@
         "tests/test_scan_diversity.py::TestScanSignalFiltering::test_scan_forwards_exclude_signals_to_config",
         "tests/test_agent_native_cli.py::test_scan_passes_exclude_and_max_per_signal"
       ],
-      "adr": "decisions/ADR-013-scan-signal-filtering-and-per-signal-cap.md",
+      "adr": "docs/decisions/ADR-013-scan-signal-filtering-and-per-signal-cap.md",
       "evidence": "audit_results/risk_register.md (RISK-OUT-2026-04-05-171)"
     },
     {

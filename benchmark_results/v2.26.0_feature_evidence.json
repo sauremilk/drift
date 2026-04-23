@@ -2,7 +2,7 @@
   "version": "v2.26.0",
   "date": "2026-04-22",
   "feature": "Strict MCP guardrails default true; SG-007 scope-gate; SG-005a/SG-006a brief staleness; nudge revert_recommended hardening + pre-commit gate; brief anti-patterns; ADR relevance + cross-file hint",
-  "adr": "decisions/ADR-080-strict-mode-default.md",
+  "adr": "docs/decisions/ADR-080-strict-mode-default.md",
   "summary": "Closes L7 (revert advisory), L8 (scope warning only), L11 (stale brief undetected) from the Vibe-Coding gap analysis. Moves drift from advisory to enforcing.",
   "scope": {
     "modules_touched": [
@@ -18,7 +18,7 @@
       "drift.schema.json",
       "drift.example.yaml",
       ".pre-commit-config.yaml",
-      "decisions/ADR-080-strict-mode-default.md"
+      "docs/decisions/ADR-080-strict-mode-default.md"
     ]
   },
   "behavior_changes": {

@@ -29,7 +29,7 @@ Vollständige Gate-Kriterien und vorbereitete PR-Texte: [`docs/distribution/awes
 ## Strategische Epochen (additiv zu POLICY §14-Phasen)
 
 > **Status:** ADR-084 Option C akzeptiert (2026-04-21, Maintainer-Freigabe) —
-> [`decisions/ADR-084-positionierung-vibe-coding-tool.md`](decisions/ADR-084-positionierung-vibe-coding-tool.md).
+> [`docs/decisions/ADR-084-positionierung-vibe-coding-tool.md`](docs/decisions/ADR-084-positionierung-vibe-coding-tool.md).
 > Diese Sektion ergänzt die bestehende Distribution-Sektion und bricht
 > nichts. Die "Currently important"-Liste und der Distribution-Track
 > bleiben unverändert maßgeblich für laufende Arbeit.

@@ -22,7 +22,7 @@ Rollback-Garantie.
 - **Precision-/Recall-Basis:** `tests/test_precision_recall.py`, `tests/fixtures/ground_truth.py`
 - **Mutation-Benchmark:** `scripts/_mutation_benchmark.py`, `benchmark_results/mutation_benchmark.json`
 - **Feature-Evidence-Muster:** `benchmark_results/v2.14.0_patch_engine_feature_evidence.json`
-- **Signal-Design-Template:** `decisions/templates/signal-design-template.md`
+- **Signal-Design-Template:** `docs/decisions/templates/signal-design-template.md`
 - **Skill:** `.github/skills/drift-signal-development-full-lifecycle/SKILL.md` (für Signal-spezifische Anteile)
 
 ## Arbeitsmodus
@@ -90,7 +90,7 @@ Garantie bei Degradation.
 
 ### Phase 2 — Drei Sub-ADRs drafen
 
-- `decisions/templates/signal-design-template.md` je Signal.
+- `docs/decisions/templates/signal-design-template.md` je Signal.
 - Jede ADR benennt konkretes Repair-Template aus
   `src/drift/repair_template_registry.py`.
 - Jede ADR benennt, welche Fixture-Klassen in
@@ -151,9 +151,9 @@ Garantie bei Degradation.
 work_artifacts/feature_07_<YYYY-MM-DD>/
     precision_baseline.md
     run.md
-decisions/ADR-NNN-auto-patch-mds.md
-decisions/ADR-NNN+1-auto-patch-pfs.md
-decisions/ADR-NNN+2-auto-patch-eds.md
+docs/decisions/ADR-NNN-auto-patch-mds.md
+docs/decisions/ADR-NNN+1-auto-patch-pfs.md
+docs/decisions/ADR-NNN+2-auto-patch-eds.md
 src/drift/patch_writer/sandbox.py
 src/drift/api/patch.py                        # erweitert
 src/drift/commands/patch_cmd.py               # neues Flag

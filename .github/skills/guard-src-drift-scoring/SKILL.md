@@ -1,4 +1,4 @@
----
+﻿---
 name: guard-src-drift-scoring
 description: "Drift-generierter Guard fuer `src/drift/scoring`. Aktiv bei Signalen: EDS. Konfidenz: 0.62. Verwende diesen Skill wenn du Aenderungen an `src/drift/scoring` planst oder wiederholte Drift-Findings (EDS) fuer dieses Modul bearbeitest."
 argument-hint: "Beschreibe welche Scoring-Logik (Gewichte, Grade-Bands, Prioritaets-Formel) geaendert wird."
@@ -72,5 +72,5 @@ print('After:', a.get('grade'), a.get('drift_score'))
 
 - [src/drift/finding_priority.py](../../../src/drift/finding_priority.py) — Finding-Priorisierung
 - [benchmark_results/kpi_snapshot.json](../../../benchmark_results/kpi_snapshot.json) — Score-Baseline
-- [decisions/](../../../decisions/) — ADR-Verzeichnis
+- [docs/decisions/](../../../docs/decisions/) — ADR-Verzeichnis
 - [DEVELOPER.md](../../DEVELOPER.md)

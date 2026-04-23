@@ -1,6 +1,6 @@
 """Drift Retrieval — deterministic fact-grounding for coding agents.
 
-See `decisions/ADR-091-drift-retrieval-rag.md` for the authoritative
+See `docs/decisions/ADR-091-drift-retrieval-rag.md` for the authoritative
 specification. This package indexes drift's own verified fact sources
 (POLICY, ROADMAP, ADRs, audit artefacts, signal docstrings, benchmark
 evidence) and exposes them via two MCP tools (`drift_retrieve`,

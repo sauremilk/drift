@@ -42,7 +42,7 @@ Use these destinations by default:
 | published docs-site source | `docs-site/` |
 | empirical benchmark and validation evidence | `benchmark_results/`, `audit_results/` |
 | local or review artifacts that should not clutter root | `work_artifacts/` |
-| architecture and process decisions | `decisions/` |
+| architecture and process decisions | `docs/decisions/` |
 | exploratory or internal drafts | `master-backlog/` |
 | generated output | ignored local directories such as `site/`, `dist/`, caches |
 

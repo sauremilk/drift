@@ -3,7 +3,7 @@
   "date": "2026-04-07",
   "change_type": "fix",
   "title": "DIA False-Positive Reduction via FTA-driven Precision Hardening",
-  "adr": "decisions/017-dia-fp-reduction.md",
+  "adr": "docs/decisions/017-dia-fp-reduction.md",
   "features": [
     {
       "id": "dia-codespan-context-gate",

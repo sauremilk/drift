@@ -31,7 +31,7 @@ path_overrides:
   "src/drift/api":
     exclude_signals:
       - pattern_fragmentation
-  "decisions/*":
+  "docs/decisions/*":
     exclude_signals:
       - doc_impl_drift
 

@@ -54,13 +54,13 @@ zwei MCP-Tools zitierbar verfügbar macht:
 | Quelle | Chunk-Strategie | Fact-ID-Präfix |
 |---|---|---|
 | `POLICY.md`, `ROADMAP.md` | Heading + Paragraph | `POLICY#S<n>.p<m>`, `ROADMAP#S<n>.p<m>` |
-| `decisions/ADR-*.md` | Abschnitt (Kontext / Entscheidung / Begründung / Consequences) | `ADR-<n>#<section>` |
+| `docs/decisions/ADR-*.md` | Abschnitt (Kontext / Entscheidung / Begründung / Consequences) | `ADR-<n>#<section>` |
 | `audit_results/*.md` | Tabellen-Zeile mit Spalten-Kontext | `AUDIT/<file>#<row-id>` |
 | `src/drift/signals/*.py` | Class-Docstring + `reason()`/`fix()` via AST | `SIGNAL/<signal_id>#<rationale\|weight\|scope>` |
 | `benchmark_results/v*_feature_evidence.json` | flache JSON-Records | `EVIDENCE/v<version>#<key>` |
 
 **Fact-ID-Stabilität (Option A):** IDs sind strukturbasiert und lesbar.
-Eine append-only Registry `decisions/fact_id_migrations.jsonl` leitet alte
+Eine append-only Registry `docs/decisions/fact_id_migrations.jsonl` leitet alte
 IDs bei legitimem Umbenennen auf neue IDs weiter. `drift_cite` löst
 transitiv auf. Snapshot-Test in `tests/test_retrieval_corpus.py` sichert
 Stabilität.

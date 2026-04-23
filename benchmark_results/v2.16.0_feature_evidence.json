@@ -30,7 +30,7 @@
     }
   ],
   "self_analysis": {
-    "note": "Tests pass (tests/test_agent_native_cli.py, tests/test_guided_mode.py, full suite); ADR-075 present at decisions/"
+    "note": "Tests pass (tests/test_agent_native_cli.py, tests/test_guided_mode.py, full suite); ADR-075 present at docs/decisions/"
   },
   "patch_writer": {
     "id": "patch_writer_auto_apply",

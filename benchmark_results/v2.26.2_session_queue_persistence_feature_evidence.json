@@ -56,7 +56,7 @@
     "audit_results/fmea_matrix.md (2026-04-21 ADR-081 entry, 5 failure modes)",
     "audit_results/stride_threat_model.md (2026-04-21 ADR-081 STRIDE review)",
     "audit_results/risk_register.md (RISK-ADR-081-SESSION-QUEUE-LOG)",
-    "decisions/ADR-081-session-queue-persistence.md (proposed)"
+    "docs/decisions/ADR-081-session-queue-persistence.md (proposed)"
   ],
   "policy_alignment": {
     "framing": "fix (adoption-blocker for MCP fix-loop per Policy §8 Einführbarkeit)",

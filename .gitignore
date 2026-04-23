@@ -70,3 +70,11 @@ pytest_output.txt
 /CLAUDE.md
 
 _selfcheck.json
+
+# Generated tool outputs — not tracked in version control
+arch_graph.json
+drift.intent.report.json
+drift.intent.report.md
+drift.agent.prompt.md
+blast_reports/
+tmplw89iq73.json

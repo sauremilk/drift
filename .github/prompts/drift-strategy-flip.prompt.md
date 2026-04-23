@@ -24,7 +24,7 @@ die Gating-Kette für Items 05–08 offen.
 
 ## Relevante Referenzen
 
-- **Strategie-ADR:** [`decisions/ADR-084-positionierung-vibe-coding-tool.md`](../../decisions/ADR-084-positionierung-vibe-coding-tool.md)
+- **Strategie-ADR:** [`docs/decisions/ADR-084-positionierung-vibe-coding-tool.md`](../../docs/decisions/ADR-084-positionierung-vibe-coding-tool.md)
 - **Positionierungsdokument:** [`docs/PRODUCT_STRATEGY.md`](../../docs/PRODUCT_STRATEGY.md)
 - **Externes Strategiedokument:** [`docs-site/product-strategy.md`](../../docs-site/product-strategy.md)
 - **ROADMAP:** [`ROADMAP.md`](../../ROADMAP.md) Sektion "Strategische Epochen"

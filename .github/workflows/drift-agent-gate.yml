@@ -24,10 +24,9 @@ on:
     paths:
       - "src/**"
       - "tests/**"
-      - "drift.agent.prompt.md"
       - "drift.output.schema.json"
       - "drift.schema.json"
-      - "decisions/**"
+      - "docs/decisions/**"
   # Reusable trigger so downstream repos can `uses:` this workflow
   # under their own approval-gate configuration.
   workflow_call:

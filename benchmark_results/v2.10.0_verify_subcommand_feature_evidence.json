@@ -2,7 +2,7 @@
   "version": "2.10.0",
   "feature": "drift verify subcommand (ADR-070)",
   "date": "2026-04-14",
-  "adr": "decisions/ADR-070-verify-subcommand.md",
+  "adr": "docs/decisions/ADR-070-verify-subcommand.md",
   "summary": "Binary pass/fail coherence gate wrapping shadow_verify() with a severity-threshold gate. Returns structured pass/fail verdict, blocking_reasons, score_delta, and direction. Available as CLI subcommand and drift_verify MCP tool.",
   "design_goals": [
     "Single yes/no verdict suitable for CI exit codes",

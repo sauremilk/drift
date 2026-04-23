@@ -67,6 +67,6 @@ Wenn wirklich nichts offen ist, schreibe: "Keine offenen Enden.">
 ## Evidenz
 
 - Evidence: <benchmark_results/v*.json | "n/a (change_class=docs)">
-- ADR: <decisions/ADR-*.md | "n/a">
+- ADR: <docs/decisions/ADR-*.md | "n/a">
 - Audit-Updates: <audit_results/*.md | "n/a">
 ```

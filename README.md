@@ -452,7 +452,7 @@ Paste the Markdown output into your README:
 | [Configuration](https://mick-gsk.github.io/drift/getting-started/configuration/) | drift.yaml, layer boundaries, signal weights |
 | [Configuration Levels](https://mick-gsk.github.io/drift/guides/configuration-levels/) | Zero-Config → Preset → YAML → Calibration → MCP → CI |
 | [Calibration & Feedback](https://mick-gsk.github.io/drift/algorithms/scoring/) | Adaptive signal reweighting, feedback workflow |
-| ADR Inspection (`drift adr`) | List active ADRs from `decisions/` — filter by task or scope |
+| ADR Inspection (`drift adr`) | List active ADRs from `docs/decisions/` — filter by task or scope |
 | [Vibe-coding Playbook](examples/vibe-coding/README.md) | 30-day rollout guide for AI-heavy teams |
 | [Open Research Questions](RESEARCH.md) | 5 falsifiable hypotheses on validity and effectiveness |
 | [Contributing](CONTRIBUTING.md) | Dev setup, FP/FN reporting, signal development |
@@ -559,7 +559,7 @@ Drift's pipeline is deterministic and benchmark artifacts are published in the r
 - **The composite score is orientation, not a verdict.** Interpret deltas via `drift trend`, not isolated snapshots.
 - **Own score context (0.36):** Drift's self-score is driven primarily by architecture violations and explainability deficit (undocumented internal functions). Pattern fragmentation in modules with intentionally diverse error-handling contracts (signals, API, calibration, integrations) is suppressed via `path_overrides` — those variations are architectural, not accidental. The score reflects a fast-moving codebase that prioritises signal correctness over internal documentation. See [drift_self.json](benchmark_results/drift_self.json) for the full breakdown.
 - **Signal overlap:** Some signals measure related phenomena (e.g., MDS and PFS both detect code similarity; CCC and TVS both use git history). A formal inter-signal correlation analysis has not been conducted. Overlap does not produce double-counting in the composite score (each signal contributes independently), but it means some findings may describe the same underlying issue from different angles.
-- **Weight derivation:** Default signal weights for the 6 original signals were derived via rank-correlation (Kendall's τ) against manual architectural assessments on 5 open-source repos (single rater). Weights for the 18 newer signals are conservative heuristic assignments pending broader validation. Full methodology: [STUDY.md §1](docs/STUDY.md), [ADR-003](decisions/ADR-003-composite-scoring-model.md).
+- **Weight derivation:** Default signal weights for the 6 original signals were derived via rank-correlation (Kendall's τ) against manual architectural assessments on 5 open-source repos (single rater). Weights for the 18 newer signals are conservative heuristic assignments pending broader validation. Full methodology: [STUDY.md §1](docs/STUDY.md), [ADR-003](docs/decisions/ADR-003-composite-scoring-model.md).
 
 Full methodology: [Benchmarking & Trust](https://mick-gsk.github.io/drift/benchmarking/) · [Full Study](https://github.com/mick-gsk/drift/blob/main/docs/STUDY.md) · [Open Research Questions](RESEARCH.md)
 

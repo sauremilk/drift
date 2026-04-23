@@ -1,4 +1,4 @@
-# Fault Tree Analysis
+﻿# Fault Tree Analysis
 
 ## 2026-04-27 - ADR-091: Drift-Retrieval-RAG
 
@@ -9,7 +9,7 @@ A coding agent presents an authoritative-sounding claim about drift (policy rule
   - **G1 — Fact-ID drift without migration entry**
     - AND
       - B1: Refactor changes slug algorithm, heading-scan heuristic, or zero-padding in `src/drift/retrieval/fact_ids.py`/`corpus_builder.py`.
-      - B2: `decisions/fact_id_migrations.jsonl` not updated with `{old_id, new_id}` pair.
+      - B2: `docs/decisions/fact_id_migrations.jsonl` not updated with `{old_id, new_id}` pair.
     - Mitigation: `MigrationRegistry` supports transitive, cycle-safe resolution; ADR-091 makes the append-only JSONL the single source for ID remapping; regression tests pin canonical POLICY / ADR fact_ids.
   - **G2 — Stale corpus served from cache**
     - AND

@@ -41,7 +41,7 @@ Quick reference:
 
 Any change to signals, scoring weights, or output formats requires:
 
-1. An ADR under `decisions/` (status `proposed`)
+1. An ADR under `docs/decisions/` (status `proposed`)
 2. Audit artifact updates under `audit_results/` (FMEA, STRIDE, fault trees, risk register as applicable)
 3. Feature evidence under `benchmark_results/`
 

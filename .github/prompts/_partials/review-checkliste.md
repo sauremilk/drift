@@ -38,7 +38,7 @@ Kein Punkt darf übersprungen werden. Bei Unsicherheit: `Nein` mit Begründung.
 
 ## 3. Architektur und ADR-Pflicht
 
-- [ ] **ADR erforderlich?** — Betrifft die Änderung Signale, Scoring, Output oder Architektur-Boundaries? Falls ja: ADR unter `decisions/` vorhanden (Status `proposed` reicht)?
+- [ ] **ADR erforderlich?** — Betrifft die Änderung Signale, Scoring, Output oder Architektur-Boundaries? Falls ja: ADR unter `docs/decisions/` vorhanden (Status `proposed` reicht)?
 - [ ] **Architektur-Layer korrekt?** — Respektiert die Änderung den Datenfluss `ingestion → signals → scoring → output`?
 - [ ] **Keine unzulässigen Layer-Übergriffe?** — Greift kein Modul auf eine Schicht zu, zu der es laut Architektur keinen Zugang haben sollte?
 

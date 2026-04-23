@@ -2,7 +2,7 @@
   "feature": "K1 — Blast-Radius-Engine (ADR-087)",
   "release": "v-next",
   "based_on_drift_version": "2.30.0",
-  "adr": "decisions/ADR-087-blast-radius-engine.md",
+  "adr": "docs/decisions/ADR-087-blast-radius-engine.md",
   "commit_type": "feat",
   "summary": "Deterministische Engine, die vor strukturellen Änderungen den Invalidierungs-Kreis (ADRs, Guard-Skills, Arch-Module, Policy-Gates) berechnet und als Pre-Push-Gate 9 kritische Impacts ohne Maintainer-Ack blockiert.",
   "surfaces": {

@@ -41,4 +41,4 @@ src/drift/signal_registry.py @mick-gsk
 src/drift/intent/handoff.py @mick-gsk
 .github/workflows/drift-agent-gate.yml @mick-gsk
 scripts/verify_gate_not_bypassed.py @mick-gsk
-decisions/ @mick-gsk
+docs/decisions/ @mick-gsk

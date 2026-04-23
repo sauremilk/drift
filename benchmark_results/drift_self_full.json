@@ -5111,13 +5111,13 @@
       "deferred": false,
       "description": "decisions\\ADR-011-csv-output-format.md mentions 'output/' but no such directory exists.",
       "end_line": null,
-      "file": "decisions/ADR-011-csv-output-format.md",
+      "file": "docs/decisions/ADR-011-csv-output-format.md",
       "finding_context": "production",
       "fix": "Update ADR-011-csv-output-format.md: remove or correct the stale 'output/' reference.",
       "impact": 0.016,
       "impact_rank": 145,
       "metadata": {
-        "adr_file": "decisions/ADR-011-csv-output-format.md",
+        "adr_file": "docs/decisions/ADR-011-csv-output-format.md",
         "finding_context": "production",
         "library_context_candidate": false,
         "referenced_dir": "output"
@@ -5139,13 +5139,13 @@
       "deferred": false,
       "description": "decisions\\ADR-017-dia-false-positive-reduction.md mentions 'services/' but no such directory exists.",
       "end_line": null,
-      "file": "decisions/ADR-017-dia-false-positive-reduction.md",
+      "file": "docs/decisions/ADR-017-dia-false-positive-reduction.md",
       "finding_context": "production",
       "fix": "Update ADR-017-dia-false-positive-reduction.md: remove or correct the stale 'services/' reference.",
       "impact": 0.016,
       "impact_rank": 146,
       "metadata": {
-        "adr_file": "decisions/ADR-017-dia-false-positive-reduction.md",
+        "adr_file": "docs/decisions/ADR-017-dia-false-positive-reduction.md",
         "finding_context": "production",
         "library_context_candidate": false,
         "referenced_dir": "services"
@@ -15723,7 +15723,7 @@
     },
     {
       "duplicate_count": 1,
-      "file": "decisions/ADR-011-csv-output-format.md",
+      "file": "docs/decisions/ADR-011-csv-output-format.md",
       "finding_context": "production",
       "impact": 0.016,
       "next_step": "Update ADR-011-csv-output-format.md: remove or correct the stale 'output/' reference.",
@@ -15738,7 +15738,7 @@
     },
     {
       "duplicate_count": 1,
-      "file": "decisions/ADR-017-dia-false-positive-reduction.md",
+      "file": "docs/decisions/ADR-017-dia-false-positive-reduction.md",
       "finding_context": "production",
       "impact": 0.016,
       "next_step": "Update ADR-017-dia-false-positive-reduction.md: remove or correct the stale 'services/' reference.",

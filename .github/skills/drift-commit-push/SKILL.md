@@ -43,7 +43,7 @@ Choose the commit type from the actual impact:
 - `chore:` for maintenance work
 - `BREAKING:` or a `BREAKING CHANGE:` footer for incompatible changes
 
-If the change touches signals, scoring, output formats, or architecture boundaries, an ADR under `decisions/` is required before implementation unless the change is only a bug fix or pure refactoring. Stop and satisfy that requirement before committing.
+If the change touches signals, scoring, output formats, or architecture boundaries, an ADR under `docs/decisions/` is required before implementation unless the change is only a bug fix or pure refactoring. Stop and satisfy that requirement before committing.
 
 ## Step 2: Inspect The Working Tree
 

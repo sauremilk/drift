@@ -13,7 +13,7 @@ validation over them:
 The server only validates; the agent writes the artifacts.
 
 See:
-    decisions/ADR-079-session-handover-artifact-gate.md
+    docs/decisions/ADR-079-session-handover-artifact-gate.md
     .github/prompts/_partials/session-handover-contract.md
 """
 

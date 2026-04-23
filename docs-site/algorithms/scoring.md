@@ -36,13 +36,13 @@ $$\text{signal\_score} = \overline{s} \times \min\!\left(1,\; \frac{\ln(1 + n)}{
 | Guard Clause Deficit (GCD) | 0.03 | Promoted from report-only (v0.7.0) |
 | Bypass Accumulation (BAT) | 0.03 | Added in v0.7.0 ([ADR-008](https://github.com/mick-gsk/drift/blob/main/docs/adr/008-adr-008-signal-promotion.md)) |
 | Exception Contract Drift (ECM) | 0.03 | Added in v0.7.1 ([ADR-008](https://github.com/mick-gsk/drift/blob/main/docs/adr/008-adr-008-signal-promotion.md)) |
-| Phantom Reference (PHR) | 0.02 | Promoted for scoring in [ADR-039](https://github.com/mick-gsk/drift/blob/main/decisions/ADR-039-activate-agent-safety-signals.md) |
-| Missing Authorization (MAZ) | 0.02 | Promoted for scoring in [ADR-039](https://github.com/mick-gsk/drift/blob/main/decisions/ADR-039-activate-agent-safety-signals.md) |
+| Phantom Reference (PHR) | 0.02 | Promoted for scoring in [ADR-039](https://github.com/mick-gsk/drift/blob/main/docs/decisions/ADR-039-activate-agent-safety-signals.md) |
+| Missing Authorization (MAZ) | 0.02 | Promoted for scoring in [ADR-039](https://github.com/mick-gsk/drift/blob/main/docs/decisions/ADR-039-activate-agent-safety-signals.md) |
 | Cohesion Deficit (COD) | 0.01 | Added in v0.7.3 as cohesion-focused coherence detector |
-| Hardcoded Secret (HSC) | 0.01 | Promoted for scoring in [ADR-039](https://github.com/mick-gsk/drift/blob/main/decisions/ADR-039-activate-agent-safety-signals.md) |
-| Insecure Default (ISD) | 0.01 | Promoted for scoring in [ADR-039](https://github.com/mick-gsk/drift/blob/main/decisions/ADR-039-activate-agent-safety-signals.md) |
+| Hardcoded Secret (HSC) | 0.01 | Promoted for scoring in [ADR-039](https://github.com/mick-gsk/drift/blob/main/docs/decisions/ADR-039-activate-agent-safety-signals.md) |
+| Insecure Default (ISD) | 0.01 | Promoted for scoring in [ADR-039](https://github.com/mick-gsk/drift/blob/main/docs/decisions/ADR-039-activate-agent-safety-signals.md) |
 | Co-Change Coupling (CCC) | 0.005 | Added in v0.8.0 for hidden git-history coupling without explicit imports |
-| Fan-Out Explosion (FOE) | 0.005 | Promoted for scoring in [ADR-039](https://github.com/mick-gsk/drift/blob/main/decisions/ADR-039-activate-agent-safety-signals.md) |
+| Fan-Out Explosion (FOE) | 0.005 | Promoted for scoring in [ADR-039](https://github.com/mick-gsk/drift/blob/main/docs/decisions/ADR-039-activate-agent-safety-signals.md) |
 
 ### Report-only Signals (`weight=0.0`)
 

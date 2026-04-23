@@ -9,7 +9,7 @@ Diese Instruction erzwingt verifizierte Zitation fuer Agenten-Aussagen
 ueber drifts eigene Entscheidungsgrundlage. Sie ergaenzt die
 [Drift Policy Instruction](drift-policy.instructions.md) und ersetzt sie nicht.
 
-**Autoritative Quelle:** [ADR-091 — Drift-Retrieval-RAG](../../decisions/ADR-091-drift-retrieval-rag.md).
+**Autoritative Quelle:** [ADR-091 — Drift-Retrieval-RAG](../../docs/decisions/ADR-091-drift-retrieval-rag.md).
 
 ## PFLICHT-GATE: Grounding-Check
 

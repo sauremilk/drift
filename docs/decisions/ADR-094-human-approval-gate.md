@@ -32,7 +32,7 @@ Einführung eines dreiteiligen, additiven Maintainer-Gates:
 
 - Trigger: `pull_request` auf `main` mit Pfad-Filter für Agent-nahe
   Dateien (`src/**`, `tests/**`, `drift.agent.prompt.md`, Schema-Dateien,
-  `decisions/**`).
+  `docs/decisions/**`).
 - Schritt 1: `drift analyze --format json --exit-zero`.
 - Schritt 2: Python-Inline-Check auf
   `agent_telemetry.agent_actions_taken[*].gate == "BLOCK"` sowie
@@ -52,7 +52,7 @@ Neuer Abschnitt „Agent-critical files" ergänzt folgende Pfade:
 - `src/drift/signal_registry.py`, `src/drift/intent/handoff.py`
 - `.github/workflows/drift-agent-gate.yml`
 - `scripts/verify_gate_not_bypassed.py`
-- `decisions/`
+- `docs/decisions/`
 
 Konsequenz: GitHub fordert automatisch @mick-gsk als Reviewer an; der
 Agent kann die eigene Review nicht substituieren.

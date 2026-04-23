@@ -5,7 +5,7 @@
 > kann statt nur statisch Schwellenwerte zu prüfen.
 >
 > **Status:** proposed — **blockiert durch Phase-B-Validierungsergebnis
-> gemäß [ADR-084](../decisions/ADR-084-positionierung-vibe-coding-tool.md)**
+> gemäß [ADR-084](../docs/decisions/ADR-084-positionierung-vibe-coding-tool.md)**
 > **Erstellt:** 2026-04-21
 > **Status: active, siehe ADR-084 Option C. Sub-ADR erforderlich vor Code-Änderungen.**
 > **Erfordert vor Beginn:** eigene ADR für die Trend-Gate-Heuristik

@@ -50,9 +50,9 @@ If unsure, prefer a draft ADR that states the uncertainty explicitly.
 
 ## Step 2: Choose The Right Template
 
-Use the general template in `decisions/templates/adr-template.md` for broad architecture or workflow decisions.
+Use the general template in `docs/decisions/templates/adr-template.md` for broad architecture or workflow decisions.
 
-When the decision is primarily about a signal, you must use `decisions/templates/signal-design-template.md` and complete its signal-specific fields. That template already forces the critical fields:
+When the decision is primarily about a signal, you must use `docs/decisions/templates/signal-design-template.md` and complete its signal-specific fields. That template already forces the critical fields:
 
 - problem class
 - heuristic
@@ -65,10 +65,10 @@ When the decision is primarily about a signal, you must use `decisions/templates
 
 ## Step 3: Create Or Update The ADR File
 
-Create the next ADR under `decisions/` using the repository numbering sequence:
+Create the next ADR under `docs/decisions/` using the repository numbering sequence:
 
 ```text
-decisions/ADR-NNN-short-slug.md
+docs/decisions/ADR-NNN-short-slug.md
 ```
 
 Required YAML frontmatter fields at the top of the file:
@@ -160,7 +160,7 @@ Do not change ADR status to `accepted` as part of the agent workflow.
 - `.github/instructions/drift-policy.instructions.md`
 - `.github/instructions/drift-quality-workflow.instructions.md`
 - `.github/skills/drift-commit-push/SKILL.md`
-- `decisions/templates/adr-template.md`
-- `decisions/templates/signal-design-template.md`
+- `docs/decisions/templates/adr-template.md`
+- `docs/decisions/templates/signal-design-template.md`
 - `DEVELOPER.md`
 - `CONTRIBUTING.md`

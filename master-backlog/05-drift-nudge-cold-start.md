@@ -7,7 +7,7 @@
 > **Status:** proposed (sekundär gegenüber Item 04)
 > **Erstellt:** 2026-04-21
 > **Status: active, siehe ADR-084 Option C. Sub-ADR erforderlich vor Code-Änderungen.**
-> **Verwandte Artefakte:** [ADR-084](../decisions/ADR-084-positionierung-vibe-coding-tool.md), [`benchmark_results/mcp_performance_smoke.json`](../benchmark_results/mcp_performance_smoke.json), [`.github/copilot-instructions.md`](../.github/copilot-instructions.md) (Post-Edit-Drift-Nudge-Pflicht)
+> **Verwandte Artefakte:** [ADR-084](../docs/decisions/ADR-084-positionierung-vibe-coding-tool.md), [`benchmark_results/mcp_performance_smoke.json`](../benchmark_results/mcp_performance_smoke.json), [`.github/copilot-instructions.md`](../.github/copilot-instructions.md) (Post-Edit-Drift-Nudge-Pflicht)
 
 ---
 

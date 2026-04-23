@@ -7,7 +7,7 @@ scope:
   - "src/drift/blast_radius/**"
   - "scripts/check_blast_radius_gate.py"
   - "scripts/validate_adr_frontmatter.py"
-  - "decisions/**"
+  - "docs/decisions/**"
   - ".github/skills/guard-*/**"
   - "hooks/pre-push"
   - ".github/instructions/drift-push-gates.instructions.md"
@@ -53,7 +53,7 @@ und abhängigen Module berechnet und in vier Oberflächen wirksam macht:
 3. **Versioniertes Artefakt** `blast_reports/<yyyymmdd_hhmmss>_<short_sha>.json`
    mit Schema-Version, `generated_by`-Block und reproduzierbarer Ancestry.
 4. **Pre-Push-Gate 9 ("Blast-Radius")**, das bei Commits in `src/drift/**`,
-   `decisions/**`, `POLICY.md`, `.github/skills/**` einen gültigen Report für
+   `docs/decisions/**`, `POLICY.md`, `.github/skills/**` einen gültigen Report für
    den Push-HEAD verlangt und bei `severity=critical` ohne Maintainer-Ack in
    `blast_reports/acks/<short_sha>.yaml` hart blockiert.
 

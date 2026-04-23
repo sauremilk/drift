@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Validiere ADR-Frontmatter gegen das ADR-087-Schema.
 
-Prüft alle ``decisions/ADR-*.md`` auf:
+Prüft alle ``docs/decisions/ADR-*.md`` auf:
 
 - bekannten ``status``
 - gültige ``criticality`` (wenn gesetzt)
@@ -39,7 +39,7 @@ def _main() -> int:
         return 1
 
     repo = Path(args.repo).resolve()
-    decisions_dir = repo / "decisions"
+    decisions_dir = repo / "docs" / "decisions"
     issues = validate_adr_frontmatter(decisions_dir)
 
     errors = [i for i in issues if i.severity == "error"]

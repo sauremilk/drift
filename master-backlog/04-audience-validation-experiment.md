@@ -2,7 +2,7 @@
 
 > **Zweck:** Empirisch klären, welche Zielgruppe Drift in der aktuellen
 > Distribution-Phase tatsächlich adoptiert. Liefert die Entscheidungs­grundlage
-> für [`decisions/ADR-084-positionierung-vibe-coding-tool.md`](../decisions/ADR-084-positionierung-vibe-coding-tool.md).
+> für [`docs/decisions/ADR-084-positionierung-vibe-coding-tool.md`](../docs/decisions/ADR-084-positionierung-vibe-coding-tool.md).
 >
 > **Status:** proposed
 > **Erstellt:** 2026-04-21

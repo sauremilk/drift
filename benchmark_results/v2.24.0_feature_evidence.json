@@ -31,7 +31,7 @@
   },
   "evidence": {
     "adr_scanner": {
-      "description": "stdlib-only ADR parser; scans decisions/*.md; filters by frontmatter status (accepted/proposed) and relevance (path tokens, task keywords); no pyyaml dependency",
+      "description": "stdlib-only ADR parser; scans docs/decisions/*.md; filters by frontmatter status (accepted/proposed) and relevance (path tokens, task keywords); no pyyaml dependency",
       "test_coverage": "tests/test_adr_scanner.py — accepted/proposed/rejected/obsolete/no_decisions_dir/scope_filter/task_filter/no_filter cases"
     },
     "brief_enrichment": {
@@ -48,5 +48,5 @@
     }
   },
   "audit_artifacts_updated": [],
-  "notes": "No signals changed; no audit artifact update required. copilot-instructions.md updated with mandatory Post-Edit Drift-Nudge section. drift.yaml updated to exclude doc_impl_drift from decisions/*."
+  "notes": "No signals changed; no audit artifact update required. copilot-instructions.md updated with mandatory Post-Edit Drift-Nudge section. drift.yaml updated to exclude doc_impl_drift from docs/decisions/*."
 }

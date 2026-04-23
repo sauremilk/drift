@@ -41,7 +41,7 @@ mindestens ein Finding aus dem vorherigen Scan-Ergebnis behebt
 
 ## Erfolgskriterien
 
-- Sub-ADR `decisions/ADR-NNN-trend-gate-enforcement.md` `proposed`
+- Sub-ADR `docs/decisions/ADR-NNN-trend-gate-enforcement.md` `proposed`
   mit Heuristik, Default-Konfiguration, Negativ-Klassen-Analyse
   (wann erzeugt das Gate FP-Blockaden?).
 - Config-Schema erweitert:
@@ -76,7 +76,7 @@ mindestens ein Finding aus dem vorherigen Scan-Ergebnis behebt
 
 ### Phase 1 — Sub-ADR
 
-- Template: `decisions/templates/adr-template.md`.
+- Template: `docs/decisions/templates/adr-template.md`.
 - Entscheidung beinhaltet **exakt** die Heuristik-Parameter und
   den Remediation-Detection-Algorithmus (Fingerprint-Match über
   Commit-Range).
@@ -150,7 +150,7 @@ mindestens ein Finding aus dem vorherigen Scan-Ergebnis behebt
 ```
 work_artifacts/feature_06_<YYYY-MM-DD>/
     run.md
-decisions/ADR-NNN-trend-gate-enforcement.md
+docs/decisions/ADR-NNN-trend-gate-enforcement.md
 src/drift/config/*                            # schema update
 src/drift/trend_history.py                    # API extension
 src/drift/quality_gate.py                     # new rule

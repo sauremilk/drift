@@ -45,7 +45,7 @@ Installationspfad via `.vsix`.
 
 ## Erfolgskriterien
 
-- Sub-ADR `decisions/ADR-NNN-vscode-extension-architecture.md`
+- Sub-ADR `docs/decisions/ADR-NNN-vscode-extension-architecture.md`
   `proposed` mit Architektur-Entscheidung:
   - MCP-Client-Lib-Wahl (offizielles SDK oder eigener Wrapper)
   - Diagnostic-Mapping Drift-Severity → VS-Code-Severity
@@ -82,7 +82,7 @@ Installationspfad via `.vsix`.
 
 ### Phase 1 — Sub-ADR
 
-- Template: `decisions/templates/adr-template.md`.
+- Template: `docs/decisions/templates/adr-template.md`.
 - Architektur-Entscheidungen begründet (MCP-Client-Wahl,
   Mono-Repo-Entscheidung, Versions-Matrix).
 
@@ -156,7 +156,7 @@ Installationspfad via `.vsix`.
 work_artifacts/feature_08_<YYYY-MM-DD>/
     run.md
     drift-vscode-<version>.vsix               # lokal, nicht committed
-decisions/ADR-NNN-vscode-extension-architecture.md
+docs/decisions/ADR-NNN-vscode-extension-architecture.md
 extensions/vscode-drift/
     package.json
     tsconfig.json

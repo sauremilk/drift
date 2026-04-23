@@ -21,7 +21,7 @@ yaml = pytest.importorskip("yaml")
 REPO = Path(__file__).resolve().parent.parent
 WORKFLOW = REPO / ".github" / "workflows" / "drift-agent-gate.yml"
 CODEOWNERS = REPO / ".github" / "CODEOWNERS"
-ADR = REPO / "decisions" / "ADR-094-human-approval-gate.md"
+ADR = REPO / "docs" / "decisions" / "ADR-094-human-approval-gate.md"
 
 
 def _load_workflow() -> dict:

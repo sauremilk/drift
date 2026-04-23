@@ -38,5 +38,5 @@
     "audit_results/risk_register.md",
     "audit_results/stride_threat_model.md"
   ],
-  "adr": "decisions/ADR-074-patch-engine.md"
+  "adr": "docs/decisions/ADR-074-patch-engine.md"
 }
