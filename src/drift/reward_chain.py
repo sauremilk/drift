@@ -77,8 +77,16 @@ def _score_specificity(recommendation: Recommendation, finding: Finding) -> floa
     return max(0.0, min(1.0, score))
 
 
-def _score_effort_accuracy(outcome: Outcome | None) -> float:
-    """0.0–1.0: how well the effort label matched actual fix duration."""
+def _score_effort_accuracy(
+    outcome: Outcome | None,
+    calibrated_effort: str | None = None,
+) -> float:
+    """0.0–1.0: how well the effort label matched actual fix duration.
+
+    When *calibrated_effort* is provided (the statistically-derived label from
+    ``recommendation_calibrator.py``), it is used as the expected class instead
+    of the raw ``outcome.effort_estimate``.
+    """
     if outcome is None or outcome.days_to_fix is None:
         return 0.0
 
@@ -90,7 +98,10 @@ def _score_effort_accuracy(outcome: Outcome | None) -> float:
     else:
         actual_class = 2  # high
 
-    estimated_class = _EFFORT_CLASS.get(outcome.effort_estimate, 1)
+    estimated_label = (
+        calibrated_effort if calibrated_effort is not None else outcome.effort_estimate
+    )
+    estimated_class = _EFFORT_CLASS.get(estimated_label, 1)
     diff = abs(actual_class - estimated_class)
     if diff == 0:
         return 1.0
@@ -134,6 +145,7 @@ def compute_reward(
     finding: Finding,
     *,
     all_outcomes: list[Outcome] | None = None,
+    calibrated_effort: str | None = None,
 ) -> RewardScore:
     """Compute a deterministic reward score for a recommendation.
 
@@ -148,6 +160,10 @@ def compute_reward(
         The original finding the recommendation is for.
     all_outcomes:
         Full outcome history, used for regression detection.
+    calibrated_effort:
+        Statistically-calibrated effort label for this signal type (from
+        ``recommendation_calibrator.load_effort``).  When provided, replaces
+        ``outcome.effort_estimate`` in the effort-accuracy sub-score.
 
     Returns
     -------
@@ -156,7 +172,7 @@ def compute_reward(
     """
     fix_speed = _score_fix_speed(outcome)
     specificity = _score_specificity(recommendation, finding)
-    effort_accuracy = _score_effort_accuracy(outcome)
+    effort_accuracy = _score_effort_accuracy(outcome, calibrated_effort)
     no_regression = _score_no_regression(outcome, all_outcomes)
 
     breakdown = {

@@ -243,7 +243,13 @@ def _refine_recommendations_with_are(
         outcome = outcome_by_fp.get(fp)
         if effort_map.get(primary_finding.signal_type):
             rec.effort = effort_map[primary_finding.signal_type]  # type: ignore[union-attr, attr-defined]
-        reward = compute_reward(outcome, rec, primary_finding, all_outcomes=outcomes)  # type: ignore[arg-type]
+        reward = compute_reward(
+            outcome,
+            rec,
+            primary_finding,
+            all_outcomes=outcomes,
+            calibrated_effort=effort_map.get(primary_finding.signal_type),
+        )  # type: ignore[arg-type]
         refined_recs.append(refine(rec, primary_finding, reward))  # type: ignore[arg-type]
     return refined_recs  # type: ignore[return-value]
 

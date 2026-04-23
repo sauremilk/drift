@@ -161,3 +161,42 @@ class TestComputeReward:
         result = compute_reward(outcome, _make_rec(), _make_finding())
         assert 0.0 <= result.total <= 1.0
         assert 0.0 <= result.confidence <= 1.0
+
+
+# ---------------------------------------------------------------------------
+# Calibrated effort wiring (Loop 4)
+# ---------------------------------------------------------------------------
+
+class TestCalibratedEffortWiring:
+    """Verify that calibrated_effort overrides outcome.effort_estimate."""
+
+    def test_calibrated_effort_exact_match_scores_1(self) -> None:
+        # days_to_fix=0.5 → actual=low(0); calibrated label "low" → exact match
+        outcome = _make_outcome(days_to_fix=0.5, effort_estimate="high")
+        result = compute_reward(
+            outcome, _make_rec(), _make_finding(), calibrated_effort="low"
+        )
+        assert result.breakdown["effort_accuracy"] == 1.0
+
+    def test_calibrated_effort_off_by_one_scores_half(self) -> None:
+        # days_to_fix=0.5 → actual=low(0); calibrated label "medium"(1) → off-by-one
+        outcome = _make_outcome(days_to_fix=0.5, effort_estimate="low")
+        result = compute_reward(
+            outcome, _make_rec(), _make_finding(), calibrated_effort="medium"
+        )
+        assert result.breakdown["effort_accuracy"] == 0.5
+
+    def test_fallback_to_outcome_estimate_when_no_calibrated_effort(self) -> None:
+        # days_to_fix=0.5 → actual=low(0); outcome says "low" → exact match (no calibration)
+        outcome = _make_outcome(days_to_fix=0.5, effort_estimate="low")
+        result = compute_reward(outcome, _make_rec(), _make_finding())
+        assert result.breakdown["effort_accuracy"] == 1.0
+
+    def test_calibrated_effort_none_falls_back_to_outcome(self) -> None:
+        # Explicit None → same as not passing
+        outcome = _make_outcome(days_to_fix=0.5, effort_estimate="high")
+        result = compute_reward(
+            outcome, _make_rec(), _make_finding(), calibrated_effort=None
+        )
+        # outcome says "high"(2) vs actual low(0) → diff=2 → 0.0
+        assert result.breakdown["effort_accuracy"] == 0.0
