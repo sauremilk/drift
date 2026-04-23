@@ -1,14 +1,17 @@
 ## [Unreleased]
 
+## [2.34.2] – 2026-04-23
+
+Short version: DSOL v2 — score-gated write-back mit Convergence-Check (ADR-098), CI/Workflow-Stabilisierung.
+
 ### Added
 
-- **DSOL v2: Score-Gated Write-Back + Convergence-Check (ADR-098).** Neuer opt-in `writeback`-Job im Workflow `self-improvement-loop.yml` mit `Score-Gate` (nur Proposals >= `min-proposal-score` werden angewendet) und `Convergence-Gate`. Neues Workflow-Input `enable-writeback` (default `false`, nie via Cron, nur manuell). Staleness-Detection: `DRIFT_SELF_SCAN_FAILED=1` wenn Self-Scan fehlschlägt. Neue Hilfsskripte `scripts/check_dsol_convergence.py` und `scripts/validate_proposals.py`. ADR-098 dokumentiert die Entscheidung (Status: proposed).
+- **DSOL v2: Score-Gated Write-Back + Convergence-Check (ADR-098).** Opt-in `writeback`-Job im Workflow `self-improvement-loop.yml` (nur manuell via `enable-writeback`-Input, nie per Cron). Score-Gate filtert Proposals unterhalb `min-proposal-score`. Convergence-Gate verhindert Endlosschleifen. Neue Skripte `check_dsol_convergence.py` und `validate_proposals.py`.
 
 ### Fixed
 
-- **shellcheck SC1017/SC1134 auf Windows-Runner.** Normalisierung auf Binary-Modus umgestellt; `.gitattributes` mit `eol=lf` fuer alle Text-Dateien ergaenzt.
-- **Vendored Shell-Skripte von shellcheck excludiert.** Exclude-Pattern in `.pre-commit-config.yaml` um `demos/.tools/` erweitert.
-- **Baseline-Test Rich word-wrap.** `soft_wrap=True` in `baseline.py` verhindert mid-word-Umbruch bei langen Pfaden.
+- **shellcheck SC1017/SC1134 auf Windows-Runner.** Normalisierung auf LF; `.gitattributes` ergänzt.
+- **Baseline-Test Rich word-wrap.** `soft_wrap=True` verhindert mid-word-Umbruch bei langen Pfaden.
 
 ## [2.34.1] – 2026-04-23
 
