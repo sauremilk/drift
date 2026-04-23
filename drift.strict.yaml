@@ -1,0 +1,32 @@
+# Strict drift config — used in the two-lane CI score gate.
+#
+# Differences from drift.yaml (default):
+#   • fail_on: medium  (default lane uses "high")
+#   • auto_calibrate: false  (no feedback-based relaxation in CI)
+#   • path_overrides removed  (all signals fire everywhere; no suppression)
+#
+# Purpose: catch regressions that the default config masks via per-path
+# signal exclusions or calibration relaxations.
+
+fail_on: medium
+auto_calibrate: false
+
+exclude:
+  - ".venv/**"
+  - ".venv-1/**"
+  - "benchmarks/**"
+  - "benchmark_results/**"
+  - "data/**"
+  - "community_flywheel_output/**"
+  - "work_artifacts/**"
+  - "tagesplanung/**"
+  - "site/**"
+  - "overrides/**"
+  - "extensions/**/node_modules/**"
+  - "examples/**"
+  - "scripts/**"
+  - "docs-site/**"
+  - "tests/fixtures/**"
+  - "hooks/**"
+  - "demos/**"
+  - ".drift/**"
