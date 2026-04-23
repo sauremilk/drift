@@ -673,9 +673,9 @@ else
 	"$PYTHON_CMD" -m pytest -q --tb=short --cov --cov-report= --ignore=tests/test_smoke_real_repos.py
 fi
 
-# 5. Self-analysis
+# 5. Self-analysis (scoped to src/drift to keep runtime manageable)
 echo ">>> [5/6] Running self-analysis..."
-drift analyze --repo . --format json --exit-zero > /dev/null
+drift analyze --repo . --path src/drift --format json --exit-zero > /dev/null
 
 if [ -n "$current_head_sha" ]; then
 	printf "%s\n" "$current_head_sha" > "$LAST_SUCCESS_SHA_FILE"
