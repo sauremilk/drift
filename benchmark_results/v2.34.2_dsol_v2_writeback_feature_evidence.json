@@ -1,0 +1,28 @@
+{
+  "version": "2.34.2",
+  "feature": "DSOL v2: score-gated writeback with convergence check (ADR-098)",
+  "date": "2026-04-23",
+  "summary": "Adds opt-in writeback job to self-improvement-loop workflow. New inputs: enable-writeback (boolean, default false, never via cron) and min-proposal-score (threshold for proposal filtering). Staleness detection via DRIFT_SELF_SCAN_FAILED environment variable when self-scan step fails. New helper scripts: scripts/check_dsol_convergence.py (convergence gate logic) and scripts/validate_proposals.py (proposal schema + score validation). ADR-098 documents the decision with status proposed. Blast reports stored in blast_reports/ as timestamped JSON artifacts.",
+  "issues": [],
+  "design_goals": [
+    "Never run writeback automatically via cron — opt-in only via workflow_dispatch",
+    "Score-Gate: drop proposals below min-proposal-score threshold before applying",
+    "Convergence-Gate: detect stagnation when identical proposals repeat across cycles",
+    "Staleness detection: annotate report when self-scan fails",
+    "All writeback logic isolated in dedicated workflow job with contents:write permission only"
+  ],
+  "non_goals": [
+    "No new drift signals added",
+    "No changes to scoring weights or thresholds",
+    "No autonomous push or PR creation — writeback is file-level, not git-level"
+  ],
+  "test_coverage": {
+    "added_tests": []
+  },
+  "self_analysis": {
+    "precision_delta": "neutral",
+    "recall_delta": "neutral",
+    "notes": "No signal logic changed; writeback is a workflow-level operational feature only."
+  },
+  "audit_artifacts_updated": []
+}
