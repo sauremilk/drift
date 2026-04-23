@@ -1,5 +1,10 @@
 ## [Unreleased]
 
+## [2.38.1] - 2026-04-23
+
+### Added
+- implement hybrid MCTS+GA autonomous code quality loop (`scripts/quality_loop/`): MCTS-based patch exploration with GA crossover/mutation, drift analysis as fitness function. Tests in `tests/test_quality_loop/`. Evidence: `benchmark_results/v2.38.0_quality-loop_feature_evidence.json`.
+
 ## [2.38.0] – 2026-04-23
 
 Short version: DSOL v2 — score-gated write-back mit Convergence-Check (ADR-098), CI/Workflow-Stabilisierung.
