@@ -1,88 +1,21 @@
 {
-  "feature": "Drift Self-Improvement Loop (DSOL)",
-  "adr": "ADR-097",
-  "status": "proposed",
-  "date": "2025-11-23",
-  "user_driver": "ich spreche von einem Loop der nie endet und das System immer immer weiter optimiert.",
-  "summary": "Never-ending, compounding self-optimization loop for drift itself. Six-phase cycle (OBSERVE → DIAGNOSE → PROPOSE → EMIT → TRACK → WAIT). Strictly POLICY-compliant: no auto-merge, no PR comments, no push.",
-  "components": {
-    "engine": "src/drift/self_improvement/engine.py",
-    "package": "src/drift/self_improvement/__init__.py",
-    "cli": "src/drift/commands/self_improve.py",
-    "cli_registration": "src/drift/cli.py",
-    "cron_workflow": ".github/workflows/self-improvement-loop.yml",
-    "adr": "decisions/ADR-097-self-improvement-loop.md",
-    "tests": "tests/test_self_improvement_loop.py"
+  "version": "2.34.0",
+  "date": "2026-04-23",
+  "feature": "self improvement loop adr 097",
+  "description": "Feature evidence for self improvement loop adr 097 (v2.34.0).",
+  "generated_by": {
+    "script": "scripts/generate_feature_evidence.py",
+    "git_sha": "d9cc1dd576463f74c3ce8819b72344218ba311ba",
+    "drift_version": "0.0.0",
+    "timestamp": "2026-04-23T05:54:39.648575+00:00"
   },
-  "diagnostics": [
-    "regressive KPI slope (aggregate_f1, mutation_recall, precision_recall_mean) below -0.005",
-    "hotspot findings ranked by severity_weight × score (per-signal cap = max_items // 3)",
-    "stale audit (signal source newer than audit_results/*.md by >= 14 days)"
-  ],
-  "guardrails": {
-    "max_proposals_default": 10,
-    "per_signal_cap_formula": "max(1, max_items // 3)",
-    "workflow_permissions": "contents: read",
-    "auto_merge": false,
-    "pr_comment": false,
-    "push": false,
-    "scoring_self_modification": "explicitly out-of-scope"
-  },
-  "compounding": {
-    "ledger_path": ".drift/self_improvement_ledger.jsonl",
-    "format": "JSONL append-only",
-    "recurrence_signal": "previously seen proposal_id => recurrence=2 => sorts ahead of new",
-    "graceful_corruption_handling": "_safe_load_jsonl skips malformed lines silently"
-  },
-  "artefacts_per_cycle": [
-    "work_artifacts/self_improvement/<cycle_ts>/proposals.json",
-    "work_artifacts/self_improvement/<cycle_ts>/summary.md",
-    ".drift/self_improvement_ledger.jsonl (appended)"
-  ],
-  "cli": {
-    "group": "drift self-improve",
-    "subcommands": ["run", "ledger"],
-    "run_options": ["--repo", "--max-proposals", "--trend-window", "--format text|json"]
-  },
-  "workflow": {
-    "schedule": "17 4 * * 0 (weekly Sunday)",
-    "manual_trigger": "workflow_dispatch with max-proposals input",
-    "concurrency_group": "drift-self-improvement-loop",
-    "artifact_retention_days": 365,
-    "renders_summary_to": "$GITHUB_STEP_SUMMARY"
+  "self_analysis": {
+    "error": "JSON parse error: Extra data: line 101576 column 1 (char 4071887)"
   },
   "tests": {
-    "file": "tests/test_self_improvement_loop.py",
-    "count": 11,
-    "results": "11 passed in 0.68s",
-    "coverage": [
-      "max_proposals cap enforcement",
-      "per-signal dominance cap",
-      "recurrence compounding (run twice => recurrence=2)",
-      "regressive KPI slope detection",
-      "stable metric => no proposal",
-      "stale audit (mtime gap)",
-      "artefacts written deterministically",
-      "proposal_id stability across runs",
-      "CLI run subcommand wiring (json output)",
-      "CLI ledger subcommand handles missing ledger",
-      "ImprovementProposal frozen contract"
-    ]
+    "total_passing": 6248,
+    "total_failing": 0,
+    "exit_code": 0
   },
-  "audit_updates": [
-    "audit_results/fmea_matrix.md (4 new rows: loop runaway, metric gaming, ledger corruption, push without consent)",
-    "audit_results/risk_register.md (RISK-ADR-097-DSOL entry with severity, triggers, mitigations)"
-  ],
-  "policy_alignment": {
-    "policy_section": "POLICY.md §6, §8, §16",
-    "human_in_the_loop": true,
-    "no_unsolicited_posting": "workflow uploads artefact + writes job summary only — never opens issues or PR comments",
-    "bounded_blast_radius": "DEFAULT_MAX_PROPOSALS=10, per-signal cap, read-only permissions"
-  },
-  "out_of_scope_explicit": [
-    "auto-merging proposals",
-    "auto-commenting on issues or PRs",
-    "modifying signal scoring weights based on DSOL output",
-    "cross-repo DSOL execution"
-  ]
+  "audit_artifacts_updated": []
 }
