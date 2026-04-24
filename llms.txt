@@ -117,4 +117,3 @@ Full study: docs/STUDY.md
 ## Keywords
 
 architectural drift detection, architecture erosion analysis, cross-file coherence detection, structural code quality, architectural linter, architecture degradation, technical debt detection, dependency cycle detection, import analysis, pattern fragmentation, static analysis, Python, monorepo, GitHub Copilot, AI coding tools, architecture enforcement
-
