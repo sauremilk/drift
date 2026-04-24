@@ -145,7 +145,7 @@ _MCP_SERVER_LEGACY_REEXPORTS = (
 # ---------------------------------------------------------------------------
 
 
-@mcp.tool()
+@mcp.tool()  # drift:ignore[DCA]
 async def drift_scan(
     path: Annotated[str, Field(description="Repository path to analyze.")] = ".",
     target_path: Annotated[
@@ -227,7 +227,7 @@ async def drift_scan(
     )
 
 
-@mcp.tool()
+@mcp.tool()  # drift:ignore[DCA]
 async def drift_diff(
     path: Annotated[str, Field(description="Repository path to analyze.")] = ".",
     diff_ref: Annotated[
@@ -328,7 +328,7 @@ async def drift_diff(
     )
 
 
-@mcp.tool()
+@mcp.tool()  # drift:ignore[DCA]
 async def drift_explain(
     topic: Annotated[
         str,
@@ -363,7 +363,7 @@ async def drift_explain(
     )
 
 
-@mcp.tool()
+@mcp.tool()  # drift:ignore[DCA]
 async def drift_fix_plan(
     path: Annotated[str, Field(description="Repository path to analyze.")] = ".",
     signal: Annotated[
@@ -440,7 +440,7 @@ async def drift_fix_plan(
     )
 
 
-@mcp.tool()
+@mcp.tool()  # drift:ignore[DCA]
 async def drift_validate(
     path: Annotated[str, Field(description="Repository path to validate.")] = ".",
     config_file: Annotated[
@@ -472,7 +472,7 @@ async def drift_validate(
     )
 
 
-@mcp.tool()
+@mcp.tool()  # drift:ignore[DCA]
 async def drift_nudge(
     path: Annotated[str, Field(description="Repository path to analyze.")] = ".",
     changed_files: Annotated[
@@ -649,7 +649,7 @@ async def drift_shadow_verify(
     )
 
 
-@mcp.tool()
+@mcp.tool()  # drift:ignore[DCA]
 async def drift_verify(
     path: Annotated[str, Field(description="Repository path to analyze.")] = ".",
     fail_on: Annotated[
@@ -714,7 +714,7 @@ async def drift_verify(
     )
 
 
-@mcp.tool()
+@mcp.tool()  # drift:ignore[DCA]
 async def drift_brief(
     path: Annotated[str, Field(description="Repository path to analyze.")] = ".",
     task: Annotated[
@@ -776,7 +776,7 @@ async def drift_brief(
     )
 
 
-@mcp.tool()
+@mcp.tool()  # drift:ignore[DCA]
 async def drift_negative_context(
     path: Annotated[str, Field(description="Repository path to analyze.")] = ".",
     scope: Annotated[
@@ -829,7 +829,7 @@ async def drift_negative_context(
 # ---------------------------------------------------------------------------
 
 
-@mcp.tool()
+@mcp.tool()  # drift:ignore[DCA]
 async def drift_session_start(
     path: Annotated[str, Field(description="Repository path for the session.")] = ".",
     signals: Annotated[
@@ -907,7 +907,7 @@ async def drift_session_start(
     )
 
 
-@mcp.tool()
+@mcp.tool()  # drift:ignore[DCA]
 async def drift_session_status(
     session_id: Annotated[
         str, Field(description="The session ID returned by drift_session_start.")
@@ -922,7 +922,7 @@ async def drift_session_status(
     )
 
 
-@mcp.tool()
+@mcp.tool()  # drift:ignore[DCA]
 async def drift_session_update(
     session_id: Annotated[
         str, Field(description="The session ID to update.")
@@ -966,7 +966,7 @@ async def drift_session_update(
     )
 
 
-@mcp.tool()
+@mcp.tool()  # drift:ignore[DCA]
 async def drift_session_end(
     session_id: Annotated[
         str, Field(description="The session ID to end.")
@@ -1046,7 +1046,7 @@ async def drift_session_end(
 # ---------------------------------------------------------------------------
 
 
-@mcp.tool()
+@mcp.tool()  # drift:ignore[DCA]
 async def drift_task_claim(
     session_id: Annotated[
         str, Field(description="The active session ID from drift_session_start.")
@@ -1079,7 +1079,7 @@ async def drift_task_claim(
     )
 
 
-@mcp.tool()
+@mcp.tool()  # drift:ignore[DCA]
 async def drift_task_renew(
     session_id: Annotated[
         str, Field(description="The active session ID from drift_session_start.")
@@ -1106,7 +1106,7 @@ async def drift_task_renew(
     )
 
 
-@mcp.tool()
+@mcp.tool()  # drift:ignore[DCA]
 async def drift_task_release(
     session_id: Annotated[
         str, Field(description="The active session ID from drift_session_start.")
@@ -1133,7 +1133,7 @@ async def drift_task_release(
     )
 
 
-@mcp.tool()
+@mcp.tool()  # drift:ignore[DCA]
 async def drift_task_complete(
     session_id: Annotated[
         str, Field(description="The active session ID from drift_session_start.")
@@ -1165,7 +1165,7 @@ async def drift_task_complete(
     )
 
 
-@mcp.tool()
+@mcp.tool()  # drift:ignore[DCA]
 async def drift_task_status(
     session_id: Annotated[
         str, Field(description="The active session ID from drift_session_start.")
@@ -1179,7 +1179,7 @@ async def drift_task_status(
     )
 
 
-@mcp.tool()
+@mcp.tool()  # drift:ignore[DCA]
 async def drift_session_trace(
     session_id: Annotated[
         str, Field(description="Active session ID from drift_session_start.")
@@ -1198,7 +1198,7 @@ async def drift_session_trace(
     )
 
 
-@mcp.tool()
+@mcp.tool()  # drift:ignore[DCA]
 async def drift_guard_contract(
     path: Annotated[str, Field(description="Repository path.")] = ".",
     target: Annotated[
