@@ -82,6 +82,12 @@ def test_parse_cache_version_mismatch_evicts_entry(
     data["_v"] = _PARSE_CACHE_VERSION + 999
     cache_file.write_text(json.dumps(data), encoding="utf-8")
 
+    # Evict the L1 entry so the disk-path validation code is exercised.
+    with ParseCache._l1_lock:
+        bucket = ParseCache._l1_store.get(cache._cache_dir_key)
+        if bucket is not None:
+            bucket.pop(content_hash, None)
+
     assert cache.get(content_hash) is None
     assert not cache_file.exists()
 
@@ -102,6 +108,12 @@ def test_parse_cache_drift_version_mismatch_evicts_entry(
     data = json.loads(cache_file.read_text(encoding="utf-8"))
     data["_drift_v"] = "0.0.0-stale"
     cache_file.write_text(json.dumps(data), encoding="utf-8")
+
+    # Evict the L1 entry so the disk-path validation code is exercised.
+    with ParseCache._l1_lock:
+        bucket = ParseCache._l1_store.get(cache._cache_dir_key)
+        if bucket is not None:
+            bucket.pop(content_hash, None)
 
     assert cache.get(content_hash) is None
     assert not cache_file.exists()
@@ -129,6 +141,12 @@ def test_parse_cache_get_refreshes_mtime_on_hit(tmp_path: Path) -> None:
     cache_file = tmp_path / "parse" / f"{content_hash}.json"
     old_time = time.time() - 9 * 24 * 3600
     os.utime(cache_file, (old_time, old_time))
+
+    # Evict the L1 entry so the disk read path (and its utime refresh) is exercised.
+    with ParseCache._l1_lock:
+        bucket = ParseCache._l1_store.get(cache._cache_dir_key)
+        if bucket is not None:
+            bucket.pop(content_hash, None)
 
     recovered = cache.get(content_hash)
     assert recovered is not None
