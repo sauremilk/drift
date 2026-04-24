@@ -381,7 +381,7 @@ class GuardClauseDeficitSignal(BaseSignal):
                                 score=nesting_score,
                                 title=f"Deep nesting in {fn.name}()",
                                 description=(
-                                    f"Function '{fn.name}' in {pr.file_path} has "
+                                    f"Function '{fn.name}' in {pr.file_path.as_posix()} has "
                                     f"nesting depth {depth} (threshold: {max_nesting}). "
                                     f"Deep nesting makes control flow hard to follow."
                                 ),

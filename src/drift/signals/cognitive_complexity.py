@@ -427,7 +427,7 @@ class CognitiveComplexitySignal(BaseSignal):
             score=score,
             title=f"High cognitive complexity in {func_name}()",
             description=(
-                f"Function '{func_name}' in {pr.file_path} has "
+                f"Function '{func_name}' in {pr.file_path.as_posix()} has "
                 f"cognitive complexity {cc} (threshold: {threshold}). "
                 f"Complex control flow makes this function hard to "
                 f"understand and maintain.{description_suffix}"

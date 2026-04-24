@@ -115,7 +115,7 @@ class FanOutExplosionSignal(BaseSignal):
                     score=score,
                     title=f"Fan-out explosion in {pr.file_path.name}",
                     description=(
-                        f"{pr.file_path} imports {count} unique modules "
+                        f"{pr.file_path.as_posix()} imports {count} unique modules "
                         f"(threshold: {threshold}). High fan-out indicates "
                         f"a coupling hub that is fragile to upstream changes."
                     ),

@@ -893,7 +893,7 @@ class HardcodedSecretSignal(BaseSignal):  # drift:ignore[DCA]
             title=f"Hardcoded secret in '{var_name}'",
             description=(
                 f"{detail} "
-                f"Variable '{var_name}' at {file_path}:{lineno} should use "
+                f"Variable '{var_name}' at {file_path.as_posix()}:{lineno} should use "
                 f"environment variables or a secrets manager."
             ),
             file_path=file_path,

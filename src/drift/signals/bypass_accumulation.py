@@ -178,7 +178,7 @@ class BypassAccumulationSignal(BaseSignal):
                     score=score,
                     title=f"High bypass marker density in {pr.file_path.name}",
                     description=(
-                        f"{pr.file_path} has {total} bypass markers "
+                        f"{pr.file_path.as_posix()} has {total} bypass markers "
                         f"across ~{file_loc} LOC "
                         f"(density {density:.3f}, threshold {density_threshold:.3f}). "
                         f"Breakdown: {cat_desc}."

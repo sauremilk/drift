@@ -1,3 +1,12 @@
+## [2.42.7] - 2026-04-24
+
+Short version: All platform-dependent path separators in signal descriptions fixed — nine signal files now use `.as_posix()` and the golden snapshot test normalizes path separators for permanent platform independence.
+
+### Fixed
+- `signals/bypass_accumulation`, `cognitive_complexity`, `dead_code_accumulation`, `fan_out_explosion`, `guard_clause_deficit`, `hardcoded_secret`, `missing_authorization` (×2), `phantom_reference`, `type_safety_bypass`: Apply `.as_posix()` to all `file_path` / `pr.file_path` f-string usages in finding `description` fields so CI on Ubuntu no longer sees Windows backslash paths.
+- `tests/test_golden_snapshot`: Added `_normalize_path_seps()` helper that recursively replaces `\\` with `/` in all string values; called from `_canonical_json()` as a permanent prevention layer so golden comparisons are platform-independent regardless of future signal additions.
+- `tests/golden`: Regenerated `corpus_snapshot.json` and `corpus_snapshot.sarif` with normalized forward-slash paths.
+
 ## [2.42.6] - 2026-04-24
 
 Short version: Golden snapshot mismatch resolved — near-duplicate and semantic-duplicate finding descriptions now use `.as_posix()` paths on all platforms.

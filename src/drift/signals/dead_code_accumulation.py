@@ -609,7 +609,7 @@ class DeadCodeAccumulationSignal(BaseSignal):
                         f"in {file_path.name}"
                     ),
                     description=(
-                        f"{file_path} exports {dead_count}/{total_exports} "
+                        f"{file_path.as_posix()} exports {dead_count}/{total_exports} "
                         f"public symbols that are never imported elsewhere: "
                         f"{', '.join(dead_names)}"
                         f"{'…' if dead_count > 10 else ''}. "

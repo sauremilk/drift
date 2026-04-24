@@ -612,7 +612,7 @@ class PhantomReferenceSignal(BaseSignal):
                     f"in {pr.file_path.name}"
                 ),
                 description=(
-                    f"{pr.file_path} uses {phantom_count} name"
+                    f"{pr.file_path.as_posix()} uses {phantom_count} name"
                     f"{'s' if phantom_count != 1 else ''} that cannot be "
                     f"resolved against local definitions, imports, builtins, "
                     f"or the project symbol table: "

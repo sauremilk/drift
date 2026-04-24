@@ -433,7 +433,7 @@ class MissingAuthorizationSignal(BaseSignal):
                     severity = Severity.LOW
 
                 description = (
-                    f"The route handler '{fn_name}' in {pr.file_path} "
+                    f"The route handler '{fn_name}' in {pr.file_path.as_posix()} "
                     f"is missing an authorization check. Without auth, "
                     f"any caller can access this endpoint. "
                     f"Detected framework: {framework}."
@@ -509,7 +509,7 @@ class MissingAuthorizationSignal(BaseSignal):
                     severity = Severity.LOW
 
                 description = (
-                    f"The route handler '{fn_name}' in {pr.file_path} "
+                    f"The route handler '{fn_name}' in {pr.file_path.as_posix()} "
                     f"is missing an authorization check. Without auth, "
                     f"any caller can access this endpoint. "
                     f"Detected framework: {framework}."

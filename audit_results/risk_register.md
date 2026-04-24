@@ -1,5 +1,20 @@
 ﻿# Risk Register
 
+## 2026-04-24 - Path Separator Normalization in Signal Descriptions (v2.42.7)
+
+- Risk ID: RISK-2026-04-24-PATH-SEP-NORMALIZATION
+- Component: `src/drift/signals/bypass_accumulation.py`, `cognitive_complexity.py`, `dead_code_accumulation.py`, `fan_out_explosion.py`, `guard_clause_deficit.py`, `hardcoded_secret.py`, `missing_authorization.py`, `phantom_reference.py`, `type_safety_bypass.py`, `src/drift/mcp_server.py`.
+- Type: Platform portability / output consistency.
+- Description: Nine signal files used `f"{file_path}"` (no `.as_posix()`) in finding `description` fields. On Windows, this produced backslash paths that caused golden snapshot mismatches on Ubuntu CI. Fixed by applying `.as_posix()` to all affected f-strings. The `mcp_server.py` fallback `Field()` function now returns a `SimpleNamespace` instead of `Ellipsis` so `get_type_hints` resolves parameter descriptions correctly on non-MCP environments. Golden snapshot updated with path normalization helper.
+- Severity: LOW - no runtime logic changed; purely affects output string formatting and test stability.
+- Triggers:
+  - Future signal additions using `f"{file_path}"` without `.as_posix()`.
+  - New MCP tool parameters using `Field()` in `mcp_server.py` when `mcp` extra is not installed.
+- Mitigations:
+  - `_normalize_path_seps()` added to `tests/test_golden_snapshot.py` as a permanent platform-independent comparison layer.
+  - `mcp_server.py` fallback `Field` now preserves kwargs via `SimpleNamespace`.
+- Residual risk: LOW - mitigations are structural and cover future additions automatically.
+
 ## 2026-04-23 - CI/Security-Hygiene Stabilization (ingestion API client hardening)
 
 - Risk ID: RISK-2026-04-23-INGESTION-API-CALLS

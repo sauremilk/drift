@@ -64,8 +64,10 @@ except ImportError:
     _MCP_AVAILABLE = False
 
     def Field(**_kwargs: object) -> Any:  # type: ignore[misc,no-redef]  # noqa: N802
-        """No-op fallback when pydantic is unavailable."""
-        return ...
+        """Fallback when pydantic is unavailable; preserves kwargs for catalog introspection."""
+        import types as _types
+
+        return _types.SimpleNamespace(**_kwargs)
 
     class _FallbackFastMCP:
         """Minimal fallback so helper functions stay importable without mcp extra."""

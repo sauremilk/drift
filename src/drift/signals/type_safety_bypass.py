@@ -270,7 +270,7 @@ class TypeSafetyBypassSignal(BaseSignal):
                         f"in {pr.file_path.name}"
                     ),
                     description=(
-                        f"{pr.file_path} contains {bypass_count} type safety "
+                        f"{pr.file_path.as_posix()} contains {bypass_count} type safety "
                         f"bypass pattern(s): {kind_summary}. "
                         f"These weaken TypeScript's type guarantees and "
                         f"can mask bugs at compile time."

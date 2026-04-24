@@ -97,11 +97,23 @@ def _run_corpus_analysis() -> tuple[str, str]:
         shutil.rmtree(cache_dir, ignore_errors=True)
 
 
+def _normalize_path_seps(obj: object) -> object:
+    """Normalize path separators in all string values to forward slashes."""
+    if isinstance(obj, dict):
+        return {k: _normalize_path_seps(v) for k, v in obj.items()}
+    if isinstance(obj, list):
+        return [_normalize_path_seps(item) for item in obj]
+    if isinstance(obj, str):
+        return obj.replace("\\", "/")
+    return obj
+
+
 def _canonical_json(raw: str, strip_fn: object = _strip_volatile) -> str:
-    """Parse, strip volatile fields, re-serialize with sorted keys."""
+    """Parse, strip volatile fields, normalize path separators, re-serialize with sorted keys."""
     data = json.loads(raw)
     cleaned = strip_fn(data)  # type: ignore[operator]
-    return json.dumps(cleaned, indent=2, sort_keys=True, ensure_ascii=False) + "\n"
+    normalized = _normalize_path_seps(cleaned)
+    return json.dumps(normalized, indent=2, sort_keys=True, ensure_ascii=False) + "\n"
 
 
 # ── Tests ─────────────────────────────────────────────────────────────────

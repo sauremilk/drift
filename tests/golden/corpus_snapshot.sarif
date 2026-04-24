@@ -1655,7 +1655,7 @@
             }
           ],
           "message": {
-            "text": "Deep nesting in transform_dataset()\nFunction 'transform_dataset' in src\\myapp\\processors\\transform.py has nesting depth 7 (threshold: 4). Deep nesting makes control flow hard to follow.\nFIX: Reduce nesting in 'transform_dataset' (depth 7, threshold 4): use early returns, extract nested blocks into helpers, or invert conditions."
+            "text": "Deep nesting in transform_dataset()\nFunction 'transform_dataset' in src/myapp/processors/transform.py has nesting depth 7 (threshold: 4). Deep nesting makes control flow hard to follow.\nFIX: Reduce nesting in 'transform_dataset' (depth 7, threshold 4): use early returns, extract nested blocks into helpers, or invert conditions."
           },
           "properties": {
             "drift:findingId": "430533c71fddda5c",
@@ -1686,7 +1686,7 @@
             }
           ],
           "message": {
-            "text": "Deep nesting in process_registration()\nFunction 'process_registration' in src\\myapp\\processors\\validator.py has nesting depth 6 (threshold: 4). Deep nesting makes control flow hard to follow.\nFIX: Reduce nesting in 'process_registration' (depth 6, threshold 4): use early returns, extract nested blocks into helpers, or invert conditions."
+            "text": "Deep nesting in process_registration()\nFunction 'process_registration' in src/myapp/processors/validator.py has nesting depth 6 (threshold: 4). Deep nesting makes control flow hard to follow.\nFIX: Reduce nesting in 'process_registration' (depth 6, threshold 4): use early returns, extract nested blocks into helpers, or invert conditions."
           },
           "properties": {
             "drift:findingId": "32ff79a120c7b724",
@@ -1717,7 +1717,7 @@
             }
           ],
           "message": {
-            "text": "Deep nesting in calculate_pricing()\nFunction 'calculate_pricing' in src\\myapp\\processors\\pricing.py has nesting depth 5 (threshold: 4). Deep nesting makes control flow hard to follow.\nFIX: Reduce nesting in 'calculate_pricing' (depth 5, threshold 4): use early returns, extract nested blocks into helpers, or invert conditions."
+            "text": "Deep nesting in calculate_pricing()\nFunction 'calculate_pricing' in src/myapp/processors/pricing.py has nesting depth 5 (threshold: 4). Deep nesting makes control flow hard to follow.\nFIX: Reduce nesting in 'calculate_pricing' (depth 5, threshold 4): use early returns, extract nested blocks into helpers, or invert conditions."
           },
           "properties": {
             "drift:findingId": "e897ab68ee7d4657",
@@ -1922,7 +1922,7 @@
             }
           ],
           "message": {
-            "text": "High cognitive complexity in calculate_pricing()\nFunction 'calculate_pricing' in src\\myapp\\processors\\pricing.py has cognitive complexity 52 (threshold: 15). Complex control flow makes this function hard to understand and maintain.\nFIX: Reduce cognitive complexity of 'calculate_pricing' (currently 52, threshold 15): extract nested logic into helper functions, replace nested conditionals with guard clauses, simplify boolean expressions."
+            "text": "High cognitive complexity in calculate_pricing()\nFunction 'calculate_pricing' in src/myapp/processors/pricing.py has cognitive complexity 52 (threshold: 15). Complex control flow makes this function hard to understand and maintain.\nFIX: Reduce cognitive complexity of 'calculate_pricing' (currently 52, threshold 15): extract nested logic into helper functions, replace nested conditionals with guard clauses, simplify boolean expressions."
           },
           "properties": {
             "drift:findingId": "89a56fec131a8f0f",
@@ -1953,7 +1953,7 @@
             }
           ],
           "message": {
-            "text": "High cognitive complexity in transform_dataset()\nFunction 'transform_dataset' in src\\myapp\\processors\\transform.py has cognitive complexity 108 (threshold: 15). Complex control flow makes this function hard to understand and maintain.\nFIX: Reduce cognitive complexity of 'transform_dataset' (currently 108, threshold 15): extract nested logic into helper functions, replace nested conditionals with guard clauses, simplify boolean expressions."
+            "text": "High cognitive complexity in transform_dataset()\nFunction 'transform_dataset' in src/myapp/processors/transform.py has cognitive complexity 108 (threshold: 15). Complex control flow makes this function hard to understand and maintain.\nFIX: Reduce cognitive complexity of 'transform_dataset' (currently 108, threshold 15): extract nested logic into helper functions, replace nested conditionals with guard clauses, simplify boolean expressions."
           },
           "properties": {
             "drift:findingId": "e79b20f2dbe5a8f1",
@@ -1984,7 +1984,7 @@
             }
           ],
           "message": {
-            "text": "High cognitive complexity in process_registration()\nFunction 'process_registration' in src\\myapp\\processors\\validator.py has cognitive complexity 27 (threshold: 15). Complex control flow makes this function hard to understand and maintain.\nFIX: Reduce cognitive complexity of 'process_registration' (currently 27, threshold 15): extract nested logic into helper functions, replace nested conditionals with guard clauses, simplify boolean expressions."
+            "text": "High cognitive complexity in process_registration()\nFunction 'process_registration' in src/myapp/processors/validator.py has cognitive complexity 27 (threshold: 15). Complex control flow makes this function hard to understand and maintain.\nFIX: Reduce cognitive complexity of 'process_registration' (currently 27, threshold 15): extract nested logic into helper functions, replace nested conditionals with guard clauses, simplify boolean expressions."
           },
           "properties": {
             "drift:findingId": "31e69f074a731507",
@@ -2014,7 +2014,7 @@
             }
           ],
           "message": {
-            "text": "8 potentially unused exports in db.py\nsrc\\myapp\\connectors\\db.py exports 8/8 public symbols that are never imported elsewhere: connect_postgres, connect_redis, connect_mongodb, connect_elasticsearch, connect_rabbitmq, connect_kafka, connect_memcached, connect_dynamodb. Dead code increases maintenance cost and confuses contributors.\nFIX: Review and remove 8 unused exports in db.py: connect_postgres, connect_redis, connect_mongodb, connect_elasticsearch, connect_rabbitmq, connect_kafka, connect_memcached, connect_dynamodb. If they are framework entry-points or dynamically loaded, mark with # drift:ignore or add to exclude patterns."
+            "text": "8 potentially unused exports in db.py\nsrc/myapp/connectors/db.py exports 8/8 public symbols that are never imported elsewhere: connect_postgres, connect_redis, connect_mongodb, connect_elasticsearch, connect_rabbitmq, connect_kafka, connect_memcached, connect_dynamodb. Dead code increases maintenance cost and confuses contributors.\nFIX: Review and remove 8 unused exports in db.py: connect_postgres, connect_redis, connect_mongodb, connect_elasticsearch, connect_rabbitmq, connect_kafka, connect_memcached, connect_dynamodb. If they are framework entry-points or dynamically loaded, mark with # drift:ignore or add to exclude patterns."
           },
           "properties": {
             "drift:findingId": "4586c0252e658564",
@@ -2044,7 +2044,7 @@
             }
           ],
           "message": {
-            "text": "2 potentially unused exports in orders.py\nsrc\\myapp\\handlers\\orders.py exports 2/3 public symbols that are never imported elsewhere: OrderError, PaymentError. Dead code increases maintenance cost and confuses contributors.\nFIX: Review and remove 2 unused exports in orders.py: OrderError, PaymentError. If they are framework entry-points or dynamically loaded, mark with # drift:ignore or add to exclude patterns."
+            "text": "2 potentially unused exports in orders.py\nsrc/myapp/handlers/orders.py exports 2/3 public symbols that are never imported elsewhere: OrderError, PaymentError. Dead code increases maintenance cost and confuses contributors.\nFIX: Review and remove 2 unused exports in orders.py: OrderError, PaymentError. If they are framework entry-points or dynamically loaded, mark with # drift:ignore or add to exclude patterns."
           },
           "properties": {
             "drift:findingId": "1c9f12909bdaeb27",
@@ -2074,7 +2074,7 @@
             }
           ],
           "message": {
-            "text": "2 potentially unused exports in payments.py\nsrc\\myapp\\handlers\\payments.py exports 2/2 public symbols that are never imported elsewhere: handle_payment, handle_refund. Dead code increases maintenance cost and confuses contributors.\nFIX: Review and remove 2 unused exports in payments.py: handle_payment, handle_refund. If they are framework entry-points or dynamically loaded, mark with # drift:ignore or add to exclude patterns."
+            "text": "2 potentially unused exports in payments.py\nsrc/myapp/handlers/payments.py exports 2/2 public symbols that are never imported elsewhere: handle_payment, handle_refund. Dead code increases maintenance cost and confuses contributors.\nFIX: Review and remove 2 unused exports in payments.py: handle_payment, handle_refund. If they are framework entry-points or dynamically loaded, mark with # drift:ignore or add to exclude patterns."
           },
           "properties": {
             "drift:findingId": "a6fb1fcc17a5ae10",
@@ -2104,7 +2104,7 @@
             }
           ],
           "message": {
-            "text": "9 potentially unused exports in core.py\nsrc\\myapp\\models\\core.py exports 9/9 public symbols that are never imported elsewhere: User.__init__, User.find_by_email, Product.__init__, Product.find_by_sku, Inventory.__init__, Inventory.check_stock, User, Product, Inventory. Dead code increases maintenance cost and confuses contributors.\nFIX: Review and remove 9 unused exports in core.py: User.__init__, User.find_by_email, Product.__init__, Product.find_by_sku, Inventory.__init__, Inventory.check_stock, User, Product, Inventory. If they are framework entry-points or dynamically loaded, mark with # drift:ignore or add to exclude patterns."
+            "text": "9 potentially unused exports in core.py\nsrc/myapp/models/core.py exports 9/9 public symbols that are never imported elsewhere: User.__init__, User.find_by_email, Product.__init__, Product.find_by_sku, Inventory.__init__, Inventory.check_stock, User, Product, Inventory. Dead code increases maintenance cost and confuses contributors.\nFIX: Review and remove 9 unused exports in core.py: User.__init__, User.find_by_email, Product.__init__, Product.find_by_sku, Inventory.__init__, Inventory.check_stock, User, Product, Inventory. If they are framework entry-points or dynamically loaded, mark with # drift:ignore or add to exclude patterns."
           },
           "properties": {
             "drift:findingId": "77350639a78592d9",
@@ -2134,7 +2134,7 @@
             }
           ],
           "message": {
-            "text": "2 potentially unused exports in enriched.py\nsrc\\myapp\\models\\enriched.py exports 2/3 public symbols that are never imported elsewhere: EnrichedOrder.__init__, EnrichedOrder.process. Dead code increases maintenance cost and confuses contributors.\nFIX: Review and remove 2 unused exports in enriched.py: EnrichedOrder.__init__, EnrichedOrder.process. If they are framework entry-points or dynamically loaded, mark with # drift:ignore or add to exclude patterns."
+            "text": "2 potentially unused exports in enriched.py\nsrc/myapp/models/enriched.py exports 2/3 public symbols that are never imported elsewhere: EnrichedOrder.__init__, EnrichedOrder.process. Dead code increases maintenance cost and confuses contributors.\nFIX: Review and remove 2 unused exports in enriched.py: EnrichedOrder.__init__, EnrichedOrder.process. If they are framework entry-points or dynamically loaded, mark with # drift:ignore or add to exclude patterns."
           },
           "properties": {
             "drift:findingId": "996071bbd7ad05a7",
@@ -2164,7 +2164,7 @@
             }
           ],
           "message": {
-            "text": "3 potentially unused exports in outlier_module.py\nsrc\\myapp\\outlier_module.py exports 3/3 public symbols that are never imported elsewhere: read_shared_memory, call_native_lib, process_binary_data. Dead code increases maintenance cost and confuses contributors.\nFIX: Review and remove 3 unused exports in outlier_module.py: read_shared_memory, call_native_lib, process_binary_data. If they are framework entry-points or dynamically loaded, mark with # drift:ignore or add to exclude patterns."
+            "text": "3 potentially unused exports in outlier_module.py\nsrc/myapp/outlier_module.py exports 3/3 public symbols that are never imported elsewhere: read_shared_memory, call_native_lib, process_binary_data. Dead code increases maintenance cost and confuses contributors.\nFIX: Review and remove 3 unused exports in outlier_module.py: read_shared_memory, call_native_lib, process_binary_data. If they are framework entry-points or dynamically loaded, mark with # drift:ignore or add to exclude patterns."
           },
           "properties": {
             "drift:findingId": "d82f97367eb454fa",
@@ -2194,7 +2194,7 @@
             }
           ],
           "message": {
-            "text": "2 potentially unused exports in service_a.py\nsrc\\myapp\\service_a.py exports 2/2 public symbols that are never imported elsewhere: process_order, validate_input. Dead code increases maintenance cost and confuses contributors.\nFIX: Review and remove 2 unused exports in service_a.py: process_order, validate_input. If they are framework entry-points or dynamically loaded, mark with # drift:ignore or add to exclude patterns."
+            "text": "2 potentially unused exports in service_a.py\nsrc/myapp/service_a.py exports 2/2 public symbols that are never imported elsewhere: process_order, validate_input. Dead code increases maintenance cost and confuses contributors.\nFIX: Review and remove 2 unused exports in service_a.py: process_order, validate_input. If they are framework entry-points or dynamically loaded, mark with # drift:ignore or add to exclude patterns."
           },
           "properties": {
             "drift:findingId": "c87beffd62d160a1",
@@ -2224,7 +2224,7 @@
             }
           ],
           "message": {
-            "text": "2 potentially unused exports in service_b.py\nsrc\\myapp\\service_b.py exports 2/2 public symbols that are never imported elsewhere: process_order, validate_input. Dead code increases maintenance cost and confuses contributors.\nFIX: Review and remove 2 unused exports in service_b.py: process_order, validate_input. If they are framework entry-points or dynamically loaded, mark with # drift:ignore or add to exclude patterns."
+            "text": "2 potentially unused exports in service_b.py\nsrc/myapp/service_b.py exports 2/2 public symbols that are never imported elsewhere: process_order, validate_input. Dead code increases maintenance cost and confuses contributors.\nFIX: Review and remove 2 unused exports in service_b.py: process_order, validate_input. If they are framework entry-points or dynamically loaded, mark with # drift:ignore or add to exclude patterns."
           },
           "properties": {
             "drift:findingId": "17ea666bd1b8eb9d",
@@ -2254,7 +2254,7 @@
             }
           ],
           "message": {
-            "text": "2 potentially unused exports in formatting.py\nsrc\\myapp\\utils\\formatting.py exports 2/2 public symbols that are never imported elsewhere: format_currency, format_money. Dead code increases maintenance cost and confuses contributors.\nFIX: Review and remove 2 unused exports in formatting.py: format_currency, format_money. If they are framework entry-points or dynamically loaded, mark with # drift:ignore or add to exclude patterns."
+            "text": "2 potentially unused exports in formatting.py\nsrc/myapp/utils/formatting.py exports 2/2 public symbols that are never imported elsewhere: format_currency, format_money. Dead code increases maintenance cost and confuses contributors.\nFIX: Review and remove 2 unused exports in formatting.py: format_currency, format_money. If they are framework entry-points or dynamically loaded, mark with # drift:ignore or add to exclude patterns."
           },
           "properties": {
             "drift:findingId": "706475a0f86d879c",
@@ -2284,7 +2284,7 @@
             }
           ],
           "message": {
-            "text": "2 potentially unused exports in naming.py\nsrc\\myapp\\utils\\naming.py exports 2/2 public symbols that are never imported elsewhere: validate_user_profile, ensure_database_connection. Dead code increases maintenance cost and confuses contributors.\nFIX: Review and remove 2 unused exports in naming.py: validate_user_profile, ensure_database_connection. If they are framework entry-points or dynamically loaded, mark with # drift:ignore or add to exclude patterns."
+            "text": "2 potentially unused exports in naming.py\nsrc/myapp/utils/naming.py exports 2/2 public symbols that are never imported elsewhere: validate_user_profile, ensure_database_connection. Dead code increases maintenance cost and confuses contributors.\nFIX: Review and remove 2 unused exports in naming.py: validate_user_profile, ensure_database_connection. If they are framework entry-points or dynamically loaded, mark with # drift:ignore or add to exclude patterns."
           },
           "properties": {
             "drift:findingId": "bdc070c6f6deda6a",
@@ -2314,7 +2314,7 @@
             }
           ],
           "message": {
-            "text": "6 potentially unused exports in test_api.py\ntests\\test_api.py exports 6/6 public symbols that are never imported elsewhere: test_user_creation, test_order_processing, test_payment_success, test_shipping_calculation, test_inventory_check, test_refund_process. Dead code increases maintenance cost and confuses contributors.\nFIX: Review and remove 6 unused exports in test_api.py: test_user_creation, test_order_processing, test_payment_success, test_shipping_calculation, test_inventory_check, test_refund_process. If they are framework entry-points or dynamically loaded, mark with # drift:ignore or add to exclude patterns."
+            "text": "6 potentially unused exports in test_api.py\ntests/test_api.py exports 6/6 public symbols that are never imported elsewhere: test_user_creation, test_order_processing, test_payment_success, test_shipping_calculation, test_inventory_check, test_refund_process. Dead code increases maintenance cost and confuses contributors.\nFIX: Review and remove 6 unused exports in test_api.py: test_user_creation, test_order_processing, test_payment_success, test_shipping_calculation, test_inventory_check, test_refund_process. If they are framework entry-points or dynamically loaded, mark with # drift:ignore or add to exclude patterns."
           },
           "properties": {
             "drift:findingId": "f7c244de91761eef",
