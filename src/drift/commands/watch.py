@@ -152,7 +152,7 @@ def _collect_changed_files(
 ) -> list[str]:
     """Collect relative posix paths for all relevant changed files."""
     result = []
-    for _change_type, path_str in changes:  # type: ignore[union-attr]
+    for _change_type, path_str in changes:  # type: ignore[union-attr,attr-defined]
         if not should_include(path_str):  # type: ignore[operator]
             continue
         try:

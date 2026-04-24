@@ -1,0 +1,28 @@
+{
+  "version": "2.39.2",
+  "date": "2026-04-24",
+  "feature": "Multi-seed evaluation layer with gate logic for MCTS+GA quality loop",
+  "description": "Feature evidence for Multi-seed evaluation layer with gate logic for MCTS+GA quality loop (v2.39.2).",
+  "generated_by": {
+    "script": "scripts/generate_feature_evidence.py",
+    "git_sha": "13a0a53ffaf53cf0f2291557e4656a5b91033072",
+    "drift_version": "2.39.2",
+    "timestamp": "2026-04-24T06:20:41.552829+00:00"
+  },
+  "self_analysis": {
+    "error": "JSON parse error: Extra data: line 42830 column 1 (char 1646023)"
+  },
+  "tests": {
+    "total_passing": 6604,
+    "total_failing": 0,
+    "exit_code": 0
+  },
+  "precision_recall_suite": {
+    "total_tests": 207,
+    "passing": 207,
+    "failing": 0,
+    "exit_code": 0,
+    "source": "live: pytest tests/test_precision_recall.py -v --tb=short"
+  },
+  "audit_artifacts_updated": []
+}

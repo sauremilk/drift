@@ -1,6 +1,9 @@
 ## [Unreleased]
 
-## [2.39.2] – 2026-04-24
+### Fixed
+- pre-push stability: align local mypy suppression in `src/drift/commands/watch.py` (`type: ignore[union-attr,attr-defined]`) and include a fresh quality-loop feature evidence artifact for gate compliance.
+
+## [2.40.0] – 2026-04-24
 
 Short version: Patch release — quality-loop src_path fix and working-tree normalization.
 
