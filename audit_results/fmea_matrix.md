@@ -1,5 +1,11 @@
 ﻿# FMEA Matrix
 
+## 2026-04-24 - fix(ci): near-dup and semantic-dup description path normalization (v2.42.6)
+
+| Component | Failure Mode | Cause | Effect | Detection | Mitigation | S | O | D | RPN | Status |
+|---|---|---|---|---|---|---:|---:|---:|---:|---|
+| `signals/mutant_duplicates.py` near-duplicate description | OS-specific path separator in `description` f-string for near-duplicate findings | `a.file_path` / `b.file_path` used directly without `.as_posix()` in two code paths (near-dup and semantic-dup) | Golden snapshot `corpus_snapshot.json` mismatches on Linux CI; backslash vs forward-slash divergence | `test_json_snapshot` (Ubuntu CI failure) | Changed both description f-strings to `a.file_path.as_posix()` / `b.file_path.as_posix()`; golden snapshots regenerated | 2 | 3 | 2 | 12 | Mitigated |
+
 ## 2026-04-24 - fix(ci): mutant_duplicates path-separator, mtime stability, tree-sitter dev dependency
 
 | Component | Failure Mode | Cause | Effect | Detection | Mitigation | S | O | D | RPN | Status |

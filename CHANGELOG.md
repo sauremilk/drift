@@ -1,3 +1,11 @@
+## [2.42.6] - 2026-04-24
+
+Short version: Golden snapshot mismatch resolved — near-duplicate and semantic-duplicate finding descriptions now use `.as_posix()` paths on all platforms.
+
+### Fixed
+- `signals/mutant_duplicates`: Apply `.as_posix()` to `file_path` in near-duplicate and semantic-duplicate `description` f-strings so CI on Ubuntu no longer sees Windows backslash paths in golden snapshot comparisons.
+- `tests/golden`: Regenerated `corpus_snapshot.json` and `corpus_snapshot.sarif` with correct forward-slash paths.
+
 ## [2.42.5] - 2026-04-24
 
 Short version: Three CI failures resolved: Windows mtime flakiness in dismissal cache, OS-specific path separators in mutant-duplicate descriptions, and missing tree-sitter dependency for TypeScript signal tests.

@@ -603,8 +603,8 @@ class MutantDuplicateSignal(BaseSignal):
                             score=score,
                             title=f"Near-duplicate ({sim:.0%}): {a.name} ↔ {b.name}",
                             description=(
-                                f"{a.file_path}:{a.start_line} and "
-                                f"{b.file_path}:{b.start_line} are {sim:.0%} similar. "
+                                f"{a.file_path.as_posix()}:{a.start_line} and "
+                                f"{b.file_path.as_posix()}:{b.start_line} are {sim:.0%} similar. "
                                 f"Small differences may indicate copy-paste divergence."
                             ),
                             file_path=a.file_path,
@@ -692,8 +692,8 @@ class MutantDuplicateSignal(BaseSignal):
                         score=score * 0.6,
                         title=(f"Semantic duplicate ({score:.0%}): {fn_a.name} ↔ {fn_b.name}"),
                         description=(
-                            f"{fn_a.file_path}:{fn_a.start_line} and "
-                            f"{fn_b.file_path}:{fn_b.start_line} are semantically "
+                            f"{fn_a.file_path.as_posix()}:{fn_a.start_line} and "
+                            f"{fn_b.file_path.as_posix()}:{fn_b.start_line} are semantically "
                             f"similar ({score:.0%}) despite different structure. "
                             f"They may serve the same purpose."
                         ),
