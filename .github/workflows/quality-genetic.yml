@@ -69,8 +69,36 @@ jobs:
           path: ga_result.json
           retention-days: 90
 
+      - name: Multi-seed evaluation (gate check)
+        id: evaluate
+        run: |
+          python -m scripts.quality_loop evaluate \
+            --src src/drift \
+            --mode hybrid \
+            --mcts-budget 10 \
+            --ga-generations 5 \
+            --ga-population 5 \
+            --seeds 11,22,33,44,55 \
+            --min-improvement 0.01 \
+            --min-median 0.01 \
+            --min-positive-rate 0.70 \
+            --drift-tolerance 0.005 \
+            --output-json eval_result.json \
+            --exit-zero
+          python -c "import json,os; d=json.load(open('eval_result.json')); open(os.environ['GITHUB_OUTPUT'],'a').write('gate_pass='+str(d['gate_pass']).lower()+'\n')"
+        continue-on-error: true
+
+      - name: Upload evaluation result artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: eval_result_ga
+          path: eval_result.json
+          retention-days: 90
+
       - name: Commit improvements (if any)
-        if: ${{ github.event.inputs.dry_run != 'true' }}
+        if: |
+          github.event.inputs.dry_run != 'true' &&
+          steps.evaluate.outputs.gate_pass == 'true'
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
@@ -78,6 +106,18 @@ jobs:
             echo "No changes to commit."
           else
             git add -A src/drift/
+            git commit -m "chore: GA quality loop improvement [skip ci]"
+            git push
+          fi
+
+      - name: Report gate block (no apply)
+        if: |
+          github.event.inputs.dry_run != 'true' &&
+          steps.evaluate.outputs.gate_pass != 'true'
+        run: |
+          echo "::warning::Quality-loop apply skipped: evaluation gate did not pass."
+          echo "See eval_result.json artifact for details."
+
             git commit -m "chore: GA quality loop improvement [skip ci]"
             git push
           fi

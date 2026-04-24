@@ -36,6 +36,16 @@ class OrchestratorResult:
     duration_seconds: float
     phases: list[PhaseResult] = field(default_factory=list)
     best_sequence: list[str] = field(default_factory=list)  # Human-readable ops
+    # Seed used for this run (None = unseeded)
+    seed: int | None = None
+    # Per-component baseline metrics
+    baseline_ruff: int = 0
+    baseline_mypy: int = 0
+    baseline_drift: float = 0.0
+    # Per-component final metrics (after apply, or best-case in dry-run)
+    final_ruff: int = 0
+    final_mypy: int = 0
+    final_drift: float = 0.0
 
     def to_dict(self) -> dict:
         d = asdict(self)
@@ -197,6 +207,23 @@ class HybridOrchestrator:
             # Always restore clean state
             base_snapshot.restore()
 
+        # ── Final component metrics ──────────────────────────────────────
+        # Measure post-apply metrics so the caller can detect regressions.
+        # * applied=True  → changes are on disk; measure directly.
+        # * dry_run=True  → temporarily apply, measure, then restore so the
+        #                   evaluator gets per-component delta without side effects.
+        # * no improvement → final = baseline (no changes were made).
+        if applied:
+            final_result = self._metric.measure()
+        elif best_sequence and improvement >= self._min_improvement:
+            # Dry-run branch: apply temporarily for measurement only.
+            for transform_cls, target_file in best_sequence:
+                apply_transform(transform_cls, target_file)
+            final_result = self._metric.measure()
+            base_snapshot.restore()
+        else:
+            final_result = baseline_result
+
         # ── Result ───────────────────────────────────────────────────────
         readable_sequence = [
             f"{t.name}@{f.relative_to(self._src_root)}"
@@ -212,4 +239,11 @@ class HybridOrchestrator:
             duration_seconds=time.monotonic() - start,
             phases=phases,
             best_sequence=readable_sequence,
+            seed=self._seed,
+            baseline_ruff=baseline_result.ruff_count,
+            baseline_mypy=baseline_result.mypy_count,
+            baseline_drift=baseline_result.drift_score,
+            final_ruff=final_result.ruff_count,
+            final_mypy=final_result.mypy_count,
+            final_drift=final_result.drift_score,
         )

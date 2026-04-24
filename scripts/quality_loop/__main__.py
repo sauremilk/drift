@@ -7,12 +7,16 @@ import sys
 from pathlib import Path
 
 import click
+from scripts.quality_loop.evaluate import evaluate_cmd
 from scripts.quality_loop.orchestrator import HybridOrchestrator
 
 
 @click.group()
 def cli() -> None:
     """Quality loop: autonomous code quality improvement via MCTS + GA."""
+
+
+cli.add_command(evaluate_cmd)
 
 
 @cli.command()
