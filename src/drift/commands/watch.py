@@ -135,48 +135,64 @@ def watch(repo: Path, debounce: float, config: Path | None, output: Path | None)
             recursive=True,
             step=100,
         ):
-            changed_files = []
-            for _change_type, path_str in changes:
-                if _should_include(path_str):
-                    try:
-                        rel = Path(path_str).relative_to(repo_path)
-                        changed_files.append(rel.as_posix())
-                    except ValueError:
-                        pass
-
+            changed_files = _collect_changed_files(changes, repo_path, _should_include)
             if not changed_files:
                 continue
-
-            console.print()
-            console.print(
-                f"[blue]⟳[/] {len(changed_files)} file(s) changed: "
-                f"[dim]{', '.join(changed_files[:5])}"
-                f"{'...' if len(changed_files) > 5 else ''}[/]",
-                highlight=False,
-            )
-
-            try:
-                result = nudge(
-                    path=repo_path,
-                    changed_files=changed_files,
-                )
-                _print_nudge_summary(result)
-                if output:
-                    summary = _build_nudge_summary(
-                        result, changed_files=changed_files, initial=False
-                    )
-                    _write_nudge_json(summary, output)
-            except Exception as exc:  # noqa: BLE001
-                console.print(f"[red]Analysis error:[/] {exc}")
-                if output:
-                    error_summary = _build_nudge_summary(
-                        {}, changed_files=changed_files, initial=False, error=str(exc)
-                    )
-                    _write_nudge_json(error_summary, output)
+            _handle_changes(changed_files, repo_path, output, nudge)
 
     except KeyboardInterrupt:
         console.print("\n[dim]Stopped watching.[/]")
         raise SystemExit(0) from None
+
+
+def _collect_changed_files(
+    changes: object,
+    repo_path: Path,
+    should_include: object,
+) -> list[str]:
+    """Collect relative posix paths for all relevant changed files."""
+    result = []
+    for _change_type, path_str in changes:  # type: ignore[union-attr]
+        if not should_include(path_str):  # type: ignore[operator]
+            continue
+        try:
+            rel = Path(path_str).relative_to(repo_path)
+            result.append(rel.as_posix())
+        except ValueError:
+            pass
+    return result
+
+
+def _handle_changes(
+    changed_files: list[str],
+    repo_path: Path,
+    output: Path | None,
+    nudge: object,
+) -> None:
+    """Print changes and run nudge for the given changed files."""
+    console.print()
+    console.print(
+        f"[blue]\u27f3[/] {len(changed_files)} file(s) changed: "
+        f"[dim]{', '.join(changed_files[:5])}"
+        f"{'...' if len(changed_files) > 5 else ''}[/]",
+        highlight=False,
+    )
+    try:
+        result = nudge(  # type: ignore[operator]
+            path=repo_path,
+            changed_files=changed_files,
+        )
+        _print_nudge_summary(result)
+        if output:
+            summary = _build_nudge_summary(result, changed_files=changed_files, initial=False)
+            _write_nudge_json(summary, output)
+    except Exception as exc:  # noqa: BLE001
+        console.print(f"[red]Analysis error:[/] {exc}")
+        if output:
+            error_summary = _build_nudge_summary(
+                {}, changed_files=changed_files, initial=False, error=str(exc)
+            )
+            _write_nudge_json(error_summary, output)
 
 
 def _print_nudge_summary(result: dict, *, initial: bool = False) -> None:

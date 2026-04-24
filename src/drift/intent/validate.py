@@ -72,6 +72,8 @@ def validate_contracts(
     list[ContractResult]
         One result per contract.
     """
+    if not isinstance(intent_data, dict):
+        raise TypeError(f"intent_data must be a dict, got {type(intent_data)!r}")
     contracts = [Contract.from_dict(c) for c in intent_data.get("contracts", [])]
 
     # Collect the signals we need

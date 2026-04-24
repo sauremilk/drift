@@ -93,6 +93,21 @@ def _code_content_hash(code: str) -> str:
     return hashlib.sha256(code.strip().encode("utf-8")).hexdigest()[:8]
 
 
+def _resolve_signal_tokens(raw: str, signal_abbrev: dict) -> set[str]:
+    """Parse and resolve comma-separated signal tokens from a suppression directive."""
+    resolved: set[str] = set()
+    for token in raw.split(","):
+        signal = token.strip()
+        if not signal:
+            continue
+        abbrev = signal.upper()
+        if abbrev in signal_abbrev:
+            resolved.add(signal_abbrev[abbrev])
+        else:
+            resolved.add(signal.lower())
+    return resolved
+
+
 def collect_inline_suppressions(
     files: list[FileInfo],
     repo_path: Path,
@@ -120,20 +135,9 @@ def collect_inline_suppressions(
             raw = match.group(1)
             signals: set[str] | None = None
             if raw:
-                resolved: set[str] = set()
-                for token in raw.split(","):
-                    signal = token.strip()
-                    if not signal:
-                        continue
-                    abbrev = signal.upper()
-                    if abbrev in SIGNAL_ABBREV:
-                        resolved.add(SIGNAL_ABBREV[abbrev])
-                    else:
-                        resolved.add(signal.lower())
-                signals = resolved
+                signals = _resolve_signal_tokens(raw, SIGNAL_ABBREV)
 
-            tail = line[match.end() :]
-            # Code content = everything before the drift:ignore comment
+            tail = line[match.end():]
             code_part = line[: match.start()]
             entries.append(
                 InlineSuppression(

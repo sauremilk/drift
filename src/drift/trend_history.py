@@ -50,6 +50,18 @@ def load_history(history_file: Path) -> list[dict]:
     return snapshots
 
 
+def _atomic_replace(tmp_path: Path, dest: Path) -> None:
+    """Replace *dest* with *tmp_path*, retrying on Windows PermissionError."""
+    for attempt in range(_HISTORY_REPLACE_RETRIES):
+        try:
+            tmp_path.replace(dest)
+            return
+        except PermissionError:
+            if attempt >= _HISTORY_REPLACE_RETRIES - 1:
+                raise
+            time.sleep(_HISTORY_REPLACE_BACKOFF_SECONDS * (attempt + 1))
+
+
 def save_history(history_file: Path, snapshots: list[dict]) -> None:
     """Persist snapshots (last 100) to the history JSON file."""
     history_file.parent.mkdir(parents=True, exist_ok=True)
@@ -63,15 +75,7 @@ def save_history(history_file: Path, snapshots: list[dict]) -> None:
     try:
         with os.fdopen(fd, "w", encoding="utf-8") as handle:
             handle.write(content)
-        for attempt in range(_HISTORY_REPLACE_RETRIES):
-            try:
-                tmp_path.replace(history_file)
-                break
-            except PermissionError:
-                # On Windows, concurrent writers can briefly lock the destination.
-                if attempt >= _HISTORY_REPLACE_RETRIES - 1:
-                    raise
-                time.sleep(_HISTORY_REPLACE_BACKOFF_SECONDS * (attempt + 1))
+        _atomic_replace(tmp_path, history_file)
     except OSError:
         with suppress(OSError):
             tmp_path.unlink(missing_ok=True)

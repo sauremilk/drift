@@ -190,6 +190,8 @@ def validate_adr_frontmatter(
     - ``scope``-Einträge müssen non-empty Strings sein (Error).
     - Fehlendes ``scope`` bei aktiven ADRs ist Warning (Text-Fallback greift).
     """
+    if not isinstance(decisions_dir, Path):
+        raise TypeError(f"decisions_dir must be a Path, got {type(decisions_dir)!r}")
     issues: list[ADRValidationIssue] = []
     if not decisions_dir.is_dir():
         return issues
