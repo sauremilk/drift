@@ -1,22 +1,17 @@
-﻿## [Unreleased]
+## [2.41.0] - 2026-04-24
+
+Short version: Signal dependency DAG scheduler, context-aware finding priority, scoring/suppression/incremental hardening.
 
 ### Added
-- `src/drift/signals/dependency_dag.py`: topological scheduler for signal classes via `depends_on_signals`; stable fallback order preserved for signals without declared dependencies.
-- `src/drift/finding_priority.py`: context-aware finding priority (issue #370); priority levels derived from signal metadata, file change frequency, and suppression state.
-- `workspace-automation-orchestrator` skill: detects and automates repetitive dev workflows in the workspace.
-- `.learnings/` directory: self-improving agent error/feature/learnings log.
-- External skills collection: `external-dotskills-*`, `external-personal-os-*`, `external-skill-conductor`, `external-teammate-skill`, and others.
+- Topological signal scheduler (`dependency_dag.py`) via `depends_on_signals`; stable fallback order for undeclared dependencies.
+- Context-aware finding priority (issue #370): priority from signal metadata, file change frequency, and suppression state.
+- `workspace-automation-orchestrator` skill; `.learnings/` self-improving-agent log; external skills collection.
 
 ### Changed
-- `src/drift/scoring/engine.py`: scoring hardening — per-signal weight application and degradation-cause tracking.
-- `src/drift/suppression.py`: suppression context enrichment with file-level override paths.
-- `src/drift/incremental.py`: incremental analysis caching improvements.
-- `src/drift/embeddings.py`: embedding stability fixes for cross-file signal matching.
-- `.github/copilot-instructions.md`, `.github/prompts/drift-reduce-findings.prompt.md`: agent instruction updates.
+- Scoring hardening (per-signal weight application, degradation-cause tracking), suppression context enrichment, incremental caching, embedding stability improvements, and agent instruction/prompt updates.
 
 ### Fixed
-- CI: replace OIDC-based Codecov upload with `CODECOV_TOKEN` secret to fix 0% coverage badge after repo transfer
-- CI: add `[tool.coverage.paths]` mapping and `codecov.yml` path fixes to resolve 0% Codecov coverage caused by absolute runner paths in coverage.xml
+- Codecov coverage reporting restored: switched to `CODECOV_TOKEN` secret and added `[tool.coverage.paths]` mapping to resolve 0% badge after repo transfer.
 
 ## [2.40.4] - 2026-04-24
 

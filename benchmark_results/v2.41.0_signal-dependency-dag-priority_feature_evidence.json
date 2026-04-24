@@ -5,12 +5,12 @@
   "description": "Feature evidence for signal dependency dag priority (v2.41.0).",
   "generated_by": {
     "script": "scripts/generate_feature_evidence.py",
-    "git_sha": "507825dae39ef890db426656aa098671b8131989",
+    "git_sha": "d539e5baab68be971271fd34027ba01b255ae726",
     "drift_version": "2.39.2",
-    "timestamp": "2026-04-24T10:05:02.908265+00:00"
+    "timestamp": "2026-04-24T10:06:43.424933+00:00"
   },
   "self_analysis": {
-    "error": "JSON parse error: Extra data: line 43137 column 1 (char 1658134)"
+    "error": "JSON parse error: Extra data: line 43137 column 1 (char 1658125)"
   },
   "tests": {
     "total_passing": 6624,

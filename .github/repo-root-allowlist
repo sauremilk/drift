@@ -33,6 +33,7 @@ ROADMAP.md
 SECURITY.md
 SUPPORT.md
 action.yml
+audit_results
 benchmarks
 benchmark_results
 codecov.yml
