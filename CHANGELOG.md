@@ -1,4 +1,4 @@
-## [Unreleased]
+﻿## [Unreleased]
 
 ### Fixed
 - CI: replace OIDC-based Codecov upload with `CODECOV_TOKEN` secret to fix 0% coverage badge after repo transfer
@@ -9,17 +9,12 @@
 Short version: MCTS config-space optimizer + GA/hybrid hardenings with empirical multi-seed evidence (gate_pass: true for MCTS and hybrid loops).
 
 ### Added
-- `scripts/quality_loop/config_transforms.py`: 28 named, frozen `ConfigAction` arms for UCB1 bandit search over drift config space (threshold/weight mutations).
-- `scripts/quality_loop/config_mcts.py`: `ConfigMCTSSearch` — UCB1 bandit that optimizes DriftConfig via `PrecisionRecallMetric` (aggregate F1 over ground-truth fixture suite).
-- `scripts/quality_loop/pr_metric.py`: `PrecisionRecallMetric` adapter exposing `measure(config) -> float` for use as a fitness function.
-- `scripts/quality_loop/__main__.py`: new `config-optimize` CLI command (`--budget`, `--output-json`, `--exit-zero`, `--seed`).
-- `.github/workflows/quality-config-optimize.yml`: weekly (Saturday 01:00 UTC) GitHub Actions workflow for config-space MCTS.
-- `src/drift/precision.py`: `config_override: DriftConfig | None` param for `run_fixture`/`evaluate_fixtures`; `summary_dict()` method on `PrecisionRecallReport`.
-- Empirical evidence: MCTS loop gate_pass=true (5/5 seeds, median +0.243); hybrid loop gate_pass=true (2/3 seeds, median +0.122); config-optimize F1=1.0 baseline, zero regression.
+- MCTS config-space optimizer: `ConfigMCTSSearch` (UCB1 bandit, 28 `ConfigAction` arms) maximizes aggregate F1 over precision fixtures; new `config-optimize` CLI command and `quality-config-optimize.yml` workflow.
+- `src/drift/precision.py`: `config_override` param for `run_fixture`/`evaluate_fixtures`; `summary_dict()` on `PrecisionRecallReport`.
+- Empirical evidence: MCTS gate_pass=true (5/5 seeds, median +0.243), hybrid gate_pass=true (2/3 seeds, median +0.122); config-optimize F1=1.0 baseline, zero regression.
 
 ### Fixed
-- quality loop evidence gate repaired (demo corpus, sys.executable, repo_root/src_path separation, json float sanitization)
-- GitHub Actions workflows `quality-mcts.yml` and `quality-genetic.yml` hardened: script-injection safety, concurrency groups, Draft PR branch strategy, `GITHUB_STEP_SUMMARY`, input bounds validation.
+- `quality-mcts.yml` and `quality-genetic.yml` hardened (script-injection safety, concurrency groups, Draft PR, `GITHUB_STEP_SUMMARY`); quality loop evidence gate repaired.
 
 ## [2.40.1] – 2026-04-25
 

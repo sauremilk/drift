@@ -88,6 +88,7 @@ Short version: summary.
 def test_validate_version_tag_lineage_fails_when_tag_missing(monkeypatch):
     module = _load_module()
 
+    monkeypatch.delenv("DRIFT_TAG_LINEAGE_WARN", raising=False)
     monkeypatch.setattr(module, "_tag_exists", lambda _tag: False)
 
     try:

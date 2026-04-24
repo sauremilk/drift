@@ -35,6 +35,7 @@ SUPPORT.md
 action.yml
 benchmarks
 benchmark_results
+codecov.yml
 demos
 docs
 docs-site
