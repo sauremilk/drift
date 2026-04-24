@@ -84,6 +84,8 @@ def test_signal_label_fallback_returns_real_signal_id(monkeypatch) -> None:
 
 
 def test_analyze_no_color_uses_colorless_console(monkeypatch, tmp_path: Path) -> None:
+    import drift.output.rich_output as rich_output
+
     monkeypatch.setattr("drift.config.DriftConfig.load", lambda *_args, **_kwargs: _DummyConfig())
     monkeypatch.setattr("drift.analyzer.analyze_repo", lambda *_args, **_kwargs: _sample_analysis())
 
@@ -92,7 +94,7 @@ def test_analyze_no_color_uses_colorless_console(monkeypatch, tmp_path: Path) ->
     def _render_full_report(*_args, **_kwargs) -> None:
         captured["no_color"] = _args[1].no_color
 
-    monkeypatch.setattr("drift.output.rich_output.render_full_report", _render_full_report)
+    monkeypatch.setattr(rich_output, "render_full_report", _render_full_report)
 
     runner = CliRunner()
     result = runner.invoke(analyze, ["--repo", str(tmp_path), "--no-color"])
@@ -102,6 +104,8 @@ def test_analyze_no_color_uses_colorless_console(monkeypatch, tmp_path: Path) ->
 
 
 def test_check_no_color_uses_colorless_console(monkeypatch, tmp_path: Path) -> None:
+    import drift.output.rich_output as rich_output
+
     monkeypatch.setattr("drift.config.DriftConfig.load", lambda *_args, **_kwargs: _DummyConfig())
     monkeypatch.setattr("drift.analyzer.analyze_diff", lambda *_args, **_kwargs: _sample_analysis())
 
@@ -110,7 +114,7 @@ def test_check_no_color_uses_colorless_console(monkeypatch, tmp_path: Path) -> N
     def _render_full_report(*_args, **_kwargs) -> None:
         captured["no_color"] = _args[1].no_color
 
-    monkeypatch.setattr("drift.output.rich_output.render_full_report", _render_full_report)
+    monkeypatch.setattr(rich_output, "render_full_report", _render_full_report)
 
     runner = CliRunner()
     result = runner.invoke(check, ["--repo", str(tmp_path), "--no-color"])
