@@ -4,7 +4,7 @@
 - CI: replace OIDC-based Codecov upload with `CODECOV_TOKEN` secret to fix 0% coverage badge after repo transfer
 - CI: add `[tool.coverage.paths]` mapping and `codecov.yml` path fixes to resolve 0% Codecov coverage caused by absolute runner paths in coverage.xml
 
-## [2.40.2] - 2026-04-24
+## [2.40.4] - 2026-04-24
 
 Short version: MCTS config-space optimizer + GA/hybrid hardenings with empirical multi-seed evidence (gate_pass: true for MCTS and hybrid loops).
 
@@ -1260,3 +1260,4 @@ Initial release with 7 detection signals: PFS, AVS, MDS, EDS, TVS, SMS, DIA.
 - CLI commands: `analyze`, `check`, `self`, `trend`, `timeline`, `patterns`, `badge`
 - Output formats: rich (terminal), JSON, SARIF (GitHub Code Scanning)
 - GitHub Actions integration via `drift-check.yml` template
+
