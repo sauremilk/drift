@@ -73,7 +73,7 @@ ProgressCallback = Callable[[str, int, int], None]
 PhaseTimingValue = float | dict[str, float]
 PhaseTimings = dict[str, PhaseTimingValue]
 
-_GIT_HISTORY_CACHE_TTL_SECONDS = 600.0
+_GIT_HISTORY_CACHE_TTL_SECONDS = 3600.0
 _GIT_HISTORY_CACHE_MAX_ENTRIES = 16
 _GIT_HISTORY_CACHE_LOCK = threading.RLock()
 _GIT_HISTORY_CACHE: dict[

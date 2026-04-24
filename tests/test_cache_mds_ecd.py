@@ -88,6 +88,13 @@ def test_signal_cache_get_refreshes_mtime_on_hit(tmp_path: Path) -> None:
     old_time = time.time() - 9 * 24 * 3600
     os.utime(cache_file, (old_time, old_time))
 
+    # Clear the L1 entry so the disk read path (and its utime refresh) is exercised.
+    l1_key = ("PFS", "fp1", "hash_mtime")
+    with SignalCache._l1_lock:
+        bucket = SignalCache._l1_store.get(sc._cache_dir_key)
+        if bucket is not None:
+            bucket.pop(l1_key, None)
+
     result = sc.get("PFS", "fp1", "hash_mtime")
     assert result == []
     assert cache_file.stat().st_mtime > old_time

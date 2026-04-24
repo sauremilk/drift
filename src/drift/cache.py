@@ -11,10 +11,12 @@ import json
 import logging
 import os
 import tempfile
+import threading
 import time
+from collections import OrderedDict
 from contextlib import suppress
 from pathlib import Path
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, ClassVar
 
 from drift import __version__ as _drift_version
 from drift.models import (
@@ -50,12 +52,21 @@ class ParseCache:  # drift:ignore[DCA]
     # collision probability versus 64-bit truncation on large repositories.
     _HASH_HEX_LEN = 32
 
+    # L1 in-memory LRU cache: shared across instances for the same cache dir.
+    # Eliminates disk I/O and JSON deserialization on warm repeated scans.
+    _L1_MAX_ENTRIES: ClassVar[int] = 512
+    _l1_store: ClassVar[dict[str, OrderedDict[str, ParseResult]]] = {}
+    _l1_lock: ClassVar[threading.RLock] = threading.RLock()
+
     def __init__(self, cache_dir: Path) -> None:
         self._cache_dir = cache_dir / "parse"
         self._cache_dir.mkdir(parents=True, exist_ok=True)
         with suppress(OSError):
             # Best-effort: Windows does not support POSIX permissions
             os.chmod(self._cache_dir, 0o700)
+        self._cache_dir_key = self._cache_dir.as_posix()
+        with ParseCache._l1_lock:
+            ParseCache._l1_store.setdefault(self._cache_dir_key, OrderedDict())
         self._evict_stale()
 
     def _evict_stale(self) -> None:
@@ -79,6 +90,12 @@ class ParseCache:  # drift:ignore[DCA]
 
     def get(self, content_hash: str) -> ParseResult | None:
         """Look up a cached parse result. Returns None on miss."""
+        # L1 in-memory check: avoids disk I/O on warm paths.
+        with ParseCache._l1_lock:
+            bucket = ParseCache._l1_store.get(self._cache_dir_key)
+            if bucket is not None and content_hash in bucket:
+                bucket.move_to_end(content_hash)
+                return bucket[content_hash]
         path = self._cache_path(content_hash)
         if not path.exists():
             return None
@@ -100,6 +117,7 @@ class ParseCache:  # drift:ignore[DCA]
             result = _deserialize(data)
             with suppress(OSError):
                 os.utime(path, None)
+            self._l1_put(content_hash, result)
             return result
         except Exception:
             # Corrupted cache entry — remove and miss
@@ -108,6 +126,7 @@ class ParseCache:  # drift:ignore[DCA]
 
     def put(self, content_hash: str, result: ParseResult) -> None:
         """Store a parse result in the cache."""
+        self._l1_put(content_hash, result)
         data = _serialize(result)
         path = self._cache_path(content_hash)
         try:
@@ -122,6 +141,17 @@ class ParseCache:  # drift:ignore[DCA]
         except OSError:
             # Cache is an optimization only; analysis must proceed without it.
             return
+
+    def _l1_put(self, content_hash: str, result: ParseResult) -> None:
+        """Insert or refresh an entry in the L1 in-memory LRU cache."""
+        with ParseCache._l1_lock:
+            bucket = ParseCache._l1_store.setdefault(self._cache_dir_key, OrderedDict())
+            if content_hash in bucket:
+                bucket.move_to_end(content_hash)
+            else:
+                if len(bucket) >= ParseCache._L1_MAX_ENTRIES:
+                    bucket.popitem(last=False)
+                bucket[content_hash] = result
 
 
 def _serialize(pr: ParseResult) -> dict[str, Any]:
@@ -288,9 +318,18 @@ class SignalCache:  # drift:ignore[DCA]
 
     _EVICTION_MAX_AGE_SECONDS = 7 * 24 * 60 * 60
 
+    # L1 in-memory LRU cache: shared across instances for the same cache dir.
+    # Eliminates disk I/O and JSON deserialization on warm repeated scans.
+    _L1_MAX_ENTRIES: ClassVar[int] = 200
+    _l1_store: ClassVar[dict[str, OrderedDict[tuple[str, str, str], list[Finding]]]] = {}
+    _l1_lock: ClassVar[threading.RLock] = threading.RLock()
+
     def __init__(self, cache_dir: Path) -> None:
         self._cache_dir = cache_dir / "signals"
         self._cache_dir.mkdir(parents=True, exist_ok=True)
+        self._cache_dir_key = self._cache_dir.as_posix()
+        with SignalCache._l1_lock:
+            SignalCache._l1_store.setdefault(self._cache_dir_key, OrderedDict())
         self._evict_stale()
 
     def _evict_stale(self) -> None:
@@ -405,6 +444,12 @@ class SignalCache:  # drift:ignore[DCA]
         self, signal_type: str, config_fp: str, content_hash: str,
     ) -> list[Finding] | None:
         """Retrieve cached findings or ``None`` on miss."""
+        l1_key = (signal_type, config_fp, content_hash)
+        with SignalCache._l1_lock:
+            bucket = SignalCache._l1_store.get(self._cache_dir_key)
+            if bucket is not None and l1_key in bucket:
+                bucket.move_to_end(l1_key)
+                return list(bucket[l1_key])
         path = self._cache_path(signal_type, config_fp, content_hash)
         if not path.exists():
             return None
@@ -423,6 +468,7 @@ class SignalCache:  # drift:ignore[DCA]
             findings = [_deser_finding(f) for f in raw_findings]
             with suppress(OSError):
                 os.utime(path, None)
+            self._l1_put(l1_key, findings)
             return findings
         except Exception:
             path.unlink(missing_ok=True)
@@ -436,6 +482,7 @@ class SignalCache:  # drift:ignore[DCA]
         findings: list[Finding],
     ) -> None:
         """Store findings in the cache."""
+        self._l1_put((signal_type, config_fp, content_hash), findings)
         path = self._cache_path(signal_type, config_fp, content_hash)
         try:
             payload = json.dumps(
@@ -456,6 +503,21 @@ class SignalCache:  # drift:ignore[DCA]
                     Path(tmp).unlink(missing_ok=True)
         except OSError:
             return
+
+    def _l1_put(
+        self,
+        l1_key: tuple[str, str, str],
+        findings: list[Finding],
+    ) -> None:
+        """Insert or refresh an entry in the L1 in-memory LRU cache."""
+        with SignalCache._l1_lock:
+            bucket = SignalCache._l1_store.setdefault(self._cache_dir_key, OrderedDict())
+            if l1_key in bucket:
+                bucket.move_to_end(l1_key)
+            else:
+                if len(bucket) >= SignalCache._L1_MAX_ENTRIES:
+                    bucket.popitem(last=False)
+                bucket[l1_key] = list(findings)
 
 
 # ---------------------------------------------------------------------------

@@ -60,12 +60,16 @@ def _make_blank_repo_analysis(repo_path: Path) -> RepoAnalysis:
 
 def test_prune_git_history_cache_stale_entries() -> None:
     """Line 268: pop stale entries from _GIT_HISTORY_CACHE."""
-    from drift.pipeline import _GIT_HISTORY_CACHE, _prune_git_history_cache
+    from drift.pipeline import (
+        _GIT_HISTORY_CACHE,
+        _GIT_HISTORY_CACHE_TTL_SECONDS,
+        _prune_git_history_cache,
+    )
 
     _GIT_HISTORY_CACHE.clear()
-    # Insert a stale entry (700 seconds old, TTL is 600s)
+    # Insert a stale entry (TTL + 100 seconds old) to ensure it is pruned.
     stale_key = "__test_stale__"
-    _GIT_HISTORY_CACHE[stale_key] = (time.time() - 700, [], {})
+    _GIT_HISTORY_CACHE[stale_key] = (time.time() - (_GIT_HISTORY_CACHE_TTL_SECONDS + 100), [], {})
 
     _prune_git_history_cache(time.time())
 

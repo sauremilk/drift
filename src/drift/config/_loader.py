@@ -194,13 +194,14 @@ class DriftConfig(BaseModel):
         ),
     )
     nudge_baseline_ttl_seconds: int = Field(
-        default=900,
+        default=3600,
         description=(
             "Time-to-live in seconds for nudge baselines. "
             "After this period a full re-scan is triggered to refresh the baseline. "
             "Lower values suit high-churn repos; higher values reduce re-scan frequency "
             "in slow CI or infrequently-changing codebases. "
-            "Default: 900 (15 minutes)."
+            "Default: 3600 (1 hour). Git-state changes (new commits, branch switch) "
+            "invalidate the baseline immediately regardless of TTL."
         ),
     )
     fail_on: str = "high"
