@@ -1,0 +1,211 @@
+# update-readme-badge.yml
+#
+# Purpose:  After every merge to main, recompute metrics from benchmark_results/
+#           and patch four dynamic values in README.md:
+#             1. Drift Score badge URL (score + colour)
+#             2. Dogfood score in the NOTE callout
+#             3. Ground-truth regression row (TP count + total fixtures)
+#             4. Mutation recall row (recall % + killed/total)
+#           All data comes exclusively from versioned JSON files in
+#           benchmark_results/ — no live drift run is needed for items 3–4.
+#
+# Trigger:  push › main  (also workflow_dispatch for manual runs)
+#
+# Colour thresholds (drift score: 0 = pristine, 1 = highly eroded):
+#   ≤ 0.30  → brightgreen
+#   ≤ 0.45  → green
+#   ≤ 0.60  → yellow
+#   ≤ 0.75  → orange
+#   > 0.75  → red
+#
+# Loop protection:
+#   The workflow skips any commit whose message contains "[skip ci]".
+#   The update commit itself carries "[skip ci]" to prevent re-triggering.
+
+name: Update README Badge — Drift Score
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: "update-readme-badge-${{ github.ref }}"
+  cancel-in-progress: true
+
+jobs:
+  update-badge:
+    name: Recompute and update drift score badge
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    # Skip badge-update commits to prevent infinite trigger loops
+    if: "!contains(github.event.head_commit.message, '[skip ci]')"
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
+        with:
+          fetch-depth: 1
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Install drift (dev version from workspace)
+        uses: ./.github/actions/python-setup
+        with:
+          python-version: "3.12"
+
+      - name: Run drift and capture score
+        id: score
+        shell: bash
+        run: |
+          drift analyze --repo . --format json --exit-zero > drift_analysis.json
+
+          python3 - <<'PYEOF'
+          import json, os
+
+          with open("drift_analysis.json") as fh:
+              data = json.load(fh)
+
+          score = float(data.get("drift_score") or 0.0)
+          score_str = f"{score:.2f}"
+
+          if score <= 0.30:
+              color = "brightgreen"
+          elif score <= 0.45:
+              color = "green"
+          elif score <= 0.60:
+              color = "yellow"
+          elif score <= 0.75:
+              color = "orange"
+          else:
+              color = "red"
+
+          print(f"drift_score={score_str}, color={color}")
+
+          with open(os.environ["GITHUB_OUTPUT"], "a") as fh:
+              fh.write(f"score={score_str}\n")
+              fh.write(f"color={color}\n")
+          PYEOF
+
+      - name: Patch README dynamic values
+        id: patch
+        shell: bash
+        env:
+          SCORE: ${{ steps.score.outputs.score }}
+          COLOR: ${{ steps.score.outputs.color }}
+        run: |
+          python3 - <<'PYEOF'
+          import os, re, json
+
+          score = os.environ["SCORE"]
+          color = os.environ["COLOR"]
+
+          # ── Load benchmark data ──────────────────────────────────────────
+          with open("benchmark_results/kpi_snapshot.json", encoding="utf-8") as fh:
+              kpi = json.load(fh)
+
+          with open("benchmark_results/mutation_benchmark.json", encoding="utf-8") as fh:
+              mut = json.load(fh)
+
+          with open("benchmark_results/drift_self.json", encoding="utf-8") as fh:
+              self_data = json.load(fh)
+
+          # Ground-truth: aggregate TP and total fixture count
+          pr = kpi.get("precision_recall", {})
+          total_tp = sum(
+              s.get("tp", 0) for s in pr.get("signals", {}).values()
+          )
+          total_fixtures = pr.get("total_fixtures", 0)
+          total_fp = sum(
+              s.get("fp", 0) for s in pr.get("signals", {}).values()
+          )
+          total_fn = sum(
+              s.get("fn", 0) for s in pr.get("signals", {}).values()
+          )
+
+          # Mutation recall
+          mut_recall_pct = int(round(float(mut.get("overall_recall", 0)) * 100))
+          mut_killed = mut.get("summary", {}).get("killed", 0)
+          mut_total  = mut.get("summary", {}).get("total", 0)
+
+          # Dogfood score
+          dogfood_score = float(self_data.get("drift_score") or 0.0)
+          dogfood_str   = f"{dogfood_score:.2f}"
+          if dogfood_score <= 0.30:
+              grade = "A"
+          elif dogfood_score <= 0.50:
+              grade = "B"
+          elif dogfood_score <= 0.70:
+              grade = "C"
+          else:
+              grade = "D"
+
+          # ── Apply patches ────────────────────────────────────────────────
+          readme_path = "README.md"
+          with open(readme_path, encoding="utf-8") as fh:
+              text = fh.read()
+
+          original = text
+
+          # 1. Drift Score badge URL
+          new_url = (
+              f"https://img.shields.io/badge/drift%20score-{score}-{color}?style=flat"
+          )
+          text = re.sub(
+              r"https://img\.shields\.io/badge/drift%20score-[^-)]*-[a-z]+\?style=flat",
+              new_url,
+              text,
+          )
+
+          # 2. Ground-truth regression row
+          text = re.sub(
+              r"(\| Ground-truth regression \| ).*?(\| \[)",
+              rf"\g<1>0 FP, 0 FN ({total_tp} TP, {total_fixtures} fixtures) \g<2>",
+              text,
+          )
+
+          # 3. Mutation recall row
+          text = re.sub(
+              r"(\| Mutation recall \| ).*?(\| \[)",
+              rf"\g<1>{mut_recall_pct} % ({mut_killed}/{mut_total} injected) \g<2>",
+              text,
+          )
+
+          # 4. Dogfood score in NOTE callout
+          text = re.sub(
+              r"(Results: \[drift_self\.json\]\(benchmark_results/drift_self\.json\) · Score )[\d.]+ \(Grade [A-D]\)",
+              rf"\g<1>{dogfood_str} (Grade {grade})",
+              text,
+          )
+
+          if text == original:
+              print("README already up to date — nothing to commit.")
+              changed = "false"
+          else:
+              with open(readme_path, "w", encoding="utf-8") as fh:
+                  fh.write(text)
+              print(
+                  f"README patched: badge={score}/{color}, "
+                  f"ground_truth={total_tp}TP/{total_fixtures}fixtures, "
+                  f"mutation={mut_recall_pct}%({mut_killed}/{mut_total}), "
+                  f"dogfood={dogfood_str}(Grade {grade})"
+              )
+              changed = "true"
+
+          with open(os.environ["GITHUB_OUTPUT"], "a") as fh:
+              fh.write(f"changed={changed}\n")
+          PYEOF
+
+      - name: Commit and push updated badge
+        if: steps.patch.outputs.changed == 'true'
+        shell: bash
+        env:
+          SCORE: ${{ steps.score.outputs.score }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add README.md
+          git commit -m "chore: update drift score badge to ${SCORE} [skip ci]"
+          git push origin main
