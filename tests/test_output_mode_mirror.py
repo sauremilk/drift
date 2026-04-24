@@ -186,4 +186,3 @@ def test_unknown_mode_treated_as_full():
     result = apply_output_mode(resp, "something_else")
     # Should behave like full — all keys present
     assert "agent_instruction" in result
-

@@ -31,4 +31,3 @@
 | pattern_fragmentation | 2 | 0 | 1.00 |
 
 **Overall detection rate:** 12/12 (100%)
-

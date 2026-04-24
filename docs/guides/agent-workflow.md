@@ -433,10 +433,10 @@ Optional fuer eingebettete Vollausgabe:
 drift_session_start(autopilot=true, autopilot_payload="full")
 ```
 
-**Warum `drift_session_start(autopilot=true)`?**  
+**Warum `drift_session_start(autopilot=true)`?**
 Ein einziger Aufruf ersetzt `drift_validate` + `drift_brief` + `drift_scan` + `drift_fix_plan` — spart 4 Round-Trips.
 
-**Warum `drift_nudge` statt `drift_diff` im Loop?**  
+**Warum `drift_nudge` statt `drift_diff` im Loop?**
 `drift_nudge` arbeitet auf einem Baseline-Snapshot und re-analysiert nur geänderte Dateien für dateibezogene Signale (~0.2 s). `drift_diff` läuft vollständig und sollte nur einmal am Ende aufgerufen werden.
 
 ---

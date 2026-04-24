@@ -345,4 +345,3 @@ def test_cli_dry_run_returns_json_with_patches(tmp_path: Path) -> None:
     assert result.exit_code == 0, result.output
     data = json.loads(result.output)
     assert "patches" in data or "tasks" in data  # either fix_apply or fix_plan response accepted
-

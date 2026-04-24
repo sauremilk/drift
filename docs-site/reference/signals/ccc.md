@@ -1,9 +1,9 @@
 # Co-Change Coupling Signal (CCC)
 
-**Signal ID:** `CCC`  
-**Full name:** Co-Change Coupling  
-**Type:** Scoring signal (contributes to drift score)  
-**Default weight:** `0.005`  
+**Signal ID:** `CCC`
+**Full name:** Co-Change Coupling
+**Type:** Scoring signal (contributes to drift score)
+**Default weight:** `0.005`
 **Scope:** git_dependent
 
 ---

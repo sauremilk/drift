@@ -1,9 +1,9 @@
 # Mutant Duplicate Signal (MDS)
 
-**Signal ID:** `MDS`  
-**Full name:** Mutant Duplicate Score  
-**Type:** Scoring signal (contributes to drift score)  
-**Default weight:** `0.13`  
+**Signal ID:** `MDS`
+**Full name:** Mutant Duplicate Score
+**Type:** Scoring signal (contributes to drift score)
+**Default weight:** `0.13`
 **Scope:** cross_file
 
 ---

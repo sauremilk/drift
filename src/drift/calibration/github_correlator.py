@@ -164,4 +164,3 @@ def correlate_github_issues(
             _correlate_bug_file(bug_file, issue_number, issue, historical_findings, seen, events)
 
     return events
-

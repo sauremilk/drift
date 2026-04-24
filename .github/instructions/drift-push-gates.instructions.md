@@ -29,15 +29,15 @@ Diese Datei ist nur fuer Commit-/Push-Vorbereitung relevant, nicht fuer allgemei
 
 ## Gate 1 — Blockierte Pfade
 
-**Bedingung:** Kein Commit darf Dateien unter `tagesplanung/` enthalten.  
-**Auslöser:** Immer (jeder Push).  
+**Bedingung:** Kein Commit darf Dateien unter `tagesplanung/` enthalten.
+**Auslöser:** Immer (jeder Push).
 **Aktion:** Diese Pfade niemals committen.
 
 ---
 
 ## Gate 2 — Feature-Evidence-Gate
 
-**Auslöser:** Push enthält mindestens einen Commit mit Prefix `feat:` (oder `feat(scope):`).  
+**Auslöser:** Push enthält mindestens einen Commit mit Prefix `feat:` (oder `feat(scope):`).
 **Alle vier Bedingungen müssen gleichzeitig erfüllt sein:**
 
 1. **Tests vorhanden:** Mindestens eine Datei unter `tests/` muss im Push enthalten sein.
@@ -56,7 +56,7 @@ Diese Datei ist nur fuer Commit-/Push-Vorbereitung relevant, nicht fuer allgemei
 - `generated_by.timestamp` muss ein valides ISO-8601-Datum sein, das nicht in der Zukunft liegt.
 - Metriken wie `drift_score` ∈ [0,1], `tests.total_failing == 0`.
 
-**Validierung läuft via:** `python scripts/validate_feature_evidence.py <file> --require-generated-by --push-head <SHA>`  
+**Validierung läuft via:** `python scripts/validate_feature_evidence.py <file> --require-generated-by --push-head <SHA>`
 **Bypass (Notfall):** `DRIFT_SKIP_EVIDENCE_VALIDATION=1 git push`
 
 **Typische Vorgehensweise bei feat::**
@@ -75,16 +75,16 @@ python scripts/generate_feature_evidence.py --version X.Y.Z --slug my-feature
 
 ## Gate 3 — Changelog-Gate
 
-**Auslöser:** Push enthält mindestens einen `feat:` oder `fix:`-Commit.  
-**Bedingung:** `CHANGELOG.md` muss im Push geändert sein.  
+**Auslöser:** Push enthält mindestens einen `feat:` oder `fix:`-Commit.
+**Bedingung:** `CHANGELOG.md` muss im Push geändert sein.
 **Bypass:** `DRIFT_SKIP_CHANGELOG=1 git push` (Notfall).
 
 ---
 
 ## Gate 4 — Version-Bump-Gate
 
-**Auslöser:** `pyproject.toml` ist im Push geändert.  
-**Bedingung:** Die Version in `pyproject.toml` muss strikt größer sein als der letzte Git-Tag auf Origin (SemVer).  
+**Auslöser:** `pyproject.toml` ist im Push geändert.
+**Bedingung:** Die Version in `pyproject.toml` muss strikt größer sein als der letzte Git-Tag auf Origin (SemVer).
 **Bypass:** `DRIFT_SKIP_VERSION_BUMP=1 git push` (Notfall).
 
 > **Hinweis:** Da Releases via python-semantic-release (PSR) in CI laufen, sollten Agenten `pyproject.toml` nie manuell versionieren. Falls `pyproject.toml` aus anderen Gründen geändert wird (Dependencies), kann das Gate ausgelöst werden — dann Bypass verwenden.
@@ -93,8 +93,8 @@ python scripts/generate_feature_evidence.py --version X.Y.Z --slug my-feature
 
 ## Gate 5 — Lockfile-Sync-Gate
 
-**Auslöser:** `pyproject.toml` ist im Push geändert.  
-**Bedingung:** `uv.lock` muss ebenfalls im Push enthalten sein.  
+**Auslöser:** `pyproject.toml` ist im Push geändert.
+**Bedingung:** `uv.lock` muss ebenfalls im Push enthalten sein.
 **Behebung:**
 ```bash
 uv lock
@@ -107,8 +107,8 @@ git commit --amend --no-edit  # oder separater Commit
 
 ## Gate 6 — Public-API-Docstring-Gate
 
-**Auslöser:** Mindestens eine Datei unter `src/drift/` ist im Push geändert.  
-**Bedingung:** Jede neu hinzugefügte öffentliche Funktion der Form `def name(...)` (lowercase, kein `_`-Prefix) in `src/drift/` muss im selben Diff eine Docstring-Zeile (`"""` oder `'''`) enthalten.  
+**Auslöser:** Mindestens eine Datei unter `src/drift/` ist im Push geändert.
+**Bedingung:** Jede neu hinzugefügte öffentliche Funktion der Form `def name(...)` (lowercase, kein `_`-Prefix) in `src/drift/` muss im selben Diff eine Docstring-Zeile (`"""` oder `'''`) enthalten.
 **Bypass:** `DRIFT_SKIP_DOCSTRING=1 git push` (Notfall).
 
 ---
@@ -165,7 +165,7 @@ git commit --amend --no-edit  # oder separater Commit
 | 4 | `pytest -q --tb=short -n 4 --dist=loadscope --cov --cov-report= --ignore=tests/test_smoke_real_repos.py` | Worker-Zahl via `DRIFT_PYTEST_WORKERS=N` überschreibbar; Default 4 verhindert OOM auf Maschinen mit vielen Kernen |
 | 5 | `drift analyze --repo . --format json --exit-zero` | – |
 
-**Diese Checks haben keinen Bypass-Mechanismus.**  
+**Diese Checks haben keinen Bypass-Mechanismus.**
 Vor jedem Push sicherstellen: `make check` lokal bestanden.
 
 > **Windows / PowerShell:** `make` ist nicht nativ verfügbar. Stattdessen:
@@ -222,7 +222,7 @@ DRIFT_SKIP_RISK_AUDIT=1 DRIFT_SKIP_CHANGELOG=1 git push
 DRIFT_SKIP_HOOKS=1 git push
 ```
 
-> **CI-Checks (Gate 8) lassen sich nicht per Env-Variable überspringen.**  
+> **CI-Checks (Gate 8) lassen sich nicht per Env-Variable überspringen.**
 > Sie können nur bestanden werden, nicht umgangen.
 
 ---
@@ -241,5 +241,5 @@ DRIFT_SKIP_HOOKS=1 git push
 > Stets `.\.scripts\check.ps1 <target>` verwenden. Der SHA-Cache-Mechanismus funktioniert identisch:
 > nach `check.ps1` wird der HEAD-SHA gecacht und der Pre-Push-Hook überspringt die teuren CI-Checks.
 
-**Keine Ausrede "ich dachte der Hook wäre nicht installiert":**  
+**Keine Ausrede "ich dachte der Hook wäre nicht installiert":**
 Der Hook liegt in `.githooks/pre-push` und ist via `git config core.hooksPath .githooks` dauerhaft aktiviert.

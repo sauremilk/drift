@@ -1070,4 +1070,3 @@ class TestResumedNextToolCall:
         assert data["resumed_older_plans_discarded"] == 0
         assert data["resumed_next_task_id"] is None
         assert data["next_tool_call"]["tool"] == "drift_scan"
-

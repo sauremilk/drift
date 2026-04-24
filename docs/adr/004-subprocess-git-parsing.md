@@ -1,7 +1,7 @@
 # ADR-004: Subprocess Git Parsing over GitPython
 
-**Status:** Accepted  
-**Date:** 2025-12-15  
+**Status:** Accepted
+**Date:** 2025-12-15
 **Decision Makers:** @mick-gsk
 
 ## Context
@@ -22,16 +22,16 @@ git log --pretty=format:'<RECORD_SEP>%H|%an|%ae|%aI|%s' --numstat
 
 ### Key Design Choices
 
-**1. Record separator strategy.**  
+**1. Record separator strategy.**
 Git log output with `--numstat` interleaves commit metadata and per-file stats. We use a custom `<RECORD_SEP>` marker (not a standard ASCII control character) to delimit commit records, then split on that marker for parsing. This avoids fragile blank-line splitting that breaks when commit messages contain empty lines.
 
-**2. `--numstat` over `--stat`.**  
+**2. `--numstat` over `--stat`.**
 `--stat` produces human-readable output with column alignment and abbreviation (`... | 42 +++---`). `--numstat` produces machine-readable tab-separated `additions\tdeletions\tfilename`. Parsing `--numstat` is trivial and robust; parsing `--stat` requires regex that breaks on filenames with special characters.
 
-**3. ISO 8601 timestamps (`%aI`).**  
+**3. ISO 8601 timestamps (`%aI`).**
 Author date in ISO 8601 format (`2024-01-15T10:30:00+01:00`) is unambiguous and parseable with `datetime.fromisoformat()`. The alternative `%ai` (similar but with space-separated timezone) requires manual parsing.
 
-**4. Single git invocation.**  
+**4. Single git invocation.**
 One `git log` call retrieves all needed data (hashes, authors, dates, messages, per-file stats). This avoids N+1 patterns where each commit requires a second call for diff stats.
 
 ## Performance Measurements

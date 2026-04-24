@@ -73,7 +73,7 @@ npm run preview
 The following signals are excluded in the browser because they require git history (subprocess not available in Pyodide):
 
 - **TVS** — Test velocity signal
-- **SMS** — Stale module signal  
+- **SMS** — Stale module signal
 - **CCS** — Contributor concentration signal
 
 Excluded via `exclude_signals=["TVS", "SMS", "CCS"]` in `pyodide-runner.ts`.

@@ -1,9 +1,9 @@
 # Cognitive Complexity Signal (CXS)
 
-**Signal ID:** `CXS`  
-**Full name:** Cognitive Complexity  
-**Type:** Report-only signal (weight 0.0 — does not contribute to drift score)  
-**Default weight:** `0.0`  
+**Signal ID:** `CXS`
+**Full name:** Cognitive Complexity
+**Type:** Report-only signal (weight 0.0 — does not contribute to drift score)
+**Default weight:** `0.0`
 **Scope:** file_local
 
 ---

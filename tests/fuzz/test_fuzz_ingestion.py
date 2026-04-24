@@ -143,4 +143,3 @@ def test_parse_typescript_file_line_count_non_negative(source: str) -> None:
         result = parse_typescript_file(Path("fuzz_lc.ts"), repo)
 
     assert result.line_count >= 0
-

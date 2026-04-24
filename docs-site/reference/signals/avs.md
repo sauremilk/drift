@@ -1,9 +1,9 @@
 # Architecture Violation Signal (AVS)
 
-**Signal ID:** `AVS`  
-**Full name:** Architecture Violation Score  
-**Type:** Scoring signal (contributes to drift score)  
-**Default weight:** `0.16`  
+**Signal ID:** `AVS`
+**Full name:** Architecture Violation Score
+**Type:** Scoring signal (contributes to drift score)
+**Default weight:** `0.16`
 **Scope:** cross_file
 
 ---

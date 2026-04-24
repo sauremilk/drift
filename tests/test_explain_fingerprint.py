@@ -343,4 +343,3 @@ class TestPrintFindingDetailSmoke:
         }
         # Must not raise even with empty finding dict
         _print_finding_detail(result, tmp_path)
-

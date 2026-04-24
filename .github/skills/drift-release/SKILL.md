@@ -88,11 +88,11 @@ PSR in CI handles the rest after push to main.
 
 ## DO NOT DO THIS
 
-❌ Forget to release after code changes  
-❌ Skip tests to "speed up" the release  
-❌ Manually create git tags/commits for releases  
-❌ Edit version numbers outside of `pyproject.toml`  
-❌ Push without running the full release workflow  
+❌ Forget to release after code changes
+❌ Skip tests to "speed up" the release
+❌ Manually create git tags/commits for releases
+❌ Edit version numbers outside of `pyproject.toml`
+❌ Push without running the full release workflow
 
 ---
 

@@ -1,7 +1,7 @@
 # ADR-002: AST Fingerprinting for Pattern Classification
 
-**Status:** Accepted  
-**Date:** 2025-12-05  
+**Status:** Accepted
+**Date:** 2025-12-05
 **Decision Makers:** @mick-gsk
 
 ## Context

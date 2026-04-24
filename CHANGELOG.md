@@ -1,5 +1,13 @@
 ## [Unreleased]
 
+## [2.39.1] – 2026-04-24
+
+Short version: Patch release — quality-loop src_path fix and working-tree normalization.
+
+### Fixed
+- Fix `src_path` default and rebalance metric weights in quality-loop: `CompositeMetric.__post_init__` now defaults `src_path` to `repo_root` if not provided, preventing ruff from being invoked as `ruff check None`. Weights rebalanced from drift=0.6/ruff=0.3/mypy=0.1 to drift=0.1/ruff=0.7/mypy=0.2.
+- Normalize line endings, docs, skills, tests and source across working tree.
+
 ## [2.39.0] - 2026-04-23
 
 Short version: Hybrid MCTS+GA autonomous code quality loop in `scripts/quality_loop/`.

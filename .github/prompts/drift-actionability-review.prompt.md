@@ -114,7 +114,7 @@ Für jedes Finding prüfen:
 Dokumentiere in `actionability_gaps.md`:
 
 | Signal | Finding-Typ | Actionability-Score | Problem | Was fehlt | Empfehlung |
-|--------|-------------|--------------------|---------|-----------|-----------| 
+|--------|-------------|--------------------|---------|-----------|-----------|
 
 ### Phase 3: Muster-Analyse
 

@@ -1,9 +1,9 @@
 # Hardcoded Secret Signal (HSC)
 
-**Signal ID:** `HSC`  
-**Full name:** Hardcoded Secret  
-**Type:** Scoring signal (contributes to drift score)  
-**Default weight:** `0.01`  
+**Signal ID:** `HSC`
+**Full name:** Hardcoded Secret
+**Type:** Scoring signal (contributes to drift score)
+**Default weight:** `0.01`
 **Scope:** file_local
 
 ---

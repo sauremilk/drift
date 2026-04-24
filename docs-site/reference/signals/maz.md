@@ -1,9 +1,9 @@
 # Missing Authorization Signal (MAZ)
 
-**Signal ID:** `MAZ`  
-**Full name:** Missing Authorization  
-**Type:** Scoring signal (contributes to drift score)  
-**Default weight:** `0.02`  
+**Signal ID:** `MAZ`
+**Full name:** Missing Authorization
+**Type:** Scoring signal (contributes to drift score)
+**Default weight:** `0.02`
 **Scope:** file_local
 
 ---

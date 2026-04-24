@@ -1,9 +1,9 @@
 # Explainability Deficit Signal (EDS)
 
-**Signal ID:** `EDS`  
-**Full name:** Explainability Deficit Score  
-**Type:** Scoring signal (contributes to drift score)  
-**Default weight:** `0.09`  
+**Signal ID:** `EDS`
+**Full name:** Explainability Deficit Score
+**Type:** Scoring signal (contributes to drift score)
+**Default weight:** `0.09`
 **Scope:** file_local
 
 ---

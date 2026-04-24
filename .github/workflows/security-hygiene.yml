@@ -78,7 +78,7 @@ jobs:
       - name: Audit Python dependencies (pip-audit)
         shell: pwsh
         run: |
-          python -m pip_audit --strict --desc
+          python -m pip_audit --strict --desc --skip-editable
 
       - name: SAST scan (bandit)
         shell: pwsh

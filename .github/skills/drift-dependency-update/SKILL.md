@@ -17,7 +17,7 @@ Deckt: neue Abhängigkeit hinzufügen, bestehende upgraden/einschränken, Abhän
 
 - `pyproject.toml`-Abhängigkeit soll geändert, hinzugefügt oder entfernt werden
 - `uv.lock` soll mit aktuellen Constraints synchronisiert werden
-- Security-Patch für eine direkte oder transitive Abhängigkeit  
+- Security-Patch für eine direkte oder transitive Abhängigkeit
 - CI schlägt fehl mit „Lockfile not synchronized" oder ähnlichem
 
 ---

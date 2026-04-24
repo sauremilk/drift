@@ -13,16 +13,16 @@ Drift kommuniziert aktuell ausschließlich über stdio (MCP-Protokoll) und CLI. 
 
 ## Entscheidung
 
-1. **Neuer optionaler HTTP-Server** via `drift serve` CLI-Subcommand.  
+1. **Neuer optionaler HTTP-Server** via `drift serve` CLI-Subcommand.
    Framework: FastAPI + uvicorn als optionale Dependencies (`pip install drift-analyzer[serve]`).
 
-2. **Agent Card** unter `GET /.well-known/agent-card.json` nach A2A v1.0.  
+2. **Agent Card** unter `GET /.well-known/agent-card.json` nach A2A v1.0.
    Exponiert 8 Kern-Analyse-Skills: scan, diff, explain, fix_plan, validate, nudge, brief, negative_context.
 
-3. **A2A JSON-RPC 2.0 Endpunkt** unter `POST /a2a/v1`.  
+3. **A2A JSON-RPC 2.0 Endpunkt** unter `POST /a2a/v1`.
    Skill-Dispatch via `skillId` in message metadata oder `skill`-Feld im data-Part.
 
-4. **Security-Defaults**: Host `127.0.0.1` (localhost-only), kein Auth in v1.  
+4. **Security-Defaults**: Host `127.0.0.1` (localhost-only), kein Auth in v1.
    Netzwerk-Exposure nur via explizitem `--host 0.0.0.0`.
 
 5. **Kein Streaming** in v1 (`capabilities.streaming: false`).

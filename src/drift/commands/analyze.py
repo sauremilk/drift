@@ -787,4 +787,3 @@ def analyze(
     _apply_analysis_severity_gate(
         analysis, fail_on, cfg, exit_zero, quiet, fail_marker, ok_marker, effective_console
     )
-

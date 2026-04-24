@@ -1,8 +1,8 @@
 # ADR-086: Trend Gate Enforcement
 
-**Status:** proposed  
-**Date:** 2025-07-21  
-**Authors:** Mick Gottschalk  
+**Status:** proposed
+**Date:** 2025-07-21
+**Authors:** Mick Gottschalk
 
 ## Context
 

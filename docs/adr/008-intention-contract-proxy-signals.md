@@ -1,7 +1,7 @@
 # ADR-008: Intention & Contract Proxy Signals (NBV, BAT, ECM)
 
-**Status:** Accepted  
-**Date:** 2026-03-26  
+**Status:** Accepted
+**Date:** 2026-03-26
 **Relates to:** ADR-007 (Consistency Proxy Signals), EPISTEMICS.md §2–§4
 
 ## Context

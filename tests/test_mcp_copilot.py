@@ -1270,4 +1270,3 @@ class TestMcpCopilotNegativeProperties:
         non_empty_lines = [line for line in instructions.splitlines() if line.strip()]
         assert not any(line is None for line in non_empty_lines)
         assert len(non_empty_lines) != 0
-

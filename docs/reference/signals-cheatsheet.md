@@ -2,7 +2,7 @@
 
 Quick reference for all drift signals — abbreviation, what it means, and how to fix it.
 
-★ = triggered especially often by AI-generated code  
+★ = triggered especially often by AI-generated code
 `(R)` = report-only (not scored, always listed)
 
 ---

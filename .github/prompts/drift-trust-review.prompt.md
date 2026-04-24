@@ -114,7 +114,7 @@ Für jedes Signal und seine Findings prüfen:
 Dokumentiere in `trust_risks.md`:
 
 | Signal | Finding | Vertrauensstufe | Problem | Wahrnehmungsrisiko | Empfehlung |
-|--------|---------|-----------------|---------|-------------------|-----------| 
+|--------|---------|-----------------|---------|-------------------|-----------|
 
 ### Phase 3: Positive Vertrauenselemente identifizieren
 

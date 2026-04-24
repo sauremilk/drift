@@ -1,8 +1,8 @@
 # Drift CLI-UX Quality Matrix
 
-**Stand:** 2026-04-18  
-**Scope:** Bestehende Terminal-Erfahrung (Rich-Output, Onboarding-Wizard, alle Subcommands)  
-**Methode:** Heuristik-Review (statische Analyse der CLI-Ausgaben; kein User-Test)  
+**Stand:** 2026-04-18
+**Scope:** Bestehende Terminal-Erfahrung (Rich-Output, Onboarding-Wizard, alle Subcommands)
+**Methode:** Heuristik-Review (statische Analyse der CLI-Ausgaben; kein User-Test)
 **Ziel:** Qualitätslücken lokalisieren, Hero-Workflow ableiten, nächste Aktionen priorisieren
 
 ---
@@ -37,7 +37,7 @@
 
 ## 3. Ist-Score-Matrix (Heuristik-Review)
 
-> Basis: Statische Analyse der Quellcode-Ausgaben in `src/drift/commands/`.  
+> Basis: Statische Analyse der Quellcode-Ausgaben in `src/drift/commands/`.
 > ⚠️ Scores ohne User-Tests; müssen nach Feldtest angepasst werden.
 
 | Reise | K | R | Ko | F | E | G | V | **Ø** |

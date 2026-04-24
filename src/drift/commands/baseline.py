@@ -450,4 +450,3 @@ def status(
         f"new: {delta}  "
         f"score: {analysis.drift_score:.2f}"
     )
-

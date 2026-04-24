@@ -1,9 +1,9 @@
 # Exception Contract Drift Signal (ECM)
 
-**Signal ID:** `ECM`  
-**Full name:** Exception Contract Drift  
-**Type:** Scoring signal (contributes to drift score)  
-**Default weight:** `0.03`  
+**Signal ID:** `ECM`
+**Full name:** Exception Contract Drift
+**Type:** Scoring signal (contributes to drift score)
+**Default weight:** `0.03`
 **Scope:** git_dependent
 
 ---

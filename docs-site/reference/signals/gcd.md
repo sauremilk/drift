@@ -1,9 +1,9 @@
 # Guard Clause Deficit Signal (GCD)
 
-**Signal ID:** `GCD`  
-**Full name:** Guard Clause Deficit  
-**Type:** Scoring signal (contributes to drift score)  
-**Default weight:** `0.03`  
+**Signal ID:** `GCD`
+**Full name:** Guard Clause Deficit
+**Type:** Scoring signal (contributes to drift score)
+**Default weight:** `0.03`
 **Scope:** file_local
 
 ---

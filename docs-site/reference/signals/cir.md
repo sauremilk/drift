@@ -1,9 +1,9 @@
 # Circular Import Signal (CIR)
 
-**Signal ID:** `CIR`  
-**Full name:** Circular Import  
-**Type:** Report-only signal (weight 0.0 — does not contribute to drift score)  
-**Default weight:** `0.0`  
+**Signal ID:** `CIR`
+**Full name:** Circular Import
+**Type:** Report-only signal (weight 0.0 — does not contribute to drift score)
+**Default weight:** `0.0`
 **Scope:** cross_file
 
 ---

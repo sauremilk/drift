@@ -1,9 +1,9 @@
 # System Misalignment Signal (SMS)
 
-**Signal ID:** `SMS`  
-**Full name:** System Misalignment Score  
-**Type:** Scoring signal (contributes to drift score)  
-**Default weight:** `0.08`  
+**Signal ID:** `SMS`
+**Full name:** System Misalignment Score
+**Type:** Scoring signal (contributes to drift score)
+**Default weight:** `0.08`
 **Scope:** cross_file
 
 ---

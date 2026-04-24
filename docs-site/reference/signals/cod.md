@@ -1,9 +1,9 @@
 # Cohesion Deficit Signal (COD)
 
-**Signal ID:** `COD`  
-**Full name:** Cohesion Deficit  
-**Type:** Scoring signal (contributes to drift score)  
-**Default weight:** `0.01`  
+**Signal ID:** `COD`
+**Full name:** Cohesion Deficit
+**Type:** Scoring signal (contributes to drift score)
+**Default weight:** `0.01`
 **Scope:** cross_file
 
 ---

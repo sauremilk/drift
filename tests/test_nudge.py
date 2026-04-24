@@ -1783,5 +1783,3 @@ class TestPostEditRegressionDetector:
         assert isinstance(result["latency_exceeded"], bool)
         assert isinstance(result["auto_fast_path"], bool)
         assert isinstance(result["baseline_created"], bool)
-
-

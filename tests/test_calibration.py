@@ -572,5 +572,3 @@ class TestFeedbackMetrics:
         from drift.calibration.feedback import feedback_metrics
 
         assert feedback_metrics([]) == {}
-
-

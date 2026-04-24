@@ -97,8 +97,8 @@ cross-file structural drift that accumulates silently — in any codebase, at an
 </tr>
 </table>
 
-> 🔍 **Before** — `drift brief` analyses your repo scope and generates structural constraints ready to paste into your agent prompt  
-> 🚦 **After** — `drift check` runs 20+ cross-file signals and exits 1 on violations — CI, SARIF, and pre-commit ready  
+> 🔍 **Before** — `drift brief` analyses your repo scope and generates structural constraints ready to paste into your agent prompt
+> 🚦 **After** — `drift check` runs 20+ cross-file signals and exits 1 on violations — CI, SARIF, and pre-commit ready
 > 🧠 **Over time** — Adaptive calibration reweights signals via feedback, git outcome correlation, and GitHub label correlation
 > 📚 **Negative context library** — `drift_nudge` delivers structured anti-patterns (canonical alternatives + CWE tags) directly into your agent's context — no manual guardrail writing needed
 

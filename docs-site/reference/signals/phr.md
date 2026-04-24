@@ -1,9 +1,9 @@
 # Phantom Reference Signal (PHR)
 
-**Signal ID:** `PHR`  
-**Full name:** Phantom Reference  
-**Type:** Scoring signal (contributes to drift score)  
-**Default weight:** `0.02`  
+**Signal ID:** `PHR`
+**Full name:** Phantom Reference
+**Type:** Scoring signal (contributes to drift score)
+**Default weight:** `0.02`
 **Scope:** cross_file
 
 ---

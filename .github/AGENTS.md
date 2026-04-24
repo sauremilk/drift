@@ -14,7 +14,7 @@ Im Chat erwähnen: „Release version", „Create release", „Publish to PyPI".
 
 Der Agent: Validiert → Version berechnet → CHANGELOG + pyproject.toml → Commit + Tag → Push → PyPI.
 
-> **Hinweis:** Releases werden automatisch via python-semantic-release in CI verwaltet.  
+> **Hinweis:** Releases werden automatisch via python-semantic-release in CI verwaltet.
 > Lokaler Fallback nur bei CI-Ausfall: `python scripts/release_automation.py --full-release`
 
 ### Wann verwenden

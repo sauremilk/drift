@@ -1,9 +1,9 @@
 # Naming Contract Violation Signal (NBV)
 
-**Signal ID:** `NBV`  
-**Full name:** Naming Contract Violation  
-**Type:** Scoring signal (contributes to drift score)  
-**Default weight:** `0.04`  
+**Signal ID:** `NBV`
+**Full name:** Naming Contract Violation
+**Type:** Scoring signal (contributes to drift score)
+**Default weight:** `0.04`
 **Scope:** file_local
 
 ---

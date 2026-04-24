@@ -64,4 +64,3 @@ def test_issue_306_eds_exclude_suppresses_test_context() -> None:
     )
 
     assert findings == []
-

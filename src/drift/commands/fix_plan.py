@@ -326,4 +326,3 @@ def fix_plan(
         yes=yes,
     )
     _emit_fix_plan_result(result, output, output_format)
-

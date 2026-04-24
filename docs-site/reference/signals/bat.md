@@ -1,9 +1,9 @@
 # Bypass Accumulation Signal (BAT)
 
-**Signal ID:** `BAT`  
-**Full name:** Bypass Accumulation  
-**Type:** Scoring signal (contributes to drift score)  
-**Default weight:** `0.03`  
+**Signal ID:** `BAT`
+**Full name:** Bypass Accumulation
+**Type:** Scoring signal (contributes to drift score)
+**Default weight:** `0.03`
 **Scope:** file_local
 
 ---

@@ -1,9 +1,9 @@
 # Doc-Implementation Drift Signal (DIA)
 
-**Signal ID:** `DIA`  
-**Full name:** Doc-Implementation Drift  
-**Type:** Scoring signal (contributes to drift score)  
-**Default weight:** `0.04`  
+**Signal ID:** `DIA`
+**Full name:** Doc-Implementation Drift
+**Type:** Scoring signal (contributes to drift score)
+**Default weight:** `0.04`
 **Scope:** cross_file
 
 ---

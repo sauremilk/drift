@@ -672,4 +672,3 @@ class TestBuildWorkflowPlan:
         # Second fix step should have a precondition
         assert len(fix_steps) == 2
         assert len(fix_steps[1].preconditions) > 0
-

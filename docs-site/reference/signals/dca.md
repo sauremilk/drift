@@ -1,9 +1,9 @@
 # Dead Code Accumulation Signal (DCA)
 
-**Signal ID:** `DCA`  
-**Full name:** Dead Code Accumulation  
-**Type:** Report-only signal (weight 0.0 — does not contribute to drift score)  
-**Default weight:** `0.0`  
+**Signal ID:** `DCA`
+**Full name:** Dead Code Accumulation
+**Type:** Report-only signal (weight 0.0 — does not contribute to drift score)
+**Default weight:** `0.0`
 **Scope:** cross_file
 
 ---
@@ -17,7 +17,7 @@ DCA detects **exported functions and classes that are never imported elsewhere**
 ```
 dead_code_accumulation in utils/legacy_helpers.py
   Unreferenced exports: 5/7 functions
-  Functions: format_v1(), parse_old_config(), legacy_transform(), 
+  Functions: format_v1(), parse_old_config(), legacy_transform(),
              convert_timestamp_v2(), render_old_template()
   → Score: 0.71 (HIGH)
 ```

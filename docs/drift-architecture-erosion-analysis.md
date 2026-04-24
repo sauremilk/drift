@@ -30,8 +30,8 @@ Die systematische Messung architektonischer Abweichungen erfordert Methoden, die
 
 Softwarearchitekturen können als gerichtete Graphen modelliert werden, wobei Knoten Module oder Dateien repräsentieren und Kanten die Abhängigkeiten (Imports, Funktionsaufrufe) darstellen. Die Quantifizierung von Erosion erfolgt hier durch die Analyse der Grapheneigenschaften.
 
-1. **Zyklenerkennung:** Zyklen zwischen Modulen (Circular Dependencies) sind ein klassisches Indiz für Erosion.9 In einem gesunden, geschichteten System sollte der Abhängigkeitsgraph ein gerichteter azyklischer Graph (DAG) sein. Ein Zyklus deutet darauf hin, dass die Trennung der Belange (Separation of Concerns) aufgehoben wurde.  
-2. **Kopplungsdichte:** Die Dichte des Graphen gibt Aufschluss darüber, wie stark Komponenten miteinander verwoben sind. Eine zunehmende Kopplungsdichte über die Zeit signalisiert einen Drift hin zu einer monolithischen Struktur, was die Testbarkeit und Austauschbarkeit untergräbt.8  
+1. **Zyklenerkennung:** Zyklen zwischen Modulen (Circular Dependencies) sind ein klassisches Indiz für Erosion.9 In einem gesunden, geschichteten System sollte der Abhängigkeitsgraph ein gerichteter azyklischer Graph (DAG) sein. Ein Zyklus deutet darauf hin, dass die Trennung der Belange (Separation of Concerns) aufgehoben wurde.
+2. **Kopplungsdichte:** Die Dichte des Graphen gibt Aufschluss darüber, wie stark Komponenten miteinander verwoben sind. Eine zunehmende Kopplungsdichte über die Zeit signalisiert einen Drift hin zu einer monolithischen Struktur, was die Testbarkeit und Austauschbarkeit untergräbt.8
 3. **Transitive Blast Radius:** Durch die Analyse indirekter Abhängigkeiten lässt sich messen, wie weit sich eine Änderung in einem Modul durch das System propagiert. Ein hoher transitiver „Blast Radius“ ist ein Zeichen für mangelnde Kapselung.9
 
 ## **Metrikbasierte Ansätze und der Instabilitätsindex**
@@ -40,10 +40,10 @@ Robert C. Martin definierte Metriken, die heute in Werkzeugen wie SonarQube oder
 
 Der Instabilitätsindex ![][image3] wird berechnet als:
 
-![][image4]  
+![][image4]
 Ein Wert von ![][image5] deutet auf eine maximal stabile Komponente hin (viele hängen von ihr ab, sie hängt von niemandem ab), während ![][image6] eine maximal instabile Komponente beschreibt.12 Architektonische Erosion lässt sich quantifizieren, indem die „Entfernung von der Hauptsequenz“ gemessen wird:
 
-![][image7]  
+![][image7]
 Hierbei repräsentiert ![][image8] die Abstraktion der Komponente. Komponenten, die weder abstrakt noch stabil sind (hohes ![][image9]), gelten als „Zone des Schmerzes“, da sie schwer zu ändern, aber dennoch zentral für das System sind.12
 
 ## **Messung von Dependency Drift und Schichtverletzungen**
@@ -74,8 +74,8 @@ Ein innovativer Ansatz ist die intermodulare Anomalieerkennung mittels Machine L
 
 Für ein Projekt wie drift könnten folgende Strategien angewandt werden, um die Wirksamkeit des eigenen Ansatzes zu validieren:
 
-* **Injektion von Architekturfehlern:** Bewusste Einführung von Schichtverletzungen in ein Test-Repository, um die Detektionsrate von Drift im Vergleich zu Ruff oder Pylint zu messen.  
-* **Historische Replay-Analyse:** Anwendung von Drift auf frühere Versionen bekannter Python-Frameworks (z. B. Django, FastAPI), um rückwirkend architektonische Wendepunkte zu identifizieren, die zu technischer Schuld geführt haben.  
+* **Injektion von Architekturfehlern:** Bewusste Einführung von Schichtverletzungen in ein Test-Repository, um die Detektionsrate von Drift im Vergleich zu Ruff oder Pylint zu messen.
+* **Historische Replay-Analyse:** Anwendung von Drift auf frühere Versionen bekannter Python-Frameworks (z. B. Django, FastAPI), um rückwirkend architektonische Wendepunkte zu identifizieren, die zu technischer Schuld geführt haben.
 * **Context Drift Monitoring:** Speziell für KI-unterstützte Teams kann gemessen werden, wie stark KI-generierte Code-Vorschläge von den in copilot-instructions.md oder ähnlichen Dokumenten definierten Regeln abweichen.22
 
 ## **Vergleich mit klassischen Tools: Die Grenzen von Ruff, MyPy und Co.**
@@ -114,9 +114,9 @@ Neuere Arbeiten wie SORT-CX führen mathematische Konzepte wie den „Resonanzra
 
 Neben Drift existieren weitere Ansätze, um architektonische Fitness Functions in Python zu implementieren:
 
-* **PyTestArch:** Erlaubt die Definition von Schichtarchitekturen (z. B. FastAPI-Strukturen) direkt in Pytest-Fixtures. Es ermöglicht explizite Regeln wie should\_not().access\_layers\_that().are\_named("persistence").7  
-* **ArchUnit-Klone:** Während ArchUnit der Goldstandard in der Java-Welt ist, übertragen Projekte wie PyTestArch dessen Philosophie (Architecture as Code) auf Python.7  
-* **Multiplayer:** Ein kommerzieller Ansatz, der Dashboards zur Echtzeit-Visualisierung von architektonischem Drift zwischen Diagrammen und Live-Systemen bietet.10  
+* **PyTestArch:** Erlaubt die Definition von Schichtarchitekturen (z. B. FastAPI-Strukturen) direkt in Pytest-Fixtures. Es ermöglicht explizite Regeln wie should\_not().access\_layers\_that().are\_named("persistence").7
+* **ArchUnit-Klone:** Während ArchUnit der Goldstandard in der Java-Welt ist, übertragen Projekte wie PyTestArch dessen Philosophie (Architecture as Code) auf Python.7
+* **Multiplayer:** Ein kommerzieller Ansatz, der Dashboards zur Echtzeit-Visualisierung von architektonischem Drift zwischen Diagrammen und Live-Systemen bietet.10
 * **Lattix:** Ein spezialisiertes Tool für DSM-Analysen, das auch Python unterstützt und komplexe Abhängigkeitsstrukturen formalisiert.8
 
 ## **Fazit: Drift als Enabler für nachhaltige KI-gestützte Entwicklung**
@@ -127,36 +127,36 @@ Durch die Kombination von graphentheoretischen Quantifizierungsansätzen (wie DS
 
 #### **Referenzen**
 
-1. 5 Python Code Quality Tools Built for 100+ Developer Teams \- Qodo, Zugriff am März 24, 2026, [https://www.qodo.ai/blog/python-code-quality-tools/](https://www.qodo.ai/blog/python-code-quality-tools/)  
-2. FAQ | Ruff \- Astral Docs, Zugriff am März 24, 2026, [https://docs.astral.sh/ruff/faq/](https://docs.astral.sh/ruff/faq/)  
-3. (PDF) Understanding software architecture erosion: A systematic ..., Zugriff am März 24, 2026, [https://www.researchgate.net/publication/357200965\_Understanding\_software\_architecture\_erosion\_A\_systematic\_mapping\_study](https://www.researchgate.net/publication/357200965_Understanding_software_architecture_erosion_A_systematic_mapping_study)  
-4. Drift and Erosion in Software Architecture: Summary and Prevention Strategies, Zugriff am März 24, 2026, [https://www.researchgate.net/publication/339385701\_Drift\_and\_Erosion\_in\_Software\_Architecture\_Summary\_and\_Prevention\_Strategies](https://www.researchgate.net/publication/339385701_Drift_and_Erosion_in_Software_Architecture_Summary_and_Prevention_Strategies)  
-5. Software Architecture, Configuration Management, and Configurable Distributed Systems: A Menage a Trois \- DTIC, Zugriff am März 24, 2026, [https://apps.dtic.mil/sti/tr/pdf/ADA452470.pdf](https://apps.dtic.mil/sti/tr/pdf/ADA452470.pdf)  
-6. Architecture consistency: State of the practice, challenges and requirements \- Diva-portal.org, Zugriff am März 24, 2026, [http://www.diva-portal.org/smash/get/diva2:1157550/FULLTEXT01.pdf](http://www.diva-portal.org/smash/get/diva2:1157550/FULLTEXT01.pdf)  
-7. Protecting Architecture with Automated Tests in Python | Tech notes of hands-on software architects, Zugriff am März 24, 2026, [https://handsonarchitects.com/blog/2026/protecting-architecture-with-automated-tests-in-python/?utm\_source=jvm-bloggers.com\&utm\_medium=link\&utm\_campaign=jvm-bloggers](https://handsonarchitects.com/blog/2026/protecting-architecture-with-automated-tests-in-python/?utm_source=jvm-bloggers.com&utm_medium=link&utm_campaign=jvm-bloggers)  
-8. Lattix | MDS Intelligence, Zugriff am März 24, 2026, [https://www.mdsit.co.kr/mdsit/en/solutions/lattix](https://www.mdsit.co.kr/mdsit/en/solutions/lattix)  
-9. Dependency Structure Matrix \- NDepend, Zugriff am März 24, 2026, [https://www.ndepend.com/docs/dependency-structure-matrix-dsm](https://www.ndepend.com/docs/dependency-structure-matrix-dsm)  
-10. Technical Debt Examples & Tutorial \- Multiplayer, Zugriff am März 24, 2026, [https://www.multiplayer.app/system-architecture/technical-debt-examples/](https://www.multiplayer.app/system-architecture/technical-debt-examples/)  
-11. Architectural Conformance Checking for MAPE-K-based Self-Adaptive Systems \- arXiv, Zugriff am März 24, 2026, [https://arxiv.org/html/2401.16382v3](https://arxiv.org/html/2401.16382v3)  
-12. Building Evolutionary Architectures: Automated Software Governance \[2 ed.\] 1492097543, 9781492097549 \- DOKUMEN.PUB, Zugriff am März 24, 2026, [https://dokumen.pub/building-evolutionary-architectures-automated-software-governance-2nbsped-1492097543-9781492097549-e-4620406.html](https://dokumen.pub/building-evolutionary-architectures-automated-software-governance-2nbsped-1492097543-9781492097549-e-4620406.html)  
-13. Software Metrics You Need to Track \- IN-COM DATA SYSTEMS, Zugriff am März 24, 2026, [https://www.in-com.com/blog/software-performance-metrics-you-need-to-track/](https://www.in-com.com/blog/software-performance-metrics-you-need-to-track/)  
-14. Artifacts in Complex Development Projects \- SE@RWTH, Zugriff am März 24, 2026, [https://www.se-rwth.de/research/Artifacts/](https://www.se-rwth.de/research/Artifacts/)  
-15. Working with the Dependency Structure Matrix (DSM) \- Lattix documentation, Zugriff am März 24, 2026, [https://docs.lattix.com/lattix/userGuide/Working\_with\_the\_Dependency\_Structure\_Matrix\_DSM.html](https://docs.lattix.com/lattix/userGuide/Working_with_the_Dependency_Structure_Matrix_DSM.html)  
-16. Dependency Structure Matrix | IntelliJ IDEA Documentation \- JetBrains, Zugriff am März 24, 2026, [https://www.jetbrains.com/help/idea/dsm-analysis.html](https://www.jetbrains.com/help/idea/dsm-analysis.html)  
-17. Leveraging Machine Learning to Detect Architectural Violations Before Refactoring, Zugriff am März 24, 2026, [https://www.in-com.com/blog/leveraging-machine-learning-to-detect-architectural-violations-before-refactoring/](https://www.in-com.com/blog/leveraging-machine-learning-to-detect-architectural-violations-before-refactoring/)  
-18. Protecting Architecture with Automated Tests in Python | Tech notes ..., Zugriff am März 24, 2026, [https://handsonarchitects.com/blog/2026/protecting-architecture-with-automated-tests-in-python/](https://handsonarchitects.com/blog/2026/protecting-architecture-with-automated-tests-in-python/)  
-19. How to Write Clean Code, Zugriff am März 24, 2026, [https://www.augmentcode.com/learn/how-to-write-clean-code](https://www.augmentcode.com/learn/how-to-write-clean-code)  
-20. Keeping Code-Aware LLMs Fresh: Full Refresh, In-Context Deltas, and Incremental Fine-Tuning \- arXiv, Zugriff am März 24, 2026, [https://arxiv.org/pdf/2511.14022](https://arxiv.org/pdf/2511.14022)  
-21. Concept drift \- Wikipedia, Zugriff am März 24, 2026, [https://en.wikipedia.org/wiki/Concept\_drift](https://en.wikipedia.org/wiki/Concept_drift)  
-22. ContextCov: Deriving and Enforcing Executable Constraints from Agent Instruction Files, Zugriff am März 24, 2026, [https://arxiv.org/html/2603.00822v1](https://arxiv.org/html/2603.00822v1)  
-23. Been using Cursor for months and just realised how much architectural drift it was quietly introducing so made a scaffold of .md files (markdownmaxxing) : r/ClaudeCode \- Reddit, Zugriff am März 24, 2026, [https://www.reddit.com/r/ClaudeCode/comments/1rmlsow/been\_using\_cursor\_for\_months\_and\_just\_realised/](https://www.reddit.com/r/ClaudeCode/comments/1rmlsow/been_using_cursor_for_months_and_just_realised/)  
-24. Even the Pylint codebase uses Ruff \- Hacker News, Zugriff am März 24, 2026, [https://news.ycombinator.com/item?id=35035618](https://news.ycombinator.com/item?id=35035618)  
-25. How do Ruff and Pylint compare? \- Python Developer Tooling Handbook, Zugriff am März 24, 2026, [https://pydevtools.com/handbook/explanation/how-do-ruff-and-pylint-compare/](https://pydevtools.com/handbook/explanation/how-do-ruff-and-pylint-compare/)  
-26. 20 Powerful Static Analysis Tools Every TypeScript Team Needs \- IN-COM DATA SYSTEMS, Zugriff am März 24, 2026, [https://www.in-com.com/blog/20-powerful-static-analysis-tools-every-typescript-team-needs/](https://www.in-com.com/blog/20-powerful-static-analysis-tools-every-typescript-team-needs/)  
-27. Modern Python Code Quality Setup: uv, ruff, and mypy | by Simone Carolini \- Medium, Zugriff am März 24, 2026, [https://simone-carolini.medium.com/modern-python-code-quality-setup-uv-ruff-and-mypy-8038c6549dcc](https://simone-carolini.medium.com/modern-python-code-quality-setup-uv-ruff-and-mypy-8038c6549dcc)  
-28. Architecture in SonarQube Cloud | Sonar, Zugriff am März 24, 2026, [https://www.sonarsource.com/solutions/architecture/](https://www.sonarsource.com/solutions/architecture/)  
-29. Leveraging Large Language Models for Automated Reproduction of Networking Research Results \- arXiv, Zugriff am März 24, 2026, [https://arxiv.org/html/2509.21074v2](https://arxiv.org/html/2509.21074v2)  
-30. SORT-CX: A Projection-Based Structural Framework for Complex Systems Operator Geometry, Non-Local Kernels, Drift Diagnostics, and Emergent Stability \- Preprints.org, Zugriff am März 24, 2026, [https://www.preprints.org/manuscript/202512.1431](https://www.preprints.org/manuscript/202512.1431)  
+1. 5 Python Code Quality Tools Built for 100+ Developer Teams \- Qodo, Zugriff am März 24, 2026, [https://www.qodo.ai/blog/python-code-quality-tools/](https://www.qodo.ai/blog/python-code-quality-tools/)
+2. FAQ | Ruff \- Astral Docs, Zugriff am März 24, 2026, [https://docs.astral.sh/ruff/faq/](https://docs.astral.sh/ruff/faq/)
+3. (PDF) Understanding software architecture erosion: A systematic ..., Zugriff am März 24, 2026, [https://www.researchgate.net/publication/357200965\_Understanding\_software\_architecture\_erosion\_A\_systematic\_mapping\_study](https://www.researchgate.net/publication/357200965_Understanding_software_architecture_erosion_A_systematic_mapping_study)
+4. Drift and Erosion in Software Architecture: Summary and Prevention Strategies, Zugriff am März 24, 2026, [https://www.researchgate.net/publication/339385701\_Drift\_and\_Erosion\_in\_Software\_Architecture\_Summary\_and\_Prevention\_Strategies](https://www.researchgate.net/publication/339385701_Drift_and_Erosion_in_Software_Architecture_Summary_and_Prevention_Strategies)
+5. Software Architecture, Configuration Management, and Configurable Distributed Systems: A Menage a Trois \- DTIC, Zugriff am März 24, 2026, [https://apps.dtic.mil/sti/tr/pdf/ADA452470.pdf](https://apps.dtic.mil/sti/tr/pdf/ADA452470.pdf)
+6. Architecture consistency: State of the practice, challenges and requirements \- Diva-portal.org, Zugriff am März 24, 2026, [http://www.diva-portal.org/smash/get/diva2:1157550/FULLTEXT01.pdf](http://www.diva-portal.org/smash/get/diva2:1157550/FULLTEXT01.pdf)
+7. Protecting Architecture with Automated Tests in Python | Tech notes of hands-on software architects, Zugriff am März 24, 2026, [https://handsonarchitects.com/blog/2026/protecting-architecture-with-automated-tests-in-python/?utm\_source=jvm-bloggers.com\&utm\_medium=link\&utm\_campaign=jvm-bloggers](https://handsonarchitects.com/blog/2026/protecting-architecture-with-automated-tests-in-python/?utm_source=jvm-bloggers.com&utm_medium=link&utm_campaign=jvm-bloggers)
+8. Lattix | MDS Intelligence, Zugriff am März 24, 2026, [https://www.mdsit.co.kr/mdsit/en/solutions/lattix](https://www.mdsit.co.kr/mdsit/en/solutions/lattix)
+9. Dependency Structure Matrix \- NDepend, Zugriff am März 24, 2026, [https://www.ndepend.com/docs/dependency-structure-matrix-dsm](https://www.ndepend.com/docs/dependency-structure-matrix-dsm)
+10. Technical Debt Examples & Tutorial \- Multiplayer, Zugriff am März 24, 2026, [https://www.multiplayer.app/system-architecture/technical-debt-examples/](https://www.multiplayer.app/system-architecture/technical-debt-examples/)
+11. Architectural Conformance Checking for MAPE-K-based Self-Adaptive Systems \- arXiv, Zugriff am März 24, 2026, [https://arxiv.org/html/2401.16382v3](https://arxiv.org/html/2401.16382v3)
+12. Building Evolutionary Architectures: Automated Software Governance \[2 ed.\] 1492097543, 9781492097549 \- DOKUMEN.PUB, Zugriff am März 24, 2026, [https://dokumen.pub/building-evolutionary-architectures-automated-software-governance-2nbsped-1492097543-9781492097549-e-4620406.html](https://dokumen.pub/building-evolutionary-architectures-automated-software-governance-2nbsped-1492097543-9781492097549-e-4620406.html)
+13. Software Metrics You Need to Track \- IN-COM DATA SYSTEMS, Zugriff am März 24, 2026, [https://www.in-com.com/blog/software-performance-metrics-you-need-to-track/](https://www.in-com.com/blog/software-performance-metrics-you-need-to-track/)
+14. Artifacts in Complex Development Projects \- SE@RWTH, Zugriff am März 24, 2026, [https://www.se-rwth.de/research/Artifacts/](https://www.se-rwth.de/research/Artifacts/)
+15. Working with the Dependency Structure Matrix (DSM) \- Lattix documentation, Zugriff am März 24, 2026, [https://docs.lattix.com/lattix/userGuide/Working\_with\_the\_Dependency\_Structure\_Matrix\_DSM.html](https://docs.lattix.com/lattix/userGuide/Working_with_the_Dependency_Structure_Matrix_DSM.html)
+16. Dependency Structure Matrix | IntelliJ IDEA Documentation \- JetBrains, Zugriff am März 24, 2026, [https://www.jetbrains.com/help/idea/dsm-analysis.html](https://www.jetbrains.com/help/idea/dsm-analysis.html)
+17. Leveraging Machine Learning to Detect Architectural Violations Before Refactoring, Zugriff am März 24, 2026, [https://www.in-com.com/blog/leveraging-machine-learning-to-detect-architectural-violations-before-refactoring/](https://www.in-com.com/blog/leveraging-machine-learning-to-detect-architectural-violations-before-refactoring/)
+18. Protecting Architecture with Automated Tests in Python | Tech notes ..., Zugriff am März 24, 2026, [https://handsonarchitects.com/blog/2026/protecting-architecture-with-automated-tests-in-python/](https://handsonarchitects.com/blog/2026/protecting-architecture-with-automated-tests-in-python/)
+19. How to Write Clean Code, Zugriff am März 24, 2026, [https://www.augmentcode.com/learn/how-to-write-clean-code](https://www.augmentcode.com/learn/how-to-write-clean-code)
+20. Keeping Code-Aware LLMs Fresh: Full Refresh, In-Context Deltas, and Incremental Fine-Tuning \- arXiv, Zugriff am März 24, 2026, [https://arxiv.org/pdf/2511.14022](https://arxiv.org/pdf/2511.14022)
+21. Concept drift \- Wikipedia, Zugriff am März 24, 2026, [https://en.wikipedia.org/wiki/Concept\_drift](https://en.wikipedia.org/wiki/Concept_drift)
+22. ContextCov: Deriving and Enforcing Executable Constraints from Agent Instruction Files, Zugriff am März 24, 2026, [https://arxiv.org/html/2603.00822v1](https://arxiv.org/html/2603.00822v1)
+23. Been using Cursor for months and just realised how much architectural drift it was quietly introducing so made a scaffold of .md files (markdownmaxxing) : r/ClaudeCode \- Reddit, Zugriff am März 24, 2026, [https://www.reddit.com/r/ClaudeCode/comments/1rmlsow/been\_using\_cursor\_for\_months\_and\_just\_realised/](https://www.reddit.com/r/ClaudeCode/comments/1rmlsow/been_using_cursor_for_months_and_just_realised/)
+24. Even the Pylint codebase uses Ruff \- Hacker News, Zugriff am März 24, 2026, [https://news.ycombinator.com/item?id=35035618](https://news.ycombinator.com/item?id=35035618)
+25. How do Ruff and Pylint compare? \- Python Developer Tooling Handbook, Zugriff am März 24, 2026, [https://pydevtools.com/handbook/explanation/how-do-ruff-and-pylint-compare/](https://pydevtools.com/handbook/explanation/how-do-ruff-and-pylint-compare/)
+26. 20 Powerful Static Analysis Tools Every TypeScript Team Needs \- IN-COM DATA SYSTEMS, Zugriff am März 24, 2026, [https://www.in-com.com/blog/20-powerful-static-analysis-tools-every-typescript-team-needs/](https://www.in-com.com/blog/20-powerful-static-analysis-tools-every-typescript-team-needs/)
+27. Modern Python Code Quality Setup: uv, ruff, and mypy | by Simone Carolini \- Medium, Zugriff am März 24, 2026, [https://simone-carolini.medium.com/modern-python-code-quality-setup-uv-ruff-and-mypy-8038c6549dcc](https://simone-carolini.medium.com/modern-python-code-quality-setup-uv-ruff-and-mypy-8038c6549dcc)
+28. Architecture in SonarQube Cloud | Sonar, Zugriff am März 24, 2026, [https://www.sonarsource.com/solutions/architecture/](https://www.sonarsource.com/solutions/architecture/)
+29. Leveraging Large Language Models for Automated Reproduction of Networking Research Results \- arXiv, Zugriff am März 24, 2026, [https://arxiv.org/html/2509.21074v2](https://arxiv.org/html/2509.21074v2)
+30. SORT-CX: A Projection-Based Structural Framework for Complex Systems Operator Geometry, Non-Local Kernels, Drift Diagnostics, and Emergent Stability \- Preprints.org, Zugriff am März 24, 2026, [https://www.preprints.org/manuscript/202512.1431](https://www.preprints.org/manuscript/202512.1431)
 31. GitHub \- LukasNiessen/ArchUnitTS: ArchUnitTS is an architecture testing library. Specify and ensure architecture rules in your TypeScript app. Easy setup and pipeline integration., Zugriff am März 24, 2026, [https://github.com/LukasNiessen/ArchUnitTS](https://github.com/LukasNiessen/ArchUnitTS)
 
 [image1]: <data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABYAAAAYCAYAAAD+vg1LAAAAYElEQVR4Xu2QQQoAIAgE+/+niw5FWtYEhpcGvOTuCKX0iSQb03bXjIIVp/0SUiKZCVIiGQEtkEynSa9KhCfSSriYZAShYmt/7O4C5H3X70s9Flrsgj76XOxyQH+Zi/TDKEroQb8LqA96AAAAAElFTkSuQmCC>

@@ -1,7 +1,7 @@
 # ADR-003: Composite Scoring Model — Weighted Mean with Count-Dampened Aggregation
 
-**Status:** Accepted (revised)  
-**Date:** 2025-12-15  
+**Status:** Accepted (revised)
+**Date:** 2025-12-15
 **Decision Makers:** @mick-gsk
 
 ## Context

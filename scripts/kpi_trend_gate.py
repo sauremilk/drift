@@ -35,8 +35,8 @@ from pathlib import Path
 def _load_trend(path: str) -> list[dict]:
     p = Path(path)
     if not p.exists():
-        print(f"ERROR: trend log not found: {path}", flush=True)
-        sys.exit(1)
+        print(f"INFO: trend log not found: {path}. Skipping.", flush=True)
+        return []
     entries = []
     with p.open(encoding="utf-8") as fh:
         for line in fh:
@@ -117,7 +117,8 @@ def main() -> None:
         for entry in window_entries:
             v = entry.get(metric)
             if v is None:
-                # Skip entries where the metric is absent (e.g. self_analysis_finding_count can be null)
+                # Skip entries where the metric is absent
+                # (e.g. self_analysis_finding_count can be null)
                 continue
             values.append(float(v))
 

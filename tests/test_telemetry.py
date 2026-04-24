@@ -415,4 +415,3 @@ def test_api_scan_returns_acceptance_fields(monkeypatch) -> None:
     assert result["high_count"] == 1
     assert "existing_high_or_critical_findings" in result["blocking_reasons"]
     assert "drift_trend_degrading" in result["blocking_reasons"]
-

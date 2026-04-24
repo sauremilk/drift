@@ -1,9 +1,9 @@
 # TypeScript Architecture Signal (TSA)
 
-**Signal ID:** `TSA`  
-**Full name:** TypeScript Architecture  
-**Type:** Report-only signal (weight 0.0 — does not contribute to drift score)  
-**Default weight:** `0.0`  
+**Signal ID:** `TSA`
+**Full name:** TypeScript Architecture
+**Type:** Report-only signal (weight 0.0 — does not contribute to drift score)
+**Default weight:** `0.0`
 **Scope:** cross_file
 
 ---

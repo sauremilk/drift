@@ -1,8 +1,8 @@
 # ADR-065 — Repair Template Registry
 
-**Status:** proposed  
-**Deciders:** Mick Gottschalk  
-**Date:** 2026-04-12  
+**Status:** proposed
+**Deciders:** Mick Gottschalk
+**Date:** 2026-04-12
 **Related:** ADR-063 (fix-intent structured contract)
 
 ---

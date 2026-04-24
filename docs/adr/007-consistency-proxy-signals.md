@@ -1,7 +1,7 @@
 # ADR-007: Consistency Proxy Signals (BEM, TPD, GCD)
 
-**Status:** Accepted  
-**Date:** 2026-03-25  
+**Status:** Accepted
+**Date:** 2026-03-25
 **Relates to:** EPISTEMICS.md §2 ("konsistente Falschheit")
 
 ## Context

@@ -431,4 +431,3 @@ def compute_corpus_sha256(chunks: list[FactChunk]) -> str:
         hasher.update(chunk.sha256.encode("utf-8"))
         hasher.update(b"\n")
     return hasher.hexdigest()
-

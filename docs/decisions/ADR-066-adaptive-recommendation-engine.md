@@ -1,8 +1,8 @@
 # ADR-066 — Adaptive Recommendation Engine (ARE)
 
-**Status:** proposed  
-**Deciders:** Mick Gottschalk  
-**Date:** 2025-07-26  
+**Status:** proposed
+**Deciders:** Mick Gottschalk
+**Date:** 2025-07-26
 **Related:** ADR-035 (per-repo calibration)
 
 ---

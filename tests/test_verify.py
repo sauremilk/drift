@@ -416,4 +416,3 @@ class TestVerifyCommand:
         runner = CliRunner()
         result = runner.invoke(verify_cmd, ["--format", "json", "--exit-zero"])
         assert result.exit_code == 0
-

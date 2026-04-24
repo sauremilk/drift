@@ -51,4 +51,3 @@ def test_issue_307_tvs_skips_menu_test_support_hotspot() -> None:
 
     assert any(f.file_path.as_posix() == "src/hot_module.py" for f in findings)
     assert all(f.file_path.as_posix() != ISSUE_307_FILE.as_posix() for f in findings)
-

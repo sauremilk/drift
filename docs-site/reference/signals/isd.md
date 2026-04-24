@@ -1,9 +1,9 @@
 # Insecure Default Signal (ISD)
 
-**Signal ID:** `ISD`  
-**Full name:** Insecure Default  
-**Type:** Scoring signal (contributes to drift score)  
-**Default weight:** `0.01`  
+**Signal ID:** `ISD`
+**Full name:** Insecure Default
+**Type:** Scoring signal (contributes to drift score)
+**Default weight:** `0.01`
 **Scope:** file_local
 
 ---

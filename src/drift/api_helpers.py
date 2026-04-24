@@ -214,4 +214,3 @@ def _fix_first_concise(analysis: RepoAnalysis, max_items: int = 5) -> list[dict[
             }
         )
     return items
-

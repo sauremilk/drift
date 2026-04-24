@@ -1,7 +1,7 @@
 # ADR-005: Delta-First Score Interpretation — Preventing Goodhart Optimization
 
-**Status:** Accepted  
-**Date:** 2026-03-24  
+**Status:** Accepted
+**Date:** 2026-03-24
 **Decision Makers:** @mick-gsk
 
 ## Context

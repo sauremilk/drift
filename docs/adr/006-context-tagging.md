@@ -1,7 +1,7 @@
 # ADR-006: Context-Tagging for Intentional Variance
 
-**Status:** Accepted  
-**Date:** 2026-03-24  
+**Status:** Accepted
+**Date:** 2026-03-24
 **Relates to:** EPISTEMICS.md Problem 1, ADR-001 (determinism), ADR-003 (scoring)
 
 ## Context

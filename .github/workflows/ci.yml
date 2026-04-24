@@ -260,7 +260,7 @@ jobs:
         # Fails on any known vulnerability with a fix available.
         shell: pwsh
         run: |
-          & $env:PYTHON_BIN -m pip_audit --strict --desc
+          & $env:PYTHON_BIN -m pip_audit --strict --desc --skip-editable
 
       - name: Lint with ruff
         shell: pwsh

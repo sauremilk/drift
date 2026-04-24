@@ -145,4 +145,3 @@ class TestDriftFeedbackAndCalibrateAbandonOnCancel:
         assert flag is True, (
             "drift_calibrate._run_sync_in_thread call must pass abandon_on_cancel=True (#376)"
         )
-

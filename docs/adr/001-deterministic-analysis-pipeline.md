@@ -1,7 +1,7 @@
 # ADR-001: Deterministic Analysis Pipeline (No LLM in Detection Core)
 
-**Status:** Accepted  
-**Date:** 2025-12-01  
+**Status:** Accepted
+**Date:** 2025-12-01
 **Decision Makers:** @mick-gsk
 
 ## Context

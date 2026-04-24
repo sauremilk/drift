@@ -1,9 +1,9 @@
 # Test Polarity Deficit Signal (TPD)
 
-**Signal ID:** `TPD`  
-**Full name:** Test Polarity Deficit  
-**Type:** Scoring signal (contributes to drift score)  
-**Default weight:** `0.04`  
+**Signal ID:** `TPD`
+**Full name:** Test Polarity Deficit
+**Type:** Scoring signal (contributes to drift score)
+**Default weight:** `0.04`
 **Scope:** file_local
 
 ---

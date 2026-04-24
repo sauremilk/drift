@@ -1,9 +1,9 @@
 # Broad Exception Monoculture Signal (BEM)
 
-**Signal ID:** `BEM`  
-**Full name:** Broad Exception Monoculture  
-**Type:** Scoring signal (contributes to drift score)  
-**Default weight:** `0.04`  
+**Signal ID:** `BEM`
+**Full name:** Broad Exception Monoculture
+**Type:** Scoring signal (contributes to drift score)
+**Default weight:** `0.04`
 **Scope:** file_local
 
 ---

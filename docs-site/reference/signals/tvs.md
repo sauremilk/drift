@@ -1,9 +1,9 @@
 # Temporal Volatility Signal (TVS)
 
-**Signal ID:** `TVS`  
-**Full name:** Temporal Volatility Score  
-**Type:** Report-only signal (weight 0.0 — does not contribute to drift score)  
-**Default weight:** `0.0`  
+**Signal ID:** `TVS`
+**Full name:** Temporal Volatility Score
+**Type:** Report-only signal (weight 0.0 — does not contribute to drift score)
+**Default weight:** `0.0`
 **Scope:** git_dependent
 
 ---

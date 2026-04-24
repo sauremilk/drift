@@ -37,12 +37,12 @@ Für jeden Task, dessen `refined_edit_kind` in `CROSS_FILE_RISKY_EDIT_KINDS`
 enthalten ist, wird:
 
 1. `AgentTask.shadow_verify = True` gesetzt.
-2. `AgentTask.shadow_verify_scope` mit den relevanten Dateien befüllt:  
-   Seed = `{task.file_path} ∪ task.related_files`,  
+2. `AgentTask.shadow_verify_scope` mit den relevanten Dateien befüllt:
+   Seed = `{task.file_path} ∪ task.related_files`,
    erweitert um `related_files` aller Nachbar-Tasks aus
    `task.depends_on ∪ task.blocks` (Task-Graph-Nachbarn, kein AST-Parsing).
-3. Im `completion_evidence`-Feld des Task-Vertrags:  
-   `tool = "drift_shadow_verify"` statt `"drift_nudge"`,  
+3. Im `completion_evidence`-Feld des Task-Vertrags:
+   `tool = "drift_shadow_verify"` statt `"drift_nudge"`,
    `predicate = "shadow_clean == true"`.
 4. Im `verify_plan` wird vor dem abschließenden nudge-Schritt ein
    `drift_shadow_verify`-Schritt eingefügt.

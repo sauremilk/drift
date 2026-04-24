@@ -1,9 +1,9 @@
 # Fan-Out Explosion Signal (FOE)
 
-**Signal ID:** `FOE`  
-**Full name:** Fan-Out Explosion  
-**Type:** Scoring signal (contributes to drift score)  
-**Default weight:** `0.005`  
+**Signal ID:** `FOE`
+**Full name:** Fan-Out Explosion
+**Type:** Scoring signal (contributes to drift score)
+**Default weight:** `0.005`
 **Scope:** file_local
 
 ---

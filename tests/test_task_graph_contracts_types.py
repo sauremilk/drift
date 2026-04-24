@@ -214,4 +214,3 @@ def test_response_shaping_helpers_cover_base_and_profile_filtering() -> None:
 
     full = shape_for_profile({"status": "ok"}, "unknown")
     assert full["response_profile"] == "full"
-

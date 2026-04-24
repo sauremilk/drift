@@ -37,7 +37,7 @@ und schreibt `MergeTrajectory`-Saetze.
 ### Schema
 
 `MergeTrajectory` ist ein frozen Pydantic-Modell mit `schema_version=1`.
-Felder: merge_commit, parent_commit, timestamp, author_type, 
+Felder: merge_commit, parent_commit, timestamp, author_type,
 ai_attribution_confidence, pre_score, post_score, delta, direction,
 per_signal_delta, recommendation_outcomes, staleness_days.
 

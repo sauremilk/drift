@@ -1,6 +1,6 @@
 # Benchmark-Audit Prompt für Claude Opus 4.6
 
-> **Zweck:** Copy-Paste in ein neues Claude-Gespräch. Alle relevanten Artefakte als Kontext anhängen.  
+> **Zweck:** Copy-Paste in ein neues Claude-Gespräch. Alle relevanten Artefakte als Kontext anhängen.
 > **Ziel:** Kritische methodische Analyse der Drift-Benchmark-Suite für belastbare empirische Aussagen.
 
 ---

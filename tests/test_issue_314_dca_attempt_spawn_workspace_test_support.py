@@ -52,4 +52,3 @@ def test_issue_314_dca_reduces_test_support_finding_to_low() -> None:
     assert finding.severity == Severity.LOW
     assert finding.metadata.get("finding_context") == "test"
     assert finding.metadata.get("dead_count") == 5
-

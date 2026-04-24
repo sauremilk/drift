@@ -508,4 +508,3 @@ def test_fuzz_type_safety_bypass(prs: list[ParseResult]) -> None:
     signal = TypeSafetyBypassSignal()
     findings = signal.analyze(prs, {}, _DEFAULT_CONFIG)
     _assert_findings_valid(findings)
-

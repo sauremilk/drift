@@ -287,8 +287,10 @@ def _blit_bokeh(buf: np.ndarray, cx: int, cy: int,
     if alpha < 0.01 or radius < 1:
         return
     stamp = _bokeh_stamp(radius)
-    y1 = max(0, cy - radius); y2 = min(H, cy + radius + 1)
-    x1 = max(0, cx - radius); x2 = min(W, cx + radius + 1)
+    y1 = max(0, cy - radius)
+    y2 = min(H, cy + radius + 1)
+    x1 = max(0, cx - radius)
+    x2 = min(W, cx + radius + 1)
     if y2 <= y1 or x2 <= x1:
         return
     sy1 = y1 - (cy - radius)
@@ -301,8 +303,10 @@ def _radial_glow(buf: np.ndarray, cx: float, cy: float,
                  radius: float, color: np.ndarray, alpha: float) -> None:
     if alpha < 0.01:
         return
-    y1 = max(0, int(cy - radius)); y2 = min(H, int(cy + radius))
-    x1 = max(0, int(cx - radius)); x2 = min(W, int(cx + radius))
+    y1 = max(0, int(cy - radius))
+    y2 = min(H, int(cy + radius))
+    x1 = max(0, int(cx - radius))
+    x2 = min(W, int(cx + radius))
     if y2 <= y1 or x2 <= x1:
         return
     yy = np.arange(y1, y2, dtype=np.float32) - cy
@@ -382,10 +386,12 @@ def _text_glow(text: str, font_name: str, size: int,
 
 def _blit_text(buf: np.ndarray, rgba: np.ndarray, y: int, alpha: float) -> None:
     th = rgba.shape[0]
-    y1 = max(0, y); y2 = min(H, y + th)
+    y1 = max(0, y)
+    y2 = min(H, y + th)
     if y2 <= y1:
         return
-    s1 = y1 - y; s2 = s1 + (y2 - y1)
+    s1 = y1 - y
+    s2 = s1 + (y2 - y1)
     a   = rgba[s1:s2, :, 3:4].astype(np.float32) * (alpha / 255.0)
     src = rgba[s1:s2, :, :3].astype(np.float32) / 255.0
     buf[y1:y2] = buf[y1:y2] * (1.0 - a) + src * a
@@ -474,8 +480,14 @@ def _draw_graph_drifted(buf: np.ndarray, alpha: float, t: float,
         return
     n   = len(nodes)
     # Use pre-computed displacement arrays (seed=99) — avoid per-frame RandomState alloc
-    dxy      = _DRIFT_DXY_A  if _DRIFT_DXY_A  is not None else np.random.RandomState(99).normal(0, 1, (n, 2)).astype(np.float32)
-    edge_rnd = _DRIFT_EDGE_A if _DRIFT_EDGE_A is not None else np.random.RandomState(100).random(max(len(_CONN_EDGES), 1)).astype(np.float32)
+    dxy = (
+        _DRIFT_DXY_A if _DRIFT_DXY_A is not None
+        else np.random.RandomState(99).normal(0, 1, (n, 2)).astype(np.float32)
+    )
+    edge_rnd = (
+        _DRIFT_EDGE_A if _DRIFT_EDGE_A is not None
+        else np.random.RandomState(100).random(max(len(_CONN_EDGES), 1)).astype(np.float32)
+    )
 
     for k, (i, j, dist) in enumerate(_CONN_EDGES):
         nx1 = float(nodes[i, 0]) + dxy[i, 0] * drift_px
@@ -854,7 +866,10 @@ def _s_transform(buf: np.ndarray, p: float, t: float) -> None:
     if _CONN_NODES is not None:
         n   = len(_CONN_NODES)
         # Use pre-computed displacement array (seed=33) — avoid per-frame RandomState alloc
-        dxy = _DRIFT_DXY_B if _DRIFT_DXY_B is not None else np.random.RandomState(33).normal(0, 1, (n, 2)).astype(np.float32)
+        dxy = (
+            _DRIFT_DXY_B if _DRIFT_DXY_B is not None
+            else np.random.RandomState(33).normal(0, 1, (n, 2)).astype(np.float32)
+        )
         dpx = chaos * 78.0
 
         for i, j, dist in _CONN_EDGES:
@@ -1118,6 +1133,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-
-
-

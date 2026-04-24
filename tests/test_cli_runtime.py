@@ -361,4 +361,3 @@ def test_safe_main_fix_plan_invalid_signal_emits_single_json_and_nonzero(
     assert payload["exit_code"] == 2
     assert payload["message"] == "Unknown signal: 'INVALID_SIGNAL'"
     assert "Usage:" not in stderr
-

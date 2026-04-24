@@ -1,8 +1,8 @@
 # Pattern Fragmentation Signal (PFS)
 
-**Signal ID:** `PFS`  
-**Full name:** Pattern Fragmentation Score  
-**Type:** Scoring signal (contributes to drift score)  
+**Signal ID:** `PFS`
+**Full name:** Pattern Fragmentation Score
+**Type:** Scoring signal (contributes to drift score)
 **Default weight:** `0.16`
 
 ---
