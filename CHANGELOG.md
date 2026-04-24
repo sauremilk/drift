@@ -1,6 +1,6 @@
 ## [Unreleased]
 
-## [2.39.1] – 2026-04-24
+## [2.39.2] – 2026-04-24
 
 Short version: Patch release — quality-loop src_path fix and working-tree normalization.
 
