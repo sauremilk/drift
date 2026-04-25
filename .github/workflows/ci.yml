@@ -282,48 +282,45 @@ jobs:
         run: |
           & $env:PYTHON_BIN -m vulture src/drift --min-confidence 65
 
-      - name: Run tests with coverage (reference Python)
-        if: matrix.python-version == '3.12'
-        shell: pwsh
+      - name: Run tests with coverage (reference Python, Linux)
+        if: matrix.python-version == '3.12' && runner.os == 'Linux'
         run: |
-          & $env:PYTHON_BIN -m pytest -v --tb=short --cov=drift --cov-report=term-missing --cov-report=xml:coverage.xml --cov-fail-under=73 -m "not slow"
+          $PYTHON_BIN -m pytest -v --tb=short --cov=drift --cov-report=term-missing --cov-report=xml:coverage.xml --cov-fail-under=73 -m "not slow"
 
       - name: Run tests (no coverage)
-        if: matrix.python-version != '3.12'
+        if: matrix.python-version != '3.12' || runner.os != 'Linux'
         shell: pwsh
         run: |
           & $env:PYTHON_BIN -m pytest -v --tb=short -m "not slow"
 
       - name: Ensure deterministic coverage.xml
-        if: matrix.python-version == '3.12' && always()
-        shell: pwsh
+        if: matrix.python-version == '3.12' && runner.os == 'Linux' && always()
         run: |
-          if (-not (Test-Path "coverage.xml") -and (Test-Path ".coverage")) {
-            Write-Host "coverage.xml missing after pytest; generating from .coverage"
-            & $env:PYTHON_BIN -m coverage xml -o coverage.xml
-          }
+          if [ ! -f coverage.xml ] && [ -f .coverage ]; then
+            echo "coverage.xml missing after pytest; generating from .coverage"
+            $PYTHON_BIN -m coverage xml -o coverage.xml
+          fi
 
-          if (-not (Test-Path "coverage.xml")) {
-            Write-Error "coverage.xml missing; refusing ambiguous Codecov upload"
+          if [ ! -f coverage.xml ]; then
+            echo "coverage.xml missing; refusing ambiguous Codecov upload"
             exit 1
-          }
+          fi
 
-          $covInfo = Get-Item "coverage.xml"
-          Write-Host ("coverage.xml ready ({0} bytes)" -f $covInfo.Length)
+          echo "coverage.xml ready ($(wc -c < coverage.xml) bytes)"
 
       - name: Upload coverage to Codecov
-        if: matrix.python-version == '3.12' && always()
+        if: matrix.python-version == '3.12' && runner.os == 'Linux' && always()
         uses: codecov/codecov-action@1f60566a86da84c4b4b64c17662a90de97fbb8d7  # v5.4.2
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: coverage.xml
           disable_search: true
           flags: py${{ matrix.python-version }}
-          fail_ci_if_error: false
+          fail_ci_if_error: true
           verbose: true
 
       - name: Upload coverage artifact
-        if: matrix.python-version == '3.12' && always() && hashFiles('coverage.xml') != ''
+        if: matrix.python-version == '3.12' && runner.os == 'Linux' && always() && hashFiles('coverage.xml') != ''
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02  # v4.6.2
         with:
           name: coverage-py${{ matrix.python-version }}

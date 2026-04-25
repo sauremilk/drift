@@ -1,3 +1,11 @@
+## [2.42.8] - 2026-04-25
+
+Short version: Codecov badge fixed — coverage upload now runs exclusively on the Linux runner to avoid Windows absolute paths in `coverage.xml`, and `fail_ci_if_error` is set to `true` so upload failures are no longer silently ignored.
+
+### Fixed
+- CI workflow (`ci.yml`): Restricted coverage collection (`pytest --cov`) and Codecov upload to `runner.os == 'Linux'` only. Windows absolute paths (`C:\...`) in `coverage.xml`'s `<source>` tag caused Codecov to mark all uploads as unusable (`state: ERROR`), resulting in the badge permanently showing 0%. The Linux-only upload produces correct relative/posix paths that Codecov can resolve.
+- CI workflow: Changed `fail_ci_if_error: false` → `fail_ci_if_error: true` for the Codecov upload step so errors surface immediately instead of being silently swallowed.
+
 ## [2.42.7] - 2026-04-24
 
 Short version: All platform-dependent path separators in signal descriptions fixed — nine signal files now use `.as_posix()` and the golden snapshot test normalizes path separators for permanent platform independence.
