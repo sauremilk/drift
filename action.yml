@@ -318,7 +318,7 @@ runs:
     # Post PR summary comment. Updates existing comment if one exists.
     - name: Post PR comment
       if: always() && inputs.comment == 'true' && github.event_name == 'pull_request'
-      uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea  # v7.0.1
+      uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3  # v9.0.0
       with:
         script: |
           const body = `${{ steps.drift-json.outputs.comment-body }}`;
@@ -380,7 +380,7 @@ runs:
 
     - name: Post brief PR comment
       if: always() && inputs.brief == 'true' && github.event_name == 'pull_request' && steps.drift-brief.outputs.brief-body != ''
-      uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea  # v7.0.1
+      uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3  # v9.0.0
       with:
         script: |
           const body = `${{ steps.drift-brief.outputs.brief-body }}`;
