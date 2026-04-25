@@ -1,0 +1,10 @@
+# Commits listed here are ignored by `git blame`.
+# Configure git to use this file:
+#   git config blame.ignoreRevsFile .git-blame-ignore-revs
+#
+# Format: one full SHA-1 per line, optionally followed by a comment.
+# Add large-scale formatting/chore commits here so `git blame` shows
+# the meaningful authoring commits instead.
+#
+# Example:
+# abc123...  # chore: apply ruff format across entire codebase

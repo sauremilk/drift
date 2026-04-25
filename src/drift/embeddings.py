@@ -14,7 +14,7 @@ import os
 import threading
 from contextlib import suppress
 from pathlib import Path
-from typing import TYPE_CHECKING, cast
+from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     import numpy as np
@@ -356,7 +356,7 @@ class EmbeddingService:  # drift:ignore[DCA]
         if isinstance(vectors, list):
             if not vectors:
                 return None
-            matrix = cast(np.ndarray, np.stack(vectors))
+            matrix = np.stack(vectors)
         else:
             matrix = vectors
 

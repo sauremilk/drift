@@ -1,0 +1,23 @@
+# markdownlint configuration
+# https://github.com/DavidAnson/markdownlint#rules--aliases
+---
+default: true
+
+# Allow long lines in tables and code blocks — enforcing line length on docs
+# is noisy and rarely actionable.
+MD013: false
+
+# Allow duplicate headings in different sections (e.g. multiple "Usage" headings
+# under different top-level sections in a long CHANGELOG).
+MD024:
+  siblings_only: true
+
+# Ordered list item prefix: allow "ordered" (1. 2. 3.) style
+MD029:
+  style: ordered
+
+# Allow inline HTML (used in README badges and details/summary blocks)
+MD033: false
+
+# Allow first-line h1 to be absent (not all docs start with a heading)
+MD041: false

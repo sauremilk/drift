@@ -224,6 +224,9 @@ select = ["E", "F", "I", "N", "W", "UP", "B", "SIM"]
 python_version = "3.11"
 warn_return_any = true
 warn_unused_configs = true
+warn_redundant_casts = true
+no_implicit_optional = true
+strict_equality = true
 ignore_missing_imports = true
 check_untyped_defs = true
 # CI and pre-push run mypy on src/drift directly; keep type checks clean.

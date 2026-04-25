@@ -72,16 +72,14 @@ jobs:
   publish:
     name: Build and publish to PyPI
     needs: validate-version
-    # NOTE: Uses GitHub-hosted Windows runner.
-    runs-on: windows-latest
+    # NOTE: Uses ubuntu-latest — pypa/gh-action-pypi-publish requires a Linux runner.
+    runs-on: ubuntu-latest
     timeout-minutes: 15
     environment: pypi
     permissions:
       contents: read
-      id-token: write      # required for sigstore/OIDC attestation
+      id-token: write      # required for Trusted Publisher (OIDC) and sigstore attestation
       attestations: write  # required for actions/attest-build-provenance
-    env:
-      PYPI_API_TOKEN: ${{ secrets.PYPI_RELEASE }}
 
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
@@ -92,66 +90,25 @@ jobs:
           cache: pip
           cache-dependency-path: pyproject.toml
 
-      - name: Resolve Python executable
-        shell: powershell
-        run: |
-          $resolved = $false
-          if (Get-Command python -ErrorAction SilentlyContinue) {
-            python --version
-            if ($LASTEXITCODE -eq 0) {
-              "PYTHON_BIN=python" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
-              $resolved = $true
-            }
-          }
-          if (-not $resolved -and (Get-Command py -ErrorAction SilentlyContinue)) {
-            py --version
-            if ($LASTEXITCODE -eq 0) {
-              "PYTHON_BIN=py" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
-              $resolved = $true
-            }
-          }
-          if (-not $resolved) {
-            Write-Error "Neither 'python' nor 'py' is available on this runner."
-            exit 1
-          }
-
       - name: Install build tools
-        shell: powershell
-        run: |
-          & $env:PYTHON_BIN -m pip install --upgrade build twine
+        run: pip install --upgrade build
 
       - name: Build wheel and sdist
-        shell: powershell
-        run: |
-          & $env:PYTHON_BIN -m build
+        run: python -m build
 
       - name: Generate SBOM (CycloneDX)
-        shell: powershell
         run: |
-          & $env:PYTHON_BIN -m pip install cyclonedx-bom --quiet
-          & $env:PYTHON_BIN -m cyclonedx_py environment --output-format JSON --outfile drift-sbom.json
+          pip install cyclonedx-bom --quiet
+          python -m cyclonedx_py environment --output-format JSON --outfile drift-sbom.json
 
-      - name: Publish to PyPI (API token)
-        shell: powershell
-        run: |
-          if ([string]::IsNullOrWhiteSpace($env:PYPI_API_TOKEN)) {
-            Write-Error "Neither PYPI_API_TOKEN nor PYPI_RELEASE secret is configured."
-            exit 1
-          }
-          $env:TWINE_USERNAME = "__token__"
-          $env:TWINE_PASSWORD = $env:PYPI_API_TOKEN
-          $maxRetries = 3
-          for ($i = 1; $i -le $maxRetries; $i++) {
-            & $env:PYTHON_BIN -m twine upload --non-interactive --skip-existing dist/*
-            if ($LASTEXITCODE -eq 0) { break }
-            if ($i -lt $maxRetries) {
-              Write-Warning "twine upload failed (attempt $i/$maxRetries), retrying in $($i * 15)s..."
-              Start-Sleep -Seconds ($i * 15)
-            } else {
-              Write-Error "twine upload failed after $maxRetries attempts"
-              exit 1
-            }
-          }
+      - name: Publish to PyPI (Trusted Publisher / OIDC)
+        # Requires a Trusted Publisher configured in PyPI project settings:
+        # https://docs.pypi.org/trusted-publishers/
+        # Publisher: GitHub Actions · owner: mick-gsk · repo: drift
+        # Workflow: publish.yml · environment: pypi
+        uses: pypa/gh-action-pypi-publish@cef221092ed1bacb1cc03d23a2d87d1d172e277b  # release/v1
+        with:
+          attestations: true
 
       - name: Attest build provenance
         uses: actions/attest-build-provenance@6149ea5740be74af77f260b9db67e633f6b0a9a1  # v2.1.3
