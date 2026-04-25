@@ -6,7 +6,8 @@
   "terminal.integrated.tabs.enabled": true,
   "terminal.integrated.shellIntegration.enabled": true,
   "terminal.integrated.env.windows": {
-    "PYTHONUNBUFFERED": "1"
+    "PYTHONUNBUFFERED": "1",
+    "PATH": "${env:PATH};${env:LOCALAPPDATA}\\Microsoft\\WinGet\\Links"
   },
   "task.allowAutomaticTasks": "on",
   "python.defaultInterpreterPath": "${workspaceFolder}\\.venv\\Scripts\\python.exe",

@@ -14,7 +14,7 @@ MYPY     ?= $(PYTHON) -m mypy
 SRC      := src/
 TESTS    := tests/
 
-.PHONY: help install lint lint-fix typecheck test test-fast test-dev test-lf test-contract smoke-pr smoke-nightly test-all coverage check self ci feat-start fix-start catalog gate-check feat-bundle handover changelog-entry audit-diff markdown-lint package-kpis-github-usage package-kpis-downloads package-kpis-real-public package-kpis-example clean replay-benchmark repair-eval ab-harness kpi-update kpi-report eval-all
+.PHONY: help install lint lint-fix typecheck test test-fast test-dev test-lf test-contract smoke-pr smoke-nightly test-all coverage check self ci feat-start fix-start catalog gate-check feat-bundle handover changelog-entry audit-diff markdown-lint package-kpis-github-usage package-kpis-downloads package-kpis-real-public package-kpis-example quality-score clean replay-benchmark repair-eval ab-harness kpi-update kpi-report eval-all
 
 help:  ## Show all available commands
 	@grep -E '^[a-zA-Z_-]+:.*##' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*##"}; {printf "  \033[36m%-15s\033[0m %s\n", $$1, $$2}'
@@ -110,6 +110,9 @@ package-kpis-example:  ## Generate monthly package KPI example report JSON
 		--thresholds-json examples/package-kpis/kpi-thresholds.json \
 		--months 12 \
 		--output benchmark_results/package_kpis_example.json
+
+quality-score:  ## Build ISO/IEC 25010 quality scorecard JSON
+	$(PYTHON) scripts/quality_scorecard.py --apply
 
 ci:  ## Replicate full CI pipeline locally
 	$(PYTHON) scripts/check_version.py --check-semver
